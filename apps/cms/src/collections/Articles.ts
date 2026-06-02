@@ -13,7 +13,7 @@ export const Articles: CollectionConfig = {
     { name: 'slug', type: 'text', required: true, unique: true, admin: { position: 'sidebar' } },
     {
       name: 'excerpt', type: 'textarea', required: true,
-      admin: { description: 'Short summary shown in article cards (~160 chars)' },
+      admin: { description: 'Short summary shown in cards (~160 chars)' },
     },
     { name: 'content', type: 'richText', editor: lexicalEditor(), required: true },
     { name: 'coverImage', type: 'upload', relationTo: 'media' },
