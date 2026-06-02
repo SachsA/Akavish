@@ -1,0 +1,33 @@
+{
+  "name": "@akavish/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_OPTIONS='--require ./scripts/patch-globals.js' next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@akavish/types": "workspace:*",
+    "@akavish/ui": "workspace:*",
+    "@akavish/api-client": "workspace:*",
+    "next": "15.4.10",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.10",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@akavish/mobile",
+  "version": "0.0.1",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "lint": "expo lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@akavish/types": "workspace:*",
+    "@akavish/api-client": "workspace:*",
+    "expo": "~52.0.0",
+    "expo-router": "~4.0.0",
+    "expo-status-bar": "~2.0.0",
+    "expo-notifications": "~0.29.0",
+    "react": "18.3.1",
+    "react-native": "0.76.7",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.1.0",
+    "@react-navigation/native": "^6.1.18"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/runtime": "^7.24.0",
+    "@types/react": "~18.3.0",
+    "typescript": "^5.4.0"
+  }
+}
