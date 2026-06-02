@@ -1,14 +1,24 @@
+/* THIS FILE WAS GENERATED AUTOMATICALLY BY PAYLOAD. */
+/* DO NOT MODIFY IT BECAUSE IT COULD BE REWRITTEN AT ANY TIME. */
 import type { Metadata } from 'next'
-import { RootPage, generatePageMetadata } from '@payloadcms/next/views'
+
 import config from '@payload-config'
+import { RootPage, generatePageMetadata } from '@payloadcms/next/views'
+import { importMap } from '../importMap'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
-export async function generateMetadata(args: any): Promise<Metadata> {
-  return generatePageMetadata({ config, ...args })
+type Args = {
+  params: Promise<{
+    segments: string[]
+  }>
+  searchParams: Promise<{
+    [key: string]: string | string[]
+  }>
 }
 
-export default async function Page(args: any) {
-  return RootPage({ config, ...args })
-}
+export const generateMetadata = ({ params, searchParams }: Args): Promise<Metadata> =>
+  generatePageMetadata({ config, params, searchParams })
+
+const Page = ({ params, searchParams }: Args) =>
+  RootPage({ config, params, searchParams, importMap })
+
+export default Page
