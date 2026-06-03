@@ -1,4 +1,12 @@
 import type { Metadata } from 'next'
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -23,15 +31,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body>
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }
 
@@ -48,6 +58,21 @@ function Header() {
           <a href="/leaks" className="hover:text-white transition-colors">Leaks</a>
           <a href="/reviews" className="hover:text-white transition-colors">Reviews</a>
           <a href="/esport" className="hover:text-white transition-colors">Esport</a>
+          <div className="flex items-center gap-3 pl-3 border-l border-zinc-800">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="hover:text-white transition-colors">Log in</button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-500 transition-colors">
+                  Sign up
+                </button>
+              </SignUpButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
+          </div>
         </nav>
       </div>
     </header>

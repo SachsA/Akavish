@@ -5,7 +5,9 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "clean": "bash scripts/clean.sh",
+    "reset:db": "bash scripts/reset-db.sh"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

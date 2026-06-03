@@ -1,8 +1,16 @@
 import type { CollectionConfig } from 'payload'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { slugField } from '../fields/slug'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
+  access: {
+    // Public can read published articles only; logged-in editors see everything.
+    read: ({ req: { user } }) => {
+      if (user) return true
+      return { status: { equals: 'published' } }
+    },
+  },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'status', 'publishedAt', 'author'],
@@ -10,7 +18,7 @@ export const Articles: CollectionConfig = {
   versions: { drafts: true },
   fields: [
     { name: 'title', type: 'text', required: true },
-    { name: 'slug', type: 'text', required: true, unique: true, admin: { position: 'sidebar' } },
+    slugField('title'),
     {
       name: 'excerpt', type: 'textarea', required: true,
       admin: { description: 'Short summary shown in cards (~160 chars)' },
