@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { PaginatedResponse, Article } from '@akavish/types'
+import type { ArticleCategory } from '@akavish/types'
+import { fetchArticles } from '@/lib/payload'
 
-// Placeholder handler — will be replaced by Payload CMS queries
+// Proxies published articles from the Payload CMS REST API.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = Number(searchParams.get('page') ?? 1)
-  const perPage = Number(searchParams.get('perPage') ?? 20)
+  const limit = Number(searchParams.get('perPage') ?? searchParams.get('limit') ?? 20)
+  const category = searchParams.get('category') ?? undefined
 
-  // TODO: replace with Payload CMS collection query
-  const mockResponse: PaginatedResponse<Article> = {
-    data: [],
-    total: 0,
-    page,
-    perPage,
-    totalPages: 0,
+  try {
+    const result = await fetchArticles({
+      page,
+      limit,
+      category: (category as ArticleCategory) ?? undefined,
+    })
+    return NextResponse.json(result)
+  } catch {
+    return NextResponse.json(
+      { message: 'Failed to load articles from CMS', status: 502 },
+      { status: 502 }
+    )
   }
-
-  return NextResponse.json(mockResponse)
 }

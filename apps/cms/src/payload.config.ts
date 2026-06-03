@@ -16,7 +16,7 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
-  serverURL: process.env.SERVER_URL || 'http://localhost:3000',
+  serverURL: process.env.SERVER_URL || 'http://localhost:3001',
   admin: {
     user: Users.slug,
     importMap: {
@@ -38,7 +38,7 @@ export default buildConfig({
     },
   }),
   sharp,
-  cors: [process.env.WEB_URL || 'http://localhost:3001'],
-  csrf: [process.env.WEB_URL || 'http://localhost:3001'],
+  cors: [process.env.WEB_URL || 'http://localhost:3000'],
+  csrf: [process.env.WEB_URL || 'http://localhost:3000'],
   plugins: [],
 })
