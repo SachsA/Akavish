@@ -36,8 +36,12 @@ interface PayloadArticle {
 
 function mediaUrl(m: { url?: string } | string | null | undefined): string | undefined {
   if (!m) return undefined
-  if (typeof m === 'string') return m
-  return m.url ?? undefined
+  const raw = typeof m === 'string' ? m : m.url
+  if (!raw) return undefined
+  // Payload may return a relative path (e.g. /api/media/file/x.jpg).
+  // Make it absolute against the CMS origin so next/image can load it.
+  if (raw.startsWith('/')) return `${CMS_URL}${raw}`
+  return raw
 }
 
 // Normalise a raw Payload doc into the shared Article shape.

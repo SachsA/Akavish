@@ -49,6 +49,10 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | Game pages `/game/[slug]` | Game metadata (cover, platform, genre, dev/publisher) + coverage |
 | ✅ | Tag pages `/tag/[slug]` | Articles filtered by tag |
 | ✅ | Cross-links | Article byline → author/game; tag chips → tag pages |
+| ✅ | Custom 404 / error pages | `not-found.tsx`, `error.tsx`, `global-error.tsx` |
+| ✅ | Functional footer | Sections, About/Contact/Legal, RSS, socials (some link targets still to build) |
+| ✅ | Loading states | `loading.tsx` + `CardGridSkeleton` on home, category, article, author, game, tag |
+| ✅ | `next/image` everywhere | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
 | ✅ | `tsconfig` baseUrl fix | `@/*` alias now resolves reliably at build |
 
 ## Auth
@@ -93,8 +97,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | Pri | Item | Notes |
 |-----|------|-------|
 | P1 | Single article polish | Reading time, share buttons, related articles, prev/next (author/game byline links ✅ done) |
-| P1 | Custom 404 / error pages | `not-found.tsx`, `error.tsx`, `global-error.tsx` with brand styling |
-| P1 | Footer links that work | About, Contact, Legal, RSS, social — currently just a copyright line |
+| P1 | Footer stub pages | `/about`, `/contact`, `/privacy`, `/terms` — linked from the footer, not built yet (currently 404) |
 | P2 | Pagination / infinite scroll | Home + category + tag pages currently cap at N items |
 | P2 | Homepage layout pass | Featured/hero article, “trending”, section blocks instead of one flat grid |
 | P2 | Search UI | Search bar + results page (depends on Meilisearch, area 4) |
@@ -106,9 +109,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 ### UX & quality
 | Pri | Item | Notes |
 |-----|------|-------|
-| P1 | Loading & skeleton states | `loading.tsx` per route; graceful CMS-down fallback everywhere |
-| P1 | Image optimization | Use `next/image` (replace raw `<img>`); configure `images.remotePatterns` for R2/CMS host |
-| P1 | Mobile responsive audit | Verify header nav, cards, article page on small screens |
+| P2 | Mobile responsive audit | Verify header nav, cards, article/game/author pages on small screens |
 | P2 | Accessibility pass | Alt text, focus states, color contrast, keyboard nav, semantic landmarks |
 | P3 | Analytics | Plausible / GA / Vercel Analytics |
 
