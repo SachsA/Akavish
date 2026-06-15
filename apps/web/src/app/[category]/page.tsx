@@ -32,6 +32,8 @@ export async function generateMetadata({
   return {
     title: conf.label,
     description: conf.blurb,
+    alternates: { canonical: `/${category}` },
+    openGraph: { title: conf.label, description: conf.blurb, url: `/${category}` },
   }
 }
 

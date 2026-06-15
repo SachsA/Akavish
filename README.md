@@ -92,7 +92,8 @@ cp apps/mobile/.env.example apps/mobile/.env.local
 ```
 
 At minimum you need: `DATABASE_URL` + `PAYLOAD_SECRET` (CMS), and the Clerk keys
-+ `CMS_URL` (web).
++ `CMS_URL` (web). For correct SEO URLs in production, also set
+`NEXT_PUBLIC_SITE_URL` (e.g. `https://akavish.gg`) on the web app.
 
 ### Dev
 
@@ -148,6 +149,8 @@ Requires the `psql` client installed locally.
 - [x] Clerk auth (reader login/signup on web; Payload auth stays for editors)
 - [x] Category pages (/news, /leaks, /reviews, /esport, …)
 - [x] Author / game / tag pages, with cross-links from articles
+- [x] Site polish (custom 404/error, footer, loading states, next/image)
+- [x] SEO (sitemap, robots, canonical, per-article OG images, JSON-LD)
 - [ ] Meilisearch integration
 - [ ] Push notifications (Expo)
 - [ ] i18n (EN + FR)

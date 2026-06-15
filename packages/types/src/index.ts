@@ -25,6 +25,7 @@ export interface Article {
   publishedAt?: string
   createdAt: string
   updatedAt: string
+  seo?: { title?: string; description?: string }
 }
 
 // ─── Game ──────────────────────────────────────────────────────────────────

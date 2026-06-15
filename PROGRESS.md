@@ -55,6 +55,17 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | `next/image` everywhere | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
 | ✅ | `tsconfig` baseUrl fix | `@/*` alias now resolves reliably at build |
 
+### SEO
+| Status | Item | Notes |
+|--------|------|-------|
+| ✅ | Site config + `metadataBase` | `lib/site.ts` reads `NEXT_PUBLIC_SITE_URL`; layout sets metadataBase + default canonical |
+| ✅ | `sitemap.xml` | `app/sitemap.ts` — static pages + categories + all published articles/authors/games/tags |
+| ✅ | `robots.txt` | `app/robots.ts` — allows all but `/api`, `/account`, `/sign-in`, `/sign-up`; links sitemap |
+| ✅ | Canonical URLs | `alternates.canonical` on home, article, category, author, game, tag |
+| ✅ | CMS `seo` fields used | Article metadata prefers `seo.title` / `seo.description`, falls back to title/excerpt |
+| ✅ | Dynamic OG images | `app/article/[slug]/opengraph-image.tsx` via `next/og` (branded, per-article) |
+| ✅ | JSON-LD | `NewsArticle` structured data on article pages |
+
 ## Auth
 
 | Status | Item | Notes |
@@ -115,14 +126,14 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 ## 2. SEO
 
+✅ **Done** — sitemap, robots, per-article OG images, JSON-LD, canonical URLs,
+and CMS `seo` fields are all wired (see the SEO block in the done section above).
+
 | Pri | Item | Notes |
 |-----|------|-------|
-| P1 | `sitemap.xml` | Dynamic from published articles + static pages (`app/sitemap.ts`) |
-| P1 | `robots.txt` | `app/robots.ts` |
-| P1 | Per-article OG/Twitter images | Static or generated via `next/og` (`opengraph-image`) |
-| P1 | JSON-LD structured data | `Article` / `NewsArticle` schema on detail pages |
-| P2 | Canonical URLs | Across web + any duplicate paths |
-| P2 | Use article `seo` fields | The CMS already has `seo.title` / `seo.description` — wire them into metadata |
+| P2 | OG images for non-article pages | Author/game/tag/category `opengraph-image` (article done) |
+| P3 | Breadcrumb JSON-LD | `BreadcrumbList` schema on detail pages |
+| P3 | Per-locale hreflang | Only once i18n lands (area 6) |
 
 ## 3. CMS / back-office (`apps/cms`)
 

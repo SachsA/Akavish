@@ -32,6 +32,7 @@ interface PayloadArticle {
   author?: { id: string | number; slug?: string; name?: string; avatar?: { url?: string } | string; bio?: string } | string | null
   game?: { id: string | number; name?: string; slug?: string } | string | null
   tags?: Array<{ slug?: string } | string> | null
+  seo?: { title?: string; description?: string } | null
 }
 
 function mediaUrl(m: { url?: string } | string | null | undefined): string | undefined {
@@ -81,6 +82,9 @@ export function mapArticle(doc: PayloadArticle): Article {
     publishedAt: doc.publishedAt ?? undefined,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    seo: doc.seo
+      ? { title: doc.seo.title ?? undefined, description: doc.seo.description ?? undefined }
+      : undefined,
   }
 }
 
@@ -249,4 +253,46 @@ export async function fetchTagBySlug(slug: string): Promise<TagEntity | null> {
   )
   if (!doc) return null
   return { id: String(doc.id), slug: doc.slug, name: doc.name }
+}
+
+// ─── Sitemap helpers ─────────────────────────────────────────────────────────
+
+export interface SlugEntry {
+  slug: string
+  updatedAt?: string
+}
+
+// All published article slugs (+ last-modified) for the sitemap.
+export async function fetchAllArticleSlugs(): Promise<SlugEntry[]> {
+  const qs = new URLSearchParams({
+    'where[status][equals]': 'published',
+    depth: '0',
+    limit: '1000',
+    sort: '-publishedAt',
+  })
+  const res = await fetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{
+    slug: string
+    updatedAt?: string
+  }>
+  return json.docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt }))
+}
+
+// All slugs of a simple collection (authors / games / tags) for the sitemap.
+export async function fetchAllEntitySlugs(
+  collection: 'authors' | 'games' | 'tags'
+): Promise<SlugEntry[]> {
+  const qs = new URLSearchParams({ depth: '0', limit: '1000' })
+  const res = await fetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{
+    slug: string
+    updatedAt?: string
+  }>
+  return json.docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt }))
 }
