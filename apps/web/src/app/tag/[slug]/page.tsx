@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import type { Article } from '@akavish/types'
 import { fetchTagBySlug, fetchArticles } from '@/lib/payload'
 import { ArticleCard } from '@/components/ArticleCard'
 
@@ -37,7 +38,7 @@ export default async function TagPage({
   }
   if (!tag) notFound()
 
-  let articles = []
+  let articles: Article[] = []
   try {
     const result = await fetchArticles({ tagId: tag.id, limit: 24 })
     articles = result.data

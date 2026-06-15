@@ -21,6 +21,8 @@ export function SearchResults() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'done'>('idle')
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- effect drives data
+       fetching keyed on the URL query; resetting state here is intentional. */
     if (!q.trim()) {
       setHits([])
       setStatus('idle')
@@ -29,10 +31,11 @@ export function SearchResults() {
 
     let cancelled = false
     setStatus('loading')
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     fetch(`/api/search?q=${encodeURIComponent(q)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-      .then((data) => {
+      .then((data: { hits?: SearchHit[] }) => {
         if (cancelled) return
         setHits(data.hits ?? [])
         setStatus('done')

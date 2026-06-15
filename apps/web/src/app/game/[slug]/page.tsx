@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import type { Article } from '@akavish/types'
 import { fetchGameBySlug, fetchArticles } from '@/lib/payload'
 import { ArticleCard } from '@/components/ArticleCard'
 
@@ -52,7 +53,7 @@ export default async function GamePage({
   }
   if (!game) notFound()
 
-  let articles = []
+  let articles: Article[] = []
   try {
     const result = await fetchArticles({ gameId: game.id, limit: 24 })
     articles = result.data

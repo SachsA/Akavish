@@ -62,7 +62,7 @@ export async function syncArticleToSearch(
       id: articleId,
       depth: 1,
       overrideAccess: true,
-    })) as Record<string, unknown>
+    })) as unknown as Record<string, unknown>
 
     const index = meili.index(ARTICLES_INDEX)
 
@@ -108,7 +108,7 @@ export async function reindexAllArticles(payload: Payload): Promise<number> {
     overrideAccess: true,
   })
 
-  const documents = docs.map((d) => toSearchDoc(d as Record<string, unknown>))
+  const documents = docs.map((d) => toSearchDoc(d as unknown as Record<string, unknown>))
   if (documents.length > 0) {
     await index.addDocuments(documents)
   }

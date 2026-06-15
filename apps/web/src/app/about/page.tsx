@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ContentPage } from '@/components/ContentPage'
 
 export const metadata: Metadata = {
@@ -23,14 +24,14 @@ export default function AboutPage() {
       <h2>What we cover</h2>
       <p>
         News, leaks, reviews, previews, conference coverage and esport. Browse by{' '}
-        <a href="/news">News</a>, <a href="/leaks">Leaks</a>,{' '}
-        <a href="/reviews">Reviews</a> or <a href="/esport">Esport</a>.
+        <Link href="/news">News</Link>, <Link href="/leaks">Leaks</Link>,{' '}
+        <Link href="/reviews">Reviews</Link> or <Link href="/esport">Esport</Link>.
       </p>
 
       <h2>Get in touch</h2>
       <p>
         Got a tip or want to work with us? Head to our{' '}
-        <a href="/contact">contact page</a>.
+        <Link href="/contact">contact page</Link>.
       </p>
     </ContentPage>
   )

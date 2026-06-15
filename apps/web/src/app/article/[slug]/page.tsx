@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { fetchArticleBySlug } from '@/lib/payload'
@@ -95,15 +96,14 @@ export default async function ArticlePage({
     <article className="max-w-3xl mx-auto px-4 py-12">
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <a
+      <Link
         href="/"
         className="text-sm text-zinc-500 hover:text-white transition-colors inline-block mb-6"
       >
         ← Back
-      </a>
+      </Link>
 
       <div className="space-y-3 mb-8">
         <span className="text-emerald-500 text-xs font-bold uppercase tracking-wide">

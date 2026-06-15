@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import {
   ClerkProvider,
@@ -54,15 +55,15 @@ function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-black tracking-tight text-white">AKV</span>
           <span className="hidden sm:inline text-xs text-zinc-500 uppercase tracking-widest">Akavish</span>
-        </a>
+        </Link>
         <nav className="flex items-center gap-4 sm:gap-6 text-sm text-zinc-400">
-          <a href="/news" className="hidden sm:inline hover:text-white transition-colors">News</a>
-          <a href="/leaks" className="hidden sm:inline hover:text-white transition-colors">Leaks</a>
-          <a href="/reviews" className="hidden sm:inline hover:text-white transition-colors">Reviews</a>
-          <a href="/esport" className="hidden sm:inline hover:text-white transition-colors">Esport</a>
+          <Link href="/news" className="hidden sm:inline hover:text-white transition-colors">News</Link>
+          <Link href="/leaks" className="hidden sm:inline hover:text-white transition-colors">Leaks</Link>
+          <Link href="/reviews" className="hidden sm:inline hover:text-white transition-colors">Reviews</Link>
+          <Link href="/esport" className="hidden sm:inline hover:text-white transition-colors">Esport</Link>
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
@@ -142,12 +143,12 @@ function Footer() {
             <ul className="space-y-2">
               {section.links.map((link) => (
                 <li key={link.href}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-sm text-zinc-400 hover:text-white transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

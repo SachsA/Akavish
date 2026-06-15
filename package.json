@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint",
+    "lint": "turbo run lint --filter=!@akavish/mobile",
+    "type-check": "turbo run type-check --filter=!@akavish/mobile",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "clean": "bash scripts/clean.sh",
     "reset:db": "bash scripts/reset-db.sh"
@@ -13,14 +14,6 @@
     "turbo": "^2.0.0",
     "typescript": "^5.4.0",
     "prettier": "^3.3.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "react": "19.2.3",
-      "react-dom": "19.2.3",
-      "@types/react": "^19.0.0",
-      "@types/react-dom": "^19.0.0"
-    }
   },
   "engines": {
     "node": ">=20.0.0",

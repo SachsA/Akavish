@@ -1,3 +1,15 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Moved here from the per-package "pnpm" field, which pnpm 10+ no longer reads.
+overrides:
+  react: 19.2.3
+  react-dom: 19.2.3
+  "@types/react": ^19.0.0
+  "@types/react-dom": ^19.0.0
+
+onlyBuiltDependencies:
+  - sharp
+  - esbuild
+  - unrs-resolver

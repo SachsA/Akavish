@@ -106,6 +106,18 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | Reset scripts | `pnpm clean` (build + deps) · `pnpm reset:db` (also wipes Postgres) |
 | ✅ | `PROGRESS.md` | This file |
 
+## CI/CD
+
+| Status | Item | Notes |
+|--------|------|-------|
+| ✅ | GitHub Actions CI | `.github/workflows/ci.yml` on push to `main` + every PR |
+| ✅ | Lint + type-check job | `pnpm lint` + `pnpm type-check` (web + CMS; mobile excluded) |
+| ✅ | Build job | `pnpm build` (web + CMS) with a Postgres service + dummy env |
+| ✅ | ESLint flat configs | web + cms use `eslint.config.mjs` importing `eslint-config-next`'s native flat presets (no FlatCompat, no `next lint`); web bumped to `eslint-config-next@16` |
+| ✅ | Link hygiene | Internal `<a>` → `next/link` `<Link>` across web (fixes `no-html-link-for-pages`) |
+| ✅ | `type-check` scripts | Added to root (turbo) and CMS |
+| ✅ | pnpm 10 fix | Moved `overrides` + `onlyBuiltDependencies` to `pnpm-workspace.yaml` (pnpm 10 ignores the `pnpm` package.json field) |
+
 ---
 
 # Backlog — everything left to do
@@ -208,6 +220,8 @@ block in the done section above).
 
 | Pri | Item | Notes |
 |-----|------|-------|
+| P1 | Upgrade Expo to SDK 53 (React 19) | Mobile is on Expo 52 / React 18 while web+cms are React 19. A repo-wide `react: 19` override forces RN onto React 19 (unsupported on SDK 52). Mobile is currently **excluded from the CI type-check** (`--filter=!@akavish/mobile`) until it's on a React-19 Expo SDK |
+| P1 | Fix api-client ↔ Payload shape | `articlesApi.list` is typed `PaginatedResponse` (`.data`) but hits Payload's REST which returns `{docs,…}` — mobile's `res.data` is undefined at runtime. Align the shared client with the web's `lib/payload.ts` mapping |
 | P2 | Feature parity audit | Home, category, article detail consuming the CMS API |
 | P2 | Push notifications | Expo notifications on new articles |
 | P3 | App store assets | Icons, splash, screenshots, listing copy |
@@ -225,9 +239,10 @@ block in the done section above).
 ### CI (GitHub Actions or similar)
 | Pri | Item | Notes |
 |-----|------|-------|
-| P1 | Lint + type-check on PR | `pnpm lint`, `tsc --noEmit` across workspaces |
-| P1 | Build on PR | `pnpm build` (catch broken builds before merge) |
-| P2 | Run tests | CMS has Vitest (int) + Playwright (e2e) configured — run them in CI |
+| ✅ | Lint + type-check on PR | Done — `pnpm lint` + `pnpm type-check` (web + CMS) |
+| ✅ | Build on PR | Done — `pnpm build` (web + CMS) with Postgres service |
+| P2 | Lint mobile | Give the Expo app a working ESLint config + re-include it once it's on a React-19 Expo SDK |
+| P2 | Run tests in CI | CMS has Vitest (int) + Playwright (e2e) — wire them into the workflow |
 | P2 | Preview deploys | Vercel preview per PR |
 | P3 | Dependabot / renovate | Dependency updates |
 
@@ -275,6 +290,12 @@ block in the done section above).
   frontend needs them.
 - The CMS runs Payload in **push mode** (no migrations). Generate real
   migrations before deploying to production.
-- The web app currently uses raw `<img>` tags — switch to `next/image` and
-  configure allowed remote hosts before launch.
 - `pnpm reset:db` needs the **`psql`** client installed locally.
+- **React types / `shamefully-hoist`:** the repo's `.npmrc` flattens deps into
+  the root `node_modules`, so the mobile app's `@types/react@18` lands at
+  `node_modules/@types/react` and `tsc` would pick it up for web/cms (React 19),
+  causing bogus "Suspense/ClerkProvider cannot be used as a JSX component" and
+  "bigint not assignable to ReactNode" errors. Fixed by `paths` overrides in
+  `apps/web/tsconfig.json` and `apps/cms/tsconfig.json` that pin `react` /
+  `react-dom` type resolution to each app's own React 19 copy. Don't remove
+  those `paths` entries.

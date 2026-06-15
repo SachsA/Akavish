@@ -9,7 +9,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     articlesApi
-      .list({ perPage: 20 })
+      .list({ limit: 20 })
       .then((res) => setArticles(res.data))
       .catch(console.error)
       .finally(() => setLoading(false))

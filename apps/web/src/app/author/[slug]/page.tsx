@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import type { Article } from '@akavish/types'
 import { fetchAuthorBySlug, fetchArticles } from '@/lib/payload'
 import { ArticleCard } from '@/components/ArticleCard'
 
@@ -38,7 +39,7 @@ export default async function AuthorPage({
   }
   if (!author) notFound()
 
-  let articles = []
+  let articles: Article[] = []
   try {
     const result = await fetchArticles({ authorId: author.id, limit: 24 })
     articles = result.data
