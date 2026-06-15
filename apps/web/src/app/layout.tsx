@@ -80,10 +80,92 @@ function Header() {
 }
 
 function Footer() {
+  const sections = [
+    {
+      title: 'Sections',
+      links: [
+        { label: 'News', href: '/news' },
+        { label: 'Leaks', href: '/leaks' },
+        { label: 'Reviews', href: '/reviews' },
+        { label: 'Esport', href: '/esport' },
+      ],
+    },
+    {
+      title: 'Akavish',
+      links: [
+        { label: 'About', href: '/about' },
+        { label: 'Contact', href: '/contact' },
+        { label: 'RSS feed', href: '/feed.xml' },
+      ],
+    },
+    {
+      title: 'Legal',
+      links: [
+        { label: 'Privacy', href: '/privacy' },
+        { label: 'Terms', href: '/terms' },
+      ],
+    },
+  ]
+
+  const socials = [
+    { label: 'X', href: 'https://twitter.com/akavish' },
+    { label: 'Discord', href: 'https://discord.gg/akavish' },
+    { label: 'YouTube', href: 'https://youtube.com/@akavish' },
+  ]
+
   return (
-    <footer className="border-t border-zinc-800 py-8 mt-16">
-      <div className="max-w-7xl mx-auto px-4 text-center text-xs text-zinc-600">
-        © {new Date().getFullYear()} Akavish. All rights reserved.
+    <footer className="border-t border-zinc-800 mt-16">
+      <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8">
+        <div className="col-span-2 sm:col-span-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-black tracking-tight text-white">AKV</span>
+            <span className="text-xs text-zinc-500 uppercase tracking-widest">Akavish</span>
+          </div>
+          <p className="text-xs text-zinc-500 mt-3 max-w-[18ch]">
+            Breaking gaming news, leaks &amp; reviews. No fluff.
+          </p>
+        </div>
+
+        {sections.map((section) => (
+          <div key={section.title}>
+            <h3 className="text-xs uppercase tracking-widest text-zinc-600 font-bold mb-3">
+              {section.title}
+            </h3>
+            <ul className="space-y-2">
+              {section.links.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    className="text-sm text-zinc-400 hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <div className="border-t border-zinc-900">
+        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-zinc-600">
+            © {new Date().getFullYear()} Akavish. All rights reserved.
+          </p>
+          <div className="flex items-center gap-4">
+            {socials.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-zinc-500 hover:text-white transition-colors"
+              >
+                {s.label}
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </footer>
   )

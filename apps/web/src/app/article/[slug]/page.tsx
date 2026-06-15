@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { fetchArticleBySlug } from '@/lib/payload'
@@ -106,12 +107,14 @@ export default async function ArticlePage({
       </div>
 
       {article.coverImage && (
-        <div className="aspect-video bg-zinc-800 rounded-lg overflow-hidden mb-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <div className="relative aspect-video bg-zinc-800 rounded-lg overflow-hidden mb-8">
+          <Image
             src={article.coverImage}
             alt={article.title}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            priority
+            className="object-cover"
           />
         </div>
       )}

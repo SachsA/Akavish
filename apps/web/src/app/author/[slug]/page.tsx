@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { fetchAuthorBySlug, fetchArticles } from '@/lib/payload'
@@ -46,10 +47,11 @@ export default async function AuthorPage({
     <div className="max-w-7xl mx-auto px-4 py-12">
       <header className="flex items-center gap-5 mb-10">
         {author.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={author.avatar}
             alt={author.name}
+            width={80}
+            height={80}
             className="w-20 h-20 rounded-full object-cover border border-zinc-800"
           />
         ) : (

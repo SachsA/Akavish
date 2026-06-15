@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { fetchGameBySlug, fetchArticles } from '@/lib/payload'
@@ -61,9 +62,14 @@ export default async function GamePage({
     <div className="max-w-7xl mx-auto px-4 py-12">
       <header className="flex flex-col sm:flex-row gap-6 mb-10">
         {game.cover && (
-          <div className="w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-lg overflow-hidden shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={game.cover} alt={game.name} className="w-full h-full object-cover" />
+          <div className="relative w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-lg overflow-hidden shrink-0">
+            <Image
+              src={game.cover}
+              alt={game.name}
+              fill
+              sizes="(max-width: 640px) 100vw, 192px"
+              className="object-cover"
+            />
           </div>
         )}
         <div className="space-y-3">
