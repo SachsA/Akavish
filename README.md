@@ -86,9 +86,9 @@ pnpm install
 Copy the example files and fill in your values:
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp apps/web/.env.example apps/web/.env
 cp apps/cms/.env.example apps/cms/.env
-cp apps/mobile/.env.example apps/mobile/.env.local
+cp apps/mobile/.env.example apps/mobile/.env
 ```
 
 At minimum you need: `DATABASE_URL` + `PAYLOAD_SECRET` (CMS), and the Clerk keys
@@ -113,6 +113,29 @@ cd apps/web && pnpm dev
 
 > Articles only appear on the site once their **status is `Published`** in the
 > CMS. Drafts are visible to logged-in editors only.
+
+#### Search (Meilisearch)
+
+Site search is powered by Meilisearch. Start it with Docker, then point both
+apps at it (the keys are already stubbed in the `.env.example` files):
+
+```bash
+# From the repo root — starts Meilisearch on http://localhost:7700
+docker compose up -d
+
+# Backfill the index with existing published articles (run once)
+cd apps/cms && pnpm reindex:search
+```
+
+After that, publishing/editing an article in the CMS keeps the index in sync
+**automatically** (Payload hooks) — no manual step in normal use. The web app
+searches via `/api/search` and the header search box / `/search` page. If
+`MEILISEARCH_HOST` is unset, indexing is skipped and search reports as
+unavailable — the rest of the site works normally.
+
+`pnpm reindex:search` is only a one-off catch-up: first setup, after a DB/index
+wipe (`pnpm reset:db`), or to repair a desync if Meilisearch was down during a
+publish. See `apps/cms/README.md` for details.
 
 Mobile (optional):
 
@@ -152,7 +175,7 @@ Requires the `psql` client installed locally.
 - [x] Site polish (custom 404/error, footer, loading states, next/image)
 - [x] SEO (sitemap, robots, canonical, per-article OG images, JSON-LD)
 - [x] Footer pages (about, contact, privacy, terms) + RSS feed
-- [ ] Meilisearch integration
+- [x] Meilisearch integration (CMS indexing hooks + `/search` + header search)
 - [ ] Push notifications (Expo)
 - [ ] i18n (EN + FR)
 

@@ -68,6 +68,15 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | Dynamic OG images | `app/article/[slug]/opengraph-image.tsx` via `next/og` (branded, per-article) |
 | ✅ | JSON-LD | `NewsArticle` structured data on article pages |
 
+### Search (Meilisearch)
+| Status | Item | Notes |
+|--------|------|-------|
+| ✅ | CMS indexing | `meilisearch` client + `afterChange`/`afterDelete` hooks on Articles (published → upsert, else remove); best-effort |
+| ✅ | Backfill script | `pnpm reindex:search` (CMS) re-creates index settings + indexes all published articles |
+| ✅ | Search API | `app/api/search/route.ts` proxies queries server-side; key never exposed |
+| ✅ | Search UI | Header `SearchBar` + `/search` results page (robots: noindex) |
+| ✅ | Local infra | `docker-compose.yml` runs Meilisearch on :7700; env wired in both `.env.example` |
+
 ## Auth
 
 | Status | Item | Notes |
@@ -113,8 +122,8 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | P2 | Legal content review | `/privacy` and `/terms` are placeholder templates — need real legal text before launch |
 | P2 | Pagination / infinite scroll | Home + category + tag pages currently cap at N items |
 | P2 | Homepage layout pass | Featured/hero article, “trending”, section blocks instead of one flat grid |
-| P2 | Search UI | Search bar + results page (depends on Meilisearch, area 4) |
 | P2 | Newsletter signup | Capture emails (needs an ESP: Resend/Mailchimp/etc.) |
+| P3 | Search polish | Highlighting, filters by category, instant/typeahead results |
 | P3 | Dark/light toggle | Currently dark-only |
 | P3 | Comments | Reader comments (needs reader auth + a comments store/service) |
 
@@ -167,12 +176,15 @@ and CMS `seo` fields are all wired (see the SEO block in the done section above)
 
 ## 4. Search (Meilisearch)
 
+✅ **Done** — indexing hooks, backfill script, `/api/search` proxy, header search
+box + `/search` page, and a dev `docker-compose` are all wired (see the Search
+block in the done section above).
+
 | Pri | Item | Notes |
 |-----|------|-------|
-| P2 | Run Meilisearch | Local (Docker) + a hosted instance for prod |
-| P2 | Index on publish | Payload `afterChange`/`afterDelete` hooks sync articles to the index |
-| P2 | Initial backfill script | Index all existing published articles |
-| P2 | Search API + UI | `/api/search` proxy + results page on the web |
+| P2 | Hosted Meilisearch for prod | Meilisearch Cloud or self-hosted; set prod host + keys |
+| P3 | Search-only API key | Generate a scoped key in prod instead of reusing the master key |
+| P3 | Typeahead / filters | Instant results in the header, filter by category/game |
 
 ## 5. Auth & reader features
 
@@ -208,7 +220,7 @@ and CMS `seo` fields are all wired (see the SEO block in the done section above)
 |-----|------|-------|
 | P2 | Dockerfile for web | Multi-stage Next.js build |
 | P2 | Dockerfile for CMS | Payload already ships a starter `apps/cms/Dockerfile` — adapt it |
-| P2 | `docker-compose` (dev) | Web + CMS + Postgres + Meilisearch in one `up` (CMS has a Mongo-based one to replace) |
+| P2 | Extend root `docker-compose` | Now runs Meilisearch ✅; add web + CMS + Postgres for a full one-command dev stack |
 
 ### CI (GitHub Actions or similar)
 | Pri | Item | Notes |

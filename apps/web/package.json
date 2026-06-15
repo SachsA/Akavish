@@ -14,6 +14,7 @@
     "@akavish/ui": "workspace:*",
     "@akavish/api-client": "workspace:*",
     "@clerk/nextjs": "^6.0.0",
+    "meilisearch": "^0.45.0",
     "next": "15.4.10",
     "react": "19.2.3",
     "react-dom": "19.2.3",
