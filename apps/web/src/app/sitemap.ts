@@ -21,6 +21,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 0.7,
     })),
+    ...['/about', '/contact', '/privacy', '/terms'].map((p) => ({
+      url: absoluteUrl(p),
+      lastModified: now,
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+    })),
   ]
 
   // Pull dynamic content; tolerate a CMS hiccup by falling back to empty lists.
