@@ -9,8 +9,10 @@ export function SearchBar() {
   const params = useSearchParams()
   const [value, setValue] = useState('')
 
-  // Keep the field in sync when landing on /search?q=…
+  // Keep the field in sync with the URL (external system) when navigating to
+  // /search?q=… — a legitimate effect-driven sync.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(params.get('q') ?? '')
   }, [params])
 

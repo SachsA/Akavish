@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import type { ArticleCategory } from '@akavish/types'
+import type { Article, ArticleCategory } from '@akavish/types'
 import { fetchArticles } from '@/lib/payload'
 import { ArticleCard } from '@/components/ArticleCard'
 
@@ -46,7 +46,7 @@ export default async function CategoryPage({
   const conf = CATEGORY_MAP[category]
   if (!conf) notFound()
 
-  let articles = []
+  let articles: Article[] = []
   let cmsError = false
   try {
     const result = await fetchArticles({ category: conf.value, limit: 24 })

@@ -23,9 +23,6 @@ const nextConfig: NextConfig = {
 
     return webpackConfig
   },
-  experimental: {
-    turbo: false as any,
-  },
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

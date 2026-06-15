@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function NotFound() {
   return (
     <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
@@ -7,18 +9,18 @@ export default function NotFound() {
         This page doesn&apos;t exist, was moved, or the link is broken.
       </p>
       <div className="flex justify-center gap-3 pt-2">
-        <a
+        <Link
           href="/"
           className="px-4 py-2 rounded-md bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors"
         >
           Back home
-        </a>
-        <a
+        </Link>
+        <Link
           href="/news"
           className="px-4 py-2 rounded-md border border-zinc-800 text-zinc-300 text-sm font-semibold hover:border-zinc-700 transition-colors"
         >
           Latest news
-        </a>
+        </Link>
       </div>
     </div>
   )

@@ -2,6 +2,9 @@
 
 > Breaking gaming news, exclusive leaks, in-depth reviews. Fast. Serious. No fluff.
 
+![CI](https://github.com/SachsA/akavish/actions/workflows/ci.yml/badge.svg)
+
+
 ## Stack
 
 | Layer | Tech |
@@ -160,6 +163,29 @@ After `pnpm reset:db`, the CMS rebuilds its tables on the next `pnpm devsafe`
 (Payload runs in push mode), and you'll create a fresh admin user on first load.
 Requires the `psql` client installed locally.
 
+## CI
+
+GitHub Actions runs on every push to `main` and every pull request
+(`.github/workflows/ci.yml`):
+
+- **Lint & type-check** — `pnpm lint` + `pnpm type-check` across the web + CMS
+  (mobile is excluded for now: it's on Expo 52 / React 18 while the rest is
+  React 19 — see `PROGRESS.md`).
+- **Build** — `pnpm build` (web + CMS) against a throwaway Postgres service with
+  dummy env values; Meilisearch is left unset and degrades gracefully.
+
+Run the same checks locally before pushing:
+
+```bash
+pnpm lint && pnpm type-check && pnpm build
+```
+
+Both apps lint via ESLint flat config (`eslint.config.mjs`) using
+`eslint-config-next`'s native flat presets — no `next lint`, no FlatCompat.
+
+> The build job uses `pnpm install --frozen-lockfile`, so commit an up-to-date
+> `pnpm-lock.yaml` whenever you change dependencies.
+
 ## Roadmap
 
 - [x] Monorepo setup (Turborepo + pnpm)
@@ -176,6 +202,7 @@ Requires the `psql` client installed locally.
 - [x] SEO (sitemap, robots, canonical, per-article OG images, JSON-LD)
 - [x] Footer pages (about, contact, privacy, terms) + RSS feed
 - [x] Meilisearch integration (CMS indexing hooks + `/search` + header search)
+- [x] CI (GitHub Actions: lint, type-check, build)
 - [ ] Push notifications (Expo)
 - [ ] i18n (EN + FR)
 
