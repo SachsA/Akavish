@@ -151,6 +151,7 @@ Requires the `psql` client installed locally.
 - [x] Author / game / tag pages, with cross-links from articles
 - [x] Site polish (custom 404/error, footer, loading states, next/image)
 - [x] SEO (sitemap, robots, canonical, per-article OG images, JSON-LD)
+- [x] Footer pages (about, contact, privacy, terms) + RSS feed
 - [ ] Meilisearch integration
 - [ ] Push notifications (Expo)
 - [ ] i18n (EN + FR)

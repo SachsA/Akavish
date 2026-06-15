@@ -50,7 +50,9 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | Tag pages `/tag/[slug]` | Articles filtered by tag |
 | ✅ | Cross-links | Article byline → author/game; tag chips → tag pages |
 | ✅ | Custom 404 / error pages | `not-found.tsx`, `error.tsx`, `global-error.tsx` |
-| ✅ | Functional footer | Sections, About/Contact/Legal, RSS, socials (some link targets still to build) |
+| ✅ | Functional footer | Sections, About/Contact/Legal, RSS, socials — all targets now exist |
+| ✅ | Footer pages | `/about`, `/contact`, `/privacy`, `/terms` (legal pages are review-me templates) |
+| ✅ | RSS feed `/feed.xml` | Route handler, latest 50 published articles |
 | ✅ | Loading states | `loading.tsx` + `CardGridSkeleton` on home, category, article, author, game, tag |
 | ✅ | `next/image` everywhere | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
 | ✅ | `tsconfig` baseUrl fix | `@/*` alias now resolves reliably at build |
@@ -108,13 +110,12 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | Pri | Item | Notes |
 |-----|------|-------|
 | P1 | Single article polish | Reading time, share buttons, related articles, prev/next (author/game byline links ✅ done) |
-| P1 | Footer stub pages | `/about`, `/contact`, `/privacy`, `/terms` — linked from the footer, not built yet (currently 404) |
+| P2 | Legal content review | `/privacy` and `/terms` are placeholder templates — need real legal text before launch |
 | P2 | Pagination / infinite scroll | Home + category + tag pages currently cap at N items |
 | P2 | Homepage layout pass | Featured/hero article, “trending”, section blocks instead of one flat grid |
 | P2 | Search UI | Search bar + results page (depends on Meilisearch, area 4) |
 | P2 | Newsletter signup | Capture emails (needs an ESP: Resend/Mailchimp/etc.) |
 | P3 | Dark/light toggle | Currently dark-only |
-| P3 | RSS / Atom feed | `/feed.xml` generated from published articles |
 | P3 | Comments | Reader comments (needs reader auth + a comments store/service) |
 
 ### UX & quality
