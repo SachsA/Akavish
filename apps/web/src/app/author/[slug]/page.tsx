@@ -14,9 +14,12 @@ export async function generateMetadata({
   const { slug } = await params
   const author = await fetchAuthorBySlug(slug).catch(() => null)
   if (!author) return { title: 'Author not found' }
+  const description = author.bio ?? `Articles by ${author.name} on Akavish.`
   return {
     title: author.name,
-    description: author.bio ?? `Articles by ${author.name} on Akavish.`,
+    description,
+    alternates: { canonical: `/author/${slug}` },
+    openGraph: { title: author.name, description, url: `/author/${slug}`, type: 'profile' },
   }
 }
 

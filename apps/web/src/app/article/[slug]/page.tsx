@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { fetchArticleBySlug } from '@/lib/payload'
 import { LexicalContent } from '@/components/LexicalContent'
+import { absoluteUrl, SITE_NAME } from '@/lib/site'
 
 export const revalidate = 30
 
@@ -32,14 +33,30 @@ export async function generateMetadata({
   const { slug } = await params
   const article = await fetchArticleBySlug(slug).catch(() => null)
   if (!article) return { title: 'Article not found' }
+
+  // Prefer the CMS SEO fields when set, fall back to the article's own title/excerpt.
+  const title = article.seo?.title || article.title
+  const description = article.seo?.description || article.excerpt
+  const url = `/article/${article.slug}`
+
   return {
-    title: article.title,
-    description: article.excerpt,
+    title,
+    description,
+    alternates: { canonical: url },
     openGraph: {
-      title: article.title,
-      description: article.excerpt,
-      images: article.coverImage ? [article.coverImage] : undefined,
+      title,
+      description,
+      url,
       type: 'article',
+      publishedTime: article.publishedAt,
+      authors: [article.author.name],
+      // Share image is provided by the sibling opengraph-image.tsx (branded,
+      // always present). Twitter falls back to it automatically.
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   }
 }
@@ -60,8 +77,27 @@ export default async function ArticlePage({
 
   if (!article) notFound()
 
+  // Schema.org NewsArticle for rich results.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
+    description: article.excerpt,
+    datePublished: article.publishedAt,
+    dateModified: article.updatedAt,
+    image: article.coverImage ? [article.coverImage] : undefined,
+    author: { '@type': 'Person', name: article.author.name },
+    publisher: { '@type': 'Organization', name: SITE_NAME },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(`/article/${article.slug}`) },
+  }
+
   return (
     <article className="max-w-3xl mx-auto px-4 py-12">
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <a
         href="/"
         className="text-sm text-zinc-500 hover:text-white transition-colors inline-block mb-6"

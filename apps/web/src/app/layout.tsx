@@ -7,9 +7,11 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs'
+import { SITE_URL, SITE_NAME, SITE_TWITTER } from '@/lib/site'
 import './globals.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Akavish — Gaming News, Leaks & Reviews',
     template: '%s | Akavish',
@@ -17,15 +19,16 @@ export const metadata: Metadata = {
   description:
     "Breaking gaming news, exclusive leaks, in-depth reviews and conference recaps. CS2, GTA, Baldur's Gate and everything in between.",
   keywords: ['gaming news', 'game leaks', 'game reviews', 'CS2', 'GTA', 'esport'],
+  alternates: { canonical: '/' },
   openGraph: {
     title: 'Akavish — Gaming News, Leaks & Reviews',
     description: 'Breaking gaming news, exclusive leaks, in-depth reviews.',
-    url: 'https://akavish.gg',
-    siteName: 'Akavish',
+    url: SITE_URL,
+    siteName: SITE_NAME,
     locale: 'en_US',
     type: 'website',
   },
-  twitter: { card: 'summary_large_image', site: '@akavish' },
+  twitter: { card: 'summary_large_image', site: SITE_TWITTER },
   robots: { index: true, follow: true },
 }
 

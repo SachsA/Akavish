@@ -23,9 +23,17 @@ export async function generateMetadata({
   const { slug } = await params
   const game = await fetchGameBySlug(slug).catch(() => null)
   if (!game) return { title: 'Game not found' }
+  const description = `News, leaks and reviews about ${game.name} on Akavish.`
   return {
     title: game.name,
-    description: `News, leaks and reviews about ${game.name} on Akavish.`,
+    description,
+    alternates: { canonical: `/game/${slug}` },
+    openGraph: {
+      title: game.name,
+      description,
+      url: `/game/${slug}`,
+      images: game.cover ? [game.cover] : undefined,
+    },
   }
 }
 

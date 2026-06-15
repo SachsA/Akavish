@@ -13,9 +13,12 @@ export async function generateMetadata({
   const { slug } = await params
   const tag = await fetchTagBySlug(slug).catch(() => null)
   if (!tag) return { title: 'Tag not found' }
+  const description = `Articles tagged ${tag.name} on Akavish.`
   return {
     title: `#${tag.name}`,
-    description: `Articles tagged ${tag.name} on Akavish.`,
+    description,
+    alternates: { canonical: `/tag/${slug}` },
+    openGraph: { title: `#${tag.name}`, description, url: `/tag/${slug}` },
   }
 }
 
