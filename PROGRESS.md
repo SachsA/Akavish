@@ -28,6 +28,7 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | Collections | articles, authors, games, tags, media, users |
 | ✅ | Article model | rich-text (Lexical), category, status, author/game/tags, SEO |
 | ✅ | Drafts + versions on articles | Draft / Published / Archived |
+| ✅ | Auto-slugs on all collections | `slugField` (auto from name/title if empty, manual-editable, `-2/-3…` on clash) now on articles, authors, games, tags |
 | ✅ | Public read access control | Articles: published-only for public; editors see all. Authors/games/tags/media: public read |
 | ✅ | Dev script fixed | `-p 3001` + `--max-old-space-size=8000` on `dev`/`devsafe` |
 | ✅ | `serverURL` / CORS / CSRF | serverURL → :3001, CORS/CSRF allow web origin :3000 |
@@ -44,6 +45,10 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | Article detail page `/article/[slug]` | Renders Lexical content, SEO metadata, OG tags |
 | ✅ | Lexical → React renderer | `LexicalContent.tsx` (headings, lists, quotes, links, inline formats) |
 | ✅ | Category pages `/[category]` | news, leaks, reviews, esport, previews, conferences |
+| ✅ | Author pages `/author/[slug]` | Profile (avatar, bio, twitter) + their published articles |
+| ✅ | Game pages `/game/[slug]` | Game metadata (cover, platform, genre, dev/publisher) + coverage |
+| ✅ | Tag pages `/tag/[slug]` | Articles filtered by tag |
+| ✅ | Cross-links | Article byline → author/game; tag chips → tag pages |
 | ✅ | `tsconfig` baseUrl fix | `@/*` alias now resolves reliably at build |
 
 ## Auth
@@ -87,10 +92,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 ### Pages & navigation
 | Pri | Item | Notes |
 |-----|------|-------|
-| P1 | Single article polish | Reading time, share buttons, related articles, prev/next, author byline with link |
-| P1 | Author pages `/author/[slug]` | Author bio + their articles. Header/footer links to them |
-| P1 | Game pages `/game/[slug]` | All articles about a game + game metadata |
-| P1 | Tag pages `/tag/[slug]` | Browse by tag |
+| P1 | Single article polish | Reading time, share buttons, related articles, prev/next (author/game byline links ✅ done) |
 | P1 | Custom 404 / error pages | `not-found.tsx`, `error.tsx`, `global-error.tsx` with brand styling |
 | P1 | Footer links that work | About, Contact, Legal, RSS, social — currently just a copyright line |
 | P2 | Pagination / infinite scroll | Home + category + tag pages currently cap at N items |

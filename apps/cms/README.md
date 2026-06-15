@@ -30,6 +30,14 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `media`    | Uploaded images (cover images, avatars). |
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). |
 
+### Slugs
+
+`articles`, `authors`, `games` and `tags` share a reusable `slugField`
+(`src/fields/slug.ts`). The slug is **auto-generated** from the source field
+(title for articles, name for the rest) when left empty, stays **manually
+editable**, and **auto-deduplicates** with a numeric suffix (`-2`, `-3`, …) on
+collision. Existing docs keep their slug until re-saved.
+
 ## Access control
 
 Public (unauthenticated) read access is intentionally scoped:

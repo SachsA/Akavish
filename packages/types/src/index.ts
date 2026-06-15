@@ -43,6 +43,7 @@ export interface Game {
 
 export interface Author {
   id: string
+  slug?: string
   name: string
   avatar?: string
   bio?: string
