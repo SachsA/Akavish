@@ -77,8 +77,31 @@ export default async function ArticlePage({
         </h1>
         <p className="text-lg text-zinc-400">{article.excerpt}</p>
         <div className="flex items-center gap-2 text-sm text-zinc-600 pt-2">
-          <span>By {article.author.name}</span>
+          <span>
+            By{' '}
+            {article.author.slug ? (
+              <a
+                href={`/author/${article.author.slug}`}
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                {article.author.name}
+              </a>
+            ) : (
+              <span className="text-zinc-400">{article.author.name}</span>
+            )}
+          </span>
           {article.publishedAt && <span>· {formatDate(article.publishedAt)}</span>}
+          {article.game?.slug && (
+            <span>
+              ·{' '}
+              <a
+                href={`/game/${article.game.slug}`}
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                {article.game.name}
+              </a>
+            </span>
+          )}
         </div>
       </div>
 
@@ -96,6 +119,20 @@ export default async function ArticlePage({
       <div className="prose-invert">
         <LexicalContent content={article.content} />
       </div>
+
+      {article.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-10 pt-6 border-t border-zinc-800">
+          {article.tags.map((tag) => (
+            <a
+              key={tag}
+              href={`/tag/${tag}`}
+              className="px-3 py-1 rounded-full border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+            >
+              #{tag}
+            </a>
+          ))}
+        </div>
+      )}
     </article>
   )
 }

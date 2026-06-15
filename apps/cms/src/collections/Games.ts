@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { slugField } from '../fields/slug'
 
 export const Games: CollectionConfig = {
   slug: 'games',
@@ -6,7 +7,7 @@ export const Games: CollectionConfig = {
   admin: { useAsTitle: 'name' },
   fields: [
     { name: 'name', type: 'text', required: true },
-    { name: 'slug', type: 'text', required: true, unique: true, admin: { position: 'sidebar' } },
+    slugField('name'),
     { name: 'cover', type: 'upload', relationTo: 'media' },
     {
       name: 'platform', type: 'select', hasMany: true,

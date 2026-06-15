@@ -29,7 +29,7 @@ interface PayloadArticle {
   publishedAt?: string | null
   createdAt: string
   updatedAt: string
-  author?: { id: string | number; name?: string; avatar?: { url?: string } | string; bio?: string } | string | null
+  author?: { id: string | number; slug?: string; name?: string; avatar?: { url?: string } | string; bio?: string } | string | null
   game?: { id: string | number; name?: string; slug?: string } | string | null
   tags?: Array<{ slug?: string } | string> | null
 }
@@ -69,6 +69,7 @@ export function mapArticle(doc: PayloadArticle): Article {
       : undefined,
     author: {
       id: author ? String(author.id) : '',
+      slug: author?.slug,
       name: author?.name ?? 'Akavish',
       avatar: mediaUrl(author?.avatar),
       bio: author?.bio,
@@ -83,13 +84,16 @@ interface ListParams {
   page?: number
   limit?: number
   category?: string
+  authorId?: string
+  gameId?: string
+  tagId?: string
 }
 
 // Fetch a paginated list of *published* articles, newest first.
 export async function fetchArticles(
   params: ListParams = {}
 ): Promise<PaginatedResponse<Article>> {
-  const { page = 1, limit = 20, category } = params
+  const { page = 1, limit = 20, category, authorId, gameId, tagId } = params
   const qs = new URLSearchParams({
     'where[status][equals]': 'published',
     sort: '-publishedAt',
@@ -98,6 +102,9 @@ export async function fetchArticles(
     page: String(page),
   })
   if (category) qs.set('where[category][equals]', category)
+  if (authorId) qs.set('where[author][equals]', authorId)
+  if (gameId) qs.set('where[game][equals]', gameId)
+  if (tagId) qs.set('where[tags][in]', tagId)
 
   const res = await fetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     // Revalidate periodically so new articles show up without a redeploy.
@@ -139,4 +146,103 @@ export async function fetchArticleBySlug(slug: string): Promise<Article | null> 
   const json = (await res.json()) as PayloadListResponse<PayloadArticle>
   const doc = json.docs[0]
   return doc ? mapArticle(doc) : null
+}
+
+// ─── Entity fetchers (author / game / tag) ───────────────────────────────────
+
+export interface AuthorEntity {
+  id: string
+  slug: string
+  name: string
+  avatar?: string
+  bio?: string
+  twitter?: string
+}
+
+export interface GameEntity {
+  id: string
+  slug: string
+  name: string
+  cover?: string
+  platform: string[]
+  genre: string[]
+  developer?: string
+  publisher?: string
+  releaseDate?: string
+}
+
+export interface TagEntity {
+  id: string
+  slug: string
+  name: string
+}
+
+// Generic helper: fetch one doc from a collection by slug.
+async function fetchOneBySlug<T>(collection: string, slug: string): Promise<T | null> {
+  const qs = new URLSearchParams({
+    'where[slug][equals]': slug,
+    depth: '1',
+    limit: '1',
+  })
+  const res = await fetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
+    next: { revalidate: 30 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<T>
+  return json.docs[0] ?? null
+}
+
+export async function fetchAuthorBySlug(slug: string): Promise<AuthorEntity | null> {
+  const doc = await fetchOneBySlug<{
+    id: string | number
+    slug: string
+    name: string
+    avatar?: { url?: string } | string | null
+    bio?: string
+    twitter?: string
+  }>('authors', slug)
+  if (!doc) return null
+  return {
+    id: String(doc.id),
+    slug: doc.slug,
+    name: doc.name,
+    avatar: mediaUrl(doc.avatar),
+    bio: doc.bio,
+    twitter: doc.twitter,
+  }
+}
+
+export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> {
+  const doc = await fetchOneBySlug<{
+    id: string | number
+    slug: string
+    name: string
+    cover?: { url?: string } | string | null
+    platform?: string[] | null
+    genre?: string[] | null
+    developer?: string
+    publisher?: string
+    releaseDate?: string | null
+  }>('games', slug)
+  if (!doc) return null
+  return {
+    id: String(doc.id),
+    slug: doc.slug,
+    name: doc.name,
+    cover: mediaUrl(doc.cover),
+    platform: doc.platform ?? [],
+    genre: doc.genre ?? [],
+    developer: doc.developer,
+    publisher: doc.publisher,
+    releaseDate: doc.releaseDate ?? undefined,
+  }
+}
+
+export async function fetchTagBySlug(slug: string): Promise<TagEntity | null> {
+  const doc = await fetchOneBySlug<{ id: string | number; slug: string; name: string }>(
+    'tags',
+    slug
+  )
+  if (!doc) return null
+  return { id: String(doc.id), slug: doc.slug, name: doc.name }
 }

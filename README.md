@@ -147,6 +147,7 @@ Requires the `psql` client installed locally.
 - [x] Prisma + PostgreSQL schema (articles, games, authors)
 - [x] Clerk auth (reader login/signup on web; Payload auth stays for editors)
 - [x] Category pages (/news, /leaks, /reviews, /esport, …)
+- [x] Author / game / tag pages, with cross-links from articles
 - [ ] Meilisearch integration
 - [ ] Push notifications (Expo)
 - [ ] i18n (EN + FR)
