@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import {
   ClerkProvider,
   SignInButton,
@@ -8,6 +9,7 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { SITE_URL, SITE_NAME, SITE_TWITTER } from '@/lib/site'
+import { SearchBar } from '@/components/SearchBar'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -56,11 +58,14 @@ function Header() {
           <span className="text-xl font-black tracking-tight text-white">AKV</span>
           <span className="hidden sm:inline text-xs text-zinc-500 uppercase tracking-widest">Akavish</span>
         </a>
-        <nav className="flex items-center gap-6 text-sm text-zinc-400">
-          <a href="/news" className="hover:text-white transition-colors">News</a>
-          <a href="/leaks" className="hover:text-white transition-colors">Leaks</a>
-          <a href="/reviews" className="hover:text-white transition-colors">Reviews</a>
-          <a href="/esport" className="hover:text-white transition-colors">Esport</a>
+        <nav className="flex items-center gap-4 sm:gap-6 text-sm text-zinc-400">
+          <a href="/news" className="hidden sm:inline hover:text-white transition-colors">News</a>
+          <a href="/leaks" className="hidden sm:inline hover:text-white transition-colors">Leaks</a>
+          <a href="/reviews" className="hidden sm:inline hover:text-white transition-colors">Reviews</a>
+          <a href="/esport" className="hidden sm:inline hover:text-white transition-colors">Esport</a>
+          <Suspense fallback={null}>
+            <SearchBar />
+          </Suspense>
           <div className="flex items-center gap-3 pl-3 border-l border-zinc-800">
             <SignedOut>
               <SignInButton mode="modal">

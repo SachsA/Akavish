@@ -1,0 +1,23 @@
+# Local dev services for Akavish.
+# Start with:  docker compose up -d
+#
+# Meilisearch powers the site search. The CMS indexes published articles into it
+# (hooks + `pnpm reindex:search`), and the web app queries it via /api/search.
+
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    container_name: akavish-meilisearch
+    ports:
+      - '7700:7700'
+    environment:
+      # Dev master key — override in production with a strong secret.
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-akavish_dev_master_key}
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: 'true'
+    volumes:
+      - meili_data:/meili_data
+    restart: unless-stopped
+
+volumes:
+  meili_data:

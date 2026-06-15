@@ -1,6 +1,10 @@
 import type { CollectionConfig } from 'payload'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { slugField } from '../fields/slug'
+import {
+  syncArticleToSearch,
+  removeArticleFromSearch,
+} from '../lib/article-search-sync'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -16,6 +20,22 @@ export const Articles: CollectionConfig = {
     defaultColumns: ['title', 'category', 'status', 'publishedAt', 'author'],
   },
   versions: { drafts: true },
+  hooks: {
+    // Keep the Meilisearch index in sync. Best-effort: runs after the response,
+    // failures are logged inside the sync helpers and never block editing.
+    afterChange: [
+      ({ doc, req }) => {
+        void syncArticleToSearch(req.payload, doc.id)
+        return doc
+      },
+    ],
+    afterDelete: [
+      ({ doc, req }) => {
+        void removeArticleFromSearch(req.payload, doc.id)
+        return doc
+      },
+    ],
+  },
   fields: [
     { name: 'title', type: 'text', required: true },
     slugField('title'),

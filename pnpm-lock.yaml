@@ -47,6 +47,9 @@ importers:
       graphql:
         specifier: ^16.8.1
         version: 16.14.1
+      meilisearch:
+        specifier: ^0.45.0
+        version: 0.45.0
       next:
         specifier: 16.2.6
         version: 16.2.6(@babel/core@7.29.7)(@playwright/test@1.58.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sass@1.77.4)
@@ -172,6 +175,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      meilisearch:
+        specifier: ^0.45.0
+        version: 0.45.0
       next:
         specifier: 15.4.10
         version: 15.4.10(@playwright/test@1.58.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(sass@1.77.4)
@@ -5397,6 +5403,9 @@ packages:
 
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
+
+  meilisearch@0.45.0:
+    resolution: {integrity: sha512-+zCzEqE+CumY4icB0Vox180adZqaNtnr60hJWGiEdmol5eWmksfY8rYsTcz87styXC2ZOg+2yF56gdH6oyIBTA==}
 
   memoize-one@5.2.1:
     resolution: {integrity: sha512-zYiwtZUcYyXKo/np96AGZAckk+FWWsUdJ3cHGGmld7+AhvcWmQyGCYUh1hc4Q/pkOhb65dQR/pqCyK0cOaHz4Q==}
@@ -13657,6 +13666,8 @@ snapshots:
       '@types/mdast': 4.0.4
 
   mdn-data@2.27.1: {}
+
+  meilisearch@0.45.0: {}
 
   memoize-one@5.2.1: {}
 
