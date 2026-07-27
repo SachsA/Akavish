@@ -37,8 +37,8 @@ export default async function OgImage({ params }: { params: Promise<{ slug: stri
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 40, fontWeight: 900, color: '#ffffff' }}>AKV</span>
-          <span style={{ fontSize: 40, fontWeight: 900, color: '#52525b' }}>ash</span>
+          <span style={{ fontSize: 40, fontWeight: 900, color: '#ffffff' }}>Akav</span>
+          <span style={{ fontSize: 40, fontWeight: 900, color: '#52525b' }}>ish</span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
