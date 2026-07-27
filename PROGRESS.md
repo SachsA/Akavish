@@ -140,8 +140,7 @@ Last updated: **2026-07-27**.
 
 | Status | Item | Notes |
 |--------|------|-------|
-| 🚧 | *(nothing actively in progress)* | Pick the next item from the backlog below |
-| ⬜ | **Deploy to production** (suggested next) | Everything is prepped — walk through [`DEPLOYMENT.md`](./DEPLOYMENT.md) with your hosting accounts. Do the DB migration step first. |
+| 🚧 | **Deploy — Phase 1 (platform URLs, no custom domain)** | Following [`DEPLOYMENT.md` → Phase 1](./DEPLOYMENT.md). CMS on Railway in progress (deleting Railway's auto-created per-package services, keeping one CMS service), then web on Vercel. Custom domain (`akavish.gg`) = Phase 2, later. |
 
 ---
 
