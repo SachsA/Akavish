@@ -88,6 +88,67 @@ and redeploy both. Also switch Clerk to **production** keys then.
 
 ---
 
+## Day-to-day workflow (dev → prod)
+
+Once deployed, this is the loop for everyday changes.
+
+### Develop locally
+
+Everything runs on your machine, against the **dev** database — production is
+never touched.
+
+```bash
+# Terminal 1 — CMS on :3001 (uses apps/cms/.env → DEV Neon DB)
+cd apps/cms && pnpm devsafe
+# Terminal 2 — web on :3000 (uses apps/web/.env → talks to local CMS)
+cd apps/web && pnpm dev
+```
+
+| | Database it uses | Config source |
+|---|---|---|
+| **Local** (`pnpm dev`) | **dev** Neon DB | your local `.env` files (gitignored) |
+| **Live** (Railway/Vercel) | **prod** Neon DB | env vars set in each platform's dashboard |
+
+Content you create locally lands in the dev DB; prod content is separate. (The
+dev DB may be empty on first run — push mode creates the tables; add test data.)
+
+### Ship to production
+
+```bash
+git add -A && git commit -m "…" && git push
+```
+
+Railway and Vercel are connected to the GitHub repo and **auto-deploy on push to
+`main`** — but with a **monorepo path filter**: each platform only rebuilds when
+the push touched *its* app's files.
+
+- Changed `apps/web/**` → **Vercel** redeploys the web.
+- Changed `apps/cms/**` → **Railway** redeploys the CMS.
+- Changed only docs / `.env.example` / the *other* app → the platform **skips**
+  the build (nothing to deploy — this is expected, not a bug).
+
+**Env-var changes are the exception:** they live in the dashboards, not in git,
+so after editing a variable you must **redeploy manually** for it to apply.
+
+### Force a deploy manually
+
+- **Vercel** → Deployments → latest → `⋯` → **Redeploy**.
+- **Railway** → service → Deployments → **Deploy**.
+
+### Where to read production errors
+
+Works locally but breaks live? Check the logs:
+
+- **Web** → Vercel → your project → the deployment → **Logs** (build + runtime).
+- **CMS** → Railway → the service → **Deployments / Logs**.
+
+### Verify auto-deploy is on
+
+- **Vercel** → Settings → **Git** → Production Branch = `main`, repo connected.
+- **Railway** → service → Settings → **Source** → branch = `main`, deploy trigger on.
+
+---
+
 ## 1. Production database (Neon)
 
 1. Create a new Neon project (or a `production` branch separate from dev).
