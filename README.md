@@ -163,9 +163,9 @@ pnpm reset:db "<DATABASE_URL>"  # wipes a specific db, e.g. production
 pnpm reset:db --yes           # skip the confirmation prompt
 ```
 
-After a DB reset, the CMS rebuilds its (empty) tables on next boot — locally via
-`pnpm devsafe`, in production by redeploying the CMS host — because Payload runs
-with `push: true`. Then open `/admin` to create a fresh first admin user.
+After a DB reset the schema is gone, so re-apply migrations to rebuild the tables:
+`cd apps/cms && pnpm migrate` (add `DATABASE_URL='<url>'` inline to target prod).
+Then open `/admin` to create a fresh first admin user. See `DEPLOYMENT.md` §5.
 
 > `reset:db` only touches the database. Run `pnpm clean` separately if you also
 > want to wipe build artifacts.

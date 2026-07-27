@@ -250,7 +250,7 @@ can create them:
 
 - **Push mode** — Payload auto-syncs the tables to your collections on boot. Zero
   effort, but it **only runs in development** (production ignores it, even with
-  `push: true`). Great for fast local iteration, unsafe/absent for prod.
+  `push: true`) — so it can't manage prod. **Akavish does not use push** (see below).
 - **Migrations** — versioned SQL files (committed to git) generated once and
   applied explicitly. Changes are reviewed and deliberate. **This is what Akavish
   uses**, in every environment: `push: false` in `payload.config.ts`, schema =
@@ -289,7 +289,13 @@ so every production deploy applies pending migrations before the new code starts
 
 ### Everyday workflow (after setup)
 
-Change a collection (add a field, a collection, an index…):
+**When do you need a migration?** Only when you change the **database shape** —
+i.e. you edit a **collection** in `apps/cms/src/collections/` (add/remove a field,
+change a type, add a collection, a relationship, an index). Everything else is a
+**normal push, no migration**: frontend changes (`apps/web`), publishing articles
+(that's *data*, done in the admin), bug fixes, config, docs.
+
+Schema change → generate + apply a migration:
 
 ```bash
 cd apps/cms
@@ -300,6 +306,12 @@ git add src/migrations && git commit -m "…" && git push
 
 On push, Railway's pre-deploy runs `pnpm migrate` → prod picks up the change
 safely. No manual DB surgery, no drift between dev and prod.
+
+**Is `pnpm migrate` destructive?** No — it's incremental. Adding a field is
+`ALTER TABLE ADD COLUMN`; your existing rows are kept. It never wipes data. (The
+change *itself* can be destructive, e.g. removing a field drops that column — but
+the migration file is reviewable, so there are no surprises.) The only destructive
+commands are `pnpm migrate:fresh` and `pnpm reset:db`, which you run deliberately.
 
 Useful commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
 (drop everything and re-run all migrations — destructive, for a clean rebuild).
