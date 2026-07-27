@@ -44,9 +44,9 @@ Don't have a domain yet? Ship first on the free URLs the platforms give you
 ([Phase 2 = §6](#6-domains--dns)). Order matters — the CMS must exist before the
 web can point at it.
 
-1. **CMS on Railway** (root dir = repo root; install `pnpm install --frozen-lockfile`,
-   build `pnpm --filter akavish-cms build`, start `pnpm --filter akavish-cms start`).
-   Env vars:
+1. **CMS on Railway** (root dir = repo root; build
+   `pnpm install --frozen-lockfile && pnpm --filter akavish-cms build`,
+   start `pnpm --filter akavish-cms start`). Env vars:
    - `DATABASE_URL` = your **prod** Neon URL
    - `PAYLOAD_SECRET` = a long random string (reuse the existing one if the DB
      already has content, so existing logins stay valid)
@@ -109,17 +109,29 @@ lockfile of its own).
 1. **New Project → Deploy from GitHub repo**, pick the Akavish repo.
 2. In the service settings:
    - **Root Directory:** leave as the repo root (`.`)
-   - **Install Command:** `pnpm install --frozen-lockfile`
-   - **Build Command:** `pnpm --filter akavish-cms build`
+   - **Build Command:** `pnpm install --frozen-lockfile && pnpm --filter akavish-cms build`
+     — Railway's builder has no separate "install" field; it auto-installs, but
+     folding install into the build command makes it explicit and frozen.
    - **Start Command:** `pnpm --filter akavish-cms start`
    - **Node version:** 20 or 22 (`NODE_VERSION` env var, or the repo `.nvmrc`).
 3. **Variables** (see the [env reference](#environment-variable-reference)):
    `DATABASE_URL`, `PAYLOAD_SECRET`, `SERVER_URL`, `WEB_URL`, and (if using search)
    `MEILISEARCH_HOST` + `MEILISEARCH_API_KEY`.
-4. Railway gives the service a URL like `https://akavish-cms.up.railway.app`.
-   Set `SERVER_URL` to that (or your custom `cms.akavish.gg`).
-5. Deploy. On first boot, run migrations (see §5) then open `/admin` to create
-   the first admin user.
+4. Get the public URL: **Settings → Networking → Generate Domain** →
+   `https://<something>.up.railway.app`. Sanity-check it:
+   `https://<url>/api/articles?limit=1` should return JSON.
+5. (Optionally) set `SERVER_URL` to that URL. On first boot the schema syncs
+   (push mode) or migrations run (see §5); then open `/admin` to create/log in as
+   the admin.
+
+> ⚠️ **Railway auto-creates one service per workspace package.** Because this is
+> a pnpm monorepo, Railway may spawn extra services like `akavish-cms`,
+> `@akavish/web`, `@akavish/mobile` alongside the one you configured. **Keep only
+> the single service you set up with the build/start commands + env vars above,
+> and delete the auto-created extras** (Settings → Delete Service). We deploy
+> only the CMS on Railway — the web goes to Vercel, the mobile isn't deployed.
+> The service's *name* doesn't matter; what matters is that it has the correct
+> config and a successful build.
 
 **Render** is equivalent: New **Web Service**, root dir `apps/cms`, same build/start
 commands and env vars.
