@@ -55,10 +55,12 @@ admin separately.
   Avoid Node 25+: Payload/Next can run out of heap memory on it.
   No nvm? Install Node 22 directly: `brew install node@22` (macOS) then
   `brew link --overwrite --force node@22`.
-- **pnpm 9** — `corepack enable` (ships with Node) or `npm i -g pnpm`.
+- **pnpm 9 or newer** (10 works) — `corepack enable` (ships with Node) or
+  `npm i -g pnpm`.
 - **PostgreSQL database** — a connection string for `DATABASE_URL`. Easiest is a
   free [Neon](https://neon.tech) or [Supabase](https://supabase.com) project; a
   local Postgres works too.
+- **Docker** *(for search)* — runs a local Meilisearch (`docker compose up -d`).
 
 **Required only for `pnpm reset:db`**
 
@@ -70,8 +72,9 @@ admin separately.
 
 - **Clerk** — for reader login/signup. Create an app at
   [clerk.com](https://clerk.com), grab the publishable + secret keys.
+- **Meilisearch** — search. Integrated; run it locally with Docker (free,
+  self-hosted). Only the managed *Meilisearch Cloud* is paid.
 - **Cloudflare R2** *(later)* — media storage. Stubbed in `.env`, not wired yet.
-- **Meilisearch** *(later)* — search. Not integrated yet.
 
 **Recommended tooling**
 
@@ -186,24 +189,12 @@ Both apps lint via ESLint flat config (`eslint.config.mjs`) using
 > The build job uses `pnpm install --frozen-lockfile`, so commit an up-to-date
 > `pnpm-lock.yaml` whenever you change dependencies.
 
-## Roadmap
+## Project status & roadmap
 
-- [x] Monorepo setup (Turborepo + pnpm)
-- [x] Next.js web app with shared API routes
-- [x] Expo mobile app consuming same API
-- [x] Shared types & API client packages
-- [x] Payload CMS integration (standalone on :3001, REST API consumed by web)
-- [x] Web frontend wired to CMS (home feed + article detail page)
-- [x] Prisma + PostgreSQL schema (articles, games, authors)
-- [x] Clerk auth (reader login/signup on web; Payload auth stays for editors)
-- [x] Category pages (/news, /leaks, /reviews, /esport, …)
-- [x] Author / game / tag pages, with cross-links from articles
-- [x] Site polish (custom 404/error, footer, loading states, next/image)
-- [x] SEO (sitemap, robots, canonical, per-article OG images, JSON-LD)
-- [x] Footer pages (about, contact, privacy, terms) + RSS feed
-- [x] Meilisearch integration (CMS indexing hooks + `/search` + header search)
-- [x] CI (GitHub Actions: lint, type-check, build)
-- [ ] Push notifications (Expo)
-- [ ] i18n (EN + FR)
+There is **one** source of truth for what's built, in progress, and still to do:
 
-See [PROGRESS.md](./PROGRESS.md) for the detailed, up-to-date task log.
+### 👉 [PROGRESS.md](./PROGRESS.md)
+
+It lists everything done (grouped by area) and the full prioritized backlog
+(pages, back-office, deployment, legal, mobile…). Keep it updated as work lands —
+this README only covers *what the project is and how to run it*, not status.
