@@ -83,12 +83,32 @@ search index follows in real time. No manual step.
 
 In short: treat `reindex:search` as a repair/bootstrap tool, not a routine step.
 
+## Database schema: push mode vs migrations
+
+In **dev** the Postgres adapter runs in **push mode** — it auto-syncs the schema
+to match the collections on every boot. Convenient locally, but unsafe for
+production (an unexpected change can drop data).
+
+Before deploying to production, switch to **versioned migrations**:
+
+```bash
+pnpm migrate:create initial   # generate migration files from the current schema (src/migrations)
+pnpm migrate                  # apply pending migrations (point DATABASE_URL at the target DB)
+pnpm migrate:status           # show which migrations have run
+```
+
+Commit the generated migration files and run `pnpm migrate` in the deploy
+pipeline. See [`DEPLOYMENT.md`](../../DEPLOYMENT.md) for the full flow.
+
 ## Useful scripts
 
 ```bash
 pnpm devsafe            # clean .next + dev on :3001
 pnpm dev                # dev on :3001
 pnpm reindex:search     # (re)index all published articles into Meilisearch
+pnpm migrate:create     # create a DB migration from the current schema
+pnpm migrate            # apply pending DB migrations
+pnpm migrate:status     # show migration state
 pnpm generate:types     # regenerate src/payload-types.ts from collections
 pnpm generate:importmap # regenerate the admin import map
 pnpm build              # production build
