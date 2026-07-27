@@ -243,11 +243,17 @@ and the search box reports "unavailable"; the rest of the site works.
 
 ---
 
-## 5. Database migrations (do this BEFORE first prod deploy)
+## 5. Database migrations
 
-Payload runs in **push mode** in dev. For production, generate versioned
-migrations and run them explicitly so schema changes are reviewed, not
-auto-applied.
+> **Current state:** the Postgres adapter is set to `push: true` in
+> `payload.config.ts`, which **forces push mode in production too** — Payload
+> auto-syncs the schema on every boot, in all environments. That's why a fresh
+> prod DB gets its tables created without any migration step. Fine while the site
+> is young; **switch to versioned migrations before you have real content you
+> can't lose** (an unexpected schema diff under push mode can drop data).
+
+To move to versioned migrations: set `push: false` in the adapter, then generate
+and run migrations explicitly so schema changes are reviewed, not auto-applied.
 
 ```bash
 cd apps/cms

@@ -8,7 +8,7 @@
     "type-check": "turbo run type-check --filter=!@akavish/mobile",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "clean": "bash scripts/clean.sh",
-    "reset:db": "bash scripts/reset-db.sh"
+    "reset:db": "node apps/cms/scripts/reset-db.mjs"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
