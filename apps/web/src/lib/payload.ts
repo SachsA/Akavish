@@ -7,6 +7,23 @@ import type { Article, PaginatedResponse } from '@akavish/types'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
+// Fail fast if the CMS is slow or down (esp. during a build), so callers hit
+// their try/catch and degrade gracefully instead of hanging the request/build.
+// Uses Promise.race (not AbortSignal) to keep Next's fetch cache semantics —
+// a `signal` would mark the fetch dynamic and clash with generateStaticParams.
+const CMS_FETCH_TIMEOUT_MS = 8000
+function cmsFetch(url: string, init?: RequestInit): Promise<Response> {
+  return Promise.race([
+    fetch(url, init),
+    new Promise<Response>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`CMS fetch timed out after ${CMS_FETCH_TIMEOUT_MS}ms`)),
+        CMS_FETCH_TIMEOUT_MS
+      )
+    ),
+  ])
+}
+
 // Payload's list responses look like { docs, totalDocs, page, totalPages, limit, ... }
 interface PayloadListResponse<T> {
   docs: T[]
@@ -114,7 +131,7 @@ export async function fetchArticles(
   if (gameId) qs.set('where[game][equals]', gameId)
   if (tagId) qs.set('where[tags][in]', tagId)
 
-  const res = await fetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     // Revalidate periodically so new articles show up without a redeploy.
     next: { revalidate: 30 },
   })
@@ -143,7 +160,7 @@ export async function fetchArticleBySlug(slug: string): Promise<Article | null> 
     limit: '1',
   })
 
-  const res = await fetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     next: { revalidate: 30 },
   })
 
@@ -192,7 +209,7 @@ async function fetchOneBySlug<T>(collection: string, slug: string): Promise<T | 
     depth: '1',
     limit: '1',
   })
-  const res = await fetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
+  const res = await cmsFetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
     next: { revalidate: 30 },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
@@ -270,7 +287,7 @@ export async function fetchAllArticleSlugs(): Promise<SlugEntry[]> {
     limit: '1000',
     sort: '-publishedAt',
   })
-  const res = await fetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     next: { revalidate: 300 },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
@@ -286,7 +303,7 @@ export async function fetchAllEntitySlugs(
   collection: 'authors' | 'games' | 'tags'
 ): Promise<SlugEntry[]> {
   const qs = new URLSearchParams({ depth: '0', limit: '1000' })
-  const res = await fetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
+  const res = await cmsFetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
     next: { revalidate: 300 },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
