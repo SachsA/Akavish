@@ -112,6 +112,7 @@ Last updated: **2026-07-27**.
 | ✅ | `.env.example` files | web (Clerk + CMS_URL + Meili + SITE_URL), cms (Postgres + URLs + Meili) |
 | ✅ | `.gitignore` | Secrets (`.env*`, `/.clerk/`), payload-types, media — verified ignored |
 | ✅ | Reset scripts | `pnpm clean` (build + deps) · `pnpm reset:db [URL]` (wipe any Postgres DB — dev by default or prod by URL; no psql, uses `pg`) |
+| ✅ | Root `CLAUDE.md` | Working agreement: keep all docs in sync on every change, migration-vs-normal push, commit messages, project quick-reference |
 | ✅ | `PROGRESS.md` | This file |
 
 ## CI/CD

@@ -208,3 +208,9 @@ There is **one** source of truth for what's built, in progress, and still to do:
 It lists everything done (grouped by area) and the full prioritized backlog
 (pages, back-office, deployment, legal, mobile…). Keep it updated as work lands —
 this README only covers *what the project is and how to run it*, not status.
+
+## Contributing / working agreement
+
+[`CLAUDE.md`](./CLAUDE.md) at the repo root holds the working conventions for this
+project (keep all docs/config in sync on every change, when a change needs a DB
+migration vs a normal push, commit-message habits, and a quick project reference).
