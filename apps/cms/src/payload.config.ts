@@ -36,6 +36,12 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    // Auto-sync the schema on boot in ALL environments (dev + prod).
+    // Payload only enables this by default in development; we force it on so a
+    // fresh/empty production DB gets its tables created without migrations.
+    // TODO before serious production use: switch to versioned migrations
+    // (pnpm migrate:create / migrate) and set this back to false. See DEPLOYMENT.md §5.
+    push: true,
   }),
   sharp,
   cors: [process.env.WEB_URL || 'http://localhost:3000'],

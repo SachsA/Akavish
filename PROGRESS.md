@@ -111,7 +111,7 @@ Last updated: **2026-07-27**.
 | ✅ | `apps/cms/README.md` | Akavish-specific (was the Payload blank template) |
 | ✅ | `.env.example` files | web (Clerk + CMS_URL + Meili + SITE_URL), cms (Postgres + URLs + Meili) |
 | ✅ | `.gitignore` | Secrets (`.env*`, `/.clerk/`), payload-types, media — verified ignored |
-| ✅ | Reset scripts | `pnpm clean` (build + deps) · `pnpm reset:db` (also wipes Postgres) |
+| ✅ | Reset scripts | `pnpm clean` (build + deps) · `pnpm reset:db [URL]` (wipe any Postgres DB — dev by default or prod by URL; no psql, uses `pg`) |
 | ✅ | `PROGRESS.md` | This file |
 
 ## CI/CD
@@ -208,7 +208,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item | Notes |
 |-----|------|-------|
 | P1 | Email adapter | Currently logs to console — add `@payloadcms/email-nodemailer` (Resend/SES) for password resets, etc. |
-| P1 | Versioned migrations | Scripts ready (`pnpm migrate:create` / `migrate` / `migrate:status`). Still push mode until you generate + commit the initial migration and switch the deploy to run `pnpm migrate` — see `DEPLOYMENT.md` §5 |
+| P1 | Versioned migrations | `push: true` is currently **forced in all envs** (incl. prod) in `payload.config.ts` so fresh DBs self-create the schema. Scripts ready (`pnpm migrate:create` / `migrate`). Before real content: set `push: false`, generate + commit the initial migration, run `pnpm migrate` on deploy — see `DEPLOYMENT.md` §5 |
 | P2 | Seed script | Script to create an admin user + sample content for fresh installs |
 | P2 | Backups | Automated DB backups (Neon has PITR; document the policy) |
 

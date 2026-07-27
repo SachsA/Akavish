@@ -151,20 +151,27 @@ cd apps/mobile && pnpm dev
 
 ### Resetting
 
+Two independent tools:
+
 ```bash
-# Full clean — wipes node_modules, .next, .turbo, .expo, dist, *.tsbuildinfo.
+# Build/deps clean — wipes node_modules, .next, .turbo, .expo, dist, *.tsbuildinfo.
 # Leaves .env files and the database untouched.
 pnpm clean
 pnpm install          # then reinstall and you're back to a clean env
 
-# Nuclear — DESTRUCTIVE. Also drops the Payload database (all content/users),
-# then runs the full clean. Asks for confirmation (or pass --yes).
-pnpm reset:db
+# Database reset — DESTRUCTIVE. Drops all data (articles, users, media…).
+# No psql needed (uses the pg driver). Asks you to type "reset" to confirm.
+pnpm reset:db                 # wipes the DEV db (DATABASE_URL from apps/cms/.env)
+pnpm reset:db "<DATABASE_URL>"  # wipes a specific db, e.g. production
+pnpm reset:db --yes           # skip the confirmation prompt
 ```
 
-After `pnpm reset:db`, the CMS rebuilds its tables on the next `pnpm devsafe`
-(Payload runs in push mode), and you'll create a fresh admin user on first load.
-Requires the `psql` client installed locally.
+After a DB reset, the CMS rebuilds its (empty) tables on next boot — locally via
+`pnpm devsafe`, in production by redeploying the CMS host — because Payload runs
+with `push: true`. Then open `/admin` to create a fresh first admin user.
+
+> `reset:db` only touches the database. Run `pnpm clean` separately if you also
+> want to wipe build artifacts.
 
 ## CI
 
