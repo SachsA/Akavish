@@ -126,6 +126,14 @@ Last updated: **2026-07-27**.
 | ✅ | `type-check` scripts | Added to root (turbo) and CMS |
 | ✅ | pnpm 10 fix | Moved `overrides` + `onlyBuiltDependencies` to `pnpm-workspace.yaml` (pnpm 10 ignores the `pnpm` package.json field) |
 
+## Deployment (prep)
+
+| Status | Item | Notes |
+|--------|------|-------|
+| ✅ | Deployment guide | `DEPLOYMENT.md` — web→Vercel, CMS→Railway/Render, Neon, search, domains, checklist + env reference |
+| ✅ | Migration scripts | CMS `pnpm migrate` / `migrate:create` / `migrate:status` added (ready to leave push mode) |
+| ⬜ | Actually deploy | Follow `DEPLOYMENT.md` — needs your Vercel/Railway/Neon/Clerk-prod accounts |
+
 ---
 
 # In progress / next up
@@ -133,7 +141,7 @@ Last updated: **2026-07-27**.
 | Status | Item | Notes |
 |--------|------|-------|
 | 🚧 | *(nothing actively in progress)* | Pick the next item from the backlog below |
-| ⬜ | **Deployment** (suggested next) | Host web on Vercel + CMS on a long-running Node host + prod DB. See Backlog → *8. Infrastructure → Deployment* |
+| ⬜ | **Deploy to production** (suggested next) | Everything is prepped — walk through [`DEPLOYMENT.md`](./DEPLOYMENT.md) with your hosting accounts. Do the DB migration step first. |
 
 ---
 
@@ -198,7 +206,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item | Notes |
 |-----|------|-------|
 | P1 | Email adapter | Currently logs to console — add `@payloadcms/email-nodemailer` (Resend/SES) for password resets, etc. |
-| P1 | Versioned migrations | Currently push mode. Generate real migrations (`payload migrate:create`) before production |
+| P1 | Versioned migrations | Scripts ready (`pnpm migrate:create` / `migrate` / `migrate:status`). Still push mode until you generate + commit the initial migration and switch the deploy to run `pnpm migrate` — see `DEPLOYMENT.md` §5 |
 | P2 | Seed script | Script to create an admin user + sample content for fresh installs |
 | P2 | Backups | Automated DB backups (Neon has PITR; document the policy) |
 
@@ -262,6 +270,10 @@ Lint + type-check + build on PR are done (see [Done → CI/CD](#cicd)). Remainin
 | P3 | Dependabot / renovate | Dependency updates |
 
 ### Deployment (production)
+
+📄 Full runbook: **[`DEPLOYMENT.md`](./DEPLOYMENT.md)**. The steps below are the
+checklist it walks through.
+
 | Pri | Item | Notes |
 |-----|------|-------|
 | P1 | Host the web app | Vercel (recommended for Next.js) |

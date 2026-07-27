@@ -189,6 +189,12 @@ Both apps lint via ESLint flat config (`eslint.config.mjs`) using
 > The build job uses `pnpm install --frozen-lockfile`, so commit an up-to-date
 > `pnpm-lock.yaml` whenever you change dependencies.
 
+## Deployment
+
+Going to production? Follow **[DEPLOYMENT.md](./DEPLOYMENT.md)** — a step-by-step
+runbook (web → Vercel, CMS → Railway/Render, Postgres → Neon, migrations,
+search, domains, and a post-deploy checklist).
+
 ## Project status & roadmap
 
 There is **one** source of truth for what's built, in progress, and still to do:
