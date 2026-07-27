@@ -36,12 +36,11 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
-    // Auto-sync the schema on boot in ALL environments (dev + prod).
-    // Payload only enables this by default in development; we force it on so a
-    // fresh/empty production DB gets its tables created without migrations.
-    // TODO before serious production use: switch to versioned migrations
-    // (pnpm migrate:create / migrate) and set this back to false. See DEPLOYMENT.md §5.
-    push: true,
+    // Schema is managed by versioned migrations (src/migrations), NOT push mode,
+    // in every environment. Change a collection → `pnpm migrate:create <name>`,
+    // commit the file, and `pnpm migrate` applies it (dev locally, prod via the
+    // Railway pre-deploy step). See DEPLOYMENT.md §5.
+    push: false,
   }),
   sharp,
   cors: [process.env.WEB_URL || 'http://localhost:3000'],

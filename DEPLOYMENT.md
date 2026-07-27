@@ -243,40 +243,66 @@ and the search box reports "unavailable"; the rest of the site works.
 
 ---
 
-## 5. Database migrations
+## 5. Database schema: migrations (READ THIS)
 
-> **Current state:** the Postgres adapter is set to `push: true` in
-> `payload.config.ts`, which **forces push mode in production too** — Payload
-> auto-syncs the schema on every boot, in all environments. That's why a fresh
-> prod DB gets its tables created without any migration step. Fine while the site
-> is young; **switch to versioned migrations before you have real content you
-> can't lose** (an unexpected schema diff under push mode can drop data).
+Payload needs the DB tables (articles, users, media…) to exist. Two mechanisms
+can create them:
 
-To move to versioned migrations: set `push: false` in the adapter, then generate
-and run migrations explicitly so schema changes are reviewed, not auto-applied.
+- **Push mode** — Payload auto-syncs the tables to your collections on boot. Zero
+  effort, but it **only runs in development** (production ignores it, even with
+  `push: true`). Great for fast local iteration, unsafe/absent for prod.
+- **Migrations** — versioned SQL files (committed to git) generated once and
+  applied explicitly. Changes are reviewed and deliberate. **This is what Akavish
+  uses**, in every environment: `push: false` in `payload.config.ts`, schema =
+  the files in `apps/cms/src/migrations/`.
+
+### One-time setup (adopting migrations)
+
+Done once. Because the DBs already had tables from earlier push runs, we start
+each DB fresh so its state matches the migration exactly.
 
 ```bash
 cd apps/cms
 
-# 1. Generate the initial migration from the current schema (writes to src/migrations)
-pnpm migrate:create initial
+# 1. DEV — wipe, generate the initial migration, apply it, commit.
+pnpm reset:db --yes                       # wipes the dev DB (URL from apps/cms/.env)
+pnpm migrate:create initial               # writes src/migrations/…
+pnpm migrate                              # applies it to the dev DB
+git add src/migrations && git commit -m "cms: initial migration" && git push
 
-# 2. Commit the generated migration files.
+# 2. PROD — wipe, then apply the same migrations.
+node scripts/reset-db.mjs '<PROD_DATABASE_URL>' --yes
+DATABASE_URL='<PROD_DATABASE_URL>' pnpm migrate
 
-# 3. On the prod DB, apply migrations (run in the deploy pipeline or once by hand
-#    with DATABASE_URL pointing at prod):
-pnpm migrate
-
-# Check state anytime:
-pnpm migrate:status
+# 3. Recreate the first admin (+ content) at each /admin:
+#    dev  → http://localhost:3001/admin   (run `pnpm devsafe` first)
+#    prod → https://<cms>.up.railway.app/admin
 ```
 
-Wire `pnpm migrate` into the CMS host's **release/pre-deploy** step so every
-deploy applies pending migrations before the new code starts.
+Then, on **Railway → service → Settings**, set a **Pre-Deploy Command**:
 
-> Until you cut over to migrations, be aware push mode will try to sync the prod
-> schema on boot — fine for the very first deploy of an empty DB, risky for
-> changes afterward.
+```
+pnpm --filter akavish-cms migrate
+```
+
+so every production deploy applies pending migrations before the new code starts.
+
+### Everyday workflow (after setup)
+
+Change a collection (add a field, a collection, an index…):
+
+```bash
+cd apps/cms
+pnpm migrate:create add_whatever   # generate a migration for the change
+pnpm migrate                       # apply locally (dev)
+git add src/migrations && git commit -m "…" && git push
+```
+
+On push, Railway's pre-deploy runs `pnpm migrate` → prod picks up the change
+safely. No manual DB surgery, no drift between dev and prod.
+
+Useful commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
+(drop everything and re-run all migrations — destructive, for a clean rebuild).
 
 ---
 

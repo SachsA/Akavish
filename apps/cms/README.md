@@ -83,22 +83,22 @@ search index follows in real time. No manual step.
 
 In short: treat `reindex:search` as a repair/bootstrap tool, not a routine step.
 
-## Database schema: push mode vs migrations
+## Database schema: migrations
 
-In **dev** the Postgres adapter runs in **push mode** — it auto-syncs the schema
-to match the collections on every boot. Convenient locally, but unsafe for
-production (an unexpected change can drop data).
+The schema is managed by **versioned migrations** (`src/migrations/`, committed to
+git), not push mode — `push: false` in `payload.config.ts`, in every environment.
 
-Before deploying to production, switch to **versioned migrations**:
+Whenever you change a collection (add a field, an index, a collection…):
 
 ```bash
-pnpm migrate:create initial   # generate migration files from the current schema (src/migrations)
-pnpm migrate                  # apply pending migrations (point DATABASE_URL at the target DB)
-pnpm migrate:status           # show which migrations have run
+pnpm migrate:create <name>   # generate a migration for the change (src/migrations/…)
+pnpm migrate                 # apply pending migrations to the dev DB
+# commit the generated files → Railway's pre-deploy runs `pnpm migrate` on prod
 ```
 
-Commit the generated migration files and run `pnpm migrate` in the deploy
-pipeline. See [`DEPLOYMENT.md`](../../DEPLOYMENT.md) for the full flow.
+Other commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
+(drop everything + re-run all migrations — destructive). Full flow + one-time
+setup in [`DEPLOYMENT.md`](../../DEPLOYMENT.md) §5.
 
 ## Useful scripts
 
@@ -109,6 +109,7 @@ pnpm reindex:search     # (re)index all published articles into Meilisearch
 pnpm migrate:create     # create a DB migration from the current schema
 pnpm migrate            # apply pending DB migrations
 pnpm migrate:status     # show migration state
+pnpm migrate:fresh      # drop everything + re-run all migrations (destructive)
 pnpm generate:types     # regenerate src/payload-types.ts from collections
 pnpm generate:importmap # regenerate the admin import map
 pnpm build              # production build

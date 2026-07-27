@@ -130,9 +130,10 @@ Last updated: **2026-07-27**.
 
 | Status | Item | Notes |
 |--------|------|-------|
-| ✅ | Deployment guide | `DEPLOYMENT.md` — web→Vercel, CMS→Railway/Render, Neon, search, domains, checklist + env reference |
-| ✅ | Migration scripts | CMS `pnpm migrate` / `migrate:create` / `migrate:status` added (ready to leave push mode) |
-| ⬜ | Actually deploy | Follow `DEPLOYMENT.md` — needs your Vercel/Railway/Neon/Clerk-prod accounts |
+| ✅ | Deployment guide | `DEPLOYMENT.md` — web→Vercel, CMS→Railway, Neon, search, domains, checklist + env reference + schema/migrations explainer |
+| ✅ | **Deployed & LIVE (Phase 1)** | Web on Vercel (`akavish-web-puce.vercel.app`) + CMS on Railway (`akavish-production.up.railway.app`) + prod Neon DB, all serving real content 🎉 |
+| ✅ | Build resilience | CMS fetches have an 8s timeout (`lib/payload.ts`) so a slow/down CMS never hangs the Vercel build |
+| ✅ | Migration scripts | CMS `pnpm migrate` / `migrate:create` / `migrate:status` added (not yet used — still on push mode) |
 
 ---
 
@@ -140,10 +141,9 @@ Last updated: **2026-07-27**.
 
 | Status | Item | Notes |
 |--------|------|-------|
-| ✅ | **Deploy — Phase 1 (live on platform URLs)** | CMS on Railway (`akavish-production.up.railway.app`) + web on Vercel (`akavish-web-puce.vercel.app`), both serving real content. Prod Neon DB. |
-| 🚧 | Finish Phase 1 wiring | Set `NEXT_PUBLIC_SITE_URL`/`NEXT_PUBLIC_APP_URL` (Vercel) + `WEB_URL` (Railway) to the live URLs, redeploy. |
-| ⬜ | **Phase 2 — custom domain** | Once `akavish.gg` is bought: add domains in Vercel + Railway, DNS, swap the URL env vars, switch Clerk to prod keys. |
-| ⬜ | **Media on R2** | Uploaded images 404 in prod (CMS disk is ephemeral on Railway) until Cloudflare R2 storage is wired — see Backlog §3. |
+| ⬜ | **Phase 2 — custom domain** | Once `akavish.gg` is bought: add domains in Vercel + Railway, DNS, swap the URL env vars (`CMS_URL`, `NEXT_PUBLIC_SITE_URL`, `SERVER_URL`, `WEB_URL`), switch Clerk to prod keys. |
+| ⬜ | **Media on R2** | Uploaded images 404 after a Railway restart (CMS disk is ephemeral) until Cloudflare R2 storage is wired — see Backlog §3. |
+| 🚧 | **Adopt migrations** | Code done: `push: false` + `migrate*` scripts. Remaining (user runs): wipe dev → `migrate:create initial` → `migrate` → commit; wipe prod → `migrate`; set Railway pre-deploy `pnpm --filter akavish-cms migrate`; recreate admins. Full steps in `DEPLOYMENT.md` §5. |
 
 ---
 
@@ -208,7 +208,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item | Notes |
 |-----|------|-------|
 | P1 | Email adapter | Currently logs to console — add `@payloadcms/email-nodemailer` (Resend/SES) for password resets, etc. |
-| P1 | Versioned migrations | `push: true` is currently **forced in all envs** (incl. prod) in `payload.config.ts` so fresh DBs self-create the schema. Scripts ready (`pnpm migrate:create` / `migrate`). Before real content: set `push: false`, generate + commit the initial migration, run `pnpm migrate` on deploy — see `DEPLOYMENT.md` §5 |
+| 🚧 | Versioned migrations | `push: false` set + `migrate*` scripts ready. Being adopted — see In progress / next up and `DEPLOYMENT.md` §5 |
 | P2 | Seed script | Script to create an admin user + sample content for fresh installs |
 | P2 | Backups | Automated DB backups (Neon has PITR; document the policy) |
 
