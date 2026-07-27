@@ -140,7 +140,10 @@ Last updated: **2026-07-27**.
 
 | Status | Item | Notes |
 |--------|------|-------|
-| 🚧 | **Deploy — Phase 1 (platform URLs, no custom domain)** | Following [`DEPLOYMENT.md` → Phase 1](./DEPLOYMENT.md). CMS on Railway in progress (deleting Railway's auto-created per-package services, keeping one CMS service), then web on Vercel. Custom domain (`akavish.gg`) = Phase 2, later. |
+| ✅ | **Deploy — Phase 1 (live on platform URLs)** | CMS on Railway (`akavish-production.up.railway.app`) + web on Vercel (`akavish-web-puce.vercel.app`), both serving real content. Prod Neon DB. |
+| 🚧 | Finish Phase 1 wiring | Set `NEXT_PUBLIC_SITE_URL`/`NEXT_PUBLIC_APP_URL` (Vercel) + `WEB_URL` (Railway) to the live URLs, redeploy. |
+| ⬜ | **Phase 2 — custom domain** | Once `akavish.gg` is bought: add domains in Vercel + Railway, DNS, swap the URL env vars, switch Clerk to prod keys. |
+| ⬜ | **Media on R2** | Uploaded images 404 in prod (CMS disk is ephemeral on Railway) until Cloudflare R2 storage is wired — see Backlog §3. |
 
 ---
 
