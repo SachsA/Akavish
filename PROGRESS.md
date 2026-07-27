@@ -1,13 +1,21 @@
 # Akavish — Progress Log
 
-A running record of what's built, what's in progress, and what's next.
-The top half is what's **done**; the [Backlog](#backlog--everything-left-to-do)
-near the bottom is the full list of everything still to do (pages, back-office,
-search, infra, CI, deployment, legal…). Last updated: **2026-06-03**.
+**The single source of truth for project status.** The README explains *what the
+project is and how to run it*; this file tracks *what's done and what's left*.
 
-Legend: ✅ done · 🚧 in progress · ⬜ not started
+- **[Done](#done)** — everything built so far, grouped by area.
+- **[In progress / next up](#in-progress--next-up)** — what's active right now.
+- **[Backlog](#backlog--everything-left-to-do)** — the full prioritized to-do
+  list (pages, back-office, deployment, legal, mobile…).
+
+Legend: ✅ done · 🚧 in progress · ⬜ not started ·
+priorities **P1** (before launch) / **P2** (soon after) / **P3** (nice-to-have).
+
+Last updated: **2026-07-27**.
 
 ---
+
+# Done
 
 ## Foundations
 
@@ -99,9 +107,9 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 
 | Status | Item | Notes |
 |--------|------|-------|
-| ✅ | Root `README.md` | Stack, structure, ports, two-terminal dev flow, roadmap |
+| ✅ | Root `README.md` | Stack, structure, ports, install/dev flow, CI — points here for status |
 | ✅ | `apps/cms/README.md` | Akavish-specific (was the Payload blank template) |
-| ✅ | `.env.example` files | web (Clerk + CMS_URL), cms (Postgres + URLs) |
+| ✅ | `.env.example` files | web (Clerk + CMS_URL + Meili + SITE_URL), cms (Postgres + URLs + Meili) |
 | ✅ | `.gitignore` | Secrets (`.env*`, `/.clerk/`), payload-types, media — verified ignored |
 | ✅ | Reset scripts | `pnpm clean` (build + deps) · `pnpm reset:db` (also wipes Postgres) |
 | ✅ | `PROGRESS.md` | This file |
@@ -117,6 +125,15 @@ Legend: ✅ done · 🚧 in progress · ⬜ not started
 | ✅ | Link hygiene | Internal `<a>` → `next/link` `<Link>` across web (fixes `no-html-link-for-pages`) |
 | ✅ | `type-check` scripts | Added to root (turbo) and CMS |
 | ✅ | pnpm 10 fix | Moved `overrides` + `onlyBuiltDependencies` to `pnpm-workspace.yaml` (pnpm 10 ignores the `pnpm` package.json field) |
+
+---
+
+# In progress / next up
+
+| Status | Item | Notes |
+|--------|------|-------|
+| 🚧 | *(nothing actively in progress)* | Pick the next item from the backlog below |
+| ⬜ | **Deployment** (suggested next) | Host web on Vercel + CMS on a long-running Node host + prod DB. See Backlog → *8. Infrastructure → Deployment* |
 
 ---
 
@@ -148,8 +165,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 ## 2. SEO
 
-✅ **Done** — sitemap, robots, per-article OG images, JSON-LD, canonical URLs,
-and CMS `seo` fields are all wired (see the SEO block in the done section above).
+Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 
 | Pri | Item | Notes |
 |-----|------|-------|
@@ -188,9 +204,7 @@ and CMS `seo` fields are all wired (see the SEO block in the done section above)
 
 ## 4. Search (Meilisearch)
 
-✅ **Done** — indexing hooks, backfill script, `/api/search` proxy, header search
-box + `/search` page, and a dev `docker-compose` are all wired (see the Search
-block in the done section above).
+Core search is done (see the [Done → Search](#search-meilisearch) section). Remaining:
 
 | Pri | Item | Notes |
 |-----|------|-------|
@@ -237,11 +251,12 @@ block in the done section above).
 | P2 | Extend root `docker-compose` | Now runs Meilisearch ✅; add web + CMS + Postgres for a full one-command dev stack |
 
 ### CI (GitHub Actions or similar)
+
+Lint + type-check + build on PR are done (see [Done → CI/CD](#cicd)). Remaining:
+
 | Pri | Item | Notes |
 |-----|------|-------|
-| ✅ | Lint + type-check on PR | Done — `pnpm lint` + `pnpm type-check` (web + CMS) |
-| ✅ | Build on PR | Done — `pnpm build` (web + CMS) with Postgres service |
-| P2 | Lint mobile | Give the Expo app a working ESLint config + re-include it once it's on a React-19 Expo SDK |
+| P2 | Lint + type-check mobile | Give the Expo app a working ESLint config + re-include it in CI once it's on a React-19 Expo SDK |
 | P2 | Run tests in CI | CMS has Vitest (int) + Playwright (e2e) — wire them into the workflow |
 | P2 | Preview deploys | Vercel preview per PR |
 | P3 | Dependabot / renovate | Dependency updates |
