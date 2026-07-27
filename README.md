@@ -62,11 +62,8 @@ admin separately.
   local Postgres works too.
 - **Docker** *(for search)* — runs a local Meilisearch (`docker compose up -d`).
 
-**Required only for `pnpm reset:db`**
-
-- **psql** (PostgreSQL client) — macOS: `brew install libpq` then
-  `brew link --force libpq` (or `brew install postgresql@16`). The reset script
-  uses it to drop/recreate the schema.
+> `pnpm reset:db` needs no extra tooling — it uses the `pg` driver bundled with
+> the CMS (no `psql` required).
 
 **External accounts you'll need (free tiers are fine to start)**
 
