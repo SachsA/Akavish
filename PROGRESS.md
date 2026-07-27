@@ -317,9 +317,9 @@ checklist it walks through.
 - Stick to **Node 20/22 LTS** — Node 25 ran the CMS out of heap memory.
 - New CMS collections default to **private** reads — add `access.read` if the
   frontend needs them.
-- The CMS runs Payload in **push mode** (no migrations). Generate real
-  migrations before deploying to production.
-- `pnpm reset:db` needs the **`psql`** client installed locally.
+- The CMS schema is managed by **versioned migrations** (`push: false`). Change a
+  collection → `pnpm migrate:create <name>` + `pnpm migrate`, commit; Railway's
+  pre-deploy applies them to prod. See `DEPLOYMENT.md` §5.
 - **React types / `shamefully-hoist`:** the repo's `.npmrc` flattens deps into
   the root `node_modules`, so the mobile app's `@types/react@18` lands at
   `node_modules/@types/react` and `tsc` would pick it up for web/cms (React 19),
