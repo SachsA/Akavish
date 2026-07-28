@@ -21,14 +21,14 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 
 ## Collections
 
-| Collection | Notes |
-|------------|-------|
+| Collection | Notes                                                                                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), author, game, tags, SEO. Versioned with drafts. |
-| `authors`  | Public profile shown on article cards/pages. |
-| `games`    | Game metadata articles can be tagged to. |
-| `tags`     | Free-form taxonomy. |
-| `media`    | Uploaded images (cover images, avatars). |
-| `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). |
+| `authors`  | Public profile shown on article cards/pages.                                                                                                       |
+| `games`    | Game metadata articles can be tagged to.                                                                                                           |
+| `tags`     | Free-form taxonomy.                                                                                                                                |
+| `media`    | Uploaded images (cover images, avatars).                                                                                                           |
+| `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk).                                                                            |
 
 ### Slugs
 

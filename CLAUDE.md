@@ -44,9 +44,11 @@ backlog) and the READMEs in sync with the real code state. **Doc upkeep is part 
 ## 3. Always give the exact commit message(s)
 
 End every change with a ready-to-paste command, e.g.:
+
 ```bash
 git add -A && git commit -m "<type>: <summary>" && git push
 ```
+
 If a dependency changed, remind the user to run `pnpm install` and commit the
 updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail otherwise).
 
