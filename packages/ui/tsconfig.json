@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "ES2022"],
+    "baseUrl": ".",
+    // Same workaround as apps/web and apps/cms: `shamefully-hoist` flattens the
+    // mobile app's @types/react@18 into the root node_modules, so pin React's
+    // type resolution to this package's own React 19 copies.
+    "paths": {
+      "react": ["../../node_modules/@types/react"],
+      "react/*": ["../../node_modules/@types/react/*"],
+      "react-dom": ["../../node_modules/@types/react-dom"],
+      "react-dom/*": ["../../node_modules/@types/react-dom/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

@@ -9,6 +9,9 @@ overrides:
   "@types/react": ^19.0.0
   "@types/react-dom": ^19.0.0
 
+# Native deps allowed to run their build scripts (merged here from the old
+# apps/cms/pnpm-workspace.yaml — a nested workspace file would make apps/cms look
+# like its own workspace root, so it must not exist).
 onlyBuiltDependencies:
   - sharp
   - esbuild
