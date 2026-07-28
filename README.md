@@ -4,20 +4,19 @@
 
 ![CI](https://github.com/SachsA/akavish/actions/workflows/ci.yml/badge.svg)
 
-
 ## Stack
 
-| Layer | Tech |
-|-------|------|
-| Web | Next.js 15 (App Router) + TypeScript + Tailwind — runs on **:3000** |
-| CMS | Payload 3 (standalone Next.js app) — runs on **:3001** |
-| Mobile | React Native + Expo + expo-router |
-| Database | PostgreSQL (Neon/Supabase) |
-| Auth | Clerk (readers, web + mobile) · Payload auth (CMS editors) |
-| Search | Meilisearch |
-| Storage | Cloudflare R2 |
-| Hosting | Vercel (web) + Expo EAS (mobile) |
-| Monorepo | Turborepo + pnpm workspaces |
+| Layer    | Tech                                                                |
+| -------- | ------------------------------------------------------------------- |
+| Web      | Next.js 15 (App Router) + TypeScript + Tailwind — runs on **:3000** |
+| CMS      | Payload 3 (standalone Next.js app) — runs on **:3001**              |
+| Mobile   | React Native + Expo + expo-router                                   |
+| Database | PostgreSQL (Neon/Supabase)                                          |
+| Auth     | Clerk (readers, web + mobile) · Payload auth (CMS editors)          |
+| Search   | Meilisearch                                                         |
+| Storage  | Cloudflare R2                                                       |
+| Hosting  | Vercel (web) + Expo EAS (mobile)                                    |
+| Monorepo | Turborepo + pnpm workspaces                                         |
 
 ## Structure
 
@@ -40,7 +39,7 @@ akavish/
 
 Conventions: **one lockfile** (`pnpm-lock.yaml` at the root — npm/yarn and nested
 lockfiles are gitignored), **one Prettier config** (root `.prettierrc`), and every
-workspace exposes a `type-check` script so CI covers apps *and* shared packages.
+workspace exposes a `type-check` script so CI covers apps _and_ shared packages.
 
 ### How the pieces talk
 
@@ -66,7 +65,7 @@ admin separately.
 - **PostgreSQL database** — a connection string for `DATABASE_URL`. Easiest is a
   free [Neon](https://neon.tech) or [Supabase](https://supabase.com) project; a
   local Postgres works too.
-- **Docker** *(for search)* — runs a local Meilisearch (`docker compose up -d`).
+- **Docker** _(for search)_ — runs a local Meilisearch (`docker compose up -d`).
 
 > `pnpm reset:db` needs no extra tooling — it uses the `pg` driver bundled with
 > the CMS (no `psql` required).
@@ -76,8 +75,8 @@ admin separately.
 - **Clerk** — for reader login/signup. Create an app at
   [clerk.com](https://clerk.com), grab the publishable + secret keys.
 - **Meilisearch** — search. Integrated; run it locally with Docker (free,
-  self-hosted). Only the managed *Meilisearch Cloud* is paid.
-- **Cloudflare R2** *(later)* — media storage. Stubbed in `.env`, not wired yet.
+  self-hosted). Only the managed _Meilisearch Cloud_ is paid.
+- **Cloudflare R2** _(later)_ — media storage. Stubbed in `.env`, not wired yet.
 
 **Recommended tooling**
 
@@ -101,8 +100,9 @@ cp apps/mobile/.env.example apps/mobile/.env
 ```
 
 At minimum you need: `DATABASE_URL` + `PAYLOAD_SECRET` (CMS), and the Clerk keys
-+ `CMS_URL` (web). For correct SEO URLs in production, also set
-`NEXT_PUBLIC_SITE_URL` (e.g. `https://akavish.gg`) on the web app.
+
+- `CMS_URL` (web). For correct SEO URLs in production, also set
+  `NEXT_PUBLIC_SITE_URL` (e.g. `https://akavish.gg`) on the web app.
 
 ### Dev
 
@@ -118,7 +118,7 @@ cd apps/web && pnpm dev
 ```
 
 - Public site: <http://localhost:3000>
-- CMS admin:   <http://localhost:3001/admin>
+- CMS admin: <http://localhost:3001/admin>
 
 > Articles only appear on the site once their **status is `Published`** in the
 > CMS. Drafts are visible to logged-in editors only.
@@ -213,7 +213,7 @@ There is **one** source of truth for what's built, in progress, and still to do:
 
 It lists everything done (grouped by area) and the full prioritized backlog
 (pages, back-office, deployment, legal, mobile…). Keep it updated as work lands —
-this README only covers *what the project is and how to run it*, not status.
+this README only covers _what the project is and how to run it_, not status.
 
 ## Contributing / working agreement
 

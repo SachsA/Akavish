@@ -7,13 +7,13 @@ first time — the order matters (database → CMS → web → search → domain
 
 Three long-lived pieces plus supporting services:
 
-| Piece | What it is | Recommended host | Notes |
-|-------|-----------|------------------|-------|
-| **Web** (`apps/web`) | Next.js frontend | **Vercel** | Serverless, scales to zero. Has workspace deps, so Vercel builds from the repo root. |
-| **CMS** (`apps/cms`) | Payload admin + API | **Railway** or **Render** (or a VPS) | Needs a **long-running Node process** — it is NOT static and won't run on Vercel's static/serverless model well. Fully standalone (no workspace deps). |
-| **Database** | PostgreSQL | **Neon** (or Supabase) | Use a separate prod project/branch from dev. |
-| **Search** | Meilisearch | **Meilisearch Cloud** or self-hosted (Docker on the same VPS/Railway) | Optional at launch — the site works without it, search just reports unavailable. |
-| **Media** | Cloudflare R2 | Cloudflare | *Not wired yet* — see backlog. Until then, uploaded media lives on the CMS host's disk (ephemeral on some hosts). |
+| Piece                | What it is          | Recommended host                                                      | Notes                                                                                                                                                  |
+| -------------------- | ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Web** (`apps/web`) | Next.js frontend    | **Vercel**                                                            | Serverless, scales to zero. Has workspace deps, so Vercel builds from the repo root.                                                                   |
+| **CMS** (`apps/cms`) | Payload admin + API | **Railway** or **Render** (or a VPS)                                  | Needs a **long-running Node process** — it is NOT static and won't run on Vercel's static/serverless model well. Fully standalone (no workspace deps). |
+| **Database**         | PostgreSQL          | **Neon** (or Supabase)                                                | Use a separate prod project/branch from dev.                                                                                                           |
+| **Search**           | Meilisearch         | **Meilisearch Cloud** or self-hosted (Docker on the same VPS/Railway) | Optional at launch — the site works without it, search just reports unavailable.                                                                       |
+| **Media**            | Cloudflare R2       | Cloudflare                                                            | _Not wired yet_ — see backlog. Until then, uploaded media lives on the CMS host's disk (ephemeral on some hosts).                                      |
 
 ```
  Reader ──▶ Vercel (web, akavish.gg) ──REST──▶ CMS host (cms.akavish.gg) ──▶ Postgres (Neon)
@@ -30,8 +30,8 @@ Three long-lived pieces plus supporting services:
   and optionally Meilisearch Cloud + Cloudflare.
 - A **domain** (e.g. `akavish.gg`) if you want a custom URL.
 
-> ⚠️ **Generate real DB migrations first.** In dev the CMS runs Payload in *push
-> mode* (it auto-syncs the schema on boot). That's convenient locally but unsafe
+> ⚠️ **Generate real DB migrations first.** In dev the CMS runs Payload in _push
+> mode_ (it auto-syncs the schema on boot). That's convenient locally but unsafe
 > in production, where an unexpected schema change can drop data. See
 > [§5 Migrations](#5-database-migrations-do-this-before-first-prod-deploy).
 
@@ -104,9 +104,9 @@ cd apps/cms && pnpm devsafe
 cd apps/web && pnpm dev
 ```
 
-| | Database it uses | Config source |
-|---|---|---|
-| **Local** (`pnpm dev`) | **dev** Neon DB | your local `.env` files (gitignored) |
+|                           | Database it uses | Config source                             |
+| ------------------------- | ---------------- | ----------------------------------------- |
+| **Local** (`pnpm dev`)    | **dev** Neon DB  | your local `.env` files (gitignored)      |
 | **Live** (Railway/Vercel) | **prod** Neon DB | env vars set in each platform's dashboard |
 
 Content you create locally lands in the dev DB; prod content is separate. (The
@@ -120,11 +120,11 @@ git add -A && git commit -m "…" && git push
 
 Railway and Vercel are connected to the GitHub repo and **auto-deploy on push to
 `main`** — but with a **monorepo path filter**: each platform only rebuilds when
-the push touched *its* app's files.
+the push touched _its_ app's files.
 
 - Changed `apps/web/**` → **Vercel** redeploys the web.
 - Changed `apps/cms/**` → **Railway** redeploys the CMS.
-- Changed only docs / `.env.example` / the *other* app → the platform **skips**
+- Changed only docs / `.env.example` / the _other_ app → the platform **skips**
   the build (nothing to deploy — this is expected, not a bug).
 
 **Env-var changes are the exception:** they live in the dashboards, not in git,
@@ -191,7 +191,7 @@ lockfile of its own).
 > the single service you set up with the build/start commands + env vars above,
 > and delete the auto-created extras** (Settings → Delete Service). We deploy
 > only the CMS on Railway — the web goes to Vercel, the mobile isn't deployed.
-> The service's *name* doesn't matter; what matters is that it has the correct
+> The service's _name_ doesn't matter; what matters is that it has the correct
 > config and a successful build.
 
 **Render** is equivalent: New **Web Service**, root dir `apps/cms`, same build/start
@@ -293,7 +293,7 @@ so every production deploy applies pending migrations before the new code starts
 i.e. you edit a **collection** in `apps/cms/src/collections/` (add/remove a field,
 change a type, add a collection, a relationship, an index). Everything else is a
 **normal push, no migration**: frontend changes (`apps/web`), publishing articles
-(that's *data*, done in the admin), bug fixes, config, docs.
+(that's _data_, done in the admin), bug fixes, config, docs.
 
 Schema change → generate + apply a migration:
 
@@ -309,7 +309,7 @@ safely. No manual DB surgery, no drift between dev and prod.
 
 **Is `pnpm migrate` destructive?** No — it's incremental. Adding a field is
 `ALTER TABLE ADD COLUMN`; your existing rows are kept. It never wipes data. (The
-change *itself* can be destructive, e.g. removing a field drops that column — but
+change _itself_ can be destructive, e.g. removing a field drops that column — but
 the migration file is reviewable, so there are no surprises.) The only destructive
 commands are `pnpm migrate:fresh` and `pnpm reset:db`, which you run deliberately.
 
@@ -320,11 +320,11 @@ Useful commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
 
 ## 6. Domains & DNS
 
-| Subdomain | Points to | Purpose |
-|-----------|-----------|---------|
-| `akavish.gg` (+ `www`) | Vercel | Public site |
-| `cms.akavish.gg` | Railway/Render | CMS admin + API |
-| `media.akavish.gg` | Cloudflare R2 | Media CDN (later) |
+| Subdomain              | Points to      | Purpose           |
+| ---------------------- | -------------- | ----------------- |
+| `akavish.gg` (+ `www`) | Vercel         | Public site       |
+| `cms.akavish.gg`       | Railway/Render | CMS admin + API   |
+| `media.akavish.gg`     | Cloudflare R2  | Media CDN (later) |
 
 - Add the domain in Vercel → it gives you the DNS records (A/CNAME).
 - Point `cms.akavish.gg` at the CMS host per their custom-domain docs.
@@ -354,26 +354,26 @@ Useful commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
 
 **Web (Vercel)**
 
-| Var | Example | Notes |
-|-----|---------|-------|
-| `CMS_URL` | `https://cms.akavish.gg` | Server-side fetch target |
-| `NEXT_PUBLIC_SITE_URL` | `https://akavish.gg` | Canonical/SEO base |
-| `NEXT_PUBLIC_APP_URL` | `https://akavish.gg` | |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_live_…` | **Prod** Clerk key |
-| `CLERK_SECRET_KEY` | `sk_live_…` | **Prod** Clerk key |
-| `MEILISEARCH_HOST` | `https://…meilisearch.io` | Optional |
-| `MEILISEARCH_SEARCH_KEY` | `…` | Optional, search-only key |
+| Var                                 | Example                   | Notes                     |
+| ----------------------------------- | ------------------------- | ------------------------- |
+| `CMS_URL`                           | `https://cms.akavish.gg`  | Server-side fetch target  |
+| `NEXT_PUBLIC_SITE_URL`              | `https://akavish.gg`      | Canonical/SEO base        |
+| `NEXT_PUBLIC_APP_URL`               | `https://akavish.gg`      |                           |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_live_…`               | **Prod** Clerk key        |
+| `CLERK_SECRET_KEY`                  | `sk_live_…`               | **Prod** Clerk key        |
+| `MEILISEARCH_HOST`                  | `https://…meilisearch.io` | Optional                  |
+| `MEILISEARCH_SEARCH_KEY`            | `…`                       | Optional, search-only key |
 
 **CMS (Railway/Render)**
 
-| Var | Example | Notes |
-|-----|---------|-------|
-| `DATABASE_URL` | `postgresql://…?sslmode=require` | Prod Neon |
-| `PAYLOAD_SECRET` | long random string | Generate fresh for prod |
-| `SERVER_URL` | `https://cms.akavish.gg` | The CMS's own public URL |
-| `WEB_URL` | `https://akavish.gg` | Allowed CORS/CSRF origin |
-| `MEILISEARCH_HOST` | `https://…` | Optional |
-| `MEILISEARCH_API_KEY` | master key | Optional, write access for indexing |
+| Var                   | Example                          | Notes                               |
+| --------------------- | -------------------------------- | ----------------------------------- |
+| `DATABASE_URL`        | `postgresql://…?sslmode=require` | Prod Neon                           |
+| `PAYLOAD_SECRET`      | long random string               | Generate fresh for prod             |
+| `SERVER_URL`          | `https://cms.akavish.gg`         | The CMS's own public URL            |
+| `WEB_URL`             | `https://akavish.gg`             | Allowed CORS/CSRF origin            |
+| `MEILISEARCH_HOST`    | `https://…`                      | Optional                            |
+| `MEILISEARCH_API_KEY` | master key                       | Optional, write access for indexing |
 
 ---
 
