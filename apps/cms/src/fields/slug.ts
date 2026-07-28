@@ -51,7 +51,6 @@ export const slugField = (sourceField = 'title'): Field => ({
         // L'id du document courant, pour ne pas entrer en collision avec lui-même.
         const currentId = originalDoc?.id ?? data?.id
 
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           const existing = await req.payload.find({
             collection: collectionSlug,

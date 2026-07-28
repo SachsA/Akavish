@@ -30,10 +30,9 @@ Three long-lived pieces plus supporting services:
   and optionally Meilisearch Cloud + Cloudflare.
 - A **domain** (e.g. `akavish.gg`) if you want a custom URL.
 
-> ⚠️ **Generate real DB migrations first.** In dev the CMS runs Payload in _push
-> mode_ (it auto-syncs the schema on boot). That's convenient locally but unsafe
-> in production, where an unexpected schema change can drop data. See
-> [§5 Migrations](#5-database-migrations-do-this-before-first-prod-deploy).
+> ⚠️ **Apply the committed migrations first.** Akavish uses versioned migrations
+> in every environment (`push: false`); the database schema is never auto-synced
+> on boot. See [§5 Database schema](#5-database-schema-how-tables-get-created-read-this).
 
 ---
 
@@ -81,10 +80,10 @@ That's a working production deploy. When you get `akavish.gg`, do
 (`SERVER_URL`, `WEB_URL`, `CMS_URL`, `NEXT_PUBLIC_SITE_URL`) to the real domain
 and redeploy both. Also switch Clerk to **production** keys then.
 
-> **Migrations in Phase 1:** if your prod DB already has the schema (e.g. it was
-> your old dev DB), push mode is a no-op on boot and you're fine. Adopt versioned
-> migrations ([§5](#5-database-migrations-do-this-before-first-prod-deploy))
-> before you start making schema changes against real data.
+> **Migrations:** both the dev and prod databases use the committed migration
+> history. Payload runs with `push: false`, so it never changes a schema on boot.
+> Before a brand-new database can serve the CMS, run the committed migrations as
+> described in [§5](#5-database-schema-how-tables-get-created-read-this).
 
 ---
 
@@ -109,8 +108,9 @@ cd apps/web && pnpm dev
 | **Local** (`pnpm dev`)    | **dev** Neon DB  | your local `.env` files (gitignored)      |
 | **Live** (Railway/Vercel) | **prod** Neon DB | env vars set in each platform's dashboard |
 
-Content you create locally lands in the dev DB; prod content is separate. (The
-dev DB may be empty on first run — push mode creates the tables; add test data.)
+Content you create locally lands in the dev DB; prod content is separate. On a
+brand-new dev DB, run `pnpm migrate` once before starting the CMS, then add test
+data.
 
 ### Ship to production
 
@@ -181,9 +181,9 @@ lockfile of its own).
 4. Get the public URL: **Settings → Networking → Generate Domain** →
    `https://<something>.up.railway.app`. Sanity-check it:
    `https://<url>/api/articles?limit=1` should return JSON.
-5. (Optionally) set `SERVER_URL` to that URL. On first boot the schema syncs
-   (push mode) or migrations run (see §5); then open `/admin` to create/log in as
-   the admin.
+5. (Optionally) set `SERVER_URL` to that URL. Apply the committed migrations
+   before the first boot (see §5), then open `/admin` to create/log in as the
+   admin.
 
 > ⚠️ **Railway auto-creates one service per workspace package.** Because this is
 > a pnpm monorepo, Railway may spawn extra services like `akavish-cms`,
@@ -245,16 +245,11 @@ and the search box reports "unavailable"; the rest of the site works.
 
 ## 5. Database schema: migrations (READ THIS)
 
-Payload needs the DB tables (articles, users, media…) to exist. Two mechanisms
-can create them:
-
-- **Push mode** — Payload auto-syncs the tables to your collections on boot. Zero
-  effort, but it **only runs in development** (production ignores it, even with
-  `push: true`) — so it can't manage prod. **Akavish does not use push** (see below).
-- **Migrations** — versioned SQL files (committed to git) generated once and
-  applied explicitly. Changes are reviewed and deliberate. **This is what Akavish
-  uses**, in every environment: `push: false` in `payload.config.ts`, schema =
-  the files in `apps/cms/src/migrations/`.
+Payload needs the DB tables (articles, users, media…) to exist. Akavish manages
+them exclusively with **migrations**: versioned SQL files committed to git and
+applied explicitly. This makes every schema change reviewed and repeatable in
+both dev and prod. Payload's automatic *push mode* is disabled (`push: false` in
+`payload.config.ts`), so starting the CMS never changes a database schema.
 
 ### One-time setup (adopting migrations)
 
@@ -381,7 +376,7 @@ Useful commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
 
 1. Prod Postgres (Neon).
 2. `pnpm migrate:create initial` + commit.
-3. CMS on Railway/Render (root `apps/cms`), env set, `pnpm migrate`, create admin.
+3. CMS on Railway/Render (repo root), env set, `pnpm migrate`, create admin.
 4. Web on Vercel (root `apps/web`), prod Clerk keys + `CMS_URL` + `NEXT_PUBLIC_SITE_URL`.
 5. (Optional) Meilisearch + `reindex:search`.
 6. Domains + DNS, then update URLs and redeploy.

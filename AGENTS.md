@@ -1,4 +1,4 @@
-# Working agreement for Claude on Akavish
+# Working agreement for Codex on Akavish
 
 Read this first. These are standing instructions for **every** change made to this
 repo — follow them without being asked.
@@ -9,7 +9,7 @@ Sweep this whole set every time and fix anything stale — commands, paths, port
 URLs, script names, env vars, versions:
 
 - **Markdown:** `README.md` (root), `apps/cms/README.md`, `PROGRESS.md`,
-  `DEPLOYMENT.md`, `apps/cms/CLAUDE.md`, and any other `.md`.
+  `DEPLOYMENT.md`, `apps/cms/AGENTS.md`, and any other `.md`.
 - **Env templates:** `apps/web/.env.example`, `apps/cms/.env.example`,
   `apps/mobile/.env.example` — must list every `process.env.*` / `EXPO_PUBLIC_*`
   the code actually reads, and match the DEPLOYMENT env reference tables.
@@ -73,3 +73,5 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Known gotchas** (details in `PROGRESS.md` → gotchas): media 404s in prod until
   Cloudflare R2 is wired; `shamefully-hoist` forces React-type `paths` in the web
   tsconfig (don't remove them); Node 20/22 LTS only (25 OOMs the CMS).
+
+## Imported Claude Cowork project instructions

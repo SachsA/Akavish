@@ -11,7 +11,7 @@ project is and how to run it_; this file tracks _what's done and what's left_.
 Legend: ✅ done · 🚧 in progress · ⬜ not started ·
 priorities **P1** (before launch) / **P2** (soon after) / **P3** (nice-to-have).
 
-Last updated: **2026-07-27**.
+Last updated: **2026-07-28**.
 
 ---
 
@@ -112,9 +112,9 @@ Last updated: **2026-07-27**.
 | ✅     | Root `README.md`           | Stack, structure, ports, install/dev flow, CI — points here for status                                                                                                                                             |
 | ✅     | `apps/cms/README.md`       | Akavish-specific (was the Payload blank template)                                                                                                                                                                  |
 | ✅     | `.env.example` files       | web (Clerk + CMS_URL + Meili + SITE_URL), cms (Postgres + URLs + Meili)                                                                                                                                            |
-| ✅     | `.gitignore`               | Secrets (`.env*`, `/.clerk/`), payload-types, media — verified ignored                                                                                                                                             |
+| ✅     | `.gitignore`               | Secrets (`.env*`, `/.clerk/`), payload-types, media and generated build state (`*.tsbuildinfo`) — verified ignored                                                                                                  |
 | ✅     | Reset scripts              | `pnpm clean` (build + deps) · `pnpm reset:db [URL]` (wipe any Postgres DB — dev by default or prod by URL; no psql, uses `pg`)                                                                                     |
-| ✅     | Root `CLAUDE.md`           | Working agreement: keep all docs in sync on every change, migration-vs-normal push, commit messages, project quick-reference                                                                                       |
+| ✅     | Root `CLAUDE.md` + `AGENTS.md` | Same working agreement for Claude and Codex: docs/config sweep, migration-vs-normal push, commit messages, project quick-reference                                                                            |
 | ✅     | Repo structure audit       | Removed Payload-template leftovers (`.yarnrc`, nested `docker-compose.yml`/`pnpm-workspace.yaml`, `my-route`, demo `(frontend)`, `test.env`) + stray `package-lock.json`; npm/yarn/nested lockfiles now gitignored |
 | ✅     | `packages/*` covered by CI | Each shared package now has a `tsconfig.json` + `type-check` script — previously turbo silently skipped them (no scripts = never checked)                                                                          |
 | ✅     | `PROGRESS.md`              | This file                                                                                                                                                                                                          |
@@ -124,11 +124,13 @@ Last updated: **2026-07-27**.
 | Status | Item                  | Notes                                                                                                                                                         |
 | ------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ✅     | GitHub Actions CI     | `.github/workflows/ci.yml` on push to `main` + every PR                                                                                                       |
-| ✅     | Lint + type-check job | `pnpm lint` + `pnpm type-check` (web + CMS; mobile excluded)                                                                                                  |
+| ✅     | Lint + type-check job | Lint: web + CMS. Type-check: web, CMS + all shared packages. Mobile excluded.                                                                                |
 | ✅     | Build job             | `pnpm build` (web + CMS) with a Postgres service + dummy env                                                                                                  |
 | ✅     | ESLint flat configs   | web + cms use `eslint.config.mjs` importing `eslint-config-next`'s native flat presets (no FlatCompat, no `next lint`); web bumped to `eslint-config-next@16` |
 | ✅     | Link hygiene          | Internal `<a>` → `next/link` `<Link>` across web (fixes `no-html-link-for-pages`)                                                                             |
 | ✅     | `type-check` scripts  | Added to root (turbo) and CMS                                                                                                                                 |
+| ✅     | CI runtime hygiene    | GitHub Actions uses Node 22 LTS plus Node-24-compatible action runtimes (`checkout@v5`, `setup-node@v5`, `pnpm/action-setup@v4.4.0`)                        |
+| ✅     | Workspace dependency hygiene | `@akavish/ui` explicitly declares its `@akavish/types` workspace dependency, so isolated CI installs resolve it correctly                              |
 | ✅     | pnpm 10 fix           | Moved `overrides` + `onlyBuiltDependencies` to `pnpm-workspace.yaml` (pnpm 10 ignores the `pnpm` package.json field)                                          |
 
 ## Deployment (prep)
@@ -138,7 +140,7 @@ Last updated: **2026-07-27**.
 | ✅     | Deployment guide              | `DEPLOYMENT.md` — web→Vercel, CMS→Railway, Neon, search, domains, checklist + env reference + schema/migrations explainer                        |
 | ✅     | **Deployed & LIVE (Phase 1)** | Web on Vercel (`akavish-web-puce.vercel.app`) + CMS on Railway (`akavish-production.up.railway.app`) + prod Neon DB, all serving real content 🎉 |
 | ✅     | Build resilience              | CMS fetches have an 8s timeout (`lib/payload.ts`) so a slow/down CMS never hangs the Vercel build                                                |
-| ✅     | Migration scripts             | CMS `pnpm migrate` / `migrate:create` / `migrate:status` added (not yet used — still on push mode)                                               |
+| ✅     | Versioned database migrations | CMS uses committed migrations with `push: false`; `pnpm migrate` is applied locally and by Railway before production deploys                     |
 
 ---
 
@@ -289,14 +291,11 @@ checklist it walks through.
 
 | Pri | Item                  | Notes                                                                                                                                              |
 | --- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | Host the web app      | Vercel (recommended for Next.js)                                                                                                                   |
-| P1  | Host the CMS          | Needs a long-running Node host (Railway / Render / Fly / VPS) — **not** static. Set `SERVER_URL`, `WEB_URL`, prod `DATABASE_URL`, `PAYLOAD_SECRET` |
-| P1  | Production database   | Neon/Supabase prod branch, separate from dev                                                                                                       |
-| P1  | Domain + DNS          | `akavish.gg` (web), e.g. `cms.akavish.gg` (CMS), `media.akavish.gg` (R2)                                                                           |
-| P1  | HTTPS + prod env vars | TLS on all hosts; real Clerk prod keys; prod `CMS_URL` on the web                                                                                  |
-| P2  | CDN / caching         | Cache headers + ISR tuning; R2/Cloudflare in front of media                                                                                        |
-| P2  | Mobile release        | Expo EAS build + store submission                                                                                                                  |
-| P3  | Staging environment   | Mirror of prod for QA                                                                                                                              |
+| P1  | Custom domains + DNS      | `akavish.gg` (web), e.g. `cms.akavish.gg` (CMS), then wire the production URLs                                                                    |
+| P1  | Production Clerk instance | After the custom domain, create/switch to `pk_live_…` / `sk_live_…` keys and configure Clerk's allowed origins                                    |
+| P2  | CDN / caching             | Cache headers + ISR tuning; R2/Cloudflare in front of media                                                                                        |
+| P2  | Mobile release            | Expo EAS build + store submission                                                                                                                  |
+| P3  | Staging environment       | Mirror of prod for QA                                                                                                                              |
 
 ## 9. Observability, security & legal
 

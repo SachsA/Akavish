@@ -11,6 +11,9 @@
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   },
+  "dependencies": {
+    "@akavish/types": "workspace:*"
+  },
   "scripts": {
     "type-check": "tsc --noEmit"
   },
