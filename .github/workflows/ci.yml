@@ -11,18 +11,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Fast, dependency-only gate: lint + type-check (web + CMS; mobile excluded).
+  # Fast, dependency-only gate: lint web + CMS; type-check web, CMS and shared
+  # packages. Mobile is excluded.
   quality:
     name: Lint & type-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4 # reads pnpm version from package.json
+      # v4.4+ uses the current Node 24 action runtime; pnpm itself remains pinned
+      # by package.json below.
+      - uses: pnpm/action-setup@v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
@@ -70,13 +73,15 @@ jobs:
       # Meilisearch intentionally unset — indexing/search degrade gracefully.
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      # v4.4+ uses the current Node 24 action runtime; pnpm itself remains pinned
+      # by package.json below.
+      - uses: pnpm/action-setup@v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies

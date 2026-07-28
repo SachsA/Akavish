@@ -1,9 +1,9 @@
 /**
  * Reset a Postgres database — DESTRUCTIVE.
  * Drops and recreates the `public` schema, deleting ALL data (articles, users,
- * media records… everything). The CMS runs Payload with `push: true`, so it
- * rebuilds the empty schema on its next boot; then open /admin to create a fresh
- * first user.
+ * media records… everything). The CMS uses committed migrations (`push: false`),
+ * so run `pnpm migrate` against this database after the reset; then open /admin
+ * to create a fresh first user.
  *
  * No psql needed — uses the `pg` driver bundled with the CMS.
  *
@@ -67,7 +67,7 @@ try {
   await client.connect()
   await client.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;')
   console.log('✅ Database reset to empty.')
-  console.log('   → Restart the CMS on this DB (push mode rebuilds the tables),')
+  console.log('   → Run `pnpm --filter akavish-cms migrate` to rebuild the tables,')
   console.log('     then open /admin to create a new first admin user.')
 } catch (err) {
   console.error('❌ Reset failed:', err.message)

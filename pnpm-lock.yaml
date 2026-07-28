@@ -237,6 +237,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@akavish/types':
+        specifier: workspace:*
+        version: link:../types
       react:
         specifier: ^18 || ^19
         version: 19.2.6

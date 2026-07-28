@@ -181,9 +181,9 @@ Then open `/admin` to create a fresh first admin user. See `DEPLOYMENT.md` §5.
 GitHub Actions runs on every push to `main` and every pull request
 (`.github/workflows/ci.yml`):
 
-- **Lint & type-check** — `pnpm lint` + `pnpm type-check` across the web + CMS
-  (mobile is excluded for now: it's on Expo 52 / React 18 while the rest is
-  React 19 — see `PROGRESS.md`).
+- **Lint & type-check** — lint runs on web + CMS; type-check runs on web, CMS,
+  and shared packages. Mobile is excluded for now: it's on Expo 52 / React 18
+  while the rest is React 19 (see `PROGRESS.md`).
 - **Build** — `pnpm build` (web + CMS) against a throwaway Postgres service with
   dummy env values; Meilisearch is left unset and degrades gracefully.
 
@@ -217,6 +217,7 @@ this README only covers _what the project is and how to run it_, not status.
 
 ## Contributing / working agreement
 
-[`CLAUDE.md`](./CLAUDE.md) at the repo root holds the working conventions for this
-project (keep all docs/config in sync on every change, when a change needs a DB
-migration vs a normal push, commit-message habits, and a quick project reference).
+[`CLAUDE.md`](./CLAUDE.md) and [`AGENTS.md`](./AGENTS.md) at the repo root hold
+the standing conventions for AI-assisted changes: keep all docs/config in sync,
+distinguish a DB-migration push from a normal push, and finish with an exact
+commit command.

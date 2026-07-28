@@ -15,6 +15,7 @@ packages/*/pnpm-lock.yaml
 dist
 build
 out
+*.tsbuildinfo
 
 # Turbo
 .turbo

@@ -64,8 +64,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `DEPLOYMENT.md` §5.
 - **Auth:** Clerk (readers, web) · Payload auth (CMS editors).
 - **Search:** Meilisearch (indexing hooks + `/api/search`).
-- **CI:** `.github/workflows/ci.yml` — lint + type-check + build (web + CMS;
-  mobile excluded). Uses `pnpm install --frozen-lockfile`.
+- **CI:** `.github/workflows/ci.yml` — lint web + CMS, type-check web/CMS/shared
+  packages, then build web + CMS (mobile excluded). Uses `pnpm install
+  --frozen-lockfile` on Node 22.
 - **Live:** web = `akavish-web-puce.vercel.app`, CMS = `akavish-production.up.railway.app`.
 - **Status / roadmap:** single source of truth is **`PROGRESS.md`**. Deployment
   runbook is **`DEPLOYMENT.md`**.
