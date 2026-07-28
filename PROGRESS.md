@@ -131,6 +131,7 @@ Last updated: **2026-07-28**.
 | ✅     | `type-check` scripts  | Added to root (turbo) and CMS                                                                                                                                 |
 | ✅     | CI runtime hygiene    | GitHub Actions uses Node 22 LTS plus Node-24-compatible action runtimes (`checkout@v5`, `setup-node@v5`, `pnpm/action-setup@v4.4.0`)                        |
 | ✅     | Workspace dependency hygiene | `@akavish/ui` explicitly declares its `@akavish/types` workspace dependency, so isolated CI installs resolve it correctly                              |
+| ✅     | API client type environment | `@akavish/api-client` explicitly includes DOM fetch types and Node 22 process types, so isolated CI type-checks match its web/Expo runtime contract     |
 | ✅     | pnpm 10 fix           | Moved `overrides` + `onlyBuiltDependencies` to `pnpm-workspace.yaml` (pnpm 10 ignores the `pnpm` package.json field)                                          |
 
 ## Deployment (prep)

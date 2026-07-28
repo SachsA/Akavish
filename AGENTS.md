@@ -9,7 +9,7 @@ Sweep this whole set every time and fix anything stale — commands, paths, port
 URLs, script names, env vars, versions:
 
 - **Markdown:** `README.md` (root), `apps/cms/README.md`, `PROGRESS.md`,
-  `DEPLOYMENT.md`, `apps/cms/AGENTS.md`, and any other `.md`.
+  `DEPLOYMENT.md`, `apps/cms/CLAUDE.md`, and any other `.md`.
 - **Env templates:** `apps/web/.env.example`, `apps/cms/.env.example`,
   `apps/mobile/.env.example` — must list every `process.env.*` / `EXPO_PUBLIC_*`
   the code actually reads, and match the DEPLOYMENT env reference tables.
