@@ -7,7 +7,13 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
   "dependencies": {
     "@akavish/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
   }
 }

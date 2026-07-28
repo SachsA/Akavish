@@ -113,6 +113,8 @@ Last updated: **2026-07-27**.
 | ✅ | `.gitignore` | Secrets (`.env*`, `/.clerk/`), payload-types, media — verified ignored |
 | ✅ | Reset scripts | `pnpm clean` (build + deps) · `pnpm reset:db [URL]` (wipe any Postgres DB — dev by default or prod by URL; no psql, uses `pg`) |
 | ✅ | Root `CLAUDE.md` | Working agreement: keep all docs in sync on every change, migration-vs-normal push, commit messages, project quick-reference |
+| ✅ | Repo structure audit | Removed Payload-template leftovers (`.yarnrc`, nested `docker-compose.yml`/`pnpm-workspace.yaml`, `my-route`, demo `(frontend)`, `test.env`) + stray `package-lock.json`; npm/yarn/nested lockfiles now gitignored |
+| ✅ | `packages/*` covered by CI | Each shared package now has a `tsconfig.json` + `type-check` script — previously turbo silently skipped them (no scripts = never checked) |
 | ✅ | `PROGRESS.md` | This file |
 
 ## CI/CD

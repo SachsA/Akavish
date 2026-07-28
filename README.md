@@ -31,10 +31,16 @@ akavish/
 │   ├── types/        # Shared TypeScript types
 │   ├── api-client/   # Shared API client (web & mobile consume same backend)
 │   └── ui/           # Shared React components
+├── scripts/          # Repo-level shell scripts (clean)
+├── docker-compose.yml # Local Meilisearch
 ├── turbo.json
-├── pnpm-workspace.yaml
+├── pnpm-workspace.yaml # Workspaces + pnpm overrides (single source — no nested copies)
 └── tsconfig.base.json
 ```
+
+Conventions: **one lockfile** (`pnpm-lock.yaml` at the root — npm/yarn and nested
+lockfiles are gitignored), **one Prettier config** (root `.prettierrc`), and every
+workspace exposes a `type-check` script so CI covers apps *and* shared packages.
 
 ### How the pieces talk
 

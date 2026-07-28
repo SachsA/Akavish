@@ -3,6 +3,13 @@ node_modules
 .pnp
 .pnp.js
 
+# This repo uses pnpm — only the root pnpm-lock.yaml is tracked.
+# Block npm/yarn lockfiles and any nested pnpm lockfile from sneaking back in.
+package-lock.json
+yarn.lock
+apps/*/pnpm-lock.yaml
+packages/*/pnpm-lock.yaml
+
 # Build outputs
 .next
 dist

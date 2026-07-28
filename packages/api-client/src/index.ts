@@ -19,11 +19,12 @@ async function fetcher<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!res.ok) {
-    const error: ApiError = await res.json().catch(() => ({
+    const error = await res.json().catch(() => ({
       message: 'Unknown error',
       status: res.status,
-    }))
-    throw error
+    }));
+
+    throw error as ApiError;
   }
 
   return res.json() as Promise<T>
