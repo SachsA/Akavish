@@ -3,6 +3,9 @@
 Read this first. These are standing instructions for **every** change made to this
 repo — follow them without being asked.
 
+> **Mirrored file:** [`CLAUDE.md`](./CLAUDE.md) holds the same agreement for Claude.
+> If you change one, change the other — they must not drift.
+
 ## 1. After ANY change, update & verify ALL docs/config (not just `.md`)
 
 Sweep this whole set every time and fix anything stale — commands, paths, ports,

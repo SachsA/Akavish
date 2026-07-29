@@ -220,4 +220,5 @@ this README only covers _what the project is and how to run it_, not status.
 [`CLAUDE.md`](./CLAUDE.md) and [`AGENTS.md`](./AGENTS.md) at the repo root hold
 the standing conventions for AI-assisted changes: keep all docs/config in sync,
 distinguish a DB-migration push from a normal push, and finish with an exact
-commit command.
+commit command. The two files are **mirrors** (one per assistant) — edit one,
+edit the other.
