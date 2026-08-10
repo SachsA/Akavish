@@ -65,6 +65,10 @@ files disappear on every redeploy.
   the right variant per context, so a 4 MB original is never used as the source
   for a 400px card. **Existing files keep working** (the mapper falls back to the
   original) but only get variants if you re-upload them.
+- Sharp never upscales: a variant wider than the source image comes back `null`
+  (a 480px-wide upload has no `card`/`hero`). That's expected — the web falls
+  back to the original, which is small anyway. **Upload covers around
+  1920–2560px wide** to get every variant without storing needless bulk.
 - Files are served straight from `R2_PUBLIC_URL` (Payload's file proxy is
   bypassed via `disablePayloadAccessControl`, fine since media is public).
 - `R2_ENDPOINT` is the S3 API endpoint — used for **uploads only**, never to
