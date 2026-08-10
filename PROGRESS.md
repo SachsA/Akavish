@@ -150,14 +150,18 @@ Last updated: **2026-07-28**.
 **Recommended order** — the backlog below is grouped by area; this is the order to
 actually tackle it, best value-for-effort first.
 
-| #   | Task                                | Why now                                                                                                             | Effort |
-| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                | —      |
-| 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context          | —      |
-| 3   | ⬜ Email adapter                    | Payload logs mails to the console — **no password reset possible**, so a lost admin password locks you out           | ~30 min |
-| 4   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare       | 1–2 h  |
-| 5   | ⬜ Custom domain + Clerk prod keys  | `akavish.gg` on Vercel/Railway + DNS + swap the 4 URL env vars; also unblocks reader login (broken on `.vercel.app`)  | ~1 h   |
-| 6   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                               | ~30 min |
+| #   | Task                                | Why now                                                                                                                                                | Effort |
+| --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                                                   | —      |
+| 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context                                             | —      |
+| 3   | 🔜 **Custom domain + Clerk prod**   | **Next.** `akavish.gg` on Vercel/Railway + DNS + swap the 4 URL env vars; also unblocks reader login (broken on `.vercel.app`). Domain purchase pending. | ~1 h   |
+| 4   | ⬜ Email adapter                    | Payload logs mails to the console — **no password reset possible**, so a lost admin password locks you out                                              | ~30 min |
+| 5   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare                                          | 1–2 h  |
+| 6   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                                                                  | ~30 min |
+
+> **Why domain before email:** the email provider (Resend) can only send to your
+> own address until a domain is verified. Doing the domain first means Resend is
+> configured once, against `akavish.gg`, instead of twice.
 
 Then, as it comes: SEO defaults hook · pagination · homepage hero/featured ·
 legal review of `/privacy` + `/terms` · accessibility pass · analytics ·
