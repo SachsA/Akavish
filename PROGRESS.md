@@ -150,7 +150,7 @@ Last updated: **2026-07-28**.
 | Status | Item                        | Notes                                                                                                                                                                                                                                                                 |
 | ------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ⬜     | **Phase 2 — custom domain** | Once `akavish.gg` is bought: add domains in Vercel + Railway, DNS, swap the URL env vars (`CMS_URL`, `NEXT_PUBLIC_SITE_URL`, `SERVER_URL`, `WEB_URL`), switch Clerk to prod keys.                                                                                     |
-| 🚧     | **Media on R2**             | Code wired (`@payloadcms/storage-s3` in `payload.config.ts`, env + `next/image` host). Remaining (user): create the R2 bucket + public URL + API token, set the vars on Railway/Vercel/local, `pnpm install`, redeploy. See `DEPLOYMENT.md` §4b.                       |
+| ✅     | **Media on R2**             | Live — uploads go to Cloudflare R2 and are served from `*.r2.dev`; images now survive Railway redeploys. Setup documented in `DEPLOYMENT.md` §4b.                                                                                                                       |
 | 🚧     | **Adopt migrations**        | Code done: `push: false` + `migrate*` scripts. Remaining (user runs): wipe dev → `migrate:create initial` → `migrate` → commit; wipe prod → `migrate`; set Railway pre-deploy `pnpm --filter akavish-cms migrate`; recreate admins. Full steps in `DEPLOYMENT.md` §5. |
 
 ---
@@ -212,7 +212,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 
 | Pri | Item                          | Notes                                                                   |
 | --- | ----------------------------- | ----------------------------------------------------------------------- |
-| 🚧  | Cloudflare R2 storage adapter | Plugin wired in `payload.config.ts`; needs the bucket + credentials set to go live (see In progress) |
+| ✅  | Cloudflare R2 storage adapter | Done — `@payloadcms/storage-s3` wired to R2, live in prod |
 | P1  | Image sizes / focal point     | Define `imageSizes` on the `media` collection for responsive cards      |
 | P2  | Alt text required on media    | Accessibility + SEO                                                     |
 
