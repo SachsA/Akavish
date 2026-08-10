@@ -73,8 +73,11 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Live:** web = `akavish-web-puce.vercel.app`, CMS = `akavish-production.up.railway.app`.
 - **Status / roadmap:** single source of truth is **`PROGRESS.md`**. Deployment
   runbook is **`DEPLOYMENT.md`**.
-- **Known gotchas** (details in `PROGRESS.md` → gotchas): media 404s in prod until
-  Cloudflare R2 is wired; `shamefully-hoist` forces React-type `paths` in the web
+- **Media:** uploads go to Cloudflare R2 via `@payloadcms/storage-s3` (the CMS
+  host's disk is ephemeral). Set `R2_*` on the CMS; unset `R2_BUCKET` falls back
+  to local disk. See `DEPLOYMENT.md` §4b.
+- **Known gotchas** (details in `PROGRESS.md` → gotchas):
+  `shamefully-hoist` forces React-type `paths` in the web
   tsconfig (don't remove them); Node 20/22 LTS only (25 OOMs the CMS).
 
 ## Imported Claude Cowork project instructions

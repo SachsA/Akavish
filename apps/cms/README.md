@@ -27,7 +27,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
 | `games`    | Game metadata articles can be tagged to.                                                                                                           |
 | `tags`     | Free-form taxonomy.                                                                                                                                |
-| `media`    | Uploaded images (cover images, avatars).                                                                                                           |
+| `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk).                                                                            |
 
 ### Slugs
@@ -50,6 +50,24 @@ Public (unauthenticated) read access is intentionally scoped:
 This is why the public site can render articles without a CMS login. If you add a
 new collection that the frontend needs to read, remember to set its
 `access.read` accordingly — Payload denies public reads by default.
+
+## Media storage (Cloudflare R2)
+
+Uploads are stored in an R2 bucket through its S3-compatible API, wired with
+`@payloadcms/storage-s3` in `src/payload.config.ts`. This is **required in
+production**: hosts like Railway have an ephemeral filesystem, so locally-stored
+files disappear on every redeploy.
+
+- Enabled only when `R2_BUCKET` is set — otherwise Payload falls back to local
+  disk, so a fresh clone works with no cloud setup.
+- Files are served straight from `R2_PUBLIC_URL` (Payload's file proxy is
+  bypassed via `disablePayloadAccessControl`, fine since media is public).
+- `R2_ENDPOINT` is the S3 API endpoint — used for **uploads only**, never to
+  serve files.
+
+Set the same `R2_*` values in dev and prod so the media collection's schema stays
+identical across environments. Full setup (bucket, public URL, API token) in
+[`DEPLOYMENT.md`](../../DEPLOYMENT.md) §4b.
 
 ## Search indexing (Meilisearch)
 
