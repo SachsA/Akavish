@@ -52,14 +52,40 @@ interface PayloadArticle {
   seo?: { title?: string; description?: string } | null
 }
 
-function mediaUrl(m: { url?: string } | string | null | undefined): string | undefined {
-  if (!m) return undefined
-  const raw = typeof m === 'string' ? m : m.url
+// A Payload upload doc: the original file plus the generated `imageSizes`
+// variants (thumbnail / card / hero / square — see apps/cms Media collection).
+type PayloadMedia =
+  | string
+  | {
+      url?: string
+      sizes?: Record<string, { url?: string } | undefined>
+    }
+  | null
+  | undefined
+
+type MediaSize = 'thumbnail' | 'card' | 'hero' | 'square'
+
+function absolutise(raw: string | undefined): string | undefined {
   if (!raw) return undefined
   // Payload may return a relative path (e.g. /api/media/file/x.jpg).
   // Make it absolute against the CMS origin so next/image can load it.
-  if (raw.startsWith('/')) return `${CMS_URL}${raw}`
-  return raw
+  return raw.startsWith('/') ? `${CMS_URL}${raw}` : raw
+}
+
+/**
+ * URL of an uploaded file. Pass a `preferred` size to serve a resized variant
+ * instead of the original — originals can be several MB, which is wasteful as a
+ * source for next/image. Falls back to the original when the variant is missing
+ * (e.g. files uploaded before imageSizes existed).
+ */
+function mediaUrl(m: PayloadMedia, preferred?: MediaSize): string | undefined {
+  if (!m) return undefined
+  if (typeof m === 'string') return absolutise(m)
+  if (preferred) {
+    const sized = absolutise(m.sizes?.[preferred]?.url)
+    if (sized) return sized
+  }
+  return absolutise(m.url)
 }
 
 // Normalise a raw Payload doc into the shared Article shape.
@@ -76,7 +102,9 @@ export function mapArticle(doc: PayloadArticle): Article {
     content: typeof doc.content === 'string' ? doc.content : JSON.stringify(doc.content ?? null),
     category: doc.category,
     status: doc.status,
-    coverImage: mediaUrl(doc.coverImage),
+    // 'hero' (1920w) is a good source for both the article hero (768 CSS px at
+    // 2x) and the cards, which next/image downscales from it.
+    coverImage: mediaUrl(doc.coverImage, 'hero'),
     tags: Array.isArray(doc.tags)
       ? doc.tags.map((t) => (typeof t === 'string' ? t : (t.slug ?? ''))).filter(Boolean)
       : [],
@@ -93,7 +121,7 @@ export function mapArticle(doc: PayloadArticle): Article {
       id: author ? String(author.id) : '',
       slug: author?.slug,
       name: author?.name ?? 'Akavish',
-      avatar: mediaUrl(author?.avatar),
+      avatar: mediaUrl(author?.avatar, 'square'),
       bio: author?.bio,
     },
     publishedAt: doc.publishedAt ?? undefined,
@@ -231,7 +259,7 @@ export async function fetchAuthorBySlug(slug: string): Promise<AuthorEntity | nu
     id: String(doc.id),
     slug: doc.slug,
     name: doc.name,
-    avatar: mediaUrl(doc.avatar),
+    avatar: mediaUrl(doc.avatar, 'square'),
     bio: doc.bio,
     twitter: doc.twitter,
   }
@@ -254,7 +282,8 @@ export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> 
     id: String(doc.id),
     slug: doc.slug,
     name: doc.name,
-    cover: mediaUrl(doc.cover),
+    // Game covers render at ~192 CSS px → 'card' (960w) is plenty at 2x.
+    cover: mediaUrl(doc.cover, 'card'),
     platform: doc.platform ?? [],
     genre: doc.genre ?? [],
     developer: doc.developer,

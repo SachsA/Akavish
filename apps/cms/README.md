@@ -60,6 +60,11 @@ files disappear on every redeploy.
 
 - Enabled only when `R2_BUCKET` is set — otherwise Payload falls back to local
   disk, so a fresh clone works with no cloud setup.
+- On upload, Sharp generates resized variants (`thumbnail` 480w, `card` 960w,
+  `hero` 1920w, `square` 256×256) alongside the original. The web app requests
+  the right variant per context, so a 4 MB original is never used as the source
+  for a 400px card. **Existing files keep working** (the mapper falls back to the
+  original) but only get variants if you re-upload them.
 - Files are served straight from `R2_PUBLIC_URL` (Payload's file proxy is
   bypassed via `disablePayloadAccessControl`, fine since media is public).
 - `R2_ENDPOINT` is the S3 API endpoint — used for **uploads only**, never to

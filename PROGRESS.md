@@ -147,11 +147,25 @@ Last updated: **2026-07-28**.
 
 # In progress / next up
 
-| Status | Item                        | Notes                                                                                                                                                                                                                                                                 |
-| ------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ⬜     | **Phase 2 — custom domain** | Once `akavish.gg` is bought: add domains in Vercel + Railway, DNS, swap the URL env vars (`CMS_URL`, `NEXT_PUBLIC_SITE_URL`, `SERVER_URL`, `WEB_URL`), switch Clerk to prod keys.                                                                                     |
-| ✅     | **Media on R2**             | Live — uploads go to Cloudflare R2 and are served from `*.r2.dev`; images now survive Railway redeploys. Setup documented in `DEPLOYMENT.md` §4b.                                                                                                                       |
-| ✅     | **Adopt migrations**        | Done — `push: false`, `src/migrations/` committed and applied on dev + prod. ⚠️ Verify Railway's **pre-deploy command** is set to `pnpm --filter akavish-cms migrate` so future schema changes reach prod automatically (`DEPLOYMENT.md` §5).                        |
+**Recommended order** — the backlog below is grouped by area; this is the order to
+actually tackle it, best value-for-effort first.
+
+| #   | Task                                | Why now                                                                                                             | Effort |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                | —      |
+| 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context          | —      |
+| 3   | ⬜ Email adapter                    | Payload logs mails to the console — **no password reset possible**, so a lost admin password locks you out           | ~30 min |
+| 4   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare       | 1–2 h  |
+| 5   | ⬜ Custom domain + Clerk prod keys  | `akavish.gg` on Vercel/Railway + DNS + swap the 4 URL env vars; also unblocks reader login (broken on `.vercel.app`)  | ~1 h   |
+| 6   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                               | ~30 min |
+
+Then, as it comes: SEO defaults hook · pagination · homepage hero/featured ·
+legal review of `/privacy` + `/terms` · accessibility pass · analytics ·
+mobile track (Expo SDK 53 + `api-client` shape fix) · i18n.
+
+| Status | Item            | Notes                                                                                                                                            |
+| ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ✅     | **Media on R2** | Live — uploads go to Cloudflare R2 and are served from `*.r2.dev`; images now survive Railway redeploys. Setup documented in `DEPLOYMENT.md` §4b. |
 
 ---
 
@@ -213,7 +227,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item                          | Notes                                                                   |
 | --- | ----------------------------- | ----------------------------------------------------------------------- |
 | ✅  | Cloudflare R2 storage adapter | Done — `@payloadcms/storage-s3` wired to R2, live in prod |
-| P1  | Image sizes / focal point     | Define `imageSizes` on the `media` collection — originals are served as-is today (a 3840px cover for a card thumbnail), so this is the biggest perf win now that R2 is live |
+| ✅  | Image sizes / focal point     | Done — `imageSizes` (thumbnail/card/hero/square) + focal point on the `media` collection; web requests the right variant |
 | P2  | Alt text required on media    | Accessibility + SEO                                                     |
 
 ### Operational
