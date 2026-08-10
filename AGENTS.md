@@ -76,6 +76,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Media:** uploads go to Cloudflare R2 via `@payloadcms/storage-s3` (the CMS
   host's disk is ephemeral). Set `R2_*` on the CMS; unset `R2_BUCKET` falls back
   to local disk. See `DEPLOYMENT.md` §4b.
+- **Adding/removing a Payload plugin:** always run `pnpm generate:importmap` in
+  `apps/cms` and commit the result — a stale `importMap.js` makes the admin panel
+  render a blank page.
 - **Known gotchas** (details in `PROGRESS.md` → gotchas):
   `shamefully-hoist` forces React-type `paths` in the web
   tsconfig (don't remove them); Node 20/22 LTS only (25 OOMs the CMS).

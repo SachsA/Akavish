@@ -69,6 +69,14 @@ Set the same `R2_*` values in dev and prod so the media collection's schema stay
 identical across environments. Full setup (bucket, public URL, API token) in
 [`DEPLOYMENT.md`](../../DEPLOYMENT.md) §4b.
 
+## ⚠️ After adding or removing a Payload plugin
+
+Run **`pnpm generate:importmap`** and commit the regenerated
+`src/app/(payload)/admin/importMap.js`. Payload resolves admin UI components
+through that file; if it's stale the admin panel fails to boot and renders a
+**blank page** (the server still returns HTML, so it looks like the site is up).
+Same goes for `pnpm generate:types` if you changed collections.
+
 ## Search indexing (Meilisearch)
 
 The CMS keeps a Meilisearch `articles` index in sync with published content:
