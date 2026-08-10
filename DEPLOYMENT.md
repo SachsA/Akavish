@@ -13,7 +13,7 @@ Three long-lived pieces plus supporting services:
 | **CMS** (`apps/cms`) | Payload admin + API | **Railway** or **Render** (or a VPS)                                  | Needs a **long-running Node process** — it is NOT static and won't run on Vercel's static/serverless model well. Fully standalone (no workspace deps). |
 | **Database**         | PostgreSQL          | **Neon** (or Supabase)                                                | Use a separate prod project/branch from dev.                                                                                                           |
 | **Search**           | Meilisearch         | **Meilisearch Cloud** or self-hosted (Docker on the same VPS/Railway) | Optional at launch — the site works without it, search just reports unavailable.                                                                       |
-| **Media**            | Cloudflare R2       | Cloudflare                                                            | _Not wired yet_ — see backlog. Until then, uploaded media lives on the CMS host's disk (ephemeral on some hosts).                                      |
+| **Media**            | Cloudflare R2       | Cloudflare                                                            | Uploads go to R2 via its S3-compatible API (`@payloadcms/storage-s3`). Required in prod — the CMS host's disk is ephemeral. See [§4b](#4b-media-storage-cloudflare-r2). |
 
 ```
  Reader ──▶ Vercel (web, akavish.gg) ──REST──▶ CMS host (cms.akavish.gg) ──▶ Postgres (Neon)
@@ -240,6 +240,58 @@ pnpm --filter akavish-cms reindex:search
 
 If you skip search at launch, leave `MEILISEARCH_HOST` unset — indexing is skipped
 and the search box reports "unavailable"; the rest of the site works.
+
+---
+
+## 4b. Media storage: Cloudflare R2
+
+**Why this is required in production:** Payload writes uploads to the local disk
+by default, and Railway's filesystem is **ephemeral** — every redeploy or restart
+wipes it, so article images 404. R2 is object storage: files persist and are
+served from a public URL.
+
+R2 exposes an S3-compatible API, so we use `@payloadcms/storage-s3` (the
+`@payloadcms/storage-r2` adapter is for Cloudflare Workers only). The plugin is
+wired in `apps/cms/src/payload.config.ts` and turns itself **off when `R2_BUCKET`
+is unset**, so a fresh clone still runs on local disk.
+
+### Create the bucket
+
+1. Cloudflare dashboard → **R2** → **Create bucket** (e.g. `akavish-media`).
+2. **Make the files publicly readable** — R2 buckets are private by default:
+   bucket → **Settings** → either enable the **r2.dev subdomain** (quick, gives
+   `https://<hash>.r2.dev`) or connect a **custom domain** (e.g.
+   `media.akavish.gg`). This public URL is what serves the images.
+3. **R2 → Manage API tokens** → create a token with **Object Read & Write** scoped
+   to that bucket. Note the **Access Key ID**, **Secret Access Key**, and the
+   **S3 API endpoint** (`https://<accountId>.r2.cloudflarestorage.com`).
+
+### Configure the env vars
+
+On the **CMS** (Railway variables, and `apps/cms/.env` locally):
+
+```bash
+R2_BUCKET=akavish-media
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_ENDPOINT=https://<accountId>.r2.cloudflarestorage.com   # uploads only
+R2_PUBLIC_URL=https://<hash>.r2.dev                        # serves the files
+```
+
+On the **web** (Vercel), so `next/image` is allowed to load from that host:
+
+```bash
+NEXT_PUBLIC_R2_PUBLIC_URL=https://<hash>.r2.dev
+```
+
+Redeploy both. New uploads now land in R2 and survive redeploys.
+
+> **Set the same R2 values locally too.** The storage plugin adds a `prefix`
+> field to the media collection when it's enabled — if it's on in prod but off in
+> dev, the two schemas drift. Configuring both keeps migrations honest.
+
+> **Existing images:** files uploaded before R2 lived on the old disk and are
+> already gone. Re-upload them in the admin — new ones persist.
 
 ---
 

@@ -27,6 +27,7 @@
   "dependencies": {
     "@payloadcms/next": "3.85.0",
     "@payloadcms/richtext-lexical": "3.85.0",
+    "@payloadcms/storage-s3": "3.85.0",
     "@payloadcms/ui": "3.85.0",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",

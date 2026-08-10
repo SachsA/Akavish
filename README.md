@@ -76,7 +76,9 @@ admin separately.
   [clerk.com](https://clerk.com), grab the publishable + secret keys.
 - **Meilisearch** — search. Integrated; run it locally with Docker (free,
   self-hosted). Only the managed _Meilisearch Cloud_ is paid.
-- **Cloudflare R2** _(later)_ — media storage. Stubbed in `.env`, not wired yet.
+- **Cloudflare R2** — media storage for uploads (required in production; the CMS
+  host's disk is ephemeral). See [`DEPLOYMENT.md` §4b](./DEPLOYMENT.md). Leave
+  `R2_BUCKET` unset locally to keep using local disk.
 
 **Recommended tooling**
 
