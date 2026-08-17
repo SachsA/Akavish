@@ -367,17 +367,84 @@ Useful commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
 
 ## 6. Domains & DNS
 
-| Subdomain              | Points to      | Purpose           |
-| ---------------------- | -------------- | ----------------- |
-| `akavish.gg` (+ `www`) | Vercel         | Public site       |
-| `cms.akavish.gg`       | Railway/Render | CMS admin + API   |
-| `media.akavish.gg`     | Cloudflare R2  | Media CDN (later) |
+Setup: domain registered at **Porkbun**, DNS managed by **Cloudflare** (registrar
+nameservers point to Cloudflare). Target layout:
 
-- Add the domain in Vercel → it gives you the DNS records (A/CNAME).
-- Point `cms.akavish.gg` at the CMS host per their custom-domain docs.
-- After DNS is live, update env: `NEXT_PUBLIC_SITE_URL=https://akavish.gg`,
-  `CMS_URL=https://cms.akavish.gg`, `SERVER_URL=https://cms.akavish.gg`,
-  `WEB_URL=https://akavish.gg`. Redeploy both apps so CORS/canonical/OG URLs are right.
+| Hostname               | Points to     | Purpose                    |
+| ---------------------- | ------------- | -------------------------- |
+| `akavish.gg` (+ `www`) | Vercel        | Public site                |
+| `cms.akavish.gg`       | Railway       | CMS admin + API            |
+| `media.akavish.gg`     | Cloudflare R2 | Media CDN (optional, later) |
+
+> **Proxy status: use “DNS only” (grey cloud)** for the Vercel and Railway
+> records. Both platforms terminate their own TLS and run their own CDN; putting
+> Cloudflare's orange-cloud proxy in front causes certificate errors and double
+> caching. Cloudflare still handles DNS resolution (fast, free, DNSSEC).
+
+### 6.1 Point the registrar at Cloudflare (do this first)
+
+1. Cloudflare → **Add a site** → **Connect a domain** → `akavish.gg` → Free plan.
+   Skip the DNS-record review (0 records on a fresh domain is expected).
+2. Copy the two assigned nameservers (e.g. `elaine.ns.cloudflare.com`).
+3. Porkbun → domain → **NAMESERVERS** → replace all four Porkbun entries with the
+   two Cloudflare ones → save. DNSSEC must be **off** at the registry during the
+   move (re-enable it from Cloudflare afterwards).
+4. Wait for the “site is active” email (usually 10–30 min).
+
+### 6.2 Web → Vercel
+
+1. Vercel → project → **Settings → Domains** → add `akavish.gg`, then `www.akavish.gg`
+   (accept the redirect to the apex).
+2. Vercel shows the required records → create them in **Cloudflare → DNS → Records**,
+   each set to **DNS only**.
+
+### 6.3 CMS → Railway
+
+1. Railway → service → **Settings → Networking → Custom Domain** → `cms.akavish.gg`.
+2. Railway returns a CNAME target → create the `cms` record in Cloudflare, **DNS only**.
+
+### 6.4 Environment variables (then redeploy both)
+
+| Where       | Variable               | Value                     |
+| ----------- | ---------------------- | ------------------------- |
+| Railway     | `SERVER_URL`           | `https://cms.akavish.gg`  |
+| Railway     | `WEB_URL`              | `https://akavish.gg`      |
+| Vercel      | `CMS_URL`              | `https://cms.akavish.gg`  |
+| Vercel      | `NEXT_PUBLIC_SITE_URL` | `https://akavish.gg`      |
+| Vercel      | `NEXT_PUBLIC_APP_URL`  | `https://akavish.gg`      |
+
+Env changes only apply to a new build — **redeploy Vercel and Railway** after
+saving. This is what makes canonical URLs, the sitemap, OG tags and CORS correct.
+
+### 6.5 Clerk production instance
+
+Reader login is broken on `*.vercel.app` because the dev instance only really
+works on localhost. With a real domain:
+
+1. Clerk dashboard → switch from **Development** to **Create production instance**.
+2. Add the DNS records Clerk provides (CNAMEs like `clerk.akavish.gg`) in
+   Cloudflare — follow Clerk's proxy guidance for each record.
+3. Replace the keys on Vercel with `pk_live_…` / `sk_live_…`, redeploy.
+
+### 6.6 Email on the domain (free, via Cloudflare)
+
+Cloudflare → **Email → Email Routing** → enable (it adds the MX/SPF records
+automatically), then create forwarding addresses to a personal inbox:
+
+- `hello@akavish.gg` and `tips@akavish.gg` — advertised on `/contact`
+- `privacy@akavish.gg` — advertised on `/privacy`
+
+Verify the destination inbox when Cloudflare emails you. Needed later for the
+transactional email provider (§ backlog: email adapter) to send from the domain.
+
+### 6.7 Post-cutover checks
+
+- `https://akavish.gg` serves the site; `https://cms.akavish.gg/admin` loads.
+- `https://akavish.gg/sitemap.xml` and `/robots.txt` show the **new** domain.
+- Sign-up/login works (after Clerk prod keys).
+- Mail to `hello@akavish.gg` lands in your inbox.
+- Re-enable **DNSSEC** from Cloudflare (DNS → Settings).
+- Update `apps/web/next.config.ts` / docs if the media host changes.
 
 ---
 
