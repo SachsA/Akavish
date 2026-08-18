@@ -1,6 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
+
+// Feature-detection for the Web Share API, read through useSyncExternalStore.
+//
+// The value legitimately differs between server (unknown → false) and client,
+// which is exactly what this hook exists for: it renders the server snapshot
+// during hydration, then swaps in the client one without a mismatch — and
+// without the extra render a setState-in-effect would cost.
+//
+// All three callbacks live outside the component so their identity is stable
+// across renders; an inline `subscribe` would make React resubscribe every time.
+const subscribeToNothing = () => () => {}
+const canShareOnClient = () =>
+  typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+const canShareOnServer = () => false
 
 /**
  * Share row under an article. Deliberately no third-party SDKs — those are all
@@ -17,13 +31,11 @@ import { useEffect, useState } from 'react'
  */
 export function ShareButtons({ url, title }: { url: string; title: string }) {
   const [copied, setCopied] = useState(false)
-  const [canNativeShare, setCanNativeShare] = useState(false)
-
-  // Feature-detect after mount: `navigator` doesn't exist during SSR, so
-  // branching on it at render time would break hydration.
-  useEffect(() => {
-    setCanNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function')
-  }, [])
+  const canNativeShare = useSyncExternalStore(
+    subscribeToNothing,
+    canShareOnClient,
+    canShareOnServer
+  )
 
   const encodedUrl = encodeURIComponent(url)
   const encodedTitle = encodeURIComponent(title)
