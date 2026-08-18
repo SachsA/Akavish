@@ -240,7 +240,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item                 | Notes                                                                                                          |
 | --- | -------------------- | -------------------------------------------------------------------------------------------------------------- |
 | ✅  | Email adapter        | Done — `@payloadcms/email-resend` sends password resets from `mail.akavish.gg`; falls back to console logging when `RESEND_API_KEY` is unset |
-| 🚧  | Versioned migrations | `push: false` set + `migrate*` scripts ready. Being adopted — see In progress / next up and `DEPLOYMENT.md` §5 |
+| ✅  | Versioned migrations | Done — `push: false`, migrations committed, applied locally and by Railway's pre-deploy step. See `DEPLOYMENT.md` §5 |
 | P2  | Seed script          | Script to create an admin user + sample content for fresh installs                                             |
 | P2  | Backups              | Automated DB backups (Neon has PITR; document the policy)                                                      |
 
