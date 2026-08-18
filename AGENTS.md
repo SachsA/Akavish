@@ -80,6 +80,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Media:** uploads go to Cloudflare R2 via `@payloadcms/storage-s3` (the CMS
   host's disk is ephemeral). Set `R2_*` on the CMS; unset `R2_BUCKET` falls back
   to local disk. See `DEPLOYMENT.md` §4b.
+- **Email:** two separate things — the CMS **sends** via Resend
+  (`@payloadcms/email-resend`, `RESEND_API_KEY` unset → console fallback,
+  `DEPLOYMENT.md` §4c); Cloudflare Email Routing only **receives**
+  (`DEPLOYMENT.md` §6.6).
 - **Adding/removing a Payload plugin:** always run `pnpm generate:importmap` in
   `apps/cms` and commit the result — a stale `importMap.js` makes the admin panel
   render a blank page.

@@ -63,6 +63,9 @@ jobs:
       # --- CMS ---
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/akavish_ci
       PAYLOAD_SECRET: ci_dummy_secret_not_used_in_prod
+      # R2 (media), Meilisearch (search) and Resend (email) are deliberately left
+      # unset — each turns itself off and falls back (local disk / no indexing /
+      # console-logged emails), so the build needs no third-party credentials.
       # --- Web ---
       # Canonical Clerk placeholder key — lets next build pass without real creds.
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k

@@ -15,6 +15,7 @@
 | Auth     | Clerk (readers, web + mobile) · Payload auth (CMS editors)          |
 | Search   | Meilisearch                                                         |
 | Storage  | Cloudflare R2                                                       |
+| Email    | Resend (sending) · Cloudflare Email Routing (receiving)             |
 | Hosting  | Vercel (web) + Expo EAS (mobile)                                    |
 | Monorepo | Turborepo + pnpm workspaces                                         |
 
@@ -79,6 +80,9 @@ admin separately.
 - **Cloudflare R2** — media storage for uploads (required in production; the CMS
   host's disk is ephemeral). See [`DEPLOYMENT.md` §4b](./DEPLOYMENT.md). Leave
   `R2_BUCKET` unset locally to keep using local disk.
+- **Resend** — transactional email from the CMS (password resets). Required in
+  production, see [`DEPLOYMENT.md` §4c](./DEPLOYMENT.md). Leave `RESEND_API_KEY`
+  unset locally and Payload just prints emails to the terminal.
 
 **Recommended tooling**
 

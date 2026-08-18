@@ -155,18 +155,14 @@ actually tackle it, best value-for-effort first.
 | 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                                                   | —      |
 | 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context                                             | —      |
 | 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk stays on dev keys for now (prod instance is paid, reader accounts unused) — see `DEPLOYMENT.md` §6 | —      |
-| 4   | ⬜ Email adapter                    | Payload logs mails to the console — **no password reset possible**, so a lost admin password locks you out                                              | ~30 min |
+| 4   | ✅ **Email adapter**                | Done — `@payloadcms/email-resend` wired in `payload.config.ts`; password resets are really sent. Off when `RESEND_API_KEY` is unset (console fallback). Setup + DNS in `DEPLOYMENT.md` §4c | —      |
 | 5   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare                                          | 1–2 h  |
 | 6   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                                                                  | ~30 min |
 
-> **Why the domain came first:** the email provider (Resend) can only send to your
-> own address until a domain is verified. Doing the domain first means Resend is
-> configured once, against `akavish.gg`, instead of twice — that prerequisite is
-> now satisfied.
->
-> Note that task 4 is about **sending**. Cloudflare Email Routing (already set up
-> in §3) only **receives** — it forwards `hello@`/`tips@`/`privacy@` to a personal
-> inbox and cannot send Payload's password resets.
+> **Sending vs receiving — two different things, both now in place.** Resend
+> (task 4) **sends** Payload's password resets from `mail.akavish.gg`. Cloudflare
+> Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
+> to a personal inbox. Neither can do the other's job.
 
 Then, as it comes: SEO defaults hook · pagination · homepage hero/featured ·
 legal review of `/privacy` + `/terms` · accessibility pass · analytics ·
@@ -243,7 +239,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 
 | Pri | Item                 | Notes                                                                                                          |
 | --- | -------------------- | -------------------------------------------------------------------------------------------------------------- |
-| P1  | Email adapter        | Currently logs to console — add `@payloadcms/email-nodemailer` (Resend/SES) for password resets, etc.          |
+| ✅  | Email adapter        | Done — `@payloadcms/email-resend` sends password resets from `mail.akavish.gg`; falls back to console logging when `RESEND_API_KEY` is unset |
 | 🚧  | Versioned migrations | `push: false` set + `migrate*` scripts ready. Being adopted — see In progress / next up and `DEPLOYMENT.md` §5 |
 | P2  | Seed script          | Script to create an admin user + sample content for fresh installs                                             |
 | P2  | Backups              | Automated DB backups (Neon has PITR; document the policy)                                                      |

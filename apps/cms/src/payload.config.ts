@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { resendAdapter } from '@payloadcms/email-resend'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 import path from 'path'
@@ -44,6 +45,20 @@ export default buildConfig({
     push: false,
   }),
   sharp,
+  // Transactional email (password resets, account verification) through Resend's
+  // REST API. Without an adapter Payload only *logs* emails to the console, which
+  // means a forgotten admin password is unrecoverable — hence this.
+  // Enabled only when RESEND_API_KEY is set: a fresh clone or local dev falls
+  // back to Payload's console adapter, so no cloud account is needed to work on
+  // the CMS. Mirrors how R2 storage degrades gracefully below.
+  email: process.env.RESEND_API_KEY
+    ? resendAdapter({
+        apiKey: process.env.RESEND_API_KEY,
+        // Must belong to a domain verified in Resend, otherwise sends are rejected.
+        defaultFromAddress: process.env.EMAIL_FROM_ADDRESS || 'noreply@mail.akavish.gg',
+        defaultFromName: process.env.EMAIL_FROM_NAME || 'Akavish',
+      })
+    : undefined,
   cors: [process.env.WEB_URL || 'http://localhost:3000'],
   csrf: [process.env.WEB_URL || 'http://localhost:3000'],
   plugins: [
