@@ -342,6 +342,12 @@ EMAIL_FROM_NAME=Akavish
 Redeploy the CMS. Test it end to end: `/admin` → **Forgot password** → the mail
 should land in your inbox and its link should open the reset form.
 
+> The reset email is a branded template
+> (`apps/cms/src/lib/emails/forgot-password.ts`) whose button points at
+> `${SERVER_URL}/admin/reset/<token>` — so a wrong `SERVER_URL` on Railway gives
+> you a good-looking email with a dead link. Worth clicking once after any
+> domain change.
+
 > Sends fail with a 4xx from Resend if `EMAIL_FROM_ADDRESS` isn't on a verified
 > domain — Payload surfaces it as an `APIError` in the CMS logs (§ "Where to read
 > production errors"). Until the domain is verified, Resend only accepts sends to
