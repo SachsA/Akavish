@@ -139,7 +139,7 @@ Last updated: **2026-07-28**.
 | Status | Item                          | Notes                                                                                                                                            |
 | ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | ✅     | Deployment guide              | `DEPLOYMENT.md` — web→Vercel, CMS→Railway, Neon, search, domains, checklist + env reference + schema/migrations explainer                        |
-| ✅     | **Deployed & LIVE (Phase 1)** | Web on Vercel (`akavish-web-puce.vercel.app`) + CMS on Railway (`akavish-production.up.railway.app`) + prod Neon DB, all serving real content 🎉 |
+| ✅     | **Deployed & LIVE**           | Web on Vercel (`akavish.gg`) + CMS on Railway (`cms.akavish.gg`) + prod Neon DB, all serving real content 🎉 The platform URLs still resolve but nothing links to them |
 | ✅     | Build resilience              | CMS fetches have an 8s timeout (`lib/payload.ts`) so a slow/down CMS never hangs the Vercel build                                                |
 | ✅     | Versioned database migrations | CMS uses committed migrations with `push: false`; `pnpm migrate` is applied locally and by Railway before production deploys                     |
 
@@ -154,14 +154,19 @@ actually tackle it, best value-for-effort first.
 | --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                                                   | —      |
 | 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context                                             | —      |
-| 3   | 🔜 **Custom domain + Clerk prod**   | **Next.** `akavish.gg` on Vercel/Railway + DNS + swap the 4 URL env vars; also unblocks reader login (broken on `.vercel.app`). Domain purchase pending. | ~1 h   |
+| 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk stays on dev keys for now (prod instance is paid, reader accounts unused) — see `DEPLOYMENT.md` §6 | —      |
 | 4   | ⬜ Email adapter                    | Payload logs mails to the console — **no password reset possible**, so a lost admin password locks you out                                              | ~30 min |
 | 5   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare                                          | 1–2 h  |
 | 6   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                                                                  | ~30 min |
 
-> **Why domain before email:** the email provider (Resend) can only send to your
+> **Why the domain came first:** the email provider (Resend) can only send to your
 > own address until a domain is verified. Doing the domain first means Resend is
-> configured once, against `akavish.gg`, instead of twice.
+> configured once, against `akavish.gg`, instead of twice — that prerequisite is
+> now satisfied.
+>
+> Note that task 4 is about **sending**. Cloudflare Email Routing (already set up
+> in §3) only **receives** — it forwards `hello@`/`tips@`/`privacy@` to a personal
+> inbox and cannot send Payload's password resets.
 
 Then, as it comes: SEO defaults hook · pagination · homepage hero/featured ·
 legal review of `/privacy` + `/terms` · accessibility pass · analytics ·
@@ -310,8 +315,8 @@ checklist it walks through.
 
 | Pri | Item                  | Notes                                                                                                                                              |
 | --- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | Custom domains + DNS      | `akavish.gg` (web), e.g. `cms.akavish.gg` (CMS), then wire the production URLs                                                                    |
-| P1  | Production Clerk instance | After the custom domain, create/switch to `pk_live_…` / `sk_live_…` keys and configure Clerk's allowed origins                                    |
+| ✅  | Custom domains + DNS      | Done — `akavish.gg` (web) + `cms.akavish.gg` (CMS) on Cloudflare DNS, prod URLs wired, `www` 308s to the apex, Email Routing forwarding          |
+| P2  | Production Clerk instance | Deferred on purpose — the dev instance works on the custom domain and reader accounts are unused. Switch to `pk_live_…` / `sk_live_…` (and set Clerk's allowed origins) when accounts start to matter |
 | P2  | CDN / caching             | Cache headers + ISR tuning; R2/Cloudflare in front of media                                                                                        |
 | P2  | Mobile release            | Expo EAS build + store submission                                                                                                                  |
 | P3  | Staging environment       | Mirror of prod for QA                                                                                                                              |
