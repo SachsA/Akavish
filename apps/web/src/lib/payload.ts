@@ -201,6 +201,44 @@ export async function fetchArticleBySlug(slug: string): Promise<Article | null> 
   return doc ? mapArticle(doc) : null
 }
 
+/**
+ * Search published articles through the CMS (i.e. Postgres `ILIKE`).
+ *
+ * The **fallback** used by /api/search when Meilisearch isn't configured, so
+ * site search works with zero extra infrastructure.
+ *
+ * Payload's `like` splits the query on spaces and requires *every* word to
+ * appear in the column, case-insensitively. So "gta 6" matches a title
+ * containing both "gta" and "6" in any order — but a query whose words are
+ * spread across the title *and* the excerpt won't match, since each branch of
+ * the OR is evaluated on a single column.
+ *
+ * No typo tolerance and no relevance ranking, hence newest-first ordering. Good
+ * enough at this article count; set MEILISEARCH_HOST to get the real thing.
+ */
+export async function searchArticles(q: string, limit = 20): Promise<Article[]> {
+  // Payload nests an OR group inside the top-level AND so the published filter
+  // still applies to every branch:
+  //   and[0]: status == published
+  //   and[1]: or[0] title ~ q  OR  or[1] excerpt ~ q
+  const qs = new URLSearchParams({
+    'where[and][0][status][equals]': 'published',
+    'where[and][1][or][0][title][like]': q,
+    'where[and][1][or][1][excerpt][like]': q,
+    sort: '-publishedAt',
+    depth: '1',
+    limit: String(limit),
+  })
+
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+    next: { revalidate: 30 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+
+  const json = (await res.json()) as PayloadListResponse<PayloadArticle>
+  return json.docs.map(mapArticle)
+}
+
 // ─── Entity fetchers (author / game / tag) ───────────────────────────────────
 
 export interface AuthorEntity {

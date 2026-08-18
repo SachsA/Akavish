@@ -132,7 +132,9 @@ The CMS keeps a Meilisearch `articles` index in sync with published content:
 - `Articles` collection `afterChange` / `afterDelete` hooks call the sync helpers.
   Published articles are upserted; drafts/archived are removed from the index.
 - Indexing is **best-effort** — if `MEILISEARCH_HOST` is unset or Meilisearch is
-  down, edits still succeed (errors are logged, not thrown).
+  down, edits still succeed (errors are logged, not thrown). The web app's
+  `/api/search` then falls back to querying this CMS directly (Postgres
+  `ILIKE`), so site search keeps working without Meilisearch at all.
 
 Set `MEILISEARCH_HOST` + `MEILISEARCH_API_KEY` (master key) in `.env`. Run
 `docker compose up -d` from the repo root to start Meilisearch locally, then

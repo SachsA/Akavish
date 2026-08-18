@@ -84,6 +84,7 @@ Last updated: **2026-07-28**.
 | ✅     | CMS indexing    | `meilisearch` client + `afterChange`/`afterDelete` hooks on Articles (published → upsert, else remove); best-effort |
 | ✅     | Backfill script | `pnpm reindex:search` (CMS) re-creates index settings + indexes all published articles                              |
 | ✅     | Search API      | `app/api/search/route.ts` proxies queries server-side; key never exposed                                            |
+| ✅     | CMS fallback    | No Meilisearch (or Meilisearch down/unindexed) → `/api/search` queries the CMS instead (Postgres `ILIKE` on title + excerpt). Search never hard-fails; the response's `engine` field says which backend answered |
 | ✅     | Search UI       | Header `SearchBar` + `/search` results page (robots: noindex)                                                       |
 | ✅     | Local infra     | `docker-compose.yml` runs Meilisearch on :7700; env wired in both `.env.example`                                    |
 
@@ -156,8 +157,10 @@ actually tackle it, best value-for-effort first.
 | 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context                                             | —      |
 | 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk stays on dev keys for now (prod instance is paid, reader accounts unused) — see `DEPLOYMENT.md` §6 | —      |
 | 4   | ✅ **Email adapter**                | Done — `@payloadcms/email-resend` wired in `payload.config.ts`; password resets are really sent, with a branded HTML template (`lib/emails/forgot-password.ts`). Off when `RESEND_API_KEY` is unset (console fallback). Setup + DNS in `DEPLOYMENT.md` §4c | —      |
-| 5   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare                                          | 1–2 h  |
-| 6   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                                                                  | ~30 min |
+| 5   | ✅ **Search works in prod**         | Done — `/api/search` falls back to the CMS (Postgres `ILIKE`) when Meilisearch isn't configured, and when it errors. The header search box was returning 503 on every page; now it works for free. `DEPLOYMENT.md` §4 | —      |
+| 6   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare                                          | 1–2 h  |
+| 7   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                                                                  | ~30 min |
+| 8   | ⬜ Legal content review             | `/privacy` + `/terms` are placeholder templates — real text needed before pushing traffic                                                                | ?      |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
 > (task 4) **sends** Payload's password resets from `mail.akavish.gg`. Cloudflare
@@ -250,7 +253,7 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 
 | Pri | Item                        | Notes                                                           |
 | --- | --------------------------- | --------------------------------------------------------------- |
-| P2  | Hosted Meilisearch for prod | Meilisearch Cloud or self-hosted; set prod host + keys          |
+| P3  | Hosted Meilisearch for prod | No longer urgent — `/api/search` falls back to the CMS (Postgres `ILIKE`), so search works in prod for free. Upgrade when article volume makes typo tolerance and ranking worth $20+/mo (Cloud has no free tier) or self-host on Railway |
 | P3  | Search-only API key         | Generate a scoped key in prod instead of reusing the master key |
 | P3  | Typeahead / filters         | Instant results in the header, filter by category/game          |
 

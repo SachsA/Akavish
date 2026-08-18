@@ -1,4 +1,5 @@
 import { MeiliSearch } from 'meilisearch'
+import type { Article } from '@akavish/types'
 
 export const ARTICLES_INDEX = 'articles'
 
@@ -12,6 +13,26 @@ export interface SearchHit {
   author?: string
   game?: string
   coverImage?: string
+}
+
+/** Which backend answered a query — surfaced by /api/search for debugging. */
+export type SearchEngine = 'cms' | 'meilisearch'
+
+/**
+ * Shape an article fetched from the CMS like a Meilisearch hit, so the client
+ * renders both backends identically.
+ */
+export function articleToSearchHit(article: Article): SearchHit {
+  return {
+    id: article.id,
+    slug: article.slug,
+    title: article.title,
+    excerpt: article.excerpt,
+    category: article.category,
+    author: article.author?.name,
+    game: article.game?.name,
+    coverImage: article.coverImage,
+  }
 }
 
 let client: MeiliSearch | null = null

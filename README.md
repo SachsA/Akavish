@@ -13,7 +13,7 @@
 | Mobile   | React Native + Expo + expo-router                                   |
 | Database | PostgreSQL (Neon/Supabase)                                          |
 | Auth     | Clerk (readers, web + mobile) · Payload auth (CMS editors)          |
-| Search   | Meilisearch                                                         |
+| Search   | CMS/Postgres by default · Meilisearch when configured               |
 | Storage  | Cloudflare R2                                                       |
 | Email    | Resend (sending) · Cloudflare Email Routing (receiving)             |
 | Hosting  | Vercel (web) + Expo EAS (mobile)                                    |
@@ -129,10 +129,22 @@ cd apps/web && pnpm dev
 > Articles only appear on the site once their **status is `Published`** in the
 > CMS. Drafts are visible to logged-in editors only.
 
-#### Search (Meilisearch)
+#### Search
 
-Site search is powered by Meilisearch. Start it with Docker, then point both
-apps at it (the keys are already stubbed in the `.env.example` files):
+The header search box and `/search` both hit `/api/search`, which has two
+backends and uses whichever is available:
+
+- **No setup (default)** — queries the CMS, i.e. Postgres `ILIKE` on title and
+  excerpt (every word of the query must appear), newest first. Works out of the
+  box, nothing to run.
+- **Meilisearch** — used as soon as `MEILISEARCH_HOST` is set. Adds typo
+  tolerance and relevance ranking.
+
+So search is never broken: if Meilisearch is configured but down (or its index
+was never built), the route falls back to the CMS instead of erroring.
+
+To run Meilisearch locally (the keys are already stubbed in the `.env.example`
+files):
 
 ```bash
 # From the repo root — starts Meilisearch on http://localhost:7700
@@ -143,10 +155,10 @@ cd apps/cms && pnpm reindex:search
 ```
 
 After that, publishing/editing an article in the CMS keeps the index in sync
-**automatically** (Payload hooks) — no manual step in normal use. The web app
-searches via `/api/search` and the header search box / `/search` page. If
-`MEILISEARCH_HOST` is unset, indexing is skipped and search reports as
-unavailable — the rest of the site works normally.
+**automatically** (Payload hooks) — no manual step in normal use.
+
+`/api/search` reports which backend answered in its `engine` field
+(`"cms"` or `"meilisearch"`), which is the quickest way to check your setup.
 
 `pnpm reindex:search` is only a one-off catch-up: first setup, after a DB/index
 wipe (`pnpm reset:db`), or to repair a desync if Meilisearch was down during a
