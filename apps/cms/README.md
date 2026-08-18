@@ -28,7 +28,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `games`    | Game metadata articles can be tagged to.                                                                                                           |
 | `tags`     | Free-form taxonomy.                                                                                                                                |
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
-| `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk).                                                                            |
+| `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). Password resets go out via Resend — see below.                             |
 
 ### Slugs
 
@@ -77,6 +77,25 @@ files disappear on every redeploy.
 Set the same `R2_*` values in dev and prod so the media collection's schema stays
 identical across environments. Full setup (bucket, public URL, API token) in
 [`DEPLOYMENT.md`](../../DEPLOYMENT.md) §4b.
+
+## Transactional email (Resend)
+
+Password resets and account verification are sent through Resend's REST API via
+`@payloadcms/email-resend`, configured in `src/payload.config.ts`.
+
+- Enabled only when `RESEND_API_KEY` is set. Unset, Payload falls back to its
+  **console adapter**: emails are printed to the terminal, not sent. That's fine
+  locally, but in production it means the "forgot password" flow looks like it
+  works while the reset link never arrives — and a lost admin password locks you
+  out for good.
+- `EMAIL_FROM_ADDRESS` must belong to a domain verified in Resend
+  (`mail.akavish.gg`), otherwise Resend rejects the send and Payload logs an
+  `APIError`. `EMAIL_FROM_NAME` is the display name.
+- This handles **sending** only. Incoming mail to `hello@` / `tips@` / `privacy@`
+  is Cloudflare Email Routing, which is a separate, receive-only thing.
+
+Domain verification and the DNS records are in
+[`DEPLOYMENT.md`](../../DEPLOYMENT.md) §4c.
 
 ## ⚠️ After adding or removing a Payload plugin
 

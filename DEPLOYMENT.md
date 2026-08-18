@@ -14,6 +14,8 @@ Three long-lived pieces plus supporting services:
 | **Database**         | PostgreSQL          | **Neon** (or Supabase)                                                | Use a separate prod project/branch from dev.                                                                                                           |
 | **Search**           | Meilisearch         | **Meilisearch Cloud** or self-hosted (Docker on the same VPS/Railway) | Optional at launch — the site works without it, search just reports unavailable.                                                                       |
 | **Media**            | Cloudflare R2       | Cloudflare                                                            | Uploads go to R2 via its S3-compatible API (`@payloadcms/storage-s3`). Required in prod — the CMS host's disk is ephemeral. See [§4b](#4b-media-storage-cloudflare-r2). |
+| **Email (send)**     | Resend              | Resend                                                                | Transactional mail from the CMS (`@payloadcms/email-resend`). Required in prod — without it password resets silently go nowhere. See [§4c](#4c-transactional-email-resend). |
+| **Email (receive)**  | Cloudflare Email Routing | Cloudflare                                                       | Forwards `hello@`/`tips@`/`privacy@` to a personal inbox. Receive-only. See [§6.6](#66-email-on-the-domain-free-via-cloudflare). |
 
 ```
  Reader ──▶ Vercel (web, akavish.gg) ──REST──▶ CMS host (cms.akavish.gg) ──▶ Postgres (Neon)
@@ -296,6 +298,57 @@ Redeploy both. New uploads now land in R2 and survive redeploys.
 
 ---
 
+## 4c. Transactional email: Resend
+
+**Why this matters:** with no email adapter Payload doesn't fail loudly — it just
+**logs emails to the console**. The "forgot password" flow appears to work while
+the reset link goes nowhere, so a lost admin password locks you out of `/admin`
+permanently. This is the only thing standing between you and that.
+
+`@payloadcms/email-resend` talks to Resend's REST API (no SMTP). It's wired in
+`apps/cms/src/payload.config.ts` and turns itself **off when `RESEND_API_KEY` is
+unset**, falling back to console logging — so a fresh clone runs with no account.
+
+> Not to be confused with **Cloudflare Email Routing** (§6.6), which only
+> **receives** and forwards `hello@`/`tips@`/`privacy@` to a personal inbox.
+> Resend only **sends**. You need both; they don't overlap.
+
+### Verify a sending domain
+
+1. [resend.com](https://resend.com) → sign up (free tier: 3 000 emails/month,
+   100/day) → **Domains → Add Domain**.
+2. Use the **subdomain `mail.akavish.gg`**, not the apex. Resend recommends a
+   subdomain to isolate sending reputation, and it keeps Resend's records well
+   clear of the Cloudflare Email Routing records already sitting on the apex.
+3. Resend lists DNS records (MX + SPF `TXT` + DKIM `TXT`) → add them in
+   **Cloudflare → DNS → Records**, each **DNS only** (grey cloud).
+
+   ⚠️ Before saving, check that none of them is an **MX on the apex
+   `akavish.gg`** — that would fight with Email Routing and break incoming mail.
+   Scoped to `mail.akavish.gg`, they can't collide.
+4. Wait for the domain to read **Verified**, then **API Keys → Create API Key**
+   (*Sending access* is enough).
+
+### Configure the env vars
+
+On the **CMS** (Railway variables, and `apps/cms/.env` locally):
+
+```bash
+RESEND_API_KEY=re_...
+EMAIL_FROM_ADDRESS=noreply@mail.akavish.gg   # must be on the verified domain
+EMAIL_FROM_NAME=Akavish
+```
+
+Redeploy the CMS. Test it end to end: `/admin` → **Forgot password** → the mail
+should land in your inbox and its link should open the reset form.
+
+> Sends fail with a 4xx from Resend if `EMAIL_FROM_ADDRESS` isn't on a verified
+> domain — Payload surfaces it as an `APIError` in the CMS logs (§ "Where to read
+> production errors"). Until the domain is verified, Resend only accepts sends to
+> your own account address, so test with that.
+
+---
+
 ## 5. Database schema: migrations (READ THIS)
 
 Payload needs the DB tables (articles, users, media…) to exist. Akavish manages
@@ -496,8 +549,9 @@ domain change:
 - [ ] CORS: the CMS `WEB_URL` matches the live web origin (else the browser
       blocks client calls — server-side fetches are unaffected).
 - [ ] Search backfilled (if enabled) and the header search returns results.
-- [ ] Set an **email adapter** on the CMS (see backlog) so password resets work —
-      by default Payload logs emails to the console.
+- [ ] `RESEND_API_KEY` set on the CMS and **"Forgot password" actually delivers a
+      mail** (§4c). Without it Payload silently logs emails to the console and a
+      lost admin password is unrecoverable.
 
 ---
 
@@ -525,6 +579,14 @@ domain change:
 | `WEB_URL`             | `https://akavish.gg`             | Allowed CORS/CSRF origin            |
 | `MEILISEARCH_HOST`    | `https://…`                      | Optional                            |
 | `MEILISEARCH_API_KEY` | master key                       | Optional, write access for indexing |
+| `RESEND_API_KEY`      | `re_…`                           | Unset → emails only logged (§4c)    |
+| `EMAIL_FROM_ADDRESS`  | `noreply@mail.akavish.gg`        | Must be on a Resend-verified domain |
+| `EMAIL_FROM_NAME`     | `Akavish`                        | Display name on outgoing mail       |
+| `R2_BUCKET`           | `akavish-media`                  | Unset → local disk (§4b)            |
+| `R2_ACCESS_KEY_ID`    | `…`                              | R2 API token                        |
+| `R2_SECRET_ACCESS_KEY`| `…`                              | R2 API token                        |
+| `R2_ENDPOINT`         | `https://<accountId>.r2.cloudflarestorage.com` | Uploads only          |
+| `R2_PUBLIC_URL`       | `https://<hash>.r2.dev`          | Serves the files                    |
 
 ---
 
@@ -533,7 +595,8 @@ domain change:
 1. Prod Postgres (Neon).
 2. `pnpm migrate:create initial` + commit.
 3. CMS on Railway/Render (repo root), env set, `pnpm migrate`, create admin.
-4. Web on Vercel (root `apps/web`), prod Clerk keys + `CMS_URL` + `NEXT_PUBLIC_SITE_URL`.
-5. (Optional) Meilisearch + `reindex:search`.
-6. Domains + DNS, then update URLs and redeploy.
-7. Walk the post-deploy checklist.
+4. Web on Vercel (root `apps/web`), Clerk keys + `CMS_URL` + `NEXT_PUBLIC_SITE_URL`.
+5. R2 for media (§4b) + Resend for email (§4c) — both required in prod.
+6. (Optional) Meilisearch + `reindex:search`.
+7. Domains + DNS, then update URLs and redeploy.
+8. Walk the post-deploy checklist.
