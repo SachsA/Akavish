@@ -97,6 +97,24 @@ Password resets and account verification are sent through Resend's REST API via
 Domain verification and the DNS records are in
 [`DEPLOYMENT.md`](../../DEPLOYMENT.md) §4c.
 
+### The "forgot password" email
+
+`src/lib/emails/forgot-password.ts` holds a branded HTML template (table layout +
+inline styles, for email-client compatibility) that replaces Payload's bare
+default. It's wired through `auth.forgotPassword` in `collections/Users.ts`.
+
+The link points at `${serverURL}/admin/reset/<token>` — the same target as the
+default — so `SERVER_URL` must be right in production or the button leads
+nowhere. Validity is `FORGOT_PASSWORD_EXPIRATION_MS` (1 hour), exported from the
+template module so the config and the "expires in one hour" copy can't drift.
+
+> `auth.forgotPassword` is **runtime config, not fields** — it adds no columns,
+> so editing it needs no migration. What *would*: `verify`, `loginWithUsername`,
+> `useAPIKey`, `useSessions`. See [`CLAUDE.md`](../../CLAUDE.md) §2.
+
+Only CMS editors ever receive this; reader accounts are handled by Clerk on the
+web app and never touch Payload auth.
+
 ## ⚠️ After adding or removing a Payload plugin
 
 Run **`pnpm generate:importmap`** and commit the regenerated

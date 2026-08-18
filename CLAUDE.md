@@ -35,7 +35,13 @@ backlog) and the READMEs in sync with the real code state. **Doc upkeep is part 
 
 - **🟠 Migration push** — only when a **DB-shape change** is made, i.e. editing a
   collection in `apps/cms/src/collections/` (add/remove field, change type, add a
-  collection/relationship/index). Then, before committing:
+  collection/relationship/index). On an auth collection, `verify`,
+  `loginWithUsername`, `useAPIKey` and `useSessions` also change the shape.
+  Touching a collection file is **not** by itself a migration: runtime-only
+  config (access control, hooks, admin options, `auth.forgotPassword` email
+  templates) adds no columns. When unsure, run `pnpm migrate:create check` — an
+  empty up/down proves there's nothing to migrate; delete it and push 🟢.
+  Then, before committing:
   ```bash
   cd apps/cms && pnpm migrate:create <name> && pnpm migrate
   ```
