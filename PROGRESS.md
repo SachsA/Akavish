@@ -65,6 +65,7 @@ Last updated: **2026-07-28**.
 | ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
 | ✅     | `tsconfig` baseUrl fix                | `@/*` alias now resolves reliably at build                                          |
 | ✅     | Article page polish                   | Reading time (`lib/reading-time.ts`), share row (`ShareButtons`), "Read next" suggestions and prev/next nav (`fetchRelatedArticles` / `fetchAdjacentArticles`) |
+| ✅     | Share targets                         | X, Reddit, Bluesky, WhatsApp + copy link, plus the **Web Share API** sheet where supported. No Discord/Messenger buttons on purpose: Discord has no web share intent, and Messenger's Send Dialog needs a Facebook App ID and doesn't work on mobile — the native sheet covers both |
 
 ### SEO
 
@@ -189,7 +190,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 | Pri | Item                         | Notes                                                                                       |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------- |
-| ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/copy link), "Read next" suggestions and prev/next navigation |
+| ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/WhatsApp + native share sheet + copy link), "Read next" suggestions and prev/next navigation |
 | P2  | Legal content review         | `/privacy` and `/terms` are placeholder templates — need real legal text before launch      |
 | P2  | Pagination / infinite scroll | Home + category + tag pages currently cap at N items                                        |
 | P2  | Homepage layout pass         | Featured/hero article, “trending”, section blocks instead of one flat grid                  |
