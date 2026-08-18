@@ -64,6 +64,7 @@ Last updated: **2026-07-28**.
 | ✅     | Loading states                        | `loading.tsx` + `CardGridSkeleton` on home, category, article, author, game, tag    |
 | ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
 | ✅     | `tsconfig` baseUrl fix                | `@/*` alias now resolves reliably at build                                          |
+| ✅     | Article page polish                   | Reading time (`lib/reading-time.ts`), share row (`ShareButtons`), "Read next" suggestions and prev/next nav (`fetchRelatedArticles` / `fetchAdjacentArticles`) |
 
 ### SEO
 
@@ -75,7 +76,7 @@ Last updated: **2026-07-28**.
 | ✅     | Canonical URLs               | `alternates.canonical` on home, article, category, author, game, tag                       |
 | ✅     | CMS `seo` fields used        | Article metadata prefers `seo.title` / `seo.description`, falls back to title/excerpt      |
 | ✅     | Dynamic OG images            | `app/article/[slug]/opengraph-image.tsx` via `next/og` (branded, per-article)              |
-| ✅     | JSON-LD                      | `NewsArticle` structured data on article pages                                             |
+| ✅     | JSON-LD                      | `NewsArticle` structured data on article pages, incl. `wordCount` + `timeRequired`         |
 
 ### Search (Meilisearch)
 
@@ -158,7 +159,7 @@ actually tackle it, best value-for-effort first.
 | 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk stays on dev keys for now (prod instance is paid, reader accounts unused) — see `DEPLOYMENT.md` §6 | —      |
 | 4   | ✅ **Email adapter**                | Done — `@payloadcms/email-resend` wired in `payload.config.ts`; password resets are really sent, with a branded HTML template (`lib/emails/forgot-password.ts`). Off when `RESEND_API_KEY` is unset (console fallback). Setup + DNS in `DEPLOYMENT.md` §4c | —      |
 | 5   | ✅ **Search works in prod**         | Done — `/api/search` falls back to the CMS (Postgres `ILIKE`) when Meilisearch isn't configured, and when it errors. The header search box was returning 503 on every page; now it works for free. `DEPLOYMENT.md` §4 | —      |
-| 6   | ⬜ Article page polish              | Reading time, share buttons, related articles, prev/next — the page that matters most to readers is still bare                                          | 1–2 h  |
+| 6   | ✅ **Article page polish**          | Done — reading time (+ `wordCount`/`timeRequired` in the JSON-LD), share row, "Read next" suggestions, prev/next nav. Suggestions fail soft: a CMS error drops them instead of breaking the page | —      |
 | 7   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                                                                  | ~30 min |
 | 8   | ⬜ Legal content review             | `/privacy` + `/terms` are placeholder templates — real text needed before pushing traffic                                                                | ?      |
 
@@ -168,8 +169,8 @@ actually tackle it, best value-for-effort first.
 > to a personal inbox. Neither can do the other's job.
 
 Then, as it comes: SEO defaults hook · pagination · homepage hero/featured ·
-legal review of `/privacy` + `/terms` · accessibility pass · analytics ·
-mobile track (Expo SDK 53 + `api-client` shape fix) · i18n.
+accessibility pass · analytics · mobile track (Expo SDK 53 + `api-client` shape
+fix) · i18n · comments (see §5 — needs traffic and paid Clerk first).
 
 | Status | Item            | Notes                                                                                                                                            |
 | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -188,7 +189,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 | Pri | Item                         | Notes                                                                                       |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------- |
-| P1  | Single article polish        | Reading time, share buttons, related articles, prev/next (author/game byline links ✅ done) |
+| ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/copy link), "Read next" suggestions and prev/next navigation |
 | P2  | Legal content review         | `/privacy` and `/terms` are placeholder templates — need real legal text before launch      |
 | P2  | Pagination / infinite scroll | Home + category + tag pages currently cap at N items                                        |
 | P2  | Homepage layout pass         | Featured/hero article, “trending”, section blocks instead of one flat grid                  |
@@ -266,6 +267,7 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 | P2  | Clerk on mobile           | Reader auth parity in the Expo app                            |
 | P3  | Saved/bookmarked articles | Per-user, needs the DB link above                             |
 | P3  | Social login providers    | Configure Google/Discord/etc. in Clerk                        |
+| P3  | **Comments**              | Deliberately deferred until there's traffic — an empty comment box under every article reads worse than none. Two costs to accept first: it forces **Clerk production keys** (paid), and a Payload `comments` collection is a 🟠 migration plus moderation, rate limiting and anti-spam to build. Third-party alternatives: Giscus (free but requires a GitHub account, poor fit for gaming readers) or Hyvor (~5 €/mo, Clerk-independent) |
 
 ## 6. Internationalization (EN + FR)
 

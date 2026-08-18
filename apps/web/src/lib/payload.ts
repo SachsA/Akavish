@@ -239,6 +239,99 @@ export async function searchArticles(q: string, limit = 20): Promise<Article[]> 
   return json.docs.map(mapArticle)
 }
 
+// ─── Article page: related + previous/next ───────────────────────────────────
+
+/** Run an articles query and map the results. Shared by the helpers below. */
+async function fetchArticleList(qs: URLSearchParams): Promise<Article[]> {
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+    next: { revalidate: 30 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<PayloadArticle>
+  return json.docs.map(mapArticle)
+}
+
+/** Published + "not this article" — the base of every query on this page. */
+function baseParams(excludeId: string): URLSearchParams {
+  const qs = new URLSearchParams({
+    'where[and][0][status][equals]': 'published',
+    'where[and][1][id][not_equals]': excludeId,
+    depth: '1',
+  })
+  return qs
+}
+
+/**
+ * Articles to suggest at the end of `article`.
+ *
+ * Same game first (the strongest signal a reader cares about), then topped up
+ * with the same category so the section is never half-empty on a game with only
+ * one article. Returns fewer than `limit` — or nothing — rather than padding
+ * with unrelated content.
+ */
+export async function fetchRelatedArticles(article: Article, limit = 3): Promise<Article[]> {
+  const collected: Article[] = []
+  const seen = new Set<string>([article.id])
+
+  const push = (articles: Article[]) => {
+    for (const a of articles) {
+      if (collected.length >= limit) return
+      if (seen.has(a.id)) continue
+      seen.add(a.id)
+      collected.push(a)
+    }
+  }
+
+  if (article.game?.id) {
+    const qs = baseParams(article.id)
+    qs.set('where[and][2][game][equals]', article.game.id)
+    qs.set('sort', '-publishedAt')
+    qs.set('limit', String(limit))
+    push(await fetchArticleList(qs))
+  }
+
+  if (collected.length < limit) {
+    const qs = baseParams(article.id)
+    qs.set('where[and][2][category][equals]', article.category)
+    qs.set('sort', '-publishedAt')
+    // Over-fetch a little: some results may already be in `collected`.
+    qs.set('limit', String(limit * 2))
+    push(await fetchArticleList(qs))
+  }
+
+  return collected
+}
+
+/**
+ * The articles published immediately before and after this one, for the
+ * prev/next footer. `previous` is older, `next` is newer — reading order.
+ *
+ * Unpublished articles have no `publishedAt` to compare against, so they get no
+ * neighbours.
+ */
+export async function fetchAdjacentArticles(
+  article: Article
+): Promise<{ next: Article | null; previous: Article | null }> {
+  if (!article.publishedAt) return { next: null, previous: null }
+
+  const olderParams = baseParams(article.id)
+  olderParams.set('where[and][2][publishedAt][less_than]', article.publishedAt)
+  olderParams.set('sort', '-publishedAt')
+  olderParams.set('limit', '1')
+
+  const newerParams = baseParams(article.id)
+  newerParams.set('where[and][2][publishedAt][greater_than]', article.publishedAt)
+  newerParams.set('sort', 'publishedAt')
+  newerParams.set('limit', '1')
+
+  const [older, newer] = await Promise.all([
+    fetchArticleList(olderParams),
+    fetchArticleList(newerParams),
+  ])
+
+  return { next: newer[0] ?? null, previous: older[0] ?? null }
+}
+
 // ─── Entity fetchers (author / game / tag) ───────────────────────────────────
 
 export interface AuthorEntity {
