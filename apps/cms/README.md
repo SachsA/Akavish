@@ -23,7 +23,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 
 | Collection | Notes                                                                                                                                              |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), author, game, tags, SEO. Versioned with drafts. |
+| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), author, game, tags, SEO. Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
 | `games`    | Game metadata articles can be tagged to.                                                                                                           |
 | `tags`     | Free-form taxonomy.                                                                                                                                |
@@ -37,6 +37,21 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 (title for articles, name for the rest) when left empty, stays **manually
 editable**, and **auto-deduplicates** with a numeric suffix (`-2`, `-3`, …) on
 collision. Existing docs keep their slug until re-saved.
+
+### `publishedAt` is stamped automatically
+
+A `beforeChange` hook on `articles` sets `publishedAt` the first time an article
+reaches `status: published`, if the field is empty. It's still editable — set it
+by hand to override, e.g. to backdate an import.
+
+This exists because the field used to be filled manually and, predictably, wasn't:
+every early article shipped with a null date. That silently cost the byline date,
+`datePublished` in the article JSON-LD (what Google leans on hardest for news),
+the prev/next navigation on the article page, and any meaningful `-publishedAt`
+ordering — the sort the whole site uses.
+
+Re-saving an already-published article that has no date backfills it from
+`createdAt` rather than today, so fixing old content doesn't rewrite its history.
 
 ## Access control
 

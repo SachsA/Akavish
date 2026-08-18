@@ -21,6 +21,28 @@ export const Articles: CollectionConfig = {
   },
   versions: { drafts: true },
   hooks: {
+    // Stamp `publishedAt` automatically. It used to be a sidebar field editors
+    // had to remember, and in practice nobody did — every early article shipped
+    // with a null date, which cost the byline date, `datePublished` in the
+    // JSON-LD (the field Google leans on hardest for news), the prev/next
+    // navigation, and any meaningful `-publishedAt` ordering.
+    beforeChange: [
+      ({ data, originalDoc }) => {
+        if (data.status !== 'published' || data.publishedAt) return data
+
+        // Already published but undated = written before this hook existed.
+        // Fall back to its creation time so re-saving an old piece doesn't
+        // restamp it with today. A genuine draft→published transition is
+        // happening now, so it gets now.
+        const isBackfill = originalDoc?.status === 'published'
+        data.publishedAt =
+          isBackfill && originalDoc?.createdAt
+            ? originalDoc.createdAt
+            : new Date().toISOString()
+
+        return data
+      },
+    ],
     // Keep the Meilisearch index in sync. Best-effort: runs after the response,
     // failures are logged inside the sync helpers and never block editing.
     afterChange: [
@@ -68,7 +90,12 @@ export const Articles: CollectionConfig = {
     },
     {
       name: 'publishedAt', type: 'date',
-      admin: { position: 'sidebar', date: { pickerAppearance: 'dayAndTime' } },
+      admin: {
+        position: 'sidebar',
+        date: { pickerAppearance: 'dayAndTime' },
+        description:
+          'Filled in automatically when the article is first published. Set it by hand only to override that date.',
+      },
     },
     { name: 'author', type: 'relationship', relationTo: 'authors', required: true, admin: { position: 'sidebar' } },
     { name: 'game', type: 'relationship', relationTo: 'games', admin: { position: 'sidebar' } },

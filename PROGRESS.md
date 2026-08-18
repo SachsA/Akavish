@@ -223,6 +223,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 
 | Pri | Item                          | Notes                                                                          |
 | --- | ----------------------------- | ------------------------------------------------------------------------------ |
+| ✅  | Auto `publishedAt`            | `beforeChange` hook stamps the publish date; re-saving an undated published article backfills from `createdAt`. Fixes the missing byline date, JSON-LD `datePublished`, prev/next nav and `-publishedAt` sorting |
 | P1  | Required SEO defaults         | Auto-fill `seo.title`/`description` from title/excerpt via a hook if empty     |
 | P1  | Author ↔ user link            | Connect a CMS `user` (editor) to an `author` profile                           |
 | P2  | Editorial workflow            | Roles (admin / editor / writer) + access control per role; review/publish flow |
