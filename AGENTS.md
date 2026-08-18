@@ -70,7 +70,11 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **CI:** `.github/workflows/ci.yml` — lint web + CMS, type-check web/CMS/shared
   packages, then build web + CMS (mobile excluded). Uses `pnpm install
   --frozen-lockfile` on Node 22.
-- **Live:** web = `akavish-web-puce.vercel.app`, CMS = `akavish-production.up.railway.app`.
+- **Live:** web = `akavish.gg` (canonical apex; `www` 308s to it), CMS =
+  `cms.akavish.gg`. DNS on Cloudflare; the platform URLs
+  (`akavish-web-puce.vercel.app`, `akavish-production.up.railway.app`) still work
+  but nothing should link to them. Mail via Cloudflare Email Routing
+  (`hello@` / `tips@` / `privacy@`, receive-only).
 - **Status / roadmap:** single source of truth is **`PROGRESS.md`**. Deployment
   runbook is **`DEPLOYMENT.md`**.
 - **Media:** uploads go to Cloudflare R2 via `@payloadcms/storage-s3` (the CMS
@@ -82,5 +86,3 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Known gotchas** (details in `PROGRESS.md` → gotchas):
   `shamefully-hoist` forces React-type `paths` in the web
   tsconfig (don't remove them); Node 20/22 LTS only (25 OOMs the CMS).
-
-## Imported Claude Cowork project instructions

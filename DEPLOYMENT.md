@@ -217,8 +217,9 @@ commands and env vars.
    `NEXT_PUBLIC_APP_URL`, and search keys if used. See the reference below.
 4. Deploy. Vercel gives you a `*.vercel.app` URL; add your domain in §6.
 
-> Use **production** Clerk keys here, not the `pk_test_…` / `sk_test_…` dev ones.
-> Create a production instance in the Clerk dashboard.
+> Clerk keys: **production** (`pk_live_…` / `sk_live_…`) is the end state, but a
+> development instance does work on a custom domain and Akavish deliberately
+> still runs on `pk_test_…` — see §6.5 for the reasoning and the switch steps.
 
 ---
 
@@ -376,10 +377,18 @@ nameservers point to Cloudflare). Target layout:
 | `cms.akavish.gg`       | Railway       | CMS admin + API            |
 | `media.akavish.gg`     | Cloudflare R2 | Media CDN (optional, later) |
 
-> **Proxy status: use “DNS only” (grey cloud)** for the Vercel and Railway
-> records. Both platforms terminate their own TLS and run their own CDN; putting
-> Cloudflare's orange-cloud proxy in front causes certificate errors and double
-> caching. Cloudflare still handles DNS resolution (fast, free, DNSSEC).
+> **Proxy status.** Vercel records are **DNS only** (grey cloud) — Vercel
+> terminates its own TLS and runs its own CDN, and stacking Cloudflare's proxy in
+> front invites certificate and double-caching problems. The Railway record for
+> `cms.akavish.gg` is **Proxied** (orange) and works fine, so it was left as
+> Railway created it. Just remember that anything proxied is subject to
+> Cloudflare's bot/AI rules — if you ever tighten those, verify the web app can
+> still reach the CMS API server-side.
+
+> **Canonical host: the apex `akavish.gg`, no `www`.** `NEXT_PUBLIC_SITE_URL`,
+> the sitemap, canonical tags and OG URLs all use it. In Vercel, `akavish.gg` is
+> the **primary** domain and `www.akavish.gg` is a **308** redirect to it — not
+> the other way around, or every URL in the sitemap would answer with a redirect.
 
 ### 6.1 Point the registrar at Cloudflare (do this first)
 
@@ -393,9 +402,12 @@ nameservers point to Cloudflare). Target layout:
 
 ### 6.2 Web → Vercel
 
-1. Vercel → project → **Settings → Domains** → add `akavish.gg`, then `www.akavish.gg`
-   (accept the redirect to the apex).
-2. Vercel shows the required records → create them in **Cloudflare → DNS → Records**,
+1. Vercel → project → **Settings → Domains** → add `akavish.gg`, then `www.akavish.gg`.
+2. On `www.akavish.gg`, pick **Redirect to Another Domain** → `akavish.gg` with
+   **308 Permanent Redirect**. Permanent (301/308) is what tells Google to
+   consolidate on the apex; 302/307 are temporary and leave both hosts indexed.
+   308 over 301 because it preserves the HTTP method (a POST stays a POST).
+3. Vercel shows the required records → create them in **Cloudflare → DNS → Records**,
    each set to **DNS only**.
 
 ### 6.3 CMS → Railway
@@ -416,34 +428,58 @@ nameservers point to Cloudflare). Target layout:
 Env changes only apply to a new build — **redeploy Vercel and Railway** after
 saving. This is what makes canonical URLs, the sitemap, OG tags and CORS correct.
 
-### 6.5 Clerk production instance
+### 6.5 Clerk — staying on the development instance (current choice)
 
-Reader login is broken on `*.vercel.app` because the dev instance only really
-works on localhost. With a real domain:
+The site currently runs with Clerk **development** keys (`pk_test_…`), on purpose:
+creating a production instance was gated behind a paid plan, and reader accounts
+aren't used for anything yet (no comments, no favourites). Development instances
+do work on a custom domain, with caveats — a "development mode" banner, lower
+limits, and sessions not meant for real users.
 
-1. Clerk dashboard → switch from **Development** to **Create production instance**.
-2. Add the DNS records Clerk provides (CNAMEs like `clerk.akavish.gg`) in
-   Cloudflare — follow Clerk's proxy guidance for each record.
+Move to a production instance when readers actually need accounts:
+
+1. Clerk dashboard → **Create production instance**.
+2. Add the DNS records Clerk provides (CNAMEs like `clerk.akavish.gg`) in Cloudflare.
 3. Replace the keys on Vercel with `pk_live_…` / `sk_live_…`, redeploy.
 
 ### 6.6 Email on the domain (free, via Cloudflare)
 
-Cloudflare → **Email → Email Routing** → enable (it adds the MX/SPF records
-automatically), then create forwarding addresses to a personal inbox:
+Cloudflare **Email Routing** forwards `@akavish.gg` mail to a personal inbox, for
+free. Order matters — a routing rule can't be created until a destination address
+is verified:
 
-- `hello@akavish.gg` and `tips@akavish.gg` — advertised on `/contact`
-- `privacy@akavish.gg` — advertised on `/privacy`
+1. **Email → Email Routing → enable.** Cloudflare adds the MX, SPF and DKIM
+   records itself (they show as *Locked* in the DNS list — leave them alone).
+2. **Destination Addresses → Add destination address** → the personal inbox.
+   Cloudflare mails a verification link; click it so the address reads *Verified*.
+3. **Routing rules → Create routing rule**, one per public address, each
+   *Send to an email* → the verified destination:
+   - `hello@akavish.gg` — advertised on `/contact` and `/terms`
+   - `tips@akavish.gg` — advertised on `/contact`
+   - `privacy@akavish.gg` — advertised on `/privacy`
+4. Leave the **Catch-all** rule on *Drop / Disabled*: it would accept mail for
+   every invented local part, which mostly means spam. The explicit rules are enough.
 
-Verify the destination inbox when Cloudflare emails you. Needed later for the
-transactional email provider (§ backlog: email adapter) to send from the domain.
+Keep these rules in sync with the addresses the site actually advertises — grep
+for `mailto:` under `apps/web/src/app` before adding or removing one.
+
+> ⚠️ Email Routing **receives only** — it cannot send. Transactional mail
+> (Payload password resets) needs a separate provider such as Resend; see the
+> email-adapter task in `PROGRESS.md`. The two are complementary, not redundant.
 
 ### 6.7 Post-cutover checks
 
+All of these passed on the `akavish.gg` cutover — re-run them after any DNS or
+domain change:
+
 - `https://akavish.gg` serves the site; `https://cms.akavish.gg/admin` loads.
-- `https://akavish.gg/sitemap.xml` and `/robots.txt` show the **new** domain.
-- Sign-up/login works (after Clerk prod keys).
-- Mail to `hello@akavish.gg` lands in your inbox.
-- Re-enable **DNSSEC** from Cloudflare (DNS → Settings).
+- `https://akavish.gg/sitemap.xml` and `/robots.txt` show the **new** domain and
+  answer **directly** (no redirect — the apex must be primary).
+- `https://www.akavish.gg/<any-path>` **308**s to the same path on the apex.
+- Sign-up/login works on the live domain (dev Clerk keys are fine — see §6.5).
+- Mail to `hello@akavish.gg` lands in the destination inbox.
+- Re-enable **DNSSEC** from Cloudflare (DNS → Settings) — it gets dropped by the
+  nameserver change.
 - Update `apps/web/next.config.ts` / docs if the media host changes.
 
 ---
@@ -454,8 +490,9 @@ transactional email provider (§ backlog: email adapter) to send from the domain
 - [ ] Created the first CMS admin user at `https://cms.akavish.gg/admin`.
 - [ ] Published a test article → it appears on `https://akavish.gg`.
 - [ ] `https://akavish.gg/sitemap.xml` and `/robots.txt` return prod URLs.
-- [ ] Clerk **production** keys in place; sign-up/login works on the live domain
-      (add the domain to Clerk's allowed origins).
+- [ ] Sign-up/login works on the live domain. Clerk currently runs on
+      **development** keys by choice (§6.5) — switch to `pk_live_…` when reader
+      accounts start to matter.
 - [ ] CORS: the CMS `WEB_URL` matches the live web origin (else the browser
       blocks client calls — server-side fetches are unaffected).
 - [ ] Search backfilled (if enabled) and the header search returns results.
@@ -473,8 +510,8 @@ transactional email provider (§ backlog: email adapter) to send from the domain
 | `CMS_URL`                           | `https://cms.akavish.gg`  | Server-side fetch target  |
 | `NEXT_PUBLIC_SITE_URL`              | `https://akavish.gg`      | Canonical/SEO base        |
 | `NEXT_PUBLIC_APP_URL`               | `https://akavish.gg`      |                           |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_live_…`               | **Prod** Clerk key        |
-| `CLERK_SECRET_KEY`                  | `sk_live_…`               | **Prod** Clerk key        |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` / `pk_live_…` | Currently the dev key — §6.5 |
+| `CLERK_SECRET_KEY`                  | `sk_test_…` / `sk_live_…` | Currently the dev key — §6.5 |
 | `MEILISEARCH_HOST`                  | `https://…meilisearch.io` | Optional                  |
 | `MEILISEARCH_SEARCH_KEY`            | `…`                       | Optional, search-only key |
 
