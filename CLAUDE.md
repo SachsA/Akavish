@@ -72,7 +72,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Schema:** versioned **migrations** (`push: false`), not push mode. See
   `DEPLOYMENT.md` §5.
 - **Auth:** Clerk (readers, web) · Payload auth (CMS editors).
-- **Search:** Meilisearch (indexing hooks + `/api/search`).
+- **Search:** `/api/search` queries the CMS (Postgres `ILIKE`) by default and
+  switches to Meilisearch when `MEILISEARCH_HOST` is set (indexing hooks in the
+  CMS). Meilisearch failures fall back to the CMS. Currently running on the
+  fallback — Meilisearch Cloud has no free tier.
 - **CI:** `.github/workflows/ci.yml` — lint web + CMS, type-check web/CMS/shared
   packages, then build web + CMS (mobile excluded). Uses `pnpm install
   --frozen-lockfile` on Node 22.

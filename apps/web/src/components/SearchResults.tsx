@@ -65,7 +65,7 @@ export function SearchResults() {
 
       {status === 'error' && (
         <p className="text-zinc-500">
-          Search is unavailable right now. Make sure Meilisearch is running.
+          Search is unavailable right now. Please try again in a moment.
         </p>
       )}
 

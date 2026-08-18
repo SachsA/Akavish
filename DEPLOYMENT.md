@@ -12,7 +12,7 @@ Three long-lived pieces plus supporting services:
 | **Web** (`apps/web`) | Next.js frontend    | **Vercel**                                                            | Serverless, scales to zero. Has workspace deps, so Vercel builds from the repo root.                                                                   |
 | **CMS** (`apps/cms`) | Payload admin + API | **Railway** or **Render** (or a VPS)                                  | Needs a **long-running Node process** — it is NOT static and won't run on Vercel's static/serverless model well. Fully standalone (no workspace deps). |
 | **Database**         | PostgreSQL          | **Neon** (or Supabase)                                                | Use a separate prod project/branch from dev.                                                                                                           |
-| **Search**           | Meilisearch         | **Meilisearch Cloud** or self-hosted (Docker on the same VPS/Railway) | Optional at launch — the site works without it, search just reports unavailable.                                                                       |
+| **Search**           | Meilisearch         | **Meilisearch Cloud** or self-hosted (Docker on the same VPS/Railway) | **Optional** — without it `/api/search` falls back to querying the CMS (Postgres `ILIKE`), so search works anyway. Meilisearch adds typo tolerance + ranking. See [§4](#4-search-in-production-optional). |
 | **Media**            | Cloudflare R2       | Cloudflare                                                            | Uploads go to R2 via its S3-compatible API (`@payloadcms/storage-s3`). Required in prod — the CMS host's disk is ephemeral. See [§4b](#4b-media-storage-cloudflare-r2). |
 | **Email (send)**     | Resend              | Resend                                                                | Transactional mail from the CMS (`@payloadcms/email-resend`). Required in prod — without it password resets silently go nowhere. See [§4c](#4c-transactional-email-resend). |
 | **Email (receive)**  | Cloudflare Email Routing | Cloudflare                                                       | Forwards `hello@`/`tips@`/`privacy@` to a personal inbox. Receive-only. See [§6.6](#66-email-on-the-domain-free-via-cloudflare). |
@@ -53,7 +53,7 @@ web can point at it.
      already has content, so existing logins stay valid)
    - Leave `SERVER_URL` / `WEB_URL` unset for now (defaults are harmless) — you'll
      set them in step 3.
-   - Skip Meilisearch for now (search will just report "unavailable").
+   - Skip Meilisearch for now — search falls back to the CMS and still works (§4).
 
    Deploy → note the URL Railway gives you, e.g. `https://akavish-cms.up.railway.app`.
    Open `…/admin` and create the first admin user (or log in if the DB already
@@ -227,22 +227,52 @@ commands and env vars.
 
 ## 4. Search in production (optional)
 
-Two options:
+**Search works with no setup at all.** `/api/search` has two backends and picks
+whichever is available:
 
-- **Meilisearch Cloud** — create a project, grab the host + a key, set
-  `MEILISEARCH_HOST` and `MEILISEARCH_API_KEY` on the CMS (admin/master key) and
-  `MEILISEARCH_HOST` + `MEILISEARCH_SEARCH_KEY` on the web (a search-only key).
-- **Self-hosted** — run the `getmeili/meilisearch` container on the same
-  Railway/VPS with a strong `MEILI_MASTER_KEY`.
+| `MEILISEARCH_HOST` | Backend                | Behaviour                                                  |
+| ------------------ | ---------------------- | ---------------------------------------------------------- |
+| unset              | CMS → Postgres `ILIKE` | Every word of the query must appear in the title, or in the excerpt. Newest first. Free. |
+| set                | Meilisearch            | Typo-tolerant, ranked by relevance.                         |
 
-Then backfill once from the CMS host (or locally against the prod DB + Meili):
+The CMS path is also the safety net: if Meilisearch is configured but down, or
+its index doesn't exist yet, the route quietly falls back instead of erroring.
+The search box lives in the global header, so a hard failure there would be
+visible on every page.
+
+**Akavish currently runs on the CMS fallback** — Meilisearch Cloud starts at
+$20/month and typo tolerance isn't worth paying for at this article count. The
+integration stays wired and switching on is one env var.
+
+### Upgrading to Meilisearch
+
+- **Meilisearch Cloud** — create a project, grab the host + keys. No free tier
+  (14-day trial, then from $20/month).
+- **Self-hosted** — run the `getmeili/meilisearch` container on Railway or a VPS
+  with a strong `MEILI_MASTER_KEY`. Cheapest real option.
+
+Then set, on the **CMS** (it writes to the index):
+
+```bash
+MEILISEARCH_HOST=https://…
+MEILISEARCH_API_KEY=<master/admin key>
+```
+
+and on the **web** (it only reads):
+
+```bash
+MEILISEARCH_HOST=https://…
+MEILISEARCH_SEARCH_KEY=<search-only key>
+```
+
+Backfill once, from the CMS host or locally against the prod DB + Meili:
 
 ```bash
 pnpm --filter akavish-cms reindex:search
 ```
 
-If you skip search at launch, leave `MEILISEARCH_HOST` unset — indexing is skipped
-and the search box reports "unavailable"; the rest of the site works.
+Confirm the switch took: `/api/search?q=test` returns `"engine":"meilisearch"`
+rather than `"engine":"cms"`.
 
 ---
 
