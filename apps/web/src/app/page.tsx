@@ -1,5 +1,6 @@
 import { fetchArticles } from '@/lib/payload'
 import { ArticleCard } from '@/components/ArticleCard'
+import { Wordmark } from '@/components/Wordmark'
 import type { Article } from '@akavish/types'
 
 // Revalidate the home page periodically so freshly published articles appear.
@@ -19,9 +20,8 @@ export default async function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <section className="mb-12 text-center space-y-4">
-        <h1 className="text-5xl font-black tracking-tight">
-          <span className="text-white">Akav</span>
-          <span className="text-zinc-600">ish</span>
+        <h1>
+          <Wordmark className="text-5xl" />
         </h1>
         <p className="text-zinc-400 text-lg max-w-xl mx-auto">
           Breaking gaming news, exclusive leaks, in-depth reviews. Fast. Serious. No fluff.

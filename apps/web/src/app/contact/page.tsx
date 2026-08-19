@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ContentPage } from '@/components/ContentPage'
+import { SITE_SOCIALS } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -25,15 +26,15 @@ export default function ContactPage() {
       <h2>Social</h2>
       <p>
         Find us on{' '}
-        <a href="https://twitter.com/akavish" target="_blank" rel="noopener noreferrer">
+        <a href={SITE_SOCIALS.x} target="_blank" rel="noopener noreferrer">
           X
         </a>
         ,{' '}
-        <a href="https://discord.gg/akavish" target="_blank" rel="noopener noreferrer">
+        <a href={SITE_SOCIALS.discord} target="_blank" rel="noopener noreferrer">
           Discord
         </a>{' '}
         and{' '}
-        <a href="https://youtube.com/@akavish" target="_blank" rel="noopener noreferrer">
+        <a href={SITE_SOCIALS.youtube} target="_blank" rel="noopener noreferrer">
           YouTube
         </a>
         .
