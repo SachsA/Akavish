@@ -26,6 +26,11 @@ out
 .env.*.local
 !.env.example
 
+# Sentry — the CLI/wizard writes the auth token here. Ignored pre-emptively so
+# it can never be committed, even if someone runs `npx @sentry/wizard` later.
+.env.sentry-build-plugin
+.sentryclirc
+
 # Payload
 src/payload-types.ts
 apps/*/src/payload-types.ts

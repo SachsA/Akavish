@@ -11,6 +11,7 @@ import {
 } from '@clerk/nextjs'
 import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
 import { Wordmark } from '@/components/Wordmark'
+import { Analytics } from '@vercel/analytics/next'
 import { SearchBar } from '@/components/SearchBar'
 import './globals.css'
 
@@ -46,6 +47,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
+          {/* Vercel Web Analytics — cookieless and no personal data, so it
+              needs no consent banner. Only actually collects when deployed on
+              Vercel; a no-op locally. 50k events/month on the Hobby plan. */}
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>

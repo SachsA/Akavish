@@ -63,9 +63,11 @@ jobs:
       # --- CMS ---
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/akavish_ci
       PAYLOAD_SECRET: ci_dummy_secret_not_used_in_prod
-      # R2 (media), Meilisearch (search) and Resend (email) are deliberately left
-      # unset — each turns itself off and falls back (local disk / no indexing /
-      # console-logged emails), so the build needs no third-party credentials.
+      # R2 (media), Meilisearch (search), Resend (email) and Sentry (monitoring)
+      # are deliberately left unset — each turns itself off and falls back (local
+      # disk / no indexing / console-logged emails / no reporting), so the build
+      # needs no third-party credentials. Sentry's build plugin also runs without
+      # SENTRY_AUTH_TOKEN; it just skips the source map upload.
       # --- Web ---
       # Canonical Clerk placeholder key — lets next build pass without real creds.
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k

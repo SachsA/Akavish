@@ -385,6 +385,63 @@ should land in your inbox and its link should open the reset form.
 
 ---
 
+## 4d. Observability: analytics + error monitoring
+
+Two separate concerns: **who visits** (Vercel Web Analytics) and **what breaks**
+(Sentry). Both run on free tiers and both no-op without configuration.
+
+### Vercel Web Analytics (traffic)
+
+`<Analytics />` sits in the web root layout. Nothing to configure in code —
+enable it in the **Vercel dashboard → project → Analytics**, redeploy, done.
+
+- **Free tier: 50 000 events/month** on Hobby, shared across all projects on the
+  account. Collection *pauses* at the limit rather than billing you.
+- **Cookieless and no personal data**, which is why the site carries no consent
+  banner. If you later add anything that does set cookies or profile users, that
+  changes — revisit `/privacy` at the same time.
+- Only collects on Vercel deployments; a no-op locally.
+- Enabling it adds routes under `/_vercel/insights/*`. The Clerk middleware
+  matcher already excludes `_vercel`, so the beacons don't run through auth.
+
+### Sentry (errors + performance)
+
+Create **two projects** at [sentry.io](https://sentry.io) — one for the web app,
+one for the CMS — so a frontend flood doesn't bury a database incident.
+
+| Where   | Variable                         | Notes                                       |
+| ------- | -------------------------------- | ------------------------------------------- |
+| Vercel  | `NEXT_PUBLIC_SENTRY_DSN`         | Web project DSN. Public by design.          |
+| Vercel  | `SENTRY_ORG` / `SENTRY_PROJECT`  | Build-time, for source maps                 |
+| Vercel  | `SENTRY_AUTH_TOKEN`              | **Secret.** Build-time only                 |
+| Railway | `SENTRY_DSN`                     | CMS project DSN — *not* `NEXT_PUBLIC_`      |
+| Railway | `SENTRY_ORG` / `SENTRY_PROJECT_CMS` | Build-time, for source maps              |
+| Railway | `SENTRY_AUTH_TOKEN`              | **Secret.** Build-time only                 |
+
+Notes on how it's wired:
+
+- **No DSN → Sentry does nothing.** Fresh clones and CI build with no account.
+- **The auth token is optional.** Without it the build succeeds and simply skips
+  the source map upload; stack traces are then minified and much harder to read.
+- **Web tunnels through `/monitoring`** (`tunnelRoute` in `next.config.ts`). Ad
+  blockers block `sentry.io` outright, and a gaming audience runs a lot of them —
+  without the tunnel you'd silently lose exactly those readers' errors. The
+  Clerk middleware matcher and `robots.ts` both exclude that path.
+- **The CMS has no browser SDK** — one editor, a heavy admin bundle, and the
+  errors worth catching there are server-side anyway.
+- **Sampling**: traces are 10% in production on the web, 50% on the CMS (far
+  fewer requests). The free tier gives 5 000 errors + 10 000 performance units a
+  month; traces eat the latter quickly. Tune in each app's `lib/sentry-shared.ts`.
+- **Session Replay is off** on purpose — it records what readers see, which is a
+  privacy question `/privacy` doesn't currently answer, and it's the heaviest
+  thing the browser SDK can load.
+
+Verify after deploying: throw a test error from a page, then check **Issues** in
+Sentry. `/api/search?q=x` and a normal page view should also appear under
+**Traces**.
+
+---
+
 ## 5. Database schema: migrations (READ THIS)
 
 Payload needs the DB tables (articles, users, media…) to exist. Akavish manages
@@ -604,6 +661,10 @@ domain change:
 | `CLERK_SECRET_KEY`                  | `sk_test_…` / `sk_live_…` | Currently the dev key — §6.5 |
 | `MEILISEARCH_HOST`                  | `https://…meilisearch.io` | Optional                  |
 | `MEILISEARCH_SEARCH_KEY`            | `…`                       | Optional, search-only key |
+| `NEXT_PUBLIC_SENTRY_DSN`            | `https://…ingest.sentry.io/…` | Unset → Sentry off (§4d) |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT`    | `production`              | Optional, defaults to `NODE_ENV` |
+| `SENTRY_ORG` / `SENTRY_PROJECT`     | `…`                       | Build-time, source maps   |
+| `SENTRY_AUTH_TOKEN`                 | `sntrys_…`                | **Secret**, build-time only |
 
 **CMS (Railway/Render)**
 
@@ -623,6 +684,10 @@ domain change:
 | `R2_SECRET_ACCESS_KEY`| `…`                              | R2 API token                        |
 | `R2_ENDPOINT`         | `https://<accountId>.r2.cloudflarestorage.com` | Uploads only          |
 | `R2_PUBLIC_URL`       | `https://<hash>.r2.dev`          | Serves the files                    |
+| `SENTRY_DSN`          | `https://…ingest.sentry.io/…`    | Unset → Sentry off (§4d). Not `NEXT_PUBLIC_` |
+| `SENTRY_ENVIRONMENT`  | `production`                     | Optional, defaults to `NODE_ENV`    |
+| `SENTRY_ORG` / `SENTRY_PROJECT_CMS` | `…`                | Build-time, source maps             |
+| `SENTRY_AUTH_TOKEN`   | `sntrys_…`                       | **Secret**, build-time only         |
 
 ---
 

@@ -93,6 +93,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`@payloadcms/email-resend`, `RESEND_API_KEY` unset → console fallback,
   `DEPLOYMENT.md` §4c); Cloudflare Email Routing only **receives**
   (`DEPLOYMENT.md` §6.6).
+- **Observability:** Vercel Web Analytics (`<Analytics />` in the web layout,
+  cookieless → no consent banner) + Sentry on both apps. Unset DSN → no-op. Web
+  tunnels through `/monitoring` to survive ad blockers (excluded from the Clerk
+  matcher and `robots.ts`); the CMS is server-side only. `DEPLOYMENT.md` §4d.
 - **Adding/removing a Payload plugin:** always run `pnpm generate:importmap` in
   `apps/cms` and commit the result — a stale `importMap.js` makes the admin panel
   render a blank page.

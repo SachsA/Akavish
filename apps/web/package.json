@@ -14,6 +14,8 @@
     "@akavish/ui": "workspace:*",
     "@akavish/api-client": "workspace:*",
     "@clerk/nextjs": "^6.0.0",
+    "@sentry/nextjs": "^10.57.0",
+    "@vercel/analytics": "^2.0.1",
     "meilisearch": "^0.45.0",
     "next": "15.4.10",
     "react": "19.2.3",
