@@ -6,7 +6,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/account', '/sign-in', '/sign-up'],
+      // `/monitoring` is Sentry's tunnel endpoint, not a page.
+      disallow: ['/api/', '/account', '/sign-in', '/sign-up', '/monitoring'],
     },
     sitemap: absoluteUrl('/sitemap.xml'),
   }

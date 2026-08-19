@@ -16,6 +16,7 @@
 | Search   | CMS/Postgres by default · Meilisearch when configured               |
 | Storage  | Cloudflare R2                                                       |
 | Email    | Resend (sending) · Cloudflare Email Routing (receiving)             |
+| Monitoring | Vercel Web Analytics (traffic) · Sentry (errors + performance)    |
 | Hosting  | Vercel (web) + Expo EAS (mobile)                                    |
 | Monorepo | Turborepo + pnpm workspaces                                         |
 
@@ -83,6 +84,9 @@ admin separately.
 - **Resend** — transactional email from the CMS (password resets). Required in
   production, see [`DEPLOYMENT.md` §4c](./DEPLOYMENT.md). Leave `RESEND_API_KEY`
   unset locally and Payload just prints emails to the terminal.
+- **Sentry** _(optional)_ — error and performance monitoring on both apps. Leave
+  the DSN unset and it's a complete no-op; nothing to install to develop. Setup
+  in [`DEPLOYMENT.md` §4d](./DEPLOYMENT.md).
 
 **Recommended tooling**
 

@@ -161,8 +161,9 @@ actually tackle it, best value-for-effort first.
 | 4   | ✅ **Email adapter**                | Done — `@payloadcms/email-resend` wired in `payload.config.ts`; password resets are really sent, with a branded HTML template (`lib/emails/forgot-password.ts`). Off when `RESEND_API_KEY` is unset (console fallback). Setup + DNS in `DEPLOYMENT.md` §4c | —      |
 | 5   | ✅ **Search works in prod**         | Done — `/api/search` falls back to the CMS (Postgres `ILIKE`) when Meilisearch isn't configured, and when it errors. The header search box was returning 503 on every page; now it works for free. `DEPLOYMENT.md` §4 | —      |
 | 6   | ✅ **Article page polish**          | Done — reading time (+ `wordCount`/`timeRequired` in the JSON-LD), share row, "Read next" suggestions, prev/next nav. Suggestions fail soft: a CMS error drops them instead of breaking the page | —      |
-| 7   | ⬜ Error monitoring (Sentry)        | Know when prod breaks instead of finding out by chance                                                                                                  | ~30 min |
+| 7   | ✅ **Observability**                | Done — Vercel Web Analytics (cookieless, 50k events/mo free) + Sentry errors & tracing on web and CMS. Both no-op without config. `DEPLOYMENT.md` §4d | —      |
 | 8   | ⬜ Legal content review             | `/privacy` + `/terms` are placeholder templates — real text needed before pushing traffic                                                                | ?      |
+| 9   | ⬜ Homepage layout pass             | Featured/hero article + sections instead of one flat grid — the front door                                                                               | 1–2 h  |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
 > (task 4) **sends** Payload's password resets from `mail.akavish.gg`. Cloudflare
@@ -205,7 +206,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | --- | ----------------------- | ------------------------------------------------------------------------ |
 | P2  | Mobile responsive audit | Verify header nav, cards, article/game/author pages on small screens     |
 | P2  | Accessibility pass      | Alt text, focus states, color contrast, keyboard nav, semantic landmarks |
-| P3  | Analytics               | Plausible / GA / Vercel Analytics                                        |
+| ✅  | Analytics               | Vercel Web Analytics — cookieless, 50k events/month free, no consent banner needed. Enable it in the Vercel dashboard to start collecting |
 
 ## 2. SEO
 
@@ -328,7 +329,7 @@ checklist it walks through.
 
 | Pri | Item               | Notes                                                                  |
 | --- | ------------------ | ---------------------------------------------------------------------- |
-| P1  | Error monitoring   | Sentry (web + CMS)                                                     |
+| ✅  | Error monitoring   | Sentry on web (client + server + edge, tunnelled through `/monitoring`) and CMS (server only). Errors + performance tracing, sampled to fit the free tier. Session Replay off on privacy grounds |
 | P1  | Secrets management | Move from `.env` files to the host's secret store in prod              |
 | P2  | Rate limiting      | On public API routes                                                   |
 | P2  | Uptime monitoring  | Healthcheck + alerting on web/CMS                                      |
