@@ -9,7 +9,8 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs'
-import { SITE_URL, SITE_NAME, SITE_TWITTER } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
+import { Wordmark } from '@/components/Wordmark'
 import { SearchBar } from '@/components/SearchBar'
 import './globals.css'
 
@@ -55,9 +56,8 @@ function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-black tracking-tight text-white">AKV</span>
-          <span className="hidden sm:inline text-xs text-zinc-500 uppercase tracking-widest">Akavish</span>
+        <Link href="/" className="flex items-center gap-2" aria-label="Akavish — home">
+          <Wordmark className="text-xl" />
         </Link>
         <nav className="flex items-center gap-4 sm:gap-6 text-sm text-zinc-400">
           <Link href="/news" className="hidden sm:inline hover:text-white transition-colors">News</Link>
@@ -117,9 +117,9 @@ function Footer() {
   ]
 
   const socials = [
-    { label: 'X', href: 'https://twitter.com/akavish' },
-    { label: 'Discord', href: 'https://discord.gg/akavish' },
-    { label: 'YouTube', href: 'https://youtube.com/@akavish' },
+    { label: 'X', href: SITE_SOCIALS.x },
+    { label: 'Discord', href: SITE_SOCIALS.discord },
+    { label: 'YouTube', href: SITE_SOCIALS.youtube },
   ]
 
   return (
@@ -127,8 +127,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8">
         <div className="col-span-2 sm:col-span-1">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-black tracking-tight text-white">AKV</span>
-            <span className="text-xs text-zinc-500 uppercase tracking-widest">Akavish</span>
+            <Wordmark className="text-xl" />
           </div>
           <p className="text-xs text-zinc-500 mt-3 max-w-[18ch]">
             Breaking gaming news, leaks &amp; reviews. No fluff.

@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import type { Article } from '@akavish/types'
+import { Wordmark } from '@/components/Wordmark'
 
 const CATEGORY_LABELS: Record<Article['category'], string> = {
   news: 'News',
@@ -35,8 +36,10 @@ export function ArticleCard({ article }: { article: Article }) {
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-zinc-700 text-2xl font-black">
-            AKV
+          <div className="w-full h-full flex items-center justify-center">
+            {/* Faint watermark when an article has no cover image. Both halves
+                are dimmed so it stays background, not a headline. */}
+            <Wordmark className="text-2xl" primary="text-zinc-700" muted="text-zinc-800" />
           </div>
         )}
       </div>
