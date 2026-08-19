@@ -12,15 +12,26 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files, unless found in search params.
-    //
-    // Two telemetry paths are excluded too:
+    // Run on everything except framework internals and telemetry:
+    //   - `_next`    — build output and image optimiser
+    //   - `_vercel`  — Web Analytics beacons (`/_vercel/insights/*`)
     //   - `monitoring` — Sentry's tunnel route (see next.config.ts). Putting an
     //     auth layer in front of error reporting is both pointless and a good
     //     way to lose the errors we most need to see.
-    //   - `_vercel` — Vercel Web Analytics beacons (`/_vercel/insights/*`),
-    //     created once Analytics is enabled in the dashboard.
-    '/((?!_next|_vercel|monitoring|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    //
+    // NOTE: Clerk's boilerplate matcher also skips anything ending in a static
+    // file extension (.ico, .png, .css…). That exclusion is a **trap here** and
+    // was removed deliberately.
+    //
+    // This app has no `public/` directory, so no such path is ever a real file.
+    // Any request for one instead falls through to the top-level `[category]`
+    // dynamic route, whose layout calls Clerk's `auth()` — which throws when the
+    // middleware was skipped. The result was a 500 on every browser's automatic
+    // `/favicon.ico` hit, one Sentry event per visitor, straight into the quota.
+    //
+    // Letting the middleware run on those paths costs almost nothing (there are
+    // no static assets to slow down) and turns those 500s into clean 404s.
+    '/((?!_next|_vercel|monitoring).*)',
     // Always run for API routes.
     '/(api|trpc)(.*)',
   ],
