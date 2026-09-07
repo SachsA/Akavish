@@ -59,7 +59,8 @@ Last updated: **2026-07-28**.
 | ✅     | Cross-links                           | Article byline → author/game; tag chips → tag pages                                 |
 | ✅     | Custom 404 / error pages              | `not-found.tsx`, `error.tsx`, `global-error.tsx`                                    |
 | ✅     | Functional footer                     | Sections, About/Contact/Legal, RSS, socials — all targets now exist                 |
-| ✅     | Footer pages                          | `/about`, `/contact`, `/privacy`, `/terms` (legal pages are review-me templates)    |
+| ✅     | Footer pages                          | `/about`, `/contact`, plus the legal set below                                       |
+| ✅     | Legal pages (EN + FR)                 | `/privacy`, `/terms`, `/legal` and `/fr/confidentialite`, `/fr/conditions`, `/fr/mentions-legales`. Facts (processors, publisher, date) live once in `lib/legal.ts`; hreflang pairs + language toggle via `LegalLanguageSwitch` |
 | ✅     | RSS feed `/feed.xml`                  | Route handler, latest 50 published articles                                         |
 | ✅     | Loading states                        | `loading.tsx` + `CardGridSkeleton` on home, category, article, author, game, tag    |
 | ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
@@ -162,7 +163,7 @@ actually tackle it, best value-for-effort first.
 | 5   | ✅ **Search works in prod**         | Done — `/api/search` falls back to the CMS (Postgres `ILIKE`) when Meilisearch isn't configured, and when it errors. The header search box was returning 503 on every page; now it works for free. `DEPLOYMENT.md` §4 | —      |
 | 6   | ✅ **Article page polish**          | Done — reading time (+ `wordCount`/`timeRequired` in the JSON-LD), share row, "Read next" suggestions, prev/next nav. Suggestions fail soft: a CMS error drops them instead of breaking the page | —      |
 | 7   | ✅ **Observability**                | Done — Vercel Web Analytics (cookieless, 50k events/mo free) + Sentry errors & tracing on web and CMS. Both no-op without config. `DEPLOYMENT.md` §4d | —      |
-| 8   | ⬜ Legal content review             | `/privacy` + `/terms` are placeholder templates — real text needed before pushing traffic                                                                | ?      |
+| 8   | ✅ **Legal pages**                  | Done — real `/privacy`, `/terms`, `/legal` (LCEN notice) in EN + FR, written from the actual processor list (`lib/legal.ts`). Sentry PII collection explicitly disabled so the policy is true. **Not reviewed by a lawyer** | —      |
 | 9   | ⬜ Homepage layout pass             | Featured/hero article + sections instead of one flat grid — the front door                                                                               | 1–2 h  |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
@@ -192,7 +193,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | Pri | Item                         | Notes                                                                                       |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------- |
 | ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/WhatsApp + native share sheet + copy link), "Read next" suggestions and prev/next navigation |
-| P2  | Legal content review         | `/privacy` and `/terms` are placeholder templates — need real legal text before launch      |
+| P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
 | P2  | Pagination / infinite scroll | Home + category + tag pages currently cap at N items                                        |
 | P2  | Homepage layout pass         | Featured/hero article, “trending”, section blocks instead of one flat grid                  |
 | P2  | Newsletter signup            | Capture emails (needs an ESP: Resend/Mailchimp/etc.)                                        |
