@@ -30,6 +30,8 @@ export const SENTRY_ENVIRONMENT = process.env.SENTRY_ENVIRONMENT ?? process.env.
  * on this app carry draft article content and editor session data, and stack
  * frame variables can hold database rows.
  */
+// No `as const`: it would make `httpBodies` a `readonly []`, which Sentry's
+// `DataCollection` type rejects — it wants a mutable array.
 export const NO_PII_DATA_COLLECTION = {
   userInfo: false,
   httpBodies: [],
@@ -37,4 +39,4 @@ export const NO_PII_DATA_COLLECTION = {
   httpHeaders: { request: false, response: false },
   urlQueryParams: false,
   stackFrameVariables: false,
-} as const
+}
