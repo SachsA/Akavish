@@ -4,6 +4,7 @@ import {
   fetchAllArticleSlugs,
   fetchAllEntitySlugs,
 } from '@/lib/payload'
+import { LEGAL_PAGES } from '@/components/LegalLanguageSwitch'
 
 export const revalidate = 300
 
@@ -21,7 +22,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 0.7,
     })),
-    ...['/about', '/contact', '/privacy', '/terms'].map((p) => ({
+    // Static pages, including both language versions of the legal set — each is
+    // a distinct URL and carries its own hreflang pair (see LEGAL_PAGES).
+    ...[
+      '/about',
+      '/contact',
+      ...Object.values(LEGAL_PAGES).flatMap((pair) => [pair.en, pair.fr]),
+    ].map((p) => ({
       url: absoluteUrl(p),
       lastModified: now,
       changeFrequency: 'yearly' as const,

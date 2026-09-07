@@ -25,6 +25,12 @@ URLs, script names, env vars, versions:
 - **Scripts:** `scripts/*.sh`, `apps/cms/scripts/*.mjs` — headers + usage strings.
 - **Code comments** describing behaviour (e.g. `payload.config.ts` push note,
   `tsconfig` React-paths workaround) — keep them true.
+- **Legal pages:** adding any third-party service that can see visitor data means
+  adding it to `apps/web/src/lib/legal.ts` (`PROCESSORS`) **in the same commit** —
+  both the EN and FR privacy pages render that list, so they stay in sync
+  automatically. Bump `LEGAL_LAST_UPDATED` when the substance changes. Changing
+  Sentry's `dataCollection`, enabling Session Replay, or adding cookies that
+  aren't strictly necessary all invalidate what `/privacy` currently promises.
 
 Cross-check that any command/port/URL/script/version stated in one place matches
 reality everywhere (a grep sweep beats eyeballing). Keep `PROGRESS.md` (done +

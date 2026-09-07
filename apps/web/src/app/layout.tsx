@@ -117,6 +117,8 @@ function Footer() {
       links: [
         { label: 'Privacy', href: '/privacy' },
         { label: 'Terms', href: '/terms' },
+        // Required in France (LCEN) — identifies the publisher and the host.
+        { label: 'Legal notice', href: '/legal' },
       ],
     },
   ]

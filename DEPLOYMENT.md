@@ -432,9 +432,14 @@ Notes on how it's wired:
 - **Sampling**: traces are 10% in production on the web, 50% on the CMS (far
   fewer requests). The free tier gives 5 000 errors + 10 000 performance units a
   month; traces eat the latter quickly. Tune in each app's `lib/sentry-shared.ts`.
-- **Session Replay is off** on purpose — it records what readers see, which is a
-  privacy question `/privacy` doesn't currently answer, and it's the heaviest
-  thing the browser SDK can load.
+- **Personal data collection is explicitly disabled** (`NO_PII_DATA_COLLECTION`
+  in each app's `lib/sentry-shared.ts`): no IP address, cookies, headers, request
+  bodies, query params or stack-frame variables. SDK v10's `dataCollection`
+  defaults are permissive, so this is set by hand rather than relied on —
+  `/privacy` and `/fr/confidentialite` promise this behaviour by name.
+- **Session Replay is off** on purpose — it records what readers see, a far
+  bigger promise than "we log errors", and it's the heaviest thing the browser
+  SDK can load. Turning it on means rewriting the privacy pages first.
 
 Verify after deploying: throw a test error from a page, then check **Issues** in
 Sentry. `/api/search?q=x` and a normal page view should also appear under

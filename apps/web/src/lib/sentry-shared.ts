@@ -28,6 +28,33 @@ export const SENTRY_ENVIRONMENT =
  * blocker killing a request, a browser extension throwing inside our page.
  * Left unfiltered these drown the real issues and eat the monthly quota.
  */
+/**
+ * Explicit opt-out of every automatic personal-data collection category.
+ *
+ * SDK v10's `dataCollection` defaults are permissive — `userInfo` (including
+ * `ip_address`), cookies, request/response headers and bodies, and URL query
+ * params are all collected unless disabled. The docs are ambiguous about what
+ * applies when the option is omitted entirely (the deprecated `sendDefaultPii`
+ * defaulted to `false`), and a GDPR question is not the place to rely on an
+ * ambiguity.
+ *
+ * Setting it explicitly means `/privacy` can state exactly what leaves the site,
+ * and that statement stays true if Sentry changes its defaults again. We lose
+ * nothing: a stack trace and a URL path are enough to debug a public news site.
+ *
+ * ⚠️ Keep this in sync with the "Error monitoring" section of `/privacy` and
+ * `/fr/confidentialite` — those pages promise this behaviour by name.
+ */
+export const NO_PII_DATA_COLLECTION = {
+  userInfo: false,
+  httpBodies: [],
+  cookies: false,
+  httpHeaders: { request: false, response: false },
+  urlQueryParams: false,
+  // Local variables can hold anything a reader typed. Not worth the risk.
+  stackFrameVariables: false,
+} as const
+
 export const IGNORED_ERRORS = [
   'AbortError',
   'ResizeObserver loop limit exceeded',

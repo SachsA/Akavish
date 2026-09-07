@@ -21,3 +21,20 @@ const isDev = process.env.NODE_ENV === 'development'
 export const TRACES_SAMPLE_RATE = isDev ? 1.0 : 0.5
 
 export const SENTRY_ENVIRONMENT = process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV
+
+/**
+ * Explicit opt-out of automatic personal-data collection, mirroring the web app
+ * (`apps/web/src/lib/sentry-shared.ts` — see the longer rationale there).
+ *
+ * It matters here too even though the CMS has no public visitors: request bodies
+ * on this app carry draft article content and editor session data, and stack
+ * frame variables can hold database rows.
+ */
+export const NO_PII_DATA_COLLECTION = {
+  userInfo: false,
+  httpBodies: [],
+  cookies: false,
+  httpHeaders: { request: false, response: false },
+  urlQueryParams: false,
+  stackFrameVariables: false,
+} as const
