@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ContentPage } from '@/components/ContentPage'
 import { LegalLanguageSwitch, legalAlternates } from '@/components/LegalLanguageSwitch'
 import { LEGAL_LAST_UPDATED, PUBLISHER } from '@/lib/legal'
@@ -18,7 +19,7 @@ export default function TermsPage() {
       <p>
         These terms govern your use of akavish.gg. By browsing the site you accept
         them. If you do not, please stop reading here. Akavish is published by{' '}
-        {PUBLISHER.name} — see the <a href="/legal">legal notice</a>.
+        {PUBLISHER.name} — see the <Link href="/legal">legal notice</Link>.
       </p>
 
       <h2>Using the site</h2>

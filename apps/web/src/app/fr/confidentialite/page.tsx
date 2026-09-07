@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ContentPage } from '@/components/ContentPage'
 import { ProcessorTable } from '@/components/ProcessorTable'
 import { LegalLanguageSwitch, legalAlternates } from '@/components/LegalLanguageSwitch'
@@ -34,7 +35,7 @@ export default function ConfidentialitePage() {
         du RGPD. Contact :{' '}
         <a href={`mailto:${PUBLISHER.privacyEmail}`}>{PUBLISHER.privacyEmail}</a>.
         Les informations d’édition et d’hébergement figurent dans les{' '}
-        <a href="/fr/mentions-legales">mentions légales</a>.
+        <Link href="/fr/mentions-legales">mentions légales</Link>.
       </p>
 
       <h2>Données collectées</h2>
