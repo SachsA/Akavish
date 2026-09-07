@@ -45,6 +45,8 @@ export const SENTRY_ENVIRONMENT =
  * ⚠️ Keep this in sync with the "Error monitoring" section of `/privacy` and
  * `/fr/confidentialite` — those pages promise this behaviour by name.
  */
+// No `as const` here: it would make `httpBodies` a `readonly []`, which Sentry's
+// `DataCollection` type rejects — it wants a mutable array.
 export const NO_PII_DATA_COLLECTION = {
   userInfo: false,
   httpBodies: [],
@@ -53,7 +55,7 @@ export const NO_PII_DATA_COLLECTION = {
   urlQueryParams: false,
   // Local variables can hold anything a reader typed. Not worth the risk.
   stackFrameVariables: false,
-} as const
+}
 
 export const IGNORED_ERRORS = [
   'AbortError',
