@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ContentPage } from '@/components/ContentPage'
 import { ProcessorTable } from '@/components/ProcessorTable'
 import { LegalLanguageSwitch, legalAlternates } from '@/components/LegalLanguageSwitch'
@@ -29,7 +30,7 @@ export default function PrivacyPage() {
         the purposes of the GDPR. Contact:{' '}
         <a href={`mailto:${PUBLISHER.privacyEmail}`}>{PUBLISHER.privacyEmail}</a>.
         Publisher and hosting details are on the{' '}
-        <a href="/legal">legal notice</a>.
+        <Link href="/legal">legal notice</Link>.
       </p>
 
       <h2>What we collect</h2>

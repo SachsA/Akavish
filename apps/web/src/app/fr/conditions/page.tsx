@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ContentPage } from '@/components/ContentPage'
 import { LegalLanguageSwitch, legalAlternates } from '@/components/LegalLanguageSwitch'
 import { LEGAL_LAST_UPDATED, PUBLISHER } from '@/lib/legal'
@@ -22,7 +23,7 @@ export default function ConditionsPage() {
         Ces conditions régissent votre utilisation d’akavish.gg. En naviguant sur
         le site, vous les acceptez. Si vous ne les acceptez pas, n’allez pas plus
         loin. Akavish est édité par {PUBLISHER.name} — voir les{' '}
-        <a href="/fr/mentions-legales">mentions légales</a>.
+        <Link href="/fr/mentions-legales">mentions légales</Link>.
       </p>
 
       <h2>Utilisation du site</h2>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ContentPage } from '@/components/ContentPage'
 import { LegalLanguageSwitch, legalAlternates } from '@/components/LegalLanguageSwitch'
 import { LEGAL_LAST_UPDATED, PUBLISHER } from '@/lib/legal'
@@ -64,7 +65,7 @@ export default function MentionsLegalesPage() {
       <p>
         Le traitement de vos données et les modalités d’exercice de vos droits
         sont détaillés dans la{' '}
-        <a href="/fr/confidentialite">politique de confidentialité</a>. Demandes :{' '}
+        <Link href="/fr/confidentialite">politique de confidentialité</Link>. Demandes :{' '}
         <a href={`mailto:${PUBLISHER.privacyEmail}`}>{PUBLISHER.privacyEmail}</a>.
       </p>
 
