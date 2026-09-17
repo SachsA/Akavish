@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import type { Article } from '@akavish/types'
+import Link from 'next/link'
 import { Wordmark } from '@/components/Wordmark'
 
 const CATEGORY_LABELS: Record<Article['category'], string> = {
@@ -22,7 +23,7 @@ function formatDate(iso?: string): string {
 
 export function ArticleCard({ article }: { article: Article }) {
   return (
-    <a
+    <Link
       href={`/article/${article.slug}`}
       className="group bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors"
     >
@@ -58,6 +59,6 @@ export function ArticleCard({ article }: { article: Article }) {
         <p className="text-sm text-zinc-400 line-clamp-2">{article.excerpt}</p>
         <p className="text-xs text-zinc-600">By {article.author.name}</p>
       </div>
-    </a>
+    </Link>
   )
 }

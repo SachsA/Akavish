@@ -108,4 +108,7 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   render a blank page.
 - **Known gotchas** (details in `PROGRESS.md` → gotchas):
   `shamefully-hoist` forces React-type `paths` in the web
-  tsconfig (don't remove them); Node 20/22 LTS only (25 OOMs the CMS).
+  tsconfig (don't remove them); Node 20/22 LTS only (25 OOMs the CMS);
+  **pnpm 10** pinned via `packageManager` — don't re-add React `overrides` to
+  `pnpm-workspace.yaml` (they'd force React 19 onto Expo 52 mobile), and pnpm 11
+  needs an `.npmrc` migration first.

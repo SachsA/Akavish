@@ -19,8 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # v4.4+ uses the current Node 24 action runtime; pnpm itself remains pinned
-      # by package.json below.
+      # v4.4+ uses the current Node 24 action runtime. No `version:` input on
+      # purpose: the action reads the root `package.json#packageManager`, so CI
+      # and local dev can never drift onto different pnpm majors.
       - uses: pnpm/action-setup@v4.4.0
 
       - uses: actions/setup-node@v5
@@ -80,8 +81,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # v4.4+ uses the current Node 24 action runtime; pnpm itself remains pinned
-      # by package.json below.
+      # v4.4+ uses the current Node 24 action runtime. No `version:` input on
+      # purpose: the action reads the root `package.json#packageManager`, so CI
+      # and local dev can never drift onto different pnpm majors.
       - uses: pnpm/action-setup@v4.4.0
 
       - uses: actions/setup-node@v5

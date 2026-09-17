@@ -96,6 +96,10 @@ function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
 
     case 'link': {
       const url = node.fields?.url ?? node.url ?? '#'
+      // Stays a plain <a> on purpose — do NOT "upgrade" this to next/link.
+      // These URLs are typed by editors in the CMS and can be anything:
+      // external sites, mailto:, or an in-page anchor. <Link> assumes an
+      // internal route and would try to client-navigate to all of them.
       return (
         <a
           key={key}
