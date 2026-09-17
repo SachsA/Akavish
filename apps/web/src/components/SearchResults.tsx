@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { SearchHit } from '@/lib/search'
@@ -77,7 +78,7 @@ export function SearchResults() {
         <ul className="divide-y divide-zinc-800 border-y border-zinc-800">
           {hits.map((hit) => (
             <li key={hit.id}>
-              <a
+              <Link
                 href={`/article/${hit.slug}`}
                 className="group flex gap-4 py-4 hover:bg-zinc-900/50 -mx-2 px-2 rounded transition-colors"
               >
@@ -93,7 +94,7 @@ export function SearchResults() {
                   </h2>
                   <p className="text-sm text-zinc-400 line-clamp-2">{hit.excerpt}</p>
                 </div>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

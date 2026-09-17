@@ -144,12 +144,12 @@ export default async function ArticlePage({
             <span>
               By{' '}
               {article.author.slug ? (
-                <a
+                <Link
                   href={`/author/${article.author.slug}`}
                   className="text-zinc-400 hover:text-white transition-colors"
                 >
                   {article.author.name}
-                </a>
+                </Link>
               ) : (
                 <span className="text-zinc-400">{article.author.name}</span>
               )}
@@ -159,12 +159,12 @@ export default async function ArticlePage({
             {article.game?.slug && (
               <span>
                 ·{' '}
-                <a
+                <Link
                   href={`/game/${article.game.slug}`}
                   className="text-zinc-400 hover:text-white transition-colors"
                 >
                   {article.game.name}
-                </a>
+                </Link>
               </span>
             )}
           </div>
@@ -190,13 +190,13 @@ export default async function ArticlePage({
         {article.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-10 pt-6 border-t border-zinc-800">
             {article.tags.map((tag) => (
-              <a
+              <Link
                 key={tag}
                 href={`/tag/${tag}`}
                 className="px-3 py-1 rounded-full border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
               >
                 #{tag}
-              </a>
+              </Link>
             ))}
           </div>
         )}

@@ -62,8 +62,10 @@ admin separately.
   Avoid Node 25+: Payload/Next can run out of heap memory on it.
   No nvm? Install Node 22 directly: `brew install node@22` (macOS) then
   `brew link --overwrite --force node@22`.
-- **pnpm 9 or newer** (10 works) — `corepack enable` (ships with Node) or
-  `npm i -g pnpm`.
+- **pnpm 10** — the exact version is pinned in `package.json#packageManager`, so
+  `corepack enable` (ships with Node) installs the right one automatically.
+  Otherwise: `npm i -g pnpm@10`. pnpm 9 is no longer supported — the repo relies
+  on `onlyBuiltDependencies` in `pnpm-workspace.yaml`, which pnpm 9 ignores.
 - **PostgreSQL database** — a connection string for `DATABASE_URL`. Easiest is a
   free [Neon](https://neon.tech) or [Supabase](https://supabase.com) project; a
   local Postgres works too.

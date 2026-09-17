@@ -136,7 +136,7 @@ Last updated: **2026-07-28**.
 | ✅     | CI runtime hygiene    | GitHub Actions uses Node 22 LTS plus Node-24-compatible action runtimes (`checkout@v5`, `setup-node@v5`, `pnpm/action-setup@v4.4.0`)                        |
 | ✅     | Workspace dependency hygiene | `@akavish/ui` explicitly declares its `@akavish/types` workspace dependency, so isolated CI installs resolve it correctly                              |
 | ✅     | API client type environment | `@akavish/api-client` explicitly includes DOM fetch types and Node 22 process types, so isolated CI type-checks match its web/Expo runtime contract     |
-| ✅     | pnpm 10 fix           | Moved `overrides` + `onlyBuiltDependencies` to `pnpm-workspace.yaml` (pnpm 10 ignores the `pnpm` package.json field)                                          |
+| ✅     | pnpm 10 adoption      | `packageManager` pins pnpm 10.34.5 (was 9.0.0 while the lockfile was pnpm-10-generated). `onlyBuiltDependencies` lives in `pnpm-workspace.yaml`, where pnpm 10 reads it. The dormant React `overrides` were **removed** rather than activated — see the gotcha below |
 
 ## Deployment (prep)
 
@@ -359,6 +359,20 @@ checklist it walks through.
 - The CMS schema is managed by **versioned migrations** (`push: false`). Change a
   collection → `pnpm migrate:create <name>` + `pnpm migrate`, commit; Railway's
   pre-deploy applies them to prod. See `DEPLOYMENT.md` §5.
+- **Don't re-add React `overrides` to `pnpm-workspace.yaml`.** They were there
+  for months but never applied (pnpm only reads them from that file since 10.5,
+  and `packageManager` was pinned to pnpm 9 — the lockfile had no `overrides:`
+  block, which proved it). What actually fixes the React 18/19 type clash is the
+  `paths` entries in the web and CMS `tsconfig.json`. Activating a repo-wide
+  `react: 19` override would force React 19 onto `apps/mobile`, which is on
+  React 18.3.1 / Expo ~52 and doesn't support it. Only reconsider once mobile
+  runs a React-19 Expo SDK.
+- **pnpm 11+ needs an `.npmrc` migration first.** From pnpm 11, `.npmrc` may only
+  hold auth/registry settings; everything else must move to
+  `pnpm-workspace.yaml`. Ours carries `shamefully-hoist=true` and
+  `public-hoist-pattern[]`, which are load-bearing for Payload resolution and
+  tied to the React-types workaround — so that upgrade is its own task, not a
+  version bump.
 - **Clerk middleware matcher — don't re-add the file-extension exclusion.**
   Clerk's boilerplate matcher skips paths ending in `.ico`, `.png`, `.css`… on
   the assumption they're static files. This app has **no `public/` directory**,
