@@ -207,6 +207,44 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 | Comments | Needs traffic, paid Clerk production keys, moderation and anti-spam (§5) |
 | Clerk production instance | Paid; only needed once reader accounts do something (§8) |
 
+### AI news scout — brief and open questions
+
+**The idea (Alex, Nov 2026):** a bot — an AI assistant — that regularly goes
+through the best-known gaming news and leak sites, and the X/Twitter profiles of
+known leakers and news accounts, picks up stories worth covering, **writes the
+articles**, and sends them to Alex **for validation** before anything is
+published. Linked to scheduled publishing (approved drafts go out at a set time)
+and to the newsletter (the same pipeline can feed a digest).
+
+**Likely shape:** a scheduled job collects sources → an LLM deduplicates against
+what's already on the site, ranks, and drafts → each draft is created in the CMS
+as a **draft** (never published by the bot) → Alex gets a summary with links,
+edits/approves in `/admin`. Nothing goes live without a human.
+
+**Constraints already identified:**
+
+- **X/Twitter:** the API is paid and scraping breaks their terms of service.
+  Start with RSS feeds of news sites and Reddit (e.g. r/GamingLeaksAndRumours),
+  which are meant to be consumed; add X only if the cost is justified.
+- **Copyright / duplicate content:** drafts must **synthesise and cite** several
+  sources with links, never paraphrase a single competitor's article — a legal
+  requirement and what keeps Google from treating the pages as copies.
+- **Leaks:** the bot will surface unverified claims; drafts must name their
+  sources and follow the leak-labelling commitment in `/terms`.
+- **AI-content transparency:** EU rules require disclosure for AI-generated text,
+  with lighter obligations when a human reviews it and takes editorial
+  responsibility — check precisely before launch, and update `/terms` (and
+  `lib/legal.ts` if a new service ever sees visitor data).
+- **Cost:** LLM API usage per draft, plus any paid source API.
+
+**Questions to answer before designing it:**
+
+1. How many drafts a day are wanted?
+2. Which sources exactly — sites, subreddits, accounts?
+3. How should validation happen — email digest, or the Akavish Discord server
+   with "publish / reject" buttons?
+4. What monthly API budget is acceptable?
+
 ---
 
 # Backlog — everything left to do
@@ -252,8 +290,8 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item                          | Notes                                                                          |
 | --- | ----------------------------- | ------------------------------------------------------------------------------ |
 | ✅  | Auto `publishedAt`            | `beforeChange` hook stamps the publish date; re-saving an undated published article backfills from `createdAt`. Fixes the missing byline date, JSON-LD `datePublished`, prev/next nav and `-publishedAt` sorting |
-| P1  | Required SEO defaults         | Auto-fill `seo.title`/`description` from title/excerpt via a hook if empty     |
-| P1  | Author ↔ user link            | Connect a CMS `user` (editor) to an `author` profile                           |
+| ✅  | Required SEO defaults         | Already covered at render time: article metadata falls back to title/excerpt when the SEO fields are empty |
+| P3  | Author ↔ user link            | Connect a CMS `user` (editor) to an `author` profile. Only matters once there's more than one writer |
 | P2  | Editorial workflow            | Roles (admin / editor / writer) + access control per role; review/publish flow |
 | P2  | Homepage curation             | A “featured” flag or a singleton “Homepage” global to pick the hero            |
 | ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
@@ -324,7 +362,7 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 | --- | ---------------------------- | ---------------------------------------------------------------------------------- |
 | P2  | Dockerfile for web           | Multi-stage Next.js build                                                          |
 | P2  | Dockerfile for CMS           | Payload already ships a starter `apps/cms/Dockerfile` — adapt it                   |
-| P2  | Extend root `docker-compose` | Now runs Meilisearch ✅; add web + CMS + Postgres for a full one-command dev stack |
+| ✅  | Extend root `docker-compose` | Postgres + Meilisearch for local dev. Web and CMS still run via `pnpm dev` (faster reloads than containers) |
 
 ### CI (GitHub Actions or similar)
 
@@ -333,7 +371,7 @@ Lint + type-check + build on PR are done (see [Done → CI/CD](#cicd)). Remainin
 | Pri | Item                     | Notes                                                                                            |
 | --- | ------------------------ | ------------------------------------------------------------------------------------------------ |
 | P2  | Lint + type-check mobile | Give the Expo app a working ESLint config + re-include it in CI once it's on a React-19 Expo SDK |
-| P2  | Run tests in CI          | CMS has Vitest (int) + Playwright (e2e) — wire them into the workflow                            |
+| P2  | CMS tests in CI          | Unit tests (web + api-client) run in CI ✅. The CMS's own Vitest int + Playwright e2e suites aren't wired in yet — they need a seeded DB and browsers |
 | P2  | Preview deploys          | Vercel preview per PR                                                                            |
 | P3  | Dependabot / renovate    | Dependency updates                                                                               |
 
@@ -354,11 +392,11 @@ checklist it walks through.
 | Pri | Item               | Notes                                                                  |
 | --- | ------------------ | ---------------------------------------------------------------------- |
 | ✅  | Error monitoring   | Sentry on web (client + server + edge, tunnelled through `/monitoring`) and CMS (server only). Errors + performance tracing, sampled to fit the free tier. Session Replay off on privacy grounds |
-| P1  | Secrets management | Move from `.env` files to the host's secret store in prod              |
+| ✅  | Secrets management | Prod secrets live only in Railway / Vercel / GitHub secrets, never in committed files; rotation runbook in `DEPLOYMENT.md` §8 |
 | P2  | Rate limiting      | On public API routes                                                   |
 | P2  | Uptime monitoring  | Healthcheck + alerting on web/CMS                                      |
-| P2  | Legal pages        | Privacy policy, terms, cookie notice (needed for Clerk/analytics/GDPR) |
-| P2  | Cookie consent     | If using analytics/tracking in the EU                                  |
+| ✅  | Legal pages        | Done — `/privacy`, `/terms`, `/legal` in EN + FR (roadmap #8)          |
+| ✅  | Cookie consent     | Not needed: cookieless analytics, only strictly necessary Clerk cookies — explained in `/privacy` |
 | P3  | Logging            | Structured logs shipped somewhere queryable                            |
 
 ## 10. Testing & docs
