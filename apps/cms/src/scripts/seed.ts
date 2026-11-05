@@ -20,7 +20,12 @@ import 'dotenv/config'
 import { getPayload, type Payload } from 'payload'
 import sharp from 'sharp'
 import config from '../payload.config'
-import type { Article } from '../payload-types'
+// No import from '../payload-types': that file is generated and gitignored, so
+// CI type-checks without it. The few types needed are spelled out here.
+// Postgres ids are numbers; without the generated types Payload reports them as
+// `number | string`, so every id goes through Number() to type-check both ways.
+type ID = number
+type Category = 'news' | 'leak' | 'review' | 'preview' | 'conference' | 'esport'
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]', 'host.docker.internal'])
 
@@ -66,7 +71,7 @@ const textNode = (text: string) => ({
   version: 1,
 })
 
-function richText(blocks: Block[]): Article['content'] {
+function richText(blocks: Block[]) {
   const children = blocks.map((block) =>
     typeof block === 'string'
       ? {
@@ -90,7 +95,7 @@ function richText(blocks: Block[]): Article['content'] {
         },
   )
   return {
-    root: { type: 'root', format: '', indent: 0, version: 1, direction: 'ltr', children },
+    root: { type: 'root', format: '' as const, indent: 0, version: 1, direction: 'ltr' as const, children },
   }
 }
 
@@ -150,7 +155,7 @@ type TagSlug = (typeof TAGS)[number]['slug']
 interface SampleArticle {
   title: string
   slug: string
-  category: Article['category']
+  category: Category
   excerpt: string
   game?: GameSlug
   tags: TagSlug[]
@@ -287,14 +292,15 @@ async function findIdBySlug(
   payload: Payload,
   collection: 'authors' | 'games' | 'tags' | 'articles',
   slug: string,
-): Promise<number | null> {
+): Promise<ID | null> {
   const res = await payload.find({
     collection,
     where: { slug: { equals: slug } },
     limit: 1,
     depth: 0,
   })
-  return res.docs[0]?.id ?? null
+  const id = res.docs[0]?.id
+  return id == null ? null : Number(id)
 }
 
 // ─── Run ───────────────────────────────────────────────────────────────────
@@ -322,29 +328,28 @@ const run = async () => {
   // Author
   let authorId = await findIdBySlug(payload, 'authors', AUTHOR.slug)
   if (!authorId) {
-    authorId = (await payload.create({ collection: 'authors', data: AUTHOR })).id
+    authorId = Number((await payload.create({ collection: 'authors', data: AUTHOR })).id)
   }
 
   // Games
-  const gameIds = new Map<string, number>()
+  const gameIds = new Map<string, ID>()
   for (const game of GAMES) {
     let id = await findIdBySlug(payload, 'games', game.slug)
     if (!id) {
-      id = (
-        await payload.create({
-          collection: 'games',
-          data: { ...game, platform: [...game.platform], genre: [...game.genre] },
-        })
-      ).id
+      const doc = await payload.create({
+        collection: 'games',
+        data: { ...game, platform: [...game.platform], genre: [...game.genre] },
+      })
+      id = Number(doc.id)
     }
     gameIds.set(game.slug, id)
   }
 
   // Tags
-  const tagIds = new Map<string, number>()
+  const tagIds = new Map<string, ID>()
   for (const tag of TAGS) {
     let id = await findIdBySlug(payload, 'tags', tag.slug)
-    if (!id) id = (await payload.create({ collection: 'tags', data: { ...tag } })).id
+    if (!id) id = Number((await payload.create({ collection: 'tags', data: { ...tag } })).id)
     tagIds.set(tag.slug, id)
   }
 
@@ -361,7 +366,7 @@ const run = async () => {
   for (const [index, article] of ARTICLES.entries()) {
     if (await findIdBySlug(payload, 'articles', article.slug)) continue
 
-    let coverImage: number | undefined
+    let coverImage: ID | undefined
     if (uploadCovers) {
       const data = await coverPng(article.title.split(':')[0].slice(0, 26), ...article.cover)
       const media = await payload.create({
@@ -374,7 +379,7 @@ const run = async () => {
           size: data.length,
         },
       })
-      coverImage = media.id
+      coverImage = Number(media.id)
     }
 
     await payload.create({
@@ -390,7 +395,7 @@ const run = async () => {
         publishedAt: new Date(now - index * 5 * 60 * 60 * 1000).toISOString(),
         author: authorId,
         game: article.game ? gameIds.get(article.game) : undefined,
-        tags: article.tags.map((slug) => tagIds.get(slug)).filter((id): id is number => id !== undefined),
+        tags: article.tags.map((slug) => tagIds.get(slug)).filter((id): id is ID => id !== undefined),
         coverImage,
       },
     })
