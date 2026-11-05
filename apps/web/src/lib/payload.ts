@@ -4,6 +4,14 @@
 // shared `Article` type the frontend (and mobile) consume.
 
 import type { Article, PaginatedResponse } from '@akavish/types'
+import {
+  mapArticle as mapPayloadArticle,
+  mediaUrl as sharedMediaUrl,
+  type MediaSize,
+  type PayloadArticle,
+  type PayloadListResponse,
+  type PayloadMedia,
+} from '@akavish/api-client/payload'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
@@ -24,114 +32,12 @@ function cmsFetch(url: string, init?: RequestInit): Promise<Response> {
   ])
 }
 
-// Payload's list responses look like { docs, totalDocs, page, totalPages, limit, ... }
-interface PayloadListResponse<T> {
-  docs: T[]
-  totalDocs: number
-  page: number
-  limit: number
-  totalPages: number
-}
-
-// A raw Payload article doc (relationships populated at depth=1).
-interface PayloadArticle {
-  id: string | number
-  slug: string
-  title: string
-  excerpt: string
-  content: unknown
-  category: Article['category']
-  status: Article['status']
-  coverImage?: { url?: string } | string | null
-  publishedAt?: string | null
-  createdAt: string
-  updatedAt: string
-  author?: { id: string | number; slug?: string; name?: string; avatar?: { url?: string } | string; bio?: string } | string | null
-  game?: { id: string | number; name?: string; slug?: string } | string | null
-  tags?: Array<{ slug?: string } | string> | null
-  seo?: { title?: string; description?: string } | null
-}
-
-// A Payload upload doc: the original file plus the generated `imageSizes`
-// variants (thumbnail / card / hero / square — see apps/cms Media collection).
-type PayloadMedia =
-  | string
-  | {
-      url?: string
-      sizes?: Record<string, { url?: string } | undefined>
-    }
-  | null
-  | undefined
-
-type MediaSize = 'thumbnail' | 'card' | 'hero' | 'square'
-
-function absolutise(raw: string | undefined): string | undefined {
-  if (!raw) return undefined
-  // Payload may return a relative path (e.g. /api/media/file/x.jpg).
-  // Make it absolute against the CMS origin so next/image can load it.
-  return raw.startsWith('/') ? `${CMS_URL}${raw}` : raw
-}
-
-/**
- * URL of an uploaded file. Pass a `preferred` size to serve a resized variant
- * instead of the original — originals can be several MB, which is wasteful as a
- * source for next/image. Falls back to the original when the variant is missing
- * (e.g. files uploaded before imageSizes existed).
- */
-function mediaUrl(m: PayloadMedia, preferred?: MediaSize): string | undefined {
-  if (!m) return undefined
-  if (typeof m === 'string') return absolutise(m)
-  if (preferred) {
-    const sized = absolutise(m.sizes?.[preferred]?.url)
-    if (sized) return sized
-  }
-  return absolutise(m.url)
-}
-
-// Normalise a raw Payload doc into the shared Article shape.
-export function mapArticle(doc: PayloadArticle): Article {
-  const author = doc.author && typeof doc.author === 'object' ? doc.author : null
-  const game = doc.game && typeof doc.game === 'object' ? doc.game : null
-
-  return {
-    id: String(doc.id),
-    slug: doc.slug,
-    title: doc.title,
-    excerpt: doc.excerpt,
-    // Keep the raw Lexical JSON as a string; the detail page parses it.
-    content: typeof doc.content === 'string' ? doc.content : JSON.stringify(doc.content ?? null),
-    category: doc.category,
-    status: doc.status,
-    // 'hero' (1920w) is a good source for both the article hero (768 CSS px at
-    // 2x) and the cards, which next/image downscales from it.
-    coverImage: mediaUrl(doc.coverImage, 'hero'),
-    tags: Array.isArray(doc.tags)
-      ? doc.tags.map((t) => (typeof t === 'string' ? t : (t.slug ?? ''))).filter(Boolean)
-      : [],
-    game: game
-      ? {
-          id: String(game.id),
-          slug: game.slug ?? '',
-          name: game.name ?? '',
-          platform: [],
-          genre: [],
-        }
-      : undefined,
-    author: {
-      id: author ? String(author.id) : '',
-      slug: author?.slug,
-      name: author?.name ?? 'Akavish',
-      avatar: mediaUrl(author?.avatar, 'square'),
-      bio: author?.bio,
-    },
-    publishedAt: doc.publishedAt ?? undefined,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt,
-    seo: doc.seo
-      ? { title: doc.seo.title ?? undefined, description: doc.seo.description ?? undefined }
-      : undefined,
-  }
-}
+// The Payload → Article mapping is shared with the mobile app and lives in
+// `@akavish/api-client/payload`. These thin wrappers bind it to this app's CMS
+// origin, so the call sites below stay one-argument.
+const mapArticle = (doc: PayloadArticle): Article => mapPayloadArticle(doc, CMS_URL)
+const mediaUrl = (m: PayloadMedia, preferred?: MediaSize) =>
+  sharedMediaUrl(m, CMS_URL, preferred)
 
 interface ListParams {
   page?: number
@@ -461,15 +367,54 @@ export async function fetchAllArticleSlugs(): Promise<SlugEntry[]> {
 // All slugs of a simple collection (authors / games / tags) for the sitemap.
 export async function fetchAllEntitySlugs(
   collection: 'authors' | 'games' | 'tags'
-): Promise<SlugEntry[]> {
+): Promise<(SlugEntry & { id: string })[]> {
   const qs = new URLSearchParams({ depth: '0', limit: '1000' })
   const res = await cmsFetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
     next: { revalidate: 300 },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
+    id: string | number
     slug: string
     updatedAt?: string
   }>
-  return json.docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt }))
+  return json.docs.map((d) => ({ id: String(d.id), slug: d.slug, updatedAt: d.updatedAt }))
+}
+
+/**
+ * IDs of the authors, games and tags that at least one *published* article
+ * points to. The sitemap uses this to leave out taxonomy pages that would only
+ * say "no articles yet" — thin pages that dilute a small site in search results.
+ * One request, relationship IDs only (`depth: 0` + `select`).
+ */
+export async function fetchUsedTaxonomyIds(): Promise<{
+  authors: Set<string>
+  games: Set<string>
+  tags: Set<string>
+}> {
+  const qs = new URLSearchParams({
+    'where[status][equals]': 'published',
+    depth: '0',
+    limit: '1000',
+    'select[author]': 'true',
+    'select[game]': 'true',
+    'select[tags]': 'true',
+  })
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{
+    author?: string | number | null
+    game?: string | number | null
+    tags?: (string | number)[] | null
+  }>
+
+  const used = { authors: new Set<string>(), games: new Set<string>(), tags: new Set<string>() }
+  for (const doc of json.docs) {
+    if (doc.author != null) used.authors.add(String(doc.author))
+    if (doc.game != null) used.games.add(String(doc.game))
+    for (const t of doc.tags ?? []) used.tags.add(String(t))
+  }
+  return used
 }

@@ -90,6 +90,11 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`akavish-web-puce.vercel.app`, `akavish-production.up.railway.app`) still work
   but nothing should link to them. Mail via Cloudflare Email Routing
   (`hello@` / `tips@` / `privacy@`, receive-only).
+- **Shared data mapping:** the Payload → `Article` mapper lives in
+  `@akavish/api-client/payload` and is used by both web (`lib/payload.ts`) and
+  mobile. Article categories have one source: `apps/web/src/lib/categories.ts`
+  (must match the CMS `category` options).
+- **Secrets:** rotation runbook and rotation log in `DEPLOYMENT.md` §8.
 - **Status / roadmap:** single source of truth is **`PROGRESS.md`**. Deployment
   runbook is **`DEPLOYMENT.md`**.
 - **Media:** uploads go to Cloudflare R2 via `@payloadcms/storage-s3` (the CMS

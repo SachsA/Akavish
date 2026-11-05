@@ -73,7 +73,7 @@ Last updated: **2026-07-28**.
 | Status | Item                         | Notes                                                                                      |
 | ------ | ---------------------------- | ------------------------------------------------------------------------------------------ |
 | ✅     | Site config + `metadataBase` | `lib/site.ts` reads `NEXT_PUBLIC_SITE_URL`; layout sets metadataBase + default canonical   |
-| ✅     | `sitemap.xml`                | `app/sitemap.ts` — static pages + categories + all published articles/authors/games/tags   |
+| ✅     | `sitemap.xml`                | `app/sitemap.ts` — static pages + categories + published articles, and only the authors/games/tags that have at least one published article (empty taxonomy pages are thin content) |
 | ✅     | `robots.txt`                 | `app/robots.ts` — allows all but `/api`, `/account`, `/sign-in`, `/sign-up`; links sitemap |
 | ✅     | Canonical URLs               | `alternates.canonical` on home, article, category, author, game, tag                       |
 | ✅     | CMS `seo` fields used        | Article metadata prefers `seo.title` / `seo.description`, falls back to title/excerpt      |
@@ -164,16 +164,22 @@ actually tackle it, best value-for-effort first.
 | 6   | ✅ **Article page polish**          | Done — reading time (+ `wordCount`/`timeRequired` in the JSON-LD), share row, "Read next" suggestions, prev/next nav. Suggestions fail soft: a CMS error drops them instead of breaking the page | —      |
 | 7   | ✅ **Observability**                | Done — Vercel Web Analytics (cookieless, 50k events/mo free) + Sentry errors & tracing on web and CMS. Both no-op without config. `DEPLOYMENT.md` §4d | —      |
 | 8   | ✅ **Legal pages**                  | Done — real `/privacy`, `/terms`, `/legal` (LCEN notice) in EN + FR, written from the actual processor list (`lib/legal.ts`). Sentry PII collection explicitly disabled so the policy is true. **Not reviewed by a lawyer** | —      |
-| 9   | ⬜ Homepage layout pass             | Featured/hero article + sections instead of one flat grid — the front door                                                                               | 1–2 h  |
+| 9   | ✅ **Homepage layout**              | Done — masthead with real section links, lead story + "Top stories" column, one section per category from the remaining articles (no duplicates). Degrades cleanly down to one article or an empty state. Skeleton in `loading.tsx` mirrors it | —      |
+| 10  | ✅ **Reader-facing fallbacks**      | Done — the home and category pages showed developer instructions to the public ("Make sure the CMS is running on localhost:3001", "Publish an article in the CMS"). Now `components/StatusMessage.tsx` | —      |
+| 11  | ✅ **Secret-rotation runbook**      | Done — `DEPLOYMENT.md` §8, written after the October 2026 Railway incident: inventory, order of operations, pitfalls, rotation log | —      |
+| 12  | ⬜ **Expo SDK upgrade**             | Mobile is on SDK 52, current is 58. Needs a simulator/device to validate — see §7 | 2–4 h  |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
 > (task 4) **sends** Payload's password resets from `mail.akavish.gg`. Cloudflare
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-Then, as it comes: SEO defaults hook · pagination · homepage hero/featured ·
-accessibility pass · analytics · mobile track (Expo SDK 53 + `api-client` shape
-fix) · i18n · comments (see §5 — needs traffic and paid Clerk first).
+Then, as it comes: SEO defaults hook · pagination · accessibility pass ·
+analytics · i18n · comments (see §5 — needs traffic and paid Clerk first).
+
+> **The real bottleneck is content, not code.** The production CMS has had zero
+> articles since October 2026. Pagination, analytics and search polish only mean
+> something once there's a steady publishing rhythm.
 
 | Status | Item            | Notes                                                                                                                                            |
 | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -195,7 +201,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/WhatsApp + native share sheet + copy link), "Read next" suggestions and prev/next navigation |
 | P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
 | P2  | Pagination / infinite scroll | Home + category + tag pages currently cap at N items                                        |
-| P2  | Homepage layout pass         | Featured/hero article, “trending”, section blocks instead of one flat grid                  |
+| ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
 | P2  | Newsletter signup            | Capture emails (needs an ESP: Resend/Mailchimp/etc.)                                        |
 | P3  | Search polish                | Highlighting, filters by category, instant/typeahead results                                |
 | P3  | Dark/light toggle            | Currently dark-only                                                                         |
@@ -285,8 +291,8 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 
 | Pri | Item                              | Notes                                                                                                                                                                                                                                                                 |
 | --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | Upgrade Expo to SDK 53 (React 19) | Mobile is on Expo 52 / React 18 while web+cms are React 19. A repo-wide `react: 19` override forces RN onto React 19 (unsupported on SDK 52). Mobile is currently **excluded from the CI type-check** (`--filter=!@akavish/mobile`) until it's on a React-19 Expo SDK |
-| P1  | Fix api-client ↔ Payload shape    | `articlesApi.list` is typed `PaginatedResponse` (`.data`) but hits Payload's REST which returns `{docs,…}` — mobile's `res.data` is undefined at runtime. Align the shared client with the web's `lib/payload.ts` mapping                                             |
+| P1  | Upgrade Expo SDK 52 → 58          | Mobile is on Expo 52 / React 18.3 / RN 0.76; current SDK is **58** (checked Nov 2026). Expo recommends one SDK at a time, each with breaking changes in expo-router and React Navigation, so it must be validated on a simulator or device — not done blind. Mobile stays **excluded from CI** (`--filter=!@akavish/mobile`) until it type-checks on the new SDK. Once mobile is on React 19, the root `@types/react@18` that forced the React `paths` workaround in the web/CMS tsconfigs disappears — re-test whether that workaround can go |
+| ✅  | Fix api-client ↔ Payload shape    | Done — the Payload → `Article` mapper now lives in `@akavish/api-client/payload` and both web and mobile use it. `articlesApi.list` really returns `PaginatedResponse<Article>` (mobile's `res.data` was undefined), filters to published, populates relations; `get` no longer interpolates the slug raw into the URL |
 | P2  | Feature parity audit              | Home, category, article detail consuming the CMS API                                                                                                                                                                                                                  |
 | P2  | Push notifications                | Expo notifications on new articles                                                                                                                                                                                                                                    |
 | P3  | App store assets                  | Icons, splash, screenshots, listing copy                                                                                                                                                                                                                              |
@@ -359,6 +365,15 @@ checklist it walks through.
 - The CMS schema is managed by **versioned migrations** (`push: false`). Change a
   collection → `pnpm migrate:create <name>` + `pnpm migrate`, commit; Railway's
   pre-deploy applies them to prod. See `DEPLOYMENT.md` §5.
+- **Categories have one source: `apps/web/src/lib/categories.ts`.** Slug (`leaks`),
+  CMS value (`leak`) and labels live there; it must match the `category` select
+  options in `apps/cms/src/collections/Articles.ts`. A few components still keep
+  their own singular-label map (`ArticleCard`, the article page, `SearchResults`,
+  the OG image) — migrate them when next touched.
+- **Never show operational details to readers.** Fallbacks go through
+  `components/StatusMessage.tsx`; diagnostics belong in Sentry and the logs.
+- **`app/loading.tsx` mirrors the home layout** — change one, change the other,
+  or the page jumps when content arrives.
 - **Don't re-add React `overrides` to `pnpm-workspace.yaml`.** They were there
   for months but never applied (pnpm only reads them from that file since 10.5,
   and `packageManager` was pinned to pnpm 9 — the lockfile had no `overrides:`

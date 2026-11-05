@@ -653,6 +653,85 @@ domain change:
 
 ---
 
+## 8. Secret rotation (incident runbook)
+
+Use this when a host or vendor reports leaked credentials, when a secret has
+been pasted somewhere it shouldn't (chat, screenshot, issue, commit), or as
+periodic hygiene. Written after the **October 2026 Railway incident**, in which
+Railway disclosed that customer environment variables may have been read and
+asked every user to rotate everything.
+
+**Rule one: assume exposed.** A provider's "you may be affected" means rotate.
+Your own app logs prove nothing — an attacker uses stolen keys directly against
+Neon, R2 or Resend, never through the CMS. Check *those* services' logs.
+
+### Inventory
+
+| Secret | Lives on | Revoke / reissue at | Breaks until redeploy | Severity |
+| --- | --- | --- | --- | --- |
+| `DATABASE_URL` | Railway | Neon → **prod** project → Roles → *Reset password* | **CMS, and therefore the site's article pages** | 🔴 full DB access |
+| `PAYLOAD_SECRET` | Railway | Generate: `openssl rand -base64 48` | Nothing — logs editors out once applied | 🔴 forge admin sessions |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Railway, local `.env` | Cloudflare → R2 → Manage API tokens | Uploads only — images keep serving from `R2_PUBLIC_URL` | 🟠 delete/plant files |
+| `RESEND_API_KEY` | Railway, local `.env` | Resend → API Keys | Password-reset emails | 🟠 phishing from your domain |
+| `SENTRY_AUTH_TOKEN` | Railway **and** Vercel | Sentry → Settings → Developer Settings → Organization Tokens | Nothing at runtime — build-time only | 🟡 |
+| `CLERK_SECRET_KEY` | Vercel | Clerk → API Keys → roll | Reader sign-in, until Vercel redeploys | 🟠 reader accounts |
+| `MEILISEARCH_API_KEY` | (unset today) | Meilisearch → keys | Search falls back to the CMS | 🟡 |
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Railway / Vercel | Sentry → Client Keys | Nothing | ⚪ public by design |
+
+Not secrets, no action: `SERVER_URL`, `WEB_URL`, `CMS_URL`, `*_SITE_URL`,
+`R2_BUCKET`, `R2_ENDPOINT`, `R2_PUBLIC_URL`, `EMAIL_FROM_*`, `SENTRY_ORG`,
+`SENTRY_PROJECT*`, `*_ENVIRONMENT`.
+
+### Order of operations
+
+New values only take effect on the **next deploy** — variables are bound to a
+deployment, so a restart reuses the old ones. That makes the order matter:
+
+1. **Zero-downtime first.** Sentry token, Resend key, R2 keys: revoke, reissue,
+   paste the new values in Railway (and Vercel / local `.env` where listed). The
+   live site keeps working throughout.
+2. **`PAYLOAD_SECRET`.** Set the new value; harmless until the deploy.
+3. **Database last.** Resetting the Neon password cuts the running CMS off
+   immediately. Do it right before you can deploy — or immediately, accepting
+   downtime, if Neon shows activity you don't recognise.
+4. **Deploy once.** If the platform queues deploys, don't trigger it again.
+   Ship rotations on their own — never in the same deploy as a dependency or
+   build change, or a failure can't be attributed.
+
+If the host has paused deployments (Railway did, for hours, by plan tier), steps
+1–2 still apply safely; step 3 is the only judgement call.
+
+### Pitfalls hit last time
+
+- **Neon has two projects.** Reset the password on **prod**, not dev.
+- **Pooled vs direct.** Keep the same connection-string form as before (`-pooler`
+  in the host or not), with `?sslmode=require` on the end.
+- **Creating a key doesn't revoke the old one.** Delete the old R2 token / Resend
+  key explicitly, then confirm the list shows only the new one.
+- **Scope new keys minimally.** R2: *Object Read & Write* on the one bucket.
+  Resend: *Sending access*. The Cloudflare `cfat_…` account token shown next to
+  R2 credentials is not used by Akavish — don't store it anywhere.
+- **Never paste a secret into a chat, ticket or screenshot** — including to an AI
+  assistant. Copy straight from the provider's copy button into the dashboard.
+  Nothing in this repo or its tooling ever needs the value itself.
+
+### After the deploy
+
+- `cms.akavish.gg/admin` → log in again (new `PAYLOAD_SECRET`) → **Users**: no
+  account you don't recognise.
+- Upload a test image (R2), trigger *Forgot password* (Resend), load `akavish.gg`.
+- Review: Neon monitoring, the R2 object list, Resend's **Emails** log, the
+  GitHub security log and deploy keys for `SachsA/Akavish`, the Sentry audit log.
+- Note the date here so the next rotation knows how old each key is.
+
+**Rotation log**
+
+- **October 2026** — full rotation of every Railway secret (Railway incident):
+  `DATABASE_URL`, `PAYLOAD_SECRET`, R2 keys, `RESEND_API_KEY`,
+  `SENTRY_AUTH_TOKEN`. Vercel-only secrets (Clerk) were not exposed and not rotated.
+
+---
+
 ## Environment variable reference
 
 **Web (Vercel)**
