@@ -15,10 +15,10 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="article/[slug]"
-          options={{ title: '', headerBackTitle: 'Back' }}
-        />
+        {/* An `article/[slug]` screen used to be declared here without the route
+            file existing, which makes Expo Router warn on every launch. Add the
+            screen back together with app/article/[slug].tsx (mobile feature
+            parity, PROGRESS.md §7). */}
       </Stack>
     </SafeAreaProvider>
   )

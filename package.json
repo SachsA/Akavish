@@ -4,8 +4,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint --filter=!@akavish/mobile",
-    "type-check": "turbo run type-check --filter=!@akavish/mobile",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
     "test": "turbo run test --filter=@akavish/web --filter=@akavish/api-client",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "clean": "bash scripts/clean.sh",

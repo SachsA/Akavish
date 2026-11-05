@@ -58,7 +58,8 @@ admin separately.
 
 **Required**
 
-- **Node 20 or 22 LTS** — a `.nvmrc` pins 22, so `nvm use` is enough.
+- **Node 22 LTS (≥ 22.13)** — a `.nvmrc` pins 22, so `nvm use` is enough. The
+  mobile app (Expo 58) requires ≥ 22.13; web and CMS also run on Node 20.
   Avoid Node 25+: Payload/Next can run out of heap memory on it.
   No nvm? Install Node 22 directly: `brew install node@22` (macOS) then
   `brew link --overwrite --force node@22`.
@@ -176,6 +177,13 @@ Mobile (optional):
 cd apps/mobile && pnpm dev
 ```
 
+Scan the QR code with the iPhone camera (or Expo Go on Android); the phone needs
+**Expo Go for SDK 58**. On iPhone, Expo Go only opens a project when the phone and
+the computer are signed in to the **same Expo account** (free): `npx expo login`
+on the computer, then sign in inside Expo Go. Keep `EXPO_PUBLIC_CMS_URL` on the
+production CMS or your Mac's LAN IP — `localhost` on a phone is the phone
+(see `apps/mobile/.env.example`). Same Wi-Fi required, or `pnpm dev --tunnel`.
+
 ### Resetting
 
 Two independent tools:
@@ -207,8 +215,8 @@ GitHub Actions runs on every push to `main` and every pull request
 
 - **Lint, type-check & tests** — lint runs on web + CMS; type-check runs on web,
   CMS, and shared packages; `pnpm test` runs the vitest unit tests (web +
-  `api-client`). Mobile is excluded for now: it's on Expo 52 / React 18 while the
-  rest is React 19 (see `PROGRESS.md`).
+  `api-client`). Lint and type-check include mobile; mobile isn't built in CI
+  (that needs EAS).
 - **Database backup** (`.github/workflows/backup.yml`) — nightly `pg_dump` of
   production into a private R2 bucket. Setup and restore: `DEPLOYMENT.md` §9.
 - **Build** — `pnpm build` (web + CMS) against a throwaway Postgres service with

@@ -11,8 +11,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Fast, dependency-only gate: lint web + CMS; type-check web, CMS and shared
-  # packages; unit tests. Mobile is excluded.
+  # Fast, dependency-only gate: lint web, CMS and mobile; type-check web, CMS,
+  # mobile and shared packages; unit tests. (Mobile is not *built* here — that
+  # needs EAS.)
   quality:
     name: Lint, type-check & tests
     runs-on: ubuntu-latest

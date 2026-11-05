@@ -128,7 +128,7 @@ Last updated: **2026-07-28**.
 | Status | Item                  | Notes                                                                                                                                                         |
 | ------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ✅     | GitHub Actions CI     | `.github/workflows/ci.yml` on push to `main` + every PR                                                                                                       |
-| ✅     | Lint + type-check job | Lint: web + CMS. Type-check: web, CMS + all shared packages. Mobile excluded.                                                                                |
+| ✅     | Lint + type-check job | Lint: web, CMS + mobile. Type-check: web, CMS, mobile + all shared packages (mobile back in CI since the Expo 58 upgrade).                                   |
 | ✅     | Build job             | `pnpm build` (web + CMS) with a Postgres service + dummy env                                                                                                  |
 | ✅     | ESLint flat configs   | web + cms use `eslint.config.mjs` importing `eslint-config-next`'s native flat presets (no FlatCompat, no `next lint`); web bumped to `eslint-config-next@16` |
 | ✅     | Link hygiene          | Internal `<a>` → `next/link` `<Link>` across web (fixes `no-html-link-for-pages`)                                                                             |
@@ -167,7 +167,7 @@ actually tackle it, best value-for-effort first.
 | 9   | ✅ **Homepage layout**              | Done — masthead with real section links, lead story + "Top stories" column, one section per category from the remaining articles (no duplicates). Degrades cleanly down to one article or an empty state. Skeleton in `loading.tsx` mirrors it | —      |
 | 10  | ✅ **Reader-facing fallbacks**      | Done — the home and category pages showed developer instructions to the public ("Make sure the CMS is running on localhost:3001", "Publish an article in the CMS"). Now `components/StatusMessage.tsx` | —      |
 | 11  | ✅ **Secret-rotation runbook**      | Done — `DEPLOYMENT.md` §8, written after the October 2026 Railway incident: inventory, order of operations, pitfalls, rotation log | —      |
-| 12  | ⬜ **Expo SDK upgrade**             | Mobile is on SDK 52, current is 58. Needs a simulator/device to validate — see §7 | 2–4 h  |
+| 12  | ✅ **Expo SDK upgrade**             | Done — SDK 52 → 58 (React 19.3, RN 0.88), validated on an iPhone in Expo Go. Mobile is back in CI lint + type-check. Details in §7 | —      |
 | 13  | ✅ **Nightly DB backups**           | Done — `.github/workflows/backup.yml`: `pg_dump` of prod → **private** R2 bucket, 30-day lifecycle. Needs one-time setup (bucket, token, GitHub secrets) — `DEPLOYMENT.md` §9 | —      |
 | 14  | ✅ **Slug redirects**               | Done — renaming a published article records the old slug (`previousSlugs`); old URLs 308 to the new one | —      |
 | 15  | ✅ **Unit tests**                   | Done — vitest on the shared Payload mapper, reading time and the web ↔ CMS category list; `pnpm test`, run in CI | —      |
@@ -182,7 +182,7 @@ actually tackle it, best value-for-effort first.
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-**Order:** #12 Expo → #18 seed → #19 monitoring → #20 audit. That's the whole
+**Order:** #18 seed → #19 monitoring → #20 audit. That's the whole
 list of work worth doing *now*.
 
 **After that, everything left waits on something:**
@@ -190,7 +190,7 @@ list of work worth doing *now*.
 | Waits on | Items (in the backlog below) |
 | --- | --- |
 | **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
-| **The app being shipped** (after #12) | Push notifications · store release (EAS) · app store assets · mobile feature parity |
+| **The app being shipped** | Push notifications · store release (EAS) · app store assets · mobile feature parity |
 | **Traffic** | CDN / cache tuning · rate limiting on public APIs · reader accounts (`/account`, Clerk → DB sync) |
 | **Content and readers** | Everything in **🅿️ Parked**: AI news scout, scheduled publishing, newsletter, pagination, analytics review, comments, Clerk production |
 | **Money / launch** | Legal review by a professional (before monetising) |
@@ -362,9 +362,10 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 
 | Pri | Item                              | Notes                                                                                                                                                                                                                                                                 |
 | --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | Upgrade Expo SDK 52 → 58          | Mobile is on Expo 52 / React 18.3 / RN 0.76; current SDK is **58** (checked Nov 2026). Expo recommends one SDK at a time, each with breaking changes in expo-router and React Navigation, so it must be validated on a simulator or device — not done blind. Mobile stays **excluded from CI** (`--filter=!@akavish/mobile`) until it type-checks on the new SDK. Once mobile is on React 19, the root `@types/react@18` that forced the React `paths` workaround in the web/CMS tsconfigs disappears — re-test whether that workaround can go |
+| ✅  | Upgrade Expo SDK 52 → 58          | Done (Nov 2026) — Expo 58.0 / React 19.3 / RN 0.88 / TypeScript 6, Node ≥ 22.13 for the mobile app. Splash moved from `app.json#splash` to the `expo-splash-screen` plugin; ESLint 9 flat config (`eslint.config.js`); expo-router's peers (`expo-linking`, `expo-constants`, `@expo/metro-runtime`) declared explicitly; unused `expo-notifications` and `@react-navigation/native` removed (push notifications come back with the item below). `types/expo.d.ts` keeps Expo's global types available in CI, where the generated `expo-env.d.ts` doesn't exist. Validated on an iPhone in Expo Go (needs an Expo account signed in on both the phone and `npx expo login`). Back in CI lint + type-check |
 | ✅  | Fix api-client ↔ Payload shape    | Done — the Payload → `Article` mapper now lives in `@akavish/api-client/payload` and both web and mobile use it. `articlesApi.list` really returns `PaginatedResponse<Article>` (mobile's `res.data` was undefined), filters to published, populates relations; `get` no longer interpolates the slug raw into the URL |
-| P2  | Feature parity audit              | Home, category, article detail consuming the CMS API                                                                                                                                                                                                                  |
+| P2  | Feature parity audit              | Home, category, article detail consuming the CMS API. Today: Home lists articles (no tap action — there is no article screen yet); Leaks / Reviews / Esport are "coming soon" placeholders                                                                            |
+| P3  | Drop the React `paths` workaround? | Added to web/CMS tsconfigs when mobile hoisted `@types/react@18`. Mobile is now on React 19.3 (web 19.2), so it may be removable — remove the `react*` paths, run `pnpm type-check`, keep them if it breaks |
 | P2  | Push notifications                | Expo notifications on new articles                                                                                                                                                                                                                                    |
 | P3  | App store assets                  | Icons, splash, screenshots, listing copy                                                                                                                                                                                                                              |
 | P3  | EAS build & submit                | iOS + Android pipelines                                                                                                                                                                                                                                               |
@@ -429,7 +430,8 @@ checklist it walks through.
 
 - Run the CMS and web as **two separate processes** (ports 3001 and 3000).
 - Articles must be **Published** to appear publicly; drafts are editor-only.
-- Stick to **Node 20/22 LTS** — Node 25 ran the CMS out of heap memory.
+- Use **Node 22 LTS (≥ 22.13)** — required by Expo 58 for the mobile app; web and
+  CMS also run on Node 20. Avoid Node 25: it ran the CMS out of heap memory.
 - New CMS collections default to **private** reads — add `access.read` if the
   frontend needs them.
 - The CMS schema is managed by **versioned migrations** (`push: false`). Change a
@@ -447,11 +449,11 @@ checklist it walks through.
 - **Don't re-add React `overrides` to `pnpm-workspace.yaml`.** They were there
   for months but never applied (pnpm only reads them from that file since 10.5,
   and `packageManager` was pinned to pnpm 9 — the lockfile had no `overrides:`
-  block, which proved it). What actually fixes the React 18/19 type clash is the
-  `paths` entries in the web and CMS `tsconfig.json`. Activating a repo-wide
-  `react: 19` override would force React 19 onto `apps/mobile`, which is on
-  React 18.3.1 / Expo ~52 and doesn't support it. Only reconsider once mobile
-  runs a React-19 Expo SDK.
+  block, which proved it). What keeps each app on its own React types is the
+  `paths` entries in the web and CMS `tsconfig.json`. A repo-wide `react`
+  override would force one exact React version on every app, but each app pins
+  its own: Expo pins React to the SDK (19.3.0 on SDK 58, must match React
+  Native exactly), Next and Payload pin theirs (19.2.x).
 - **pnpm 11+ needs an `.npmrc` migration first.** From pnpm 11, `.npmrc` may only
   hold auth/registry settings; everything else must move to
   `pnpm-workspace.yaml`. Ours carries `shamefully-hoist=true` and

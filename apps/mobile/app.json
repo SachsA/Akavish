@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "akavish",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#060d1a"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "gg.akavish.app"
@@ -29,10 +24,12 @@
     "plugins": [
       "expo-router",
       [
-        "expo-notifications",
+        "expo-splash-screen",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#0ea5e9"
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "imageWidth": 200,
+          "backgroundColor": "#060d1a"
         }
       ]
     ],

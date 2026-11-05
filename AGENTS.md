@@ -84,9 +84,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   switches to Meilisearch when `MEILISEARCH_HOST` is set (indexing hooks in the
   CMS). Meilisearch failures fall back to the CMS. Currently running on the
   fallback — Meilisearch Cloud has no free tier.
-- **CI:** `.github/workflows/ci.yml` — lint web + CMS, type-check web/CMS/shared
-  packages, unit tests (`pnpm test`: vitest in web + api-client), then build web +
-  CMS (mobile excluded). `.github/workflows/backup.yml` dumps the prod DB nightly
+- **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
+  web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web +
+  api-client), then build web + CMS (mobile isn't built — that needs EAS). `.github/workflows/backup.yml` dumps the prod DB nightly
   to a private R2 bucket (`DEPLOYMENT.md` §9). Uses `pnpm install
   --frozen-lockfile` on Node 22.
 - **Live:** web = `akavish.gg` (canonical apex; `www` 308s to it), CMS =
@@ -117,7 +117,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   render a blank page.
 - **Known gotchas** (details in `PROGRESS.md` → gotchas):
   `shamefully-hoist` forces React-type `paths` in the web
-  tsconfig (don't remove them); Node 20/22 LTS only (25 OOMs the CMS);
-  **pnpm 10** pinned via `packageManager` — don't re-add React `overrides` to
-  `pnpm-workspace.yaml` (they'd force React 19 onto Expo 52 mobile), and pnpm 11
-  needs an `.npmrc` migration first.
+  tsconfig (don't remove them untested); Node 22 LTS ≥ 22.13 (Expo 58 needs it;
+  25 OOMs the CMS); **pnpm 10** pinned via `packageManager` — don't re-add React
+  `overrides` to `pnpm-workspace.yaml` (Expo pins its own exact React, 19.3 on
+  SDK 58, while Next/Payload are on 19.2), and pnpm 11 needs an `.npmrc`
+  migration first. Mobile = **Expo SDK 58**; on iPhone, Expo Go needs the same
+  Expo account signed in on phone and computer.

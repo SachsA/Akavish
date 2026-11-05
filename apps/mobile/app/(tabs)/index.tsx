@@ -27,6 +27,7 @@ export default function HomeScreen() {
     <FlatList
       data={articles}
       keyExtractor={(item) => item.id}
+      style={styles.screen}
       contentContainerStyle={styles.list}
       ListEmptyComponent={
         <View style={styles.centered}>
@@ -45,7 +46,16 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  // The FlatList is the screen itself: without a background it fell back to
+  // the light system default while the other tabs are dark.
+  screen: { flex: 1, backgroundColor: '#09090b' },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#09090b',
+  },
   empty: { color: '#71717a', textAlign: 'center' },
   list: { padding: 16, gap: 12 },
   card: {
