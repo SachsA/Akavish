@@ -173,14 +173,29 @@ actually tackle it, best value-for-effort first.
 | 15  | ✅ **Unit tests**                   | Done — vitest on the shared Payload mapper, reading time and the web ↔ CMS category list; `pnpm test`, run in CI | —      |
 | 16  | ✅ **Share images everywhere**      | Done — one design (`lib/og.tsx`) for a site-wide default plus category, author, game and tag pages. Fixed the wordmark rendering as "Akav ish" | —      |
 | 17  | ✅ **Local dev DB in Docker**       | Done — the Neon dev project and the Railway dev environment were deleted; local dev uses Postgres from `docker-compose.yml` | —      |
+| 18  | ⬜ **Seed script**                  | `pnpm seed`: admin user + a few sample articles, so a fresh local DB is usable at once and the homepage layout can be seen | ~1 h   |
+| 19  | ⬜ **Uptime monitoring**            | Free external check (UptimeRobot / Better Stack) on `akavish.gg` and `cms.akavish.gg` — the Railway outage was discovered by email | ~15 min |
+| 20  | ⬜ **Mobile + accessibility audit** | The site on a phone; keyboard navigation, focus states, contrast, screen-reader landmarks | 1–2 h  |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
 > (task 4) **sends** Payload's password resets from `mail.akavish.gg`. Cloudflare
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-Then, as it comes: SEO defaults hook · accessibility pass · i18n. Ideas that
-need content and readers first are in **🅿️ Parked** below.
+**Order:** #12 Expo → #18 seed → #19 monitoring → #20 audit. That's the whole
+list of work worth doing *now*.
+
+**After that, everything left waits on something:**
+
+| Waits on | Items (in the backlog below) |
+| --- | --- |
+| **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
+| **The app being shipped** (after #12) | Push notifications · store release (EAS) · app store assets · mobile feature parity |
+| **Traffic** | CDN / cache tuning · rate limiting on public APIs · reader accounts (`/account`, Clerk → DB sync) |
+| **Content and readers** | Everything in **🅿️ Parked**: AI news scout, scheduled publishing, newsletter, pagination, analytics review, comments, Clerk production |
+| **Money / launch** | Legal review by a professional (before monetising) |
+
+i18n (EN + FR) is its own project — §6.
 
 > **The real bottleneck is content, not code.** The production CMS has had zero
 > articles since October 2026. Pagination, analytics and search polish only mean
