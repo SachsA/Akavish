@@ -1,10 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import {
   fetchAdjacentArticles,
   fetchArticleBySlug,
+  fetchCurrentSlugFor,
   fetchRelatedArticles,
 } from '@/lib/payload'
 import { LexicalContent } from '@/components/LexicalContent'
@@ -83,7 +84,15 @@ export default async function ArticlePage({
     article = null
   }
 
-  if (!article) notFound()
+  if (!article) {
+    // Renamed article? Send old links (shared, bookmarked, indexed) to the
+    // current URL with a permanent redirect, so search engines move their
+    // ranking over instead of dropping a 404.
+    // Kept outside any try/catch: permanentRedirect() works by throwing.
+    const currentSlug = await fetchCurrentSlugFor(slug).catch(() => null)
+    if (currentSlug && currentSlug !== slug) permanentRedirect(`/article/${currentSlug}`)
+    notFound()
+  }
 
   // Secondary content: never let it break the page. The article itself is what
   // matters — if the CMS is slow or these queries fail, we drop the extras

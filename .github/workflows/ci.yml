@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   # Fast, dependency-only gate: lint web + CMS; type-check web, CMS and shared
-  # packages. Mobile is excluded.
+  # packages; unit tests. Mobile is excluded.
   quality:
-    name: Lint & type-check
+    name: Lint, type-check & tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -38,6 +38,11 @@ jobs:
       - name: Type-check
         run: pnpm type-check
 
+      # Pure-logic unit tests (vitest): the shared Payload mapper, reading time,
+      # and the web ↔ CMS category list. No database or browser needed.
+      - name: Unit tests
+        run: pnpm test
+
   # Verify the apps actually build. The CMS (Payload) needs a database, so we
   # spin up a throwaway Postgres and feed dummy env values.
   build:
@@ -47,7 +52,8 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        # Same major as local dev (docker-compose.yml) and production (Neon).
+        image: postgres:17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

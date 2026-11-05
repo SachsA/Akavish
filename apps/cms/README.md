@@ -53,6 +53,14 @@ ordering — the sort the whole site uses.
 Re-saving an already-published article that has no date backfills it from
 `createdAt` rather than today, so fixing old content doesn't rewrite its history.
 
+### Renaming a published article keeps old links working
+
+When the slug of a **published** article changes, a `beforeChange` hook appends
+the old slug to `previousSlugs`. The web app's article page falls back to that
+list on a miss and answers with a **308** to the current URL, so shared links,
+bookmarks and search rankings follow the rename. Renaming back to an old slug
+removes it from the list. Drafts that were never public aren't tracked.
+
 ## Access control
 
 Public (unauthenticated) read access is intentionally scoped:

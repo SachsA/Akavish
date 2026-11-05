@@ -1,10 +1,39 @@
 # Local dev services for Akavish.
 # Start with:  docker compose up -d
 #
-# Meilisearch powers the site search. The CMS indexes published articles into it
-# (hooks + `pnpm reindex:search`), and the web app queries it via /api/search.
+# - Postgres: the CMS's development database. Production runs on Neon; local
+#   development deliberately does NOT use a hosted database, so no credentials
+#   for it live at a vendor (lesson of the October 2026 Railway incident) and a
+#   fresh clone works with no account at all.
+# - Meilisearch: optional site search. The CMS indexes published articles into
+#   it (hooks + `pnpm reindex:search`), and the web app queries it via
+#   /api/search — which falls back to the CMS when it isn't running.
 
 services:
+  postgres:
+    # Keep the major version in step with production (shown in the Neon
+    # console) and with PG_MAJOR in .github/workflows/backup.yml, so a prod
+    # dump restores cleanly here.
+    image: postgres:17
+    container_name: akavish-postgres
+    ports:
+      # Override if a locally installed Postgres already holds 5432, e.g.
+      # POSTGRES_PORT=5433 docker compose up -d — then match DATABASE_URL.
+      - '${POSTGRES_PORT:-5432}:5432'
+    environment:
+      # Throwaway local credentials — never reuse them anywhere else.
+      POSTGRES_USER: akavish
+      POSTGRES_PASSWORD: akavish
+      POSTGRES_DB: akavish
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U akavish -d akavish']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   meilisearch:
     image: getmeili/meilisearch:v1.10
     container_name: akavish-meilisearch
@@ -20,4 +49,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
   meili_data:

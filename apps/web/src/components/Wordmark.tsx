@@ -8,7 +8,7 @@
  * Pass sizing through `className` (e.g. `text-xl`, `text-5xl`) — weight,
  * tracking and colours belong to the mark and shouldn't be overridden.
  *
- * Note: the OG image (`article/[slug]/opengraph-image.tsx`) deliberately repeats
+ * Note: the share images (`lib/og.tsx`, used by every `opengraph-image.tsx`) deliberately repeat
  * the markup instead of importing this. It renders through `next/og`, which
  * supports neither Tailwind classes nor arbitrary components — keep the two in
  * sync by hand if the mark ever changes.

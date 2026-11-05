@@ -66,10 +66,10 @@ admin separately.
   `corepack enable` (ships with Node) installs the right one automatically.
   Otherwise: `npm i -g pnpm@10`. pnpm 9 is no longer supported — the repo relies
   on `onlyBuiltDependencies` in `pnpm-workspace.yaml`, which pnpm 9 ignores.
-- **PostgreSQL database** — a connection string for `DATABASE_URL`. Easiest is a
-  free [Neon](https://neon.tech) or [Supabase](https://supabase.com) project; a
-  local Postgres works too.
-- **Docker** _(for search)_ — runs a local Meilisearch (`docker compose up -d`).
+- **Docker** — `docker compose up -d` at the repo root starts the local
+  **Postgres** (the CMS's dev database) and Meilisearch. The default
+  `DATABASE_URL` in `apps/cms/.env.example` already points at it. Production runs
+  on Neon, whose credentials never go in a local `.env`.
 
 > `pnpm reset:db` needs no extra tooling — it uses the `pg` driver bundled with
 > the CMS (no `psql` required).
@@ -205,16 +205,19 @@ Then open `/admin` to create a fresh first admin user. See `DEPLOYMENT.md` §5.
 GitHub Actions runs on every push to `main` and every pull request
 (`.github/workflows/ci.yml`):
 
-- **Lint & type-check** — lint runs on web + CMS; type-check runs on web, CMS,
-  and shared packages. Mobile is excluded for now: it's on Expo 52 / React 18
-  while the rest is React 19 (see `PROGRESS.md`).
+- **Lint, type-check & tests** — lint runs on web + CMS; type-check runs on web,
+  CMS, and shared packages; `pnpm test` runs the vitest unit tests (web +
+  `api-client`). Mobile is excluded for now: it's on Expo 52 / React 18 while the
+  rest is React 19 (see `PROGRESS.md`).
+- **Database backup** (`.github/workflows/backup.yml`) — nightly `pg_dump` of
+  production into a private R2 bucket. Setup and restore: `DEPLOYMENT.md` §9.
 - **Build** — `pnpm build` (web + CMS) against a throwaway Postgres service with
   dummy env values; Meilisearch is left unset and degrades gracefully.
 
 Run the same checks locally before pushing:
 
 ```bash
-pnpm lint && pnpm type-check && pnpm build
+pnpm lint && pnpm type-check && pnpm test && pnpm build
 ```
 
 Both apps lint via ESLint flat config (`eslint.config.mjs`) using

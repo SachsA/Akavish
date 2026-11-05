@@ -42,6 +42,29 @@ export const Articles: CollectionConfig = {
 
         return data
       },
+
+      // Remember the old slug when a *published* article is renamed, so links
+      // already shared or indexed by Google keep working: the web app looks up
+      // `previousSlugs` on a miss and 308-redirects to the current URL.
+      // Drafts that were never public have no old URL worth keeping.
+      ({ data, originalDoc }) => {
+        const oldSlug: string | undefined = originalDoc?.slug
+        const newSlug: string | undefined = data.slug
+        if (!oldSlug || !newSlug || oldSlug === newSlug) return data
+        if (originalDoc?.status !== 'published') return data
+
+        // Partial API updates may omit the array — fall back to what's stored.
+        const current: { slug?: string }[] = Array.isArray(data.previousSlugs)
+          ? data.previousSlugs
+          : (originalDoc?.previousSlugs ?? [])
+
+        // Renaming back to an old slug: it's live again, so drop it from the list.
+        const kept = current.filter((entry) => entry.slug && entry.slug !== newSlug)
+        if (!kept.some((entry) => entry.slug === oldSlug)) kept.push({ slug: oldSlug })
+
+        data.previousSlugs = kept
+        return data
+      },
     ],
     // Keep the Meilisearch index in sync. Best-effort: runs after the response,
     // failures are logged inside the sync helpers and never block editing.
@@ -106,6 +129,18 @@ export const Articles: CollectionConfig = {
         { name: 'title', type: 'text' },
         { name: 'description', type: 'textarea' },
       ],
+    },
+    {
+      // Filled by the beforeChange hook above. Editable so a stale redirect can
+      // be removed by hand, but there's normally no reason to touch it.
+      name: 'previousSlugs',
+      type: 'array',
+      admin: {
+        initCollapsed: true,
+        description:
+          'Old URLs of this article. Visitors and search engines landing on them are permanently redirected here. Filled in automatically when you change the slug of a published article.',
+      },
+      fields: [{ name: 'slug', type: 'text', required: true, index: true }],
     },
   ],
 }

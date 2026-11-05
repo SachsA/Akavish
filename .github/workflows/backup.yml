@@ -1,0 +1,90 @@
+name: Database backup
+
+# Nightly logical backup of the PRODUCTION Postgres (Neon) into a PRIVATE R2
+# bucket. Setup, retention and restore: DEPLOYMENT.md §9.
+#
+# Why this exists: Neon's own history window is short on the free plan. A bad
+# delete (or an attacker with leaked credentials, as in the October 2026 Railway
+# incident) noticed a few days late would otherwise be unrecoverable.
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # 03:17 UTC daily — off the hour, when GitHub is less busy
+  workflow_dispatch: # "Run workflow" button, for a manual backup before risky work
+
+# Never let two backups overlap.
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: pg_dump → R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Must be >= the Postgres major version Neon runs (shown in the Neon
+      # console). pg_dump refuses to dump a newer server.
+      PG_MAJOR: '17'
+
+    steps:
+      - name: Check secrets are configured
+        env:
+          DB: ${{ secrets.BACKUP_DATABASE_URL }}
+          KEY: ${{ secrets.BACKUP_R2_ACCESS_KEY_ID }}
+          SECRET: ${{ secrets.BACKUP_R2_SECRET_ACCESS_KEY }}
+          ENDPOINT: ${{ secrets.BACKUP_R2_ENDPOINT }}
+          BUCKET: ${{ secrets.BACKUP_R2_BUCKET }}
+        run: |
+          missing=()
+          [ -z "$DB" ] && missing+=(BACKUP_DATABASE_URL)
+          [ -z "$KEY" ] && missing+=(BACKUP_R2_ACCESS_KEY_ID)
+          [ -z "$SECRET" ] && missing+=(BACKUP_R2_SECRET_ACCESS_KEY)
+          [ -z "$ENDPOINT" ] && missing+=(BACKUP_R2_ENDPOINT)
+          [ -z "$BUCKET" ] && missing+=(BACKUP_R2_BUCKET)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing repository secrets: ${missing[*]} — see DEPLOYMENT.md §9"
+            exit 1
+          fi
+
+      - name: Dump the database
+        env:
+          # The DIRECT (non-pooled) Neon connection string — pg_dump doesn't
+          # work reliably through PgBouncer's transaction pooling.
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          FILE="akavish-$(date -u +%Y-%m-%dT%H%MZ).dump"
+          echo "FILE=$FILE" >> "$GITHUB_ENV"
+          # pg_dump runs from the official image so its version is pinned and
+          # independent of whatever the runner ships.
+          # --format=custom: compressed, restorable selectively with pg_restore.
+          # --no-owner/--no-privileges: restores cleanly into any database/role.
+          docker run --rm -e DATABASE_URL -v "$PWD:/out" "postgres:${PG_MAJOR}" \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges \
+                     --file="/out/'"$FILE"'" "$DATABASE_URL"'
+          SIZE=$(stat -c%s "$FILE")
+          echo "Dump size: $SIZE bytes"
+          # An empty or near-empty dump means something went wrong, even if
+          # pg_dump exited 0. Fail loudly rather than upload garbage.
+          if [ "$SIZE" -lt 1024 ]; then
+            echo "::error::Dump is suspiciously small ($SIZE bytes)"
+            exit 1
+          fi
+
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto # R2 rejects real AWS regions
+          R2_ENDPOINT: ${{ secrets.BACKUP_R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.BACKUP_R2_BUCKET }}
+        run: |
+          set -euo pipefail
+          # The AWS CLI ships on GitHub's ubuntu runners; R2 speaks the S3 API.
+          aws s3 cp "$FILE" "s3://$R2_BUCKET/db/$FILE" --endpoint-url "$R2_ENDPOINT"
+          echo "Uploaded s3://$R2_BUCKET/db/$FILE"

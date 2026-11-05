@@ -108,6 +108,27 @@ export async function fetchArticleBySlug(slug: string): Promise<Article | null> 
 }
 
 /**
+ * The current slug of the published article that used to live at `oldSlug`,
+ * or null. Backs the 308 redirect on the article page: the CMS records a
+ * published article's previous slugs whenever it's renamed (`previousSlugs`).
+ */
+export async function fetchCurrentSlugFor(oldSlug: string): Promise<string | null> {
+  const qs = new URLSearchParams({
+    'where[previousSlugs.slug][equals]': oldSlug,
+    'where[status][equals]': 'published',
+    depth: '0',
+    limit: '1',
+    'select[slug]': 'true',
+  })
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+    next: { revalidate: 30 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{ slug: string }>
+  return json.docs[0]?.slug ?? null
+}
+
+/**
  * Search published articles through the CMS (i.e. Postgres `ILIKE`).
  *
  * The **fallback** used by /api/search when Meilisearch isn't configured, so

@@ -73,8 +73,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 
 - **Monorepo** (Turborepo + pnpm): `apps/web` (Next.js, Vercel, :3000),
   `apps/cms` (Payload, Railway, :3001), `apps/mobile` (Expo), `packages/*`.
-- **DB:** PostgreSQL (Neon) — separate **dev** and **prod** databases. Local dev
-  → dev DB (via `apps/cms/.env`); live → prod DB (via platform env vars).
+- **DB:** PostgreSQL. Local dev → **Postgres in Docker** (`docker compose up -d`,
+  default `DATABASE_URL` in `apps/cms/.env.example`); live → **Neon** (URL only in
+  Railway's variables). There is no hosted dev database and no Railway dev
+  environment any more — both were removed in Nov 2026.
 - **Schema:** versioned **migrations** (`push: false`), not push mode. See
   `DEPLOYMENT.md` §5.
 - **Auth:** Clerk (readers, web) · Payload auth (CMS editors).
@@ -83,7 +85,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   CMS). Meilisearch failures fall back to the CMS. Currently running on the
   fallback — Meilisearch Cloud has no free tier.
 - **CI:** `.github/workflows/ci.yml` — lint web + CMS, type-check web/CMS/shared
-  packages, then build web + CMS (mobile excluded). Uses `pnpm install
+  packages, unit tests (`pnpm test`: vitest in web + api-client), then build web +
+  CMS (mobile excluded). `.github/workflows/backup.yml` dumps the prod DB nightly
+  to a private R2 bucket (`DEPLOYMENT.md` §9). Uses `pnpm install
   --frozen-lockfile` on Node 22.
 - **Live:** web = `akavish.gg` (canonical apex; `www` 308s to it), CMS =
   `cms.akavish.gg`. DNS on Cloudflare; the platform URLs

@@ -77,7 +77,7 @@ Last updated: **2026-07-28**.
 | ✅     | `robots.txt`                 | `app/robots.ts` — allows all but `/api`, `/account`, `/sign-in`, `/sign-up`; links sitemap |
 | ✅     | Canonical URLs               | `alternates.canonical` on home, article, category, author, game, tag                       |
 | ✅     | CMS `seo` fields used        | Article metadata prefers `seo.title` / `seo.description`, falls back to title/excerpt      |
-| ✅     | Dynamic OG images            | `app/article/[slug]/opengraph-image.tsx` via `next/og` (branded, per-article)              |
+| ✅     | Dynamic OG images            | Shared design in `lib/og.tsx`; site default + article, category, author, game, tag routes   |
 | ✅     | JSON-LD                      | `NewsArticle` structured data on article pages, incl. `wordCount` + `timeRequired`         |
 
 ### Search (Meilisearch)
@@ -168,14 +168,19 @@ actually tackle it, best value-for-effort first.
 | 10  | ✅ **Reader-facing fallbacks**      | Done — the home and category pages showed developer instructions to the public ("Make sure the CMS is running on localhost:3001", "Publish an article in the CMS"). Now `components/StatusMessage.tsx` | —      |
 | 11  | ✅ **Secret-rotation runbook**      | Done — `DEPLOYMENT.md` §8, written after the October 2026 Railway incident: inventory, order of operations, pitfalls, rotation log | —      |
 | 12  | ⬜ **Expo SDK upgrade**             | Mobile is on SDK 52, current is 58. Needs a simulator/device to validate — see §7 | 2–4 h  |
+| 13  | ✅ **Nightly DB backups**           | Done — `.github/workflows/backup.yml`: `pg_dump` of prod → **private** R2 bucket, 30-day lifecycle. Needs one-time setup (bucket, token, GitHub secrets) — `DEPLOYMENT.md` §9 | —      |
+| 14  | ✅ **Slug redirects**               | Done — renaming a published article records the old slug (`previousSlugs`); old URLs 308 to the new one | —      |
+| 15  | ✅ **Unit tests**                   | Done — vitest on the shared Payload mapper, reading time and the web ↔ CMS category list; `pnpm test`, run in CI | —      |
+| 16  | ✅ **Share images everywhere**      | Done — one design (`lib/og.tsx`) for a site-wide default plus category, author, game and tag pages. Fixed the wordmark rendering as "Akav ish" | —      |
+| 17  | ✅ **Local dev DB in Docker**       | Done — the Neon dev project and the Railway dev environment were deleted; local dev uses Postgres from `docker-compose.yml` | —      |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
 > (task 4) **sends** Payload's password resets from `mail.akavish.gg`. Cloudflare
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-Then, as it comes: SEO defaults hook · pagination · accessibility pass ·
-analytics · i18n · comments (see §5 — needs traffic and paid Clerk first).
+Then, as it comes: SEO defaults hook · accessibility pass · i18n. Ideas that
+need content and readers first are in **🅿️ Parked** below.
 
 > **The real bottleneck is content, not code.** The production CMS has had zero
 > articles since October 2026. Pagination, analytics and search polish only mean
@@ -184,6 +189,23 @@ analytics · i18n · comments (see §5 — needs traffic and paid Clerk first).
 | Status | Item            | Notes                                                                                                                                            |
 | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | ✅     | **Media on R2** | Live — uploads go to Cloudflare R2 and are served from `*.r2.dev`; images now survive Railway redeploys. Setup documented in `DEPLOYMENT.md` §4b. |
+
+---
+
+# 🅿️ Parked — good ideas, deliberately not now
+
+Kept here so they aren't lost. Each one only pays off with **content and
+readers**, which the site doesn't have yet — revisit once publishing is regular.
+
+| Idea | Why it waits / what it depends on |
+| --- | --- |
+| **AI news scout** | A bot that watches the big news/leak sites and leaker accounts, drafts articles, and sends them for human approval before publishing. Ties together scheduled publishing and email. Open design questions (sources, copyright, X/Twitter API cost, AI-content disclosure) — see the discussion before building anything |
+| Scheduled publishing | Publish at a future `publishedAt` (cron or a Payload job). Most useful together with the AI scout: approve in the evening, publish in the morning |
+| Newsletter | Capture emails and send a digest (Resend can do it). The one channel that brings readers back without Google or social. Needs a consent flow and a `/privacy` update |
+| Pagination / infinite scroll | Pages cap at 24 articles — irrelevant until there are more |
+| Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
+| Comments | Needs traffic, paid Clerk production keys, moderation and anti-spam (§5) |
+| Clerk production instance | Paid; only needed once reader accounts do something (§8) |
 
 ---
 
@@ -200,9 +222,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------- |
 | ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/WhatsApp + native share sheet + copy link), "Read next" suggestions and prev/next navigation |
 | P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
-| P2  | Pagination / infinite scroll | Home + category + tag pages currently cap at N items                                        |
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
-| P2  | Newsletter signup            | Capture emails (needs an ESP: Resend/Mailchimp/etc.)                                        |
 | P3  | Search polish                | Highlighting, filters by category, instant/typeahead results                                |
 | P3  | Dark/light toggle            | Currently dark-only                                                                         |
 | P3  | Comments                     | Reader comments (needs reader auth + a comments store/service)                              |
@@ -221,7 +241,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 
 | Pri | Item                            | Notes                                                     |
 | --- | ------------------------------- | --------------------------------------------------------- |
-| P2  | OG images for non-article pages | Author/game/tag/category `opengraph-image` (article done) |
+| ✅  | OG images for non-article pages | Done — shared `lib/og.tsx`; default + category/author/game/tag |
 | P3  | Breadcrumb JSON-LD              | `BreadcrumbList` schema on detail pages                   |
 | P3  | Per-locale hreflang             | Only once i18n lands (area 6)                             |
 
@@ -235,9 +255,8 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | P1  | Required SEO defaults         | Auto-fill `seo.title`/`description` from title/excerpt via a hook if empty     |
 | P1  | Author ↔ user link            | Connect a CMS `user` (editor) to an `author` profile                           |
 | P2  | Editorial workflow            | Roles (admin / editor / writer) + access control per role; review/publish flow |
-| P2  | Scheduled publishing          | Publish at a future `publishedAt` (cron or Payload job)                        |
 | P2  | Homepage curation             | A “featured” flag or a singleton “Homepage” global to pick the hero            |
-| P2  | Redirects collection          | Manage slug changes without breaking links (`@payloadcms/plugin-redirects`)    |
+| ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
 | P3  | i18n fields                   | Localized title/content if going bilingual (area 6)                            |
 | P3  | Related games/series taxonomy | Beyond single `game` relation                                                  |
 
@@ -247,7 +266,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | --- | ----------------------------- | ----------------------------------------------------------------------- |
 | ✅  | Cloudflare R2 storage adapter | Done — `@payloadcms/storage-s3` wired to R2, live in prod |
 | ✅  | Image sizes / focal point     | Done — `imageSizes` (thumbnail/card/hero/square) + focal point on the `media` collection; web requests the right variant |
-| P2  | Alt text required on media    | Accessibility + SEO                                                     |
+| ✅  | Alt text required on media    | Already the case — `alt` is `required: true` in `Media.ts`              |
 
 ### Operational
 
@@ -256,7 +275,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | ✅  | Email adapter        | Done — `@payloadcms/email-resend` sends password resets from `mail.akavish.gg`; falls back to console logging when `RESEND_API_KEY` is unset |
 | ✅  | Versioned migrations | Done — `push: false`, migrations committed, applied locally and by Railway's pre-deploy step. See `DEPLOYMENT.md` §5 |
 | P2  | Seed script          | Script to create an admin user + sample content for fresh installs                                             |
-| P2  | Backups              | Automated DB backups (Neon has PITR; document the policy)                                                      |
+| ✅  | Backups              | Nightly `pg_dump` → private R2 bucket via GitHub Actions; restore runbook in `DEPLOYMENT.md` §9 |
 
 ## 4. Search (Meilisearch)
 
@@ -277,7 +296,6 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 | P2  | Clerk on mobile           | Reader auth parity in the Expo app                            |
 | P3  | Saved/bookmarked articles | Per-user, needs the DB link above                             |
 | P3  | Social login providers    | Configure Google/Discord/etc. in Clerk                        |
-| P3  | **Comments**              | Deliberately deferred until there's traffic — an empty comment box under every article reads worse than none. Two costs to accept first: it forces **Clerk production keys** (paid), and a Payload `comments` collection is a 🟠 migration plus moderation, rate limiting and anti-spam to build. Third-party alternatives: Giscus (free but requires a GitHub account, poor fit for gaming readers) or Hyvor (~5 €/mo, Clerk-independent) |
 
 ## 6. Internationalization (EN + FR)
 
@@ -327,7 +345,6 @@ checklist it walks through.
 | Pri | Item                  | Notes                                                                                                                                              |
 | --- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ✅  | Custom domains + DNS      | Done — `akavish.gg` (web) + `cms.akavish.gg` (CMS) on Cloudflare DNS, prod URLs wired, `www` 308s to the apex, Email Routing forwarding          |
-| P2  | Production Clerk instance | Deferred on purpose — the dev instance works on the custom domain and reader accounts are unused. Switch to `pk_live_…` / `sk_live_…` (and set Clerk's allowed origins) when accounts start to matter |
 | P2  | CDN / caching             | Cache headers + ISR tuning; R2/Cloudflare in front of media                                                                                        |
 | P2  | Mobile release            | Expo EAS build + store submission                                                                                                                  |
 | P3  | Staging environment       | Mirror of prod for QA                                                                                                                              |
@@ -348,8 +365,8 @@ checklist it walks through.
 
 | Pri | Item                 | Notes                                                                  |
 | --- | -------------------- | ---------------------------------------------------------------------- |
-| P2  | Web tests            | The CMS has tests; the web app has none yet (unit + a couple of e2e)   |
-| P2  | API contract checks  | Guard the Payload→web mapping in `lib/payload.ts` against schema drift |
+| ✅  | Unit tests           | vitest in `apps/web` and `packages/api-client`, `pnpm test`, run in CI. Next: e2e on key pages |
+| ✅  | API contract checks  | The shared mapper is unit-tested, and a test fails if the web and CMS category lists drift |
 | P3  | Contributor docs     | How to add a collection, a page, run tests                             |
 | P3  | Architecture diagram | One picture of web ↔ CMS ↔ DB ↔ services                               |
 

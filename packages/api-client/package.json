@@ -9,13 +9,15 @@
     "./payload": "./src/payload.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@akavish/types": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.19.9",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "4.0.18"
   }
 }

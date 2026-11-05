@@ -95,11 +95,13 @@ Once deployed, this is the loop for everyday changes.
 
 ### Develop locally
 
-Everything runs on your machine, against the **dev** database — production is
-never touched.
+Everything runs on your machine, against a **local Postgres in Docker** —
+production is never touched.
 
 ```bash
-# Terminal 1 — CMS on :3001 (uses apps/cms/.env → DEV Neon DB)
+# Once per session — local Postgres (+ Meilisearch)
+docker compose up -d
+# Terminal 1 — CMS on :3001 (uses apps/cms/.env → local Docker Postgres)
 cd apps/cms && pnpm devsafe
 # Terminal 2 — web on :3000 (uses apps/web/.env → talks to local CMS)
 cd apps/web && pnpm dev
@@ -107,12 +109,18 @@ cd apps/web && pnpm dev
 
 |                           | Database it uses | Config source                             |
 | ------------------------- | ---------------- | ----------------------------------------- |
-| **Local** (`pnpm dev`)    | **dev** Neon DB  | your local `.env` files (gitignored)      |
+| **Local** (`pnpm dev`)    | Docker Postgres  | your local `.env` files (gitignored)      |
 | **Live** (Railway/Vercel) | **prod** Neon DB | env vars set in each platform's dashboard |
 
-Content you create locally lands in the dev DB; prod content is separate. On a
-brand-new dev DB, run `pnpm migrate` once before starting the CMS, then add test
-data.
+Content you create locally lands in the local DB; prod content is separate. On a
+fresh local DB, run `pnpm migrate` once before starting the CMS, then create an
+admin at `localhost:3001/admin` and add test data. To get a realistic copy of
+production instead, restore last night's backup into it (§9).
+
+> There used to be a separate **dev project on Neon** (and a dev environment on
+> Railway). Both were deleted in November 2026: they held credentials at vendors
+> for no benefit, and the Railway one was among the variables exposed in the
+> October incident without anyone remembering it existed.
 
 ### Ship to production
 
@@ -153,7 +161,8 @@ Works locally but breaks live? Check the logs:
 
 ## 1. Production database (Neon)
 
-1. Create a new Neon project (or a `production` branch separate from dev).
+1. Create a Neon project for production (local development uses Docker, see
+   *Develop locally*).
 2. Copy its pooled connection string — this is your prod `DATABASE_URL`
    (`postgresql://…?sslmode=require`).
 3. Keep it handy; both the CMS host and migrations need it.
@@ -677,6 +686,8 @@ Neon, R2 or Resend, never through the CMS. Check *those* services' logs.
 | `CLERK_SECRET_KEY` | Vercel | Clerk → API Keys → roll | Reader sign-in, until Vercel redeploys | 🟠 reader accounts |
 | `MEILISEARCH_API_KEY` | (unset today) | Meilisearch → keys | Search falls back to the CMS | 🟡 |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Railway / Vercel | Sentry → Client Keys | Nothing | ⚪ public by design |
+| `BACKUP_DATABASE_URL` | GitHub secrets | Neon (same reset as above, or the `backup_ro` role) | Nightly backups fail | 🔴 if the owner role, 🟠 if read-only |
+| `BACKUP_R2_*` | GitHub secrets | Cloudflare → R2 → the backups-bucket token | Nightly backups fail | 🔴 every past dump |
 
 Not secrets, no action: `SERVER_URL`, `WEB_URL`, `CMS_URL`, `*_SITE_URL`,
 `R2_BUCKET`, `R2_ENDPOINT`, `R2_PUBLIC_URL`, `EMAIL_FROM_*`, `SENTRY_ORG`,
@@ -703,7 +714,13 @@ If the host has paused deployments (Railway did, for hours, by plan tier), steps
 
 ### Pitfalls hit last time
 
-- **Neon has two projects.** Reset the password on **prod**, not dev.
+- **Rotate every environment, not just production.** A host leak covers all of
+  them. In October 2026 only Railway's `production` environment was rotated; a
+  forgotten `dev` environment kept its old variables and was only found weeks
+  later, when its deploy failed. List the host's environments before starting.
+- **Neon project.** Reset the password on the **production** project. (There used
+  to be a dev project with an identically named `neondb_owner` role — a copy-paste
+  between the two fails with `password authentication failed`.)
 - **Pooled vs direct.** Keep the same connection-string form as before (`-pooler`
   in the host or not), with `?sslmode=require` on the end.
 - **Creating a key doesn't revoke the old one.** Delete the old R2 token / Resend
@@ -729,6 +746,79 @@ If the host has paused deployments (Railway did, for hours, by plan tier), steps
 - **October 2026** — full rotation of every Railway secret (Railway incident):
   `DATABASE_URL`, `PAYLOAD_SECRET`, R2 keys, `RESEND_API_KEY`,
   `SENTRY_AUTH_TOKEN`. Vercel-only secrets (Clerk) were not exposed and not rotated.
+
+---
+
+## 9. Database backups
+
+`.github/workflows/backup.yml` runs `pg_dump` against the **production** Neon
+database every night (03:17 UTC) and uploads a compressed dump to a **private**
+R2 bucket. It can also be run by hand: GitHub → **Actions → Database backup →
+Run workflow** — worth doing before anything risky (a migration, a bulk delete).
+
+Neon's built-in history is short on the free plan; these dumps are what lets you
+recover from a mistake noticed days later.
+
+### One-time setup
+
+1. **A separate, private bucket.** Cloudflare → R2 → **Create bucket** →
+   `akavish-backups`. Do **not** enable public access, and never reuse the media
+   bucket: it's public (`r2.dev`), so a dump there would publish the database.
+2. **Retention.** In that bucket → **Settings → Object lifecycle rules** → delete
+   objects under prefix `db/` after **30 days**. Without it dumps pile up forever.
+3. **A dedicated R2 token.** R2 → Manage API tokens → *Object Read & Write*,
+   scoped to `akavish-backups` only. Not the CMS's token: if one leaks, the other
+   bucket stays safe.
+4. **A connection string for the dump.** Neon → prod project → **Connect** →
+   untick *Connection pooling* to get the **direct** string (no `-pooler` in the
+   host). Optionally use a read-only role so the GitHub secret can't modify data:
+   ```sql
+   CREATE ROLE backup_ro WITH LOGIN PASSWORD '<generated>';
+   GRANT pg_read_all_data TO backup_ro;
+   ```
+   If Neon refuses the grant on your plan, fall back to the owner role.
+5. **Repository secrets.** GitHub → repo → Settings → Secrets and variables →
+   Actions:
+
+   | Secret | Value |
+   | --- | --- |
+   | `BACKUP_DATABASE_URL` | the direct prod connection string from step 4 |
+   | `BACKUP_R2_ACCESS_KEY_ID` | from step 3 |
+   | `BACKUP_R2_SECRET_ACCESS_KEY` | from step 3 |
+   | `BACKUP_R2_ENDPOINT` | `https://<accountId>.r2.cloudflarestorage.com` |
+   | `BACKUP_R2_BUCKET` | `akavish-backups` |
+
+6. **Check the Postgres version.** The Neon console shows it. If it isn't 17,
+   change `PG_MAJOR` in the workflow — `pg_dump` refuses to dump a newer server.
+7. Run the workflow once by hand and confirm the file appears in the bucket.
+
+### Restoring
+
+**Always restore into your local Docker database first** to check the dump
+(`postgresql://akavish:akavish@localhost:5432/akavish`), then prod.
+
+```bash
+# 1. Download the dump from the R2 dashboard (akavish-backups → db/ → file).
+# 2. Restore — --clean drops existing objects first, so this REPLACES the target.
+pg_restore --clean --if-exists --no-owner --no-privileges \
+  --dbname "<target connection string>" akavish-2026-11-06T0317Z.dump
+```
+
+Needs a local `pg_restore` of the same major version (`brew install
+postgresql@17`), or run it through Docker:
+`docker run --rm -v "$PWD:/in" postgres:17 pg_restore … /in/<file>.dump`.
+
+Media files are **not** in the dump — they live in the R2 media bucket.
+
+### Things that can silently stop it
+
+- **GitHub disables scheduled workflows after 60 days without repository
+  activity.** If you step away from the project, check Actions when you return
+  and re-enable it. You also get an email.
+- A failed run emails whoever last edited the workflow's schedule — don't filter
+  those out.
+- Rotating the prod database password (§8) means updating
+  `BACKUP_DATABASE_URL` too.
 
 ---
 
@@ -784,4 +874,5 @@ If the host has paused deployments (Railway did, for hours, by plan tier), steps
 5. R2 for media (§4b) + Resend for email (§4c) — both required in prod.
 6. (Optional) Meilisearch + `reindex:search`.
 7. Domains + DNS, then update URLs and redeploy.
-8. Walk the post-deploy checklist.
+8. Nightly database backups to a private R2 bucket (§9).
+9. Walk the post-deploy checklist.
