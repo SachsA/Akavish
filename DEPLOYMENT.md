@@ -761,6 +761,10 @@ recover from a mistake noticed days later.
 
 ### One-time setup
 
+> **Status:** done on 2026-11-05. Bucket `akavish-backups`, 30-day rule on `db/`,
+> the 5 `BACKUP_*` secrets set; the first manual run succeeded. A restore into
+> the local Docker DB hasn't been rehearsed yet.
+
 1. **A separate, private bucket.** Cloudflare → R2 → **Create bucket** →
    `akavish-backups`. Do **not** enable public access, and never reuse the media
    bucket: it's public (`r2.dev`), so a dump there would publish the database.

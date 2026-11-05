@@ -11,7 +11,7 @@ project is and how to run it_; this file tracks _what's done and what's left_.
 Legend: ✅ done · 🚧 in progress · ⬜ not started ·
 priorities **P1** (before launch) / **P2** (soon after) / **P3** (nice-to-have).
 
-Last updated: **2026-07-28**.
+Last updated: **2026-11-05**.
 
 ---
 
@@ -168,7 +168,7 @@ actually tackle it, best value-for-effort first.
 | 10  | ✅ **Reader-facing fallbacks**      | Done — the home and category pages showed developer instructions to the public ("Make sure the CMS is running on localhost:3001", "Publish an article in the CMS"). Now `components/StatusMessage.tsx` | —      |
 | 11  | ✅ **Secret-rotation runbook**      | Done — `DEPLOYMENT.md` §8, written after the October 2026 Railway incident: inventory, order of operations, pitfalls, rotation log | —      |
 | 12  | ✅ **Expo SDK upgrade**             | Done — SDK 52 → 58 (React 19.3, RN 0.88), validated on an iPhone in Expo Go. Mobile is back in CI lint + type-check. Details in §7 | —      |
-| 13  | ✅ **Nightly DB backups**           | Done — `.github/workflows/backup.yml`: `pg_dump` of prod → **private** R2 bucket, 30-day lifecycle. Needs one-time setup (bucket, token, GitHub secrets) — `DEPLOYMENT.md` §9 | —      |
+| 13  | ✅ **Nightly DB backups**           | Done — `.github/workflows/backup.yml`: `pg_dump` of prod → **private** R2 bucket, 30-day lifecycle. Set up and verified on 2026-11-05 (first manual run uploaded to `akavish-backups/db/`). Restore not rehearsed yet — `DEPLOYMENT.md` §9 | —      |
 | 14  | ✅ **Slug redirects**               | Done — renaming a published article records the old slug (`previousSlugs`); old URLs 308 to the new one | —      |
 | 15  | ✅ **Unit tests**                   | Done — vitest on the shared Payload mapper, reading time and the web ↔ CMS category list; `pnpm test`, run in CI | —      |
 | 16  | ✅ **Share images everywhere**      | Done — one design (`lib/og.tsx`) for a site-wide default plus category, author, game and tag pages. Fixed the wordmark rendering as "Akav ish" | —      |
