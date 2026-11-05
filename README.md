@@ -133,6 +133,22 @@ cd apps/web && pnpm dev
 - Public site: <http://localhost:3000>
 - CMS admin: <http://localhost:3001/admin>
 
+**Fresh database?** Fill it in one go (after `docker compose up -d` and
+`cd apps/cms && pnpm migrate`):
+
+```bash
+pnpm seed
+```
+
+It creates an admin — **only if the database has no user yet** —
+(`admin@akavish.test` / `akavish-local`, override with `SEED_ADMIN_EMAIL` /
+`SEED_ADMIN_PASSWORD` in `apps/cms/.env`), plus a sample author, four fictional
+games, tags and 8 published articles covering every category, so the homepage
+shows its full layout. Re-running it only adds what's missing. It **refuses to run
+unless `DATABASE_URL` points at localhost**. Cover images are generated and
+uploaded only when media is stored on local disk; with `R2_BUCKET` set they're
+skipped unless you pass `pnpm seed --with-images`.
+
 > Articles only appear on the site once their **status is `Published`** in the
 > CMS. Drafts are visible to logged-in editors only.
 
@@ -203,7 +219,8 @@ pnpm reset:db --yes           # skip the confirmation prompt
 
 After a DB reset the schema is gone, so re-apply migrations to rebuild the tables:
 `cd apps/cms && pnpm migrate` (add `DATABASE_URL='<url>'` inline to target prod).
-Then open `/admin` to create a fresh first admin user. See `DEPLOYMENT.md` §5.
+Then open `/admin` to create a fresh first admin user — or, locally, run
+`pnpm seed` to get an admin and sample content. See `DEPLOYMENT.md` §5.
 
 > `reset:db` only touches the database. Run `pnpm clean` separately if you also
 > want to wipe build artifacts.

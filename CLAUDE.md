@@ -76,7 +76,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **DB:** PostgreSQL. Local dev → **Postgres in Docker** (`docker compose up -d`,
   default `DATABASE_URL` in `apps/cms/.env.example`); live → **Neon** (URL only in
   Railway's variables). There is no hosted dev database and no Railway dev
-  environment any more — both were removed in Nov 2026.
+  environment any more — both were removed in Nov 2026. `pnpm seed` fills a
+  local DB with an admin + sample articles (refuses any non-localhost DB).
 - **Schema:** versioned **migrations** (`push: false`), not push mode. See
   `DEPLOYMENT.md` §5.
 - **Auth:** Clerk (readers, web) · Payload auth (CMS editors).

@@ -9,7 +9,8 @@
     "test": "turbo run test --filter=@akavish/web --filter=@akavish/api-client",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "clean": "bash scripts/clean.sh",
-    "reset:db": "node apps/cms/scripts/reset-db.mjs"
+    "reset:db": "node apps/cms/scripts/reset-db.mjs",
+    "seed": "pnpm --filter akavish-cms seed"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

@@ -858,6 +858,7 @@ Media files are **not** in the dump — they live in the R2 media bucket.
 | `R2_SECRET_ACCESS_KEY`| `…`                              | R2 API token                        |
 | `R2_ENDPOINT`         | `https://<accountId>.r2.cloudflarestorage.com` | Uploads only          |
 | `R2_PUBLIC_URL`       | `https://<hash>.r2.dev`          | Serves the files                    |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | — | **Local `.env` only**, never on Railway: `pnpm seed` refuses non-localhost databases |
 | `SENTRY_DSN`          | `https://…ingest.sentry.io/…`    | Unset → Sentry off (§4d). Not `NEXT_PUBLIC_` |
 | `SENTRY_ENVIRONMENT`  | `production`                     | Optional, defaults to `NODE_ENV`    |
 | `SENTRY_ORG` / `SENTRY_PROJECT_CMS` | `…`                | Build-time, source maps             |

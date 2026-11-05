@@ -26,6 +26,9 @@ out
 .env.*.local
 !.env.example
 
+# GitHub token the assistant reads to push and check CI — never commit it.
+.github-token
+
 # Database dumps — a full copy of production (emails, password hashes). The
 # usual `git add -A` would publish one downloaded here for a restore.
 *.dump

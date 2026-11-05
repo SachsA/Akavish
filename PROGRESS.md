@@ -173,7 +173,7 @@ actually tackle it, best value-for-effort first.
 | 15  | ✅ **Unit tests**                   | Done — vitest on the shared Payload mapper, reading time and the web ↔ CMS category list; `pnpm test`, run in CI | —      |
 | 16  | ✅ **Share images everywhere**      | Done — one design (`lib/og.tsx`) for a site-wide default plus category, author, game and tag pages. Fixed the wordmark rendering as "Akav ish" | —      |
 | 17  | ✅ **Local dev DB in Docker**       | Done — the Neon dev project and the Railway dev environment were deleted; local dev uses Postgres from `docker-compose.yml` | —      |
-| 18  | ⬜ **Seed script**                  | `pnpm seed`: admin user + a few sample articles, so a fresh local DB is usable at once and the homepage layout can be seen | ~1 h   |
+| 18  | ✅ **Seed script**                  | Done — `pnpm seed`: admin (only on an empty DB) + 8 fictional articles across all 6 categories, with author, games, tags and generated covers. Re-runnable, refuses any non-localhost `DATABASE_URL` | —      |
 | 19  | ⬜ **Uptime monitoring**            | Free external check (UptimeRobot / Better Stack) on `akavish.gg` and `cms.akavish.gg` — the Railway outage was discovered by email | ~15 min |
 | 20  | ⬜ **Mobile + accessibility audit** | The site on a phone; keyboard navigation, focus states, contrast, screen-reader landmarks | 1–2 h  |
 
@@ -182,7 +182,7 @@ actually tackle it, best value-for-effort first.
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-**Order:** #18 seed → #19 monitoring → #20 audit. That's the whole
+**Order:** #19 monitoring → #20 audit. That's the whole
 list of work worth doing *now*.
 
 **After that, everything left waits on something:**
@@ -327,7 +327,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | --- | -------------------- | -------------------------------------------------------------------------------------------------------------- |
 | ✅  | Email adapter        | Done — `@payloadcms/email-resend` sends password resets from `mail.akavish.gg`; falls back to console logging when `RESEND_API_KEY` is unset |
 | ✅  | Versioned migrations | Done — `push: false`, migrations committed, applied locally and by Railway's pre-deploy step. See `DEPLOYMENT.md` §5 |
-| P2  | Seed script          | Script to create an admin user + sample content for fresh installs                                             |
+| ✅  | Seed script          | Done — `pnpm seed` (local DBs only), see the roadmap (#18) and the README                                     |
 | ✅  | Backups              | Nightly `pg_dump` → private R2 bucket via GitHub Actions; restore runbook in `DEPLOYMENT.md` §9 |
 
 ## 4. Search (Meilisearch)

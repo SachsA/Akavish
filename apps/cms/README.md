@@ -203,6 +203,7 @@ setup in [`DEPLOYMENT.md`](../../DEPLOYMENT.md) §5.
 pnpm devsafe            # clean .next + dev on :3001
 pnpm dev                # dev on :3001
 pnpm reindex:search     # (re)index all published articles into Meilisearch
+pnpm seed               # LOCAL DB only: admin (if none) + sample articles (--with-images to force covers with R2 on)
 pnpm migrate:create     # create a DB migration from the current schema
 pnpm migrate            # apply pending DB migrations
 pnpm migrate:status     # show migration state

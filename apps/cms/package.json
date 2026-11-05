@@ -19,6 +19,7 @@
     "migrate:fresh": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:fresh",
     "reindex:search": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/scripts/reindex-search.ts",
     "reset:db": "node scripts/reset-db.mjs",
+    "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/scripts/seed.ts",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "test": "pnpm run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
