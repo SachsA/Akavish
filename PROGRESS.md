@@ -183,7 +183,14 @@ actually tackle it, best value-for-effort first.
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-**The "do now" list is done** (#1–#20). Everything left waits on something:
+**The "do now" list is done** (#1–#20), and so is everything that could be done
+without waiting (CMS tests in CI, Dependabot, previews, Docker, breadcrumbs,
+homepage `featured`, contributor docs, security cleanup — 2026-11-06).
+
+**Next session:** the **AI news scout** (🅿️ Parked below). Answer its four open
+questions first, then design it.
+
+Everything else waits on something:
 
 | Waits on | Items (in the backlog below) |
 | --- | --- |
