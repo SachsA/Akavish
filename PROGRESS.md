@@ -383,7 +383,7 @@ Lint + type-check + build on PR are done (see [Done → CI/CD](#cicd)). Remainin
 
 | Pri | Item                     | Notes                                                                                            |
 | --- | ------------------------ | ------------------------------------------------------------------------------------------------ |
-| P2  | Lint + type-check mobile | Give the Expo app a working ESLint config + re-include it in CI once it's on a React-19 Expo SDK |
+| ✅  | Lint + type-check mobile | Done with the Expo 58 upgrade (roadmap #12): ESLint 9 flat config, mobile back in CI lint + type-check |
 | P2  | CMS tests in CI          | Unit tests (web + api-client) run in CI ✅. The CMS's own Vitest int + Playwright e2e suites aren't wired in yet — they need a seeded DB and browsers |
 | P2  | Preview deploys          | Vercel preview per PR                                                                            |
 | P3  | Dependabot / renovate    | Dependency updates                                                                               |
