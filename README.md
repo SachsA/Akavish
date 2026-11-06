@@ -302,6 +302,11 @@ React, React Native and Expo are **ignored on purpose**: Expo pins an exact Reac
 that must match React Native, so they move together through an Expo SDK upgrade
 (`npx expo install --fix`), not one bump at a time.
 
+A Dependabot run that fails with `ERR_PNPM_NO_MATURE_MATCHING_VERSION` isn't
+our bug: a package in the lockfile is younger than Dependabot's release-age
+window (it happened with Expo 58.0.23 two days after its release). It clears
+itself on a later run once that version is old enough.
+
 ## Deployment
 
 Going to production? Follow **[DEPLOYMENT.md](./DEPLOYMENT.md)** — a step-by-step

@@ -231,6 +231,13 @@ commands and env vars.
 > development instance does work on a custom domain and Akavish deliberately
 > still runs on `pk_test_…` — see §6.5 for the reasoning and the switch steps.
 
+**Preview deploys.** Vercel builds every branch and pull request on its own and
+posts the link on the PR ("Vercel Preview Comments"); confirmed on 2026-11-06
+with the first Dependabot PR. A preview reads the **production** CMS (it uses
+the same `CMS_URL`), so it shows real published content and never writes to it.
+Previews live on `*.vercel.app` and aren't indexed (Vercel adds
+`X-Robots-Tag: noindex` to them). Nothing to configure.
+
 ---
 
 ## 4. Search in production (optional)
