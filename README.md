@@ -33,9 +33,9 @@ akavish/
 │   ├── api-client/   # Shared API client (web & mobile consume same backend)
 │   └── ui/           # Shared React components
 ├── scripts/          # Repo-level shell scripts (clean)
-├── docker-compose.yml # Local Meilisearch
+├── docker-compose.yml # Local Postgres + Meilisearch
 ├── turbo.json
-├── pnpm-workspace.yaml # Workspaces + pnpm overrides (single source — no nested copies)
+├── pnpm-workspace.yaml # Workspaces + onlyBuiltDependencies (single source — no nested copies)
 └── tsconfig.base.json
 ```
 
@@ -51,6 +51,39 @@ frontend: its server components fetch published articles from the CMS via
 `CMS_URL` and render them. The **mobile** app hits the same CMS API. Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately.
+
+In production, with the services around them:
+
+```mermaid
+flowchart LR
+  reader([Reader]) --> web
+  editor([Editor]) --> cms
+  phone([Mobile app · Expo]) -->|REST| cms
+
+  subgraph vercel [Vercel]
+    web[Web · Next.js<br/>akavish.gg]
+  end
+  subgraph railway [Railway]
+    cms[CMS · Payload<br/>cms.akavish.gg]
+  end
+
+  web -->|REST, server side| cms
+  web -->|reader login| clerk[Clerk]
+  cms --> db[(Postgres · Neon)]
+  cms -->|uploads| media[(R2 · media, public)]
+  cms -->|password resets| resend[Resend]
+  web -. errors .-> sentry[Sentry]
+  cms -. errors .-> sentry
+
+  gha[GitHub Actions] -->|nightly pg_dump| backups[(R2 · backups, private)]
+  gha -->|ping| hc[healthchecks.io]
+  db -.-> gha
+  uptime[UptimeRobot] -. every 5 min .-> web
+  uptime -. every 5 min .-> cms
+```
+
+Solid arrows are requests; dotted ones are monitoring and backups. Setup for
+each service: [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Getting started
 
@@ -286,6 +319,9 @@ It lists everything done (grouped by area) and the full prioritized backlog
 this README only covers _what the project is and how to run it_, not status.
 
 ## Contributing / working agreement
+
+How to add a CMS field, a page or a test without breaking production:
+**[CONTRIBUTING.md](./CONTRIBUTING.md)**.
 
 [`CLAUDE.md`](./CLAUDE.md) and [`AGENTS.md`](./AGENTS.md) at the repo root hold
 the standing conventions for AI-assisted changes: keep all docs/config in sync,

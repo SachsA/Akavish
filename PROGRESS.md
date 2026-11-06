@@ -418,8 +418,8 @@ checklist it walks through.
 | --- | -------------------- | ---------------------------------------------------------------------- |
 | ✅  | Unit tests           | vitest in `apps/web` and `packages/api-client` (`pnpm test`) + CMS integration and admin e2e tests, all run in CI. Next: e2e on the public site's key pages |
 | ✅  | API contract checks  | The shared mapper is unit-tested, and a test fails if the web and CMS category lists drift |
-| P3  | Contributor docs     | How to add a collection, a page, run tests                             |
-| P3  | Architecture diagram | One picture of web ↔ CMS ↔ DB ↔ services                               |
+| ✅  | Contributor docs     | Done (2026-11-06) — `CONTRIBUTING.md`: the loop, adding a field/collection (migration steps), adding a page (data, SEO, a11y rules), where the tests live, commits |
+| ✅  | Architecture diagram | Done (2026-11-06) — Mermaid diagram in the README ("How the pieces talk"): apps, hosts, every service, monitoring and backups |
 
 ---
 
