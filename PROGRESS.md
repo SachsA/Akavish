@@ -305,7 +305,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | ✅  | Required SEO defaults         | Already covered at render time: article metadata falls back to title/excerpt when the SEO fields are empty |
 | P3  | Author ↔ user link            | Connect a CMS `user` (editor) to an `author` profile. Only matters once there's more than one writer |
 | P2  | Editorial workflow            | Roles (admin / editor / writer) + access control per role; review/publish flow |
-| P2  | Homepage curation             | A “featured” flag or a singleton “Homepage” global to pick the hero            |
+| ✅  | Homepage curation             | Done (2026-11-06) — `featured` checkbox on articles (migration `article_featured`): the newest featured article is the homepage lead, else the newest article (`lib/home.ts`, tested). How-to in `apps/cms/README.md` |
 | ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
 | P3  | i18n fields                   | Localized title/content if going bilingual (area 6)                            |
 | P3  | Related games/series taxonomy | Beyond single `game` relation                                                  |

@@ -143,8 +143,8 @@ pnpm seed
 It creates an admin — **only if the database has no user yet** —
 (`admin@akavish.test` / `akavish-local`, override with `SEED_ADMIN_EMAIL` /
 `SEED_ADMIN_PASSWORD` in `apps/cms/.env`), plus a sample author, four fictional
-games, tags and 8 published articles covering every category, so the homepage
-shows its full layout. Re-running it only adds what's missing. It **refuses to run
+games, tags and 8 published articles covering every category (one of them
+`featured`, so it's the homepage lead), so the homepage shows its full layout. Re-running it only adds what's missing. It **refuses to run
 unless `DATABASE_URL` points at localhost**. Cover images are generated and
 uploaded only when media is stored on local disk; with `R2_BUCKET` set they're
 skipped unless you pass `pnpm seed --with-images`.

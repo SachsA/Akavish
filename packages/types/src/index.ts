@@ -28,6 +28,8 @@ export interface Article {
   createdAt: string
   updatedAt: string
   seo?: { title?: string; description?: string }
+  /** Picked by the editor as the homepage lead story. */
+  featured?: boolean
 }
 
 // ─── Game ──────────────────────────────────────────────────────────────────

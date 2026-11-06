@@ -101,6 +101,11 @@ describe('articles', () => {
     expect(published.publishedAt).toBeTruthy()
   })
 
+  it('is not featured unless the editor ticks it', async () => {
+    const doc = await createArticle({ title: `${RUN} not featured` })
+    expect(doc.featured).toBe(false)
+  })
+
   it('records the old slug when a published article is renamed', async () => {
     const doc = await createArticle({
       title: `${RUN} renamed`,

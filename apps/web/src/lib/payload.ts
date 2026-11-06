@@ -46,13 +46,15 @@ interface ListParams {
   authorId?: string
   gameId?: string
   tagId?: string
+  /** Only articles the editor marked as homepage lead. */
+  featured?: boolean
 }
 
 // Fetch a paginated list of *published* articles, newest first.
 export async function fetchArticles(
   params: ListParams = {}
 ): Promise<PaginatedResponse<Article>> {
-  const { page = 1, limit = 20, category, authorId, gameId, tagId } = params
+  const { page = 1, limit = 20, category, authorId, gameId, tagId, featured } = params
   const qs = new URLSearchParams({
     'where[status][equals]': 'published',
     sort: '-publishedAt',
@@ -64,6 +66,7 @@ export async function fetchArticles(
   if (authorId) qs.set('where[author][equals]', authorId)
   if (gameId) qs.set('where[game][equals]', gameId)
   if (tagId) qs.set('where[tags][in]', tagId)
+  if (featured) qs.set('where[featured][equals]', 'true')
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     // Revalidate periodically so new articles show up without a redeploy.

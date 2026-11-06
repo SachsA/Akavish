@@ -23,7 +23,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 
 | Collection | Notes                                                                                                                                              |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), author, game, tags, SEO. Versioned with drafts. `publishedAt` is auto-stamped — see below. |
+| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, tags, SEO. Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
 | `games`    | Game metadata articles can be tagged to.                                                                                                           |
 | `tags`     | Free-form taxonomy.                                                                                                                                |
@@ -60,6 +60,14 @@ the old slug to `previousSlugs`. The web app's article page falls back to that
 list on a miss and answers with a **308** to the current URL, so shared links,
 bookmarks and search rankings follow the rename. Renaming back to an old slug
 removes it from the list. Drafts that were never public aren't tracked.
+
+### Picking the homepage lead story (`featured`)
+
+Tick **featured** in an article's sidebar to make it the big lead story on the
+homepage. If several are ticked, the most recently published one wins; with
+none, the lead is simply the newest article. The pick is never repeated lower
+on the page. Untick it once the story is no longer the headline: nothing
+expires it automatically.
 
 ## Access control
 
@@ -211,7 +219,7 @@ pnpm migrate:fresh      # drop everything + re-run all migrations (destructive)
 pnpm generate:types     # regenerate src/payload-types.ts from collections
 pnpm generate:importmap # regenerate the admin import map
 pnpm build              # production build
-pnpm test:int           # LOCAL DB only: integration tests (slugs, publishedAt, previousSlugs, public access)
+pnpm test:int           # LOCAL DB only: integration tests (slugs, publishedAt, featured default, previousSlugs, public access)
 pnpm test:e2e           # Playwright through the admin panel on :3001 (starts `pnpm dev` if nothing is running)
 ```
 

@@ -161,6 +161,8 @@ interface SampleArticle {
   tags: TagSlug[]
   cover: [string, string]
   body: Block[]
+  /** Homepage lead pick. One sample has it, so the lead isn't just the newest. */
+  featured?: boolean
 }
 
 const ARTICLES: SampleArticle[] = [
@@ -234,6 +236,7 @@ const ARTICLES: SampleArticle[] = [
     game: 'starfall-tactics',
     tags: ['showcase'],
     cover: ['#064e3b', '#10b981'],
+    featured: true,
     body: [
       'Northlight Interactive packed its summer showcase into forty minutes. Here is everything it announced.',
       { h2: 'Starfall Tactics: Deep Orbit' },
@@ -397,6 +400,7 @@ const run = async () => {
         game: article.game ? gameIds.get(article.game) : undefined,
         tags: article.tags.map((slug) => tagIds.get(slug)).filter((id): id is ID => id !== undefined),
         coverImage,
+        featured: article.featured ?? false,
       },
     })
     created += 1

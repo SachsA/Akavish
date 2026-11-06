@@ -73,6 +73,7 @@ describe('mapArticle', () => {
     expect(a.id).toBe('7')
     expect(a.coverImage).toBe(`${CMS}/a-1920.jpg`)
     expect(a.coverImageAlt).toBe('Trevor on a jet ski')
+    expect(a.featured).toBe(false)
     expect(a.author).toMatchObject({ id: '1', slug: 'akavish', name: 'Akavish' })
     expect(a.author.avatar).toBe('https://cdn.test/me.png')
     expect(a.game).toMatchObject({ id: '2', slug: 'gta-vi', name: 'GTA VI' })

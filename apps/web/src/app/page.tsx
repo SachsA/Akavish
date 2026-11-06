@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Article } from '@akavish/types'
 import { fetchArticles } from '@/lib/payload'
 import { CATEGORIES } from '@/lib/categories'
+import { pickLead } from '@/lib/home'
 import { ArticleCard } from '@/components/ArticleCard'
 import { ArticleListItem, FeaturedArticle } from '@/components/FeaturedArticle'
 import { Wordmark } from '@/components/Wordmark'
@@ -19,7 +20,8 @@ const PER_SECTION = 3
  * Layout, top to bottom:
  *
  *   1. Masthead — wordmark, tagline, links to every section.
- *   2. Lead story (newest article, large) + a "Top stories" column (next 3).
+ *   2. Lead story (the editor's "featured" pick, else the newest article) +
+ *      a "Top stories" column (the next 3).
  *   3. One section per category, built from the remaining articles.
  *
  * Every article appears once: the category sections only use what the lead and
@@ -27,20 +29,28 @@ const PER_SECTION = 3
  * show, so the page degrades cleanly from "busy" all the way down to a single
  * article — or to an empty-state message.
  *
- * Everything comes from a single CMS request, grouped in memory.
+ * Two CMS requests (the latest articles + the newest featured one), grouped in
+ * memory.
  */
 export default async function HomePage() {
   let articles: Article[] = []
+  let featured: Article | null = null
   let cmsError = false
 
   try {
-    const result = await fetchArticles({ limit: 24 })
-    articles = result.data
+    const [latest, picks] = await Promise.all([
+      fetchArticles({ limit: 24 }),
+      // The editor's pick is a nice-to-have: if this query fails, fall back to
+      // "newest is the lead" rather than an error page.
+      fetchArticles({ featured: true, limit: 1 }).catch(() => null),
+    ])
+    articles = latest.data
+    featured = picks?.data[0] ?? null
   } catch {
     cmsError = true
   }
 
-  const [lead, ...others] = articles
+  const { lead, others } = pickLead(articles, featured)
   const topStories = others.slice(0, TOP_STORIES)
   const remaining = others.slice(TOP_STORIES)
 

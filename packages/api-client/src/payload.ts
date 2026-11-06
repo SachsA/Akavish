@@ -57,6 +57,7 @@ export interface PayloadArticle {
   game?: { id: string | number; name?: string; slug?: string } | string | null
   tags?: Array<{ slug?: string } | string> | null
   seo?: { title?: string | null; description?: string | null } | null
+  featured?: boolean | null
 }
 
 /** Payload may return a relative path (`/api/media/file/x.jpg`); make it absolute. */
@@ -110,6 +111,7 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     // which are downscaled from it.
     coverImage: mediaUrl(doc.coverImage, cmsUrl, 'hero'),
     coverImageAlt: mediaAlt(doc.coverImage),
+    featured: doc.featured === true,
     tags: Array.isArray(doc.tags)
       ? doc.tags.map((t) => (typeof t === 'string' ? t : (t.slug ?? ''))).filter(Boolean)
       : [],

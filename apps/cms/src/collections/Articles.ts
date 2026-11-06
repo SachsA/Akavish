@@ -120,6 +120,16 @@ export const Articles: CollectionConfig = {
           'Filled in automatically when the article is first published. Set it by hand only to override that date.',
       },
     },
+    {
+      // Homepage curation: the newest published article with this ticked is the
+      // big lead story; without one, the lead is simply the newest article.
+      name: 'featured', type: 'checkbox', defaultValue: false, index: true,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Show as the big lead story on the homepage. If several are ticked, the most recent one wins. Untick it when the story is no longer the headline.',
+      },
+    },
     { name: 'author', type: 'relationship', relationTo: 'authors', required: true, admin: { position: 'sidebar' } },
     { name: 'game', type: 'relationship', relationTo: 'games', admin: { position: 'sidebar' } },
     { name: 'tags', type: 'relationship', relationTo: 'tags', hasMany: true, admin: { position: 'sidebar' } },
