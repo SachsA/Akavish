@@ -791,7 +791,8 @@ recover from a mistake noticed days later.
 > **Status:** done on 2026-11-05. Bucket `akavish-backups`, 30-day rule on `db/`,
 > the 5 `BACKUP_*` secrets set; the first manual run succeeded. Restore rehearsed
 > on 2026-11-06 with the drill below: all 4 migrations present, `migrate:status`
-> clean, row counts matching prod.
+> clean, row counts matching prod. healthchecks.io check (step 8) added the same
+> day and confirmed by a manual run.
 
 1. **A separate, private bucket.** Cloudflare → R2 → **Create bucket** →
    `akavish-backups`. Do **not** enable public access, and never reuse the media
