@@ -373,8 +373,8 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 
 | Pri | Item                         | Notes                                                                              |
 | --- | ---------------------------- | ---------------------------------------------------------------------------------- |
-| P2  | Dockerfile for web           | Multi-stage Next.js build                                                          |
-| P2  | Dockerfile for CMS           | Payload already ships a starter `apps/cms/Dockerfile` — adapt it                   |
+| ✅  | Dockerfile for web           | Done (2026-11-06) — `apps/web/Dockerfile`: turbo prune → build with `NEXT_OUTPUT=standalone` → ~400 MB non-root image. Exit door only, production stays on Vercel. `DEPLOYMENT.md` §10 |
+| ✅  | Dockerfile for CMS           | Done (2026-11-06) — Payload's starter replaced: same pattern, plus a `migrate` target for pre-deploy migrations. Tested with a real upload (sharp on Alpine). `DEPLOYMENT.md` §10 |
 | ✅  | Extend root `docker-compose` | Postgres + Meilisearch for local dev. Web and CMS still run via `pnpm dev` (faster reloads than containers) |
 
 ### CI (GitHub Actions or similar)

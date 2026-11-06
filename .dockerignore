@@ -1,0 +1,16 @@
+# Docker build context for apps/web/Dockerfile and apps/cms/Dockerfile (both
+# built from the repo root). Keep secrets and local state out of the image.
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+.git
+.github-token
+**/.env
+**/.env.*
+!**/.env.example
+*.dump
+apps/cms/media
+apps/mobile
+**/playwright-report
+**/test-results

@@ -104,6 +104,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `@akavish/api-client/payload` and is used by both web (`lib/payload.ts`) and
   mobile. Article categories have one source: `apps/web/src/lib/categories.ts`
   (must match the CMS `category` options).
+- **Docker (fallback only):** `apps/web/Dockerfile`, `apps/cms/Dockerfile`, built
+  from the repo root; `NEXT_OUTPUT=standalone` is set only there (Vercel/Railway
+  unchanged). `DEPLOYMENT.md` §10.
 - **Secrets:** rotation runbook and rotation log in `DEPLOYMENT.md` §8.
 - **Status / roadmap:** single source of truth is **`PROGRESS.md`**. Deployment
   runbook is **`DEPLOYMENT.md`**.

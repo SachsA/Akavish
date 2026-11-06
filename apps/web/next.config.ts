@@ -1,3 +1,4 @@
+import path from 'node:path'
 import type { NextConfig } from 'next'
 import { withSentryConfig } from '@sentry/nextjs'
 
@@ -23,7 +24,17 @@ function toRemotePattern(url: string | undefined): RemotePattern | null {
 const cmsPattern = toRemotePattern(process.env.CMS_URL ?? 'http://localhost:3001')
 const mediaPattern = toRemotePattern(process.env.NEXT_PUBLIC_R2_PUBLIC_URL)
 
+// `NEXT_OUTPUT=standalone` (set only by the Dockerfile) emits a self-contained
+// server in .next/standalone. Vercel/Railway builds don't set it and are
+// unchanged. The tracing root is the monorepo root so workspace packages and
+// the hoisted pnpm store are included.
+const standalone =
+  process.env.NEXT_OUTPUT === 'standalone'
+    ? { output: 'standalone' as const, outputFileTracingRoot: path.resolve(process.cwd(), '../..') }
+    : {}
+
 const nextConfig: NextConfig = {
+  ...standalone,
   transpilePackages: ['@akavish/ui', '@akavish/types', '@akavish/api-client'],
   images: {
     remotePatterns: [

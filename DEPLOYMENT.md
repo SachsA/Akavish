@@ -208,10 +208,9 @@ lockfile of its own).
 **Render** is equivalent: New **Web Service**, root dir `apps/cms`, same build/start
 commands and env vars.
 
-> **Docker alternative (advanced):** `apps/cms/Dockerfile` is the Payload starter.
-> It targets a single-app build and needs `output: 'standalone'` in
-> `next.config.ts` plus monorepo-aware `COPY` paths. The managed buildpack path
-> above is simpler and recommended; only reach for Docker if your host requires it.
+> **Docker alternative:** `apps/cms/Dockerfile` builds a production image of the
+> CMS (§10). The managed path above is simpler and is what production uses; the
+> image is there for a host that needs a container.
 
 ---
 
@@ -899,6 +898,56 @@ All of these are caught by the healthchecks.io check (step 8): no ping by
 
 ---
 
+## 10. Running in Docker
+
+Production doesn't use containers: Vercel and Railway build from the repo.
+`apps/web/Dockerfile` and `apps/cms/Dockerfile` are the **exit door**, ready if
+either platform ever has to be replaced by a VPS, Fly.io, Render's Docker mode
+or anything else that runs an image. Both were built and run end to end on
+2026-11-06 (pages served, migrations applied, an image upload resized by
+`sharp`).
+
+How they work: built from the **repo root** (the lockfile and workspace
+packages live there); `turbo prune` keeps only the app and what it depends on;
+the build sets `NEXT_OUTPUT=standalone`, which makes `next.config.ts` emit
+Next's self-contained server. That variable is set **only** in the
+Dockerfiles, so Vercel and Railway builds are unchanged. Runtime images run as
+a non-root user, about 400 MB each.
+
+```bash
+# CMS: migrations first (what Railway's pre-deploy does), then the server
+docker build -f apps/cms/Dockerfile --target migrate -t akavish-cms-migrate .
+docker build -f apps/cms/Dockerfile -t akavish-cms .
+docker run --rm -e DATABASE_URL=... -e PAYLOAD_SECRET=... akavish-cms-migrate
+docker run -p 3001:3001 --env-file cms.env akavish-cms
+
+# Web: NEXT_PUBLIC_* are baked in at build time, so they're build args
+docker build -f apps/web/Dockerfile -t akavish-web \
+  --build-arg NEXT_PUBLIC_SITE_URL=https://akavish.gg \
+  --build-arg NEXT_PUBLIC_APP_URL=https://akavish.gg \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_... \
+  --build-arg NEXT_PUBLIC_SENTRY_DSN=https://... \
+  --build-arg CMS_URL=https://cms.akavish.gg .
+docker run -p 3000:3000 --env-file web.env akavish-web
+```
+
+`cms.env` / `web.env` hold the **runtime** variables from the reference below
+(CMS: `DATABASE_URL`, `PAYLOAD_SECRET`, `SERVER_URL`, `WEB_URL`, `R2_*`,
+`RESEND_API_KEY`, `SENTRY_DSN`…; web: `CLERK_SECRET_KEY`, `CMS_URL`,
+`MEILISEARCH_*`…). Never bake secrets into an image with `--build-arg`: only
+the public `NEXT_PUBLIC_*` values belong there.
+
+Two things that differ from the platforms:
+
+- **Media must be on R2.** A container's disk is thrown away on restart, so
+  with `R2_BUCKET` unset, uploads vanish (§4b).
+- **Source maps:** to upload them to Sentry, pass `SENTRY_ORG`,
+  `SENTRY_PROJECT(_CMS)` and `SENTRY_AUTH_TOKEN` as build args too, or traces
+  stay minified. The token then sits in the build cache, so build on a trusted
+  machine.
+
+---
+
 ## Environment variable reference
 
 **Web (Vercel)**
@@ -953,4 +1002,5 @@ All of these are caught by the healthchecks.io check (step 8): no ping by
 6. (Optional) Meilisearch + `reindex:search`.
 7. Domains + DNS, then update URLs and redeploy.
 8. Nightly database backups to a private R2 bucket (§9) + UptimeRobot probes (§4d).
+   (Docker images for both apps exist as a fallback host option: §10.)
 9. Walk the post-deploy checklist.
