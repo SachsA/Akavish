@@ -35,7 +35,7 @@ akavish/
 ├── scripts/          # Repo-level shell scripts (clean)
 ├── docker-compose.yml # Local Postgres + Meilisearch
 ├── turbo.json
-├── pnpm-workspace.yaml # Workspaces + onlyBuiltDependencies (single source — no nested copies)
+├── pnpm-workspace.yaml # Workspaces, onlyBuiltDependencies, security overrides (single source — no nested copies)
 └── tsconfig.base.json
 ```
 
@@ -306,6 +306,14 @@ A Dependabot run that fails with `ERR_PNPM_NO_MATURE_MATCHING_VERSION` isn't
 our bug: a package in the lockfile is younger than Dependabot's release-age
 window (it happened with Expo 58.0.23 two days after its release). It clears
 itself on a later run once that version is old enough.
+
+**Security alerts** (GitHub → Security → Dependabot) are separate from the weekly
+PRs. A direct dependency gets fixed by bumping it; a vulnerable *transitive*
+one by a pinned entry under `overrides:` in `pnpm-workspace.yaml`, always kept
+inside its parent's major (`'pkg@>=7.0.0 <7.30.1': '^7.30.1'`, never a bare
+`>=`). Check what's left with `pnpm audit`. First cleanup (2026-11-06): 298
+alerts → 5 low/moderate ones in build-only tooling with no fix in the same
+major (esbuild, glob, minimatch, deepmerge).
 
 ## Deployment
 

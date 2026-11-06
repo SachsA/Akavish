@@ -136,6 +136,7 @@ Last updated: **2026-11-06**.
 | ✅     | CI runtime hygiene    | GitHub Actions uses Node 22 LTS plus Node-24-compatible action runtimes (`checkout@v7`, `setup-node@v7`, `pnpm/action-setup@v6.1.1`, kept current by Dependabot)                        |
 | ✅     | Workspace dependency hygiene | `@akavish/ui` explicitly declares its `@akavish/types` workspace dependency, so isolated CI installs resolve it correctly                              |
 | ✅     | API client type environment | `@akavish/api-client` explicitly includes DOM fetch types and Node 22 process types, so isolated CI type-checks match its web/Expo runtime contract     |
+| ✅     | Security cleanup      | 2026-11-06: 298 Dependabot alerts (30 critical) → 5 low/moderate in build-only tooling. Next (web 15.5.29, CMS 16.4.5), Payload 3.93.0 (+ migration `payload_3_93`), Sentry 10.78, sharp 0.35.5, vitest 4.1.12; unused `jsdom` / `@vitejs/plugin-react` removed from the CMS; transitive fixes pinned in `pnpm-workspace.yaml` `overrides` |
 | ✅     | pnpm 10 adoption      | `packageManager` pins pnpm 10.34.5 (was 9.0.0 while the lockfile was pnpm-10-generated). `onlyBuiltDependencies` lives in `pnpm-workspace.yaml`, where pnpm 10 reads it. The dormant React `overrides` were **removed** rather than activated — see the gotcha below |
 
 ## Deployment (prep)
@@ -456,6 +457,9 @@ checklist it walks through.
   `components/StatusMessage.tsx`; diagnostics belong in Sentry and the logs.
 - **`app/loading.tsx` mirrors the home layout** — change one, change the other,
   or the page jumps when content arrives.
+- **`overrides` in `pnpm-workspace.yaml` are security pins only** (transitive
+  packages with a known vulnerability, each kept to its parent's major — see
+  README → Dependency updates). Don't add React there, as below.
 - **Don't re-add React `overrides` to `pnpm-workspace.yaml`.** They were there
   for months but never applied (pnpm only reads them from that file since 10.5,
   and `packageManager` was pinned to pnpm 9 — the lockfile had no `overrides:`

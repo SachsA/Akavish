@@ -9,3 +9,34 @@ onlyBuiltDependencies:
   - sharp
   - esbuild
   - unrs-resolver
+
+# Security pins for vulnerable *transitive* dependencies (2026-11-06 audit of
+# GitHub's Dependabot alerts). Each one stays inside the major version its
+# parents expect (^x.y.z) — never a blanket ">=" that could jump a major.
+# Drop an entry once `pnpm why <pkg>` shows every parent already requires a
+# fixed version. Not related to the React gotcha in PROGRESS.md: never add
+# react/react-dom here.
+overrides:
+  'undici@>=7.0.0 <7.30.1': '^7.30.1'
+  'dompurify@>=3.0.0 <3.4.17': '^3.4.17'
+  '@xmldom/xmldom@>=0.9.0 <0.9.12': '^0.9.12'
+  'brace-expansion@<1.1.21': '^1.1.21'
+  'brace-expansion@>=4.0.0 <5.0.12': '^5.0.12'
+  'node-forge@<1.4.1': '^1.4.1'
+  'fast-uri@>=3.0.0 <3.1.9': '^3.1.9'
+  # Unscoped: vitest asks for `vite: ^6 || ^7`, which a range selector doesn't
+  # match. Every vite in the tree is already 7.x, so this only moves the patch.
+  vite: '^7.3.7'
+  'postcss@>=8.0.0 <8.5.23': '^8.5.23'
+  'js-yaml@>=4.0.0 <4.3.2': '^4.3.2'
+  'happy-dom@<21.0.4': '^21.0.4'
+  'shell-quote@<1.11.0': '^1.11.0'
+  'nanoid@>=3.0.0 <3.3.18': '^3.3.18'
+  'postcss-selector-parser@>=6.0.0 <6.1.5': '^6.1.5'
+  'browserslist@<4.28.7': '^4.28.7'
+  'immutable@>=4.0.0 <4.3.9': '^4.3.9'
+  'baseline-browser-mapping@>=2.0.0 <2.11.0': '^2.11.0'
+  'source-map-js@<1.2.2': '^1.2.2'
+  'compression@<1.8.2': '^1.8.2'
+  'fast-copy@>=3.0.0 <3.1.0': '^3.1.0'
+  'zod@>=4.0.0 <4.6.6': '^4.6.6'

@@ -130,8 +130,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Known gotchas** (details in `PROGRESS.md` → gotchas):
   `.npmrc` is gitignored, so CI/Vercel/Railway install without hoisting;
   Node 22 LTS ≥ 22.13 (Expo 58 needs it;
-  25 OOMs the CMS); **pnpm 10** pinned via `packageManager` — don't re-add React
-  `overrides` to `pnpm-workspace.yaml` (Expo pins its own exact React, 19.3 on
+  25 OOMs the CMS); **pnpm 10** pinned via `packageManager` — `overrides` in
+  `pnpm-workspace.yaml` are security pins for transitive deps only (same major,
+  `^x.y.z`); never add React there (Expo pins its own exact React, 19.3 on
   SDK 58, while Next/Payload are on 19.2). Mobile = **Expo SDK 58**; on iPhone, Expo Go needs the same
   Expo account signed in on phone and computer. Accessibility: small text on the
   dark background is `text-zinc-400` or lighter (never `zinc-500/600`), card
