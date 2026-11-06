@@ -88,7 +88,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web +
   api-client), then build web + CMS (mobile isn't built — that needs EAS). `.github/workflows/backup.yml` dumps the prod DB nightly
-  to a private R2 bucket (`DEPLOYMENT.md` §9). Uses `pnpm install
+  to a private R2 bucket and pings healthchecks.io, which emails if a night is
+  missed (`DEPLOYMENT.md` §9). Uses `pnpm install
   --frozen-lockfile` on Node 22.
 - **Live:** web = `akavish.gg` (canonical apex; `www` 308s to it), CMS =
   `cms.akavish.gg`. DNS on Cloudflare; the platform URLs

@@ -88,3 +88,24 @@ jobs:
           # The AWS CLI ships on GitHub's ubuntu runners; R2 speaks the S3 API.
           aws s3 cp "$FILE" "s3://$R2_BUCKET/db/$FILE" --endpoint-url "$R2_ENDPOINT"
           echo "Uploaded s3://$R2_BUCKET/db/$FILE"
+
+      # Dead-man's switch (DEPLOYMENT.md §9). GitHub emails when this job FAILS,
+      # but nothing tells you when it never STARTS (a skipped cron, a workflow
+      # disabled after 60 days of inactivity). healthchecks.io expects a ping
+      # every night and emails when one is missing. Optional: with the secret
+      # unset these steps do nothing, and a ping problem never fails the backup.
+      - name: Ping healthchecks.io (success)
+        if: success()
+        env:
+          HC_URL: ${{ secrets.BACKUP_HEALTHCHECK_URL }}
+        run: |
+          [ -z "$HC_URL" ] && { echo "BACKUP_HEALTHCHECK_URL not set, skipping"; exit 0; }
+          curl -fsS -m 10 --retry 3 "$HC_URL" > /dev/null && echo "Pinged" || echo "::warning::healthchecks.io ping failed"
+
+      - name: Ping healthchecks.io (failure)
+        if: failure()
+        env:
+          HC_URL: ${{ secrets.BACKUP_HEALTHCHECK_URL }}
+        run: |
+          [ -z "$HC_URL" ] && exit 0
+          curl -fsS -m 10 --retry 3 "$HC_URL/fail" > /dev/null || true

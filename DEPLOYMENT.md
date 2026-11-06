@@ -819,10 +819,21 @@ recover from a mistake noticed days later.
    | `BACKUP_R2_SECRET_ACCESS_KEY` | from step 3 |
    | `BACKUP_R2_ENDPOINT` | `https://<accountId>.r2.cloudflarestorage.com` |
    | `BACKUP_R2_BUCKET` | `akavish-backups` |
+   | `BACKUP_HEALTHCHECK_URL` | optional, step 8 |
 
 6. **Check the Postgres version.** The Neon console shows it. If it isn't 17,
    change `PG_MAJOR` in the workflow — `pg_dump` refuses to dump a newer server.
 7. Run the workflow once by hand and confirm the file appears in the bucket.
+8. **Dead-man's switch (healthchecks.io).** GitHub emails when the job *fails*,
+   but nothing tells you when it never *starts* (a skipped cron, a workflow
+   disabled after 60 days). Sign up at healthchecks.io (free), **Add Check**:
+   name `Akavish DB backup`, schedule **Cron** `17 3 * * *`, time zone **UTC**,
+   grace time **3 hours** (GitHub often starts crons late). Copy its ping URL
+   (`https://hc-ping.com/<uuid>`) into a sixth repository secret,
+   `BACKUP_HEALTHCHECK_URL`. The workflow pings it after each successful upload
+   and pings `/fail` when a run fails; no ping by ~06:17 UTC → email. Optional:
+   unset, those steps do nothing. Run the workflow once by hand: the check
+   turns green ("up").
 
 ### Restoring
 
@@ -873,6 +884,9 @@ the mistake.
 Media files are **not** in the dump — they live in the R2 media bucket.
 
 ### Things that can silently stop it
+
+All of these are caught by the healthchecks.io check (step 8): no ping by
+~06:17 UTC means an email, whatever the cause.
 
 - **GitHub disables scheduled workflows after 60 days without repository
   activity.** If you step away from the project, check Actions when you return
