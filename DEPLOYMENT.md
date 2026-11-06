@@ -762,8 +762,9 @@ recover from a mistake noticed days later.
 ### One-time setup
 
 > **Status:** done on 2026-11-05. Bucket `akavish-backups`, 30-day rule on `db/`,
-> the 5 `BACKUP_*` secrets set; the first manual run succeeded. A restore into
-> the local Docker DB hasn't been rehearsed yet.
+> the 5 `BACKUP_*` secrets set; the first manual run succeeded. Restore rehearsed
+> on 2026-11-06 with the drill below: all 4 migrations present, `migrate:status`
+> clean, row counts matching prod.
 
 1. **A separate, private bucket.** Cloudflare → R2 → **Create bucket** →
    `akavish-backups`. Do **not** enable public access, and never reuse the media
@@ -798,19 +799,49 @@ recover from a mistake noticed days later.
 
 ### Restoring
 
-**Always restore into your local Docker database first** to check the dump
-(`postgresql://akavish:akavish@localhost:5432/akavish`), then prod.
+**Download** the dump from Cloudflare → R2 → `akavish-backups` → `db/` → the file
+→ **Download**. The dashboard flattens the folder into the name, so it lands as
+`~/Downloads/db_akavish-<date>.dump` (note the `db_` prefix).
+
+**Drill: check a dump without touching anything.** Restore into a throwaway
+`akavish_restore` database in the local Docker Postgres (your seeded `akavish`
+DB is left alone), check it, drop it. Worth repeating every few months.
 
 ```bash
-# 1. Download the dump from the R2 dashboard (akavish-backups → db/ → file).
-# 2. Restore — --clean drops existing objects first, so this REPLACES the target.
-pg_restore --clean --if-exists --no-owner --no-privileges \
-  --dbname "<target connection string>" akavish-2026-11-06T0317Z.dump
+docker compose up -d
+docker exec akavish-postgres createdb -U akavish akavish_restore
+docker exec -i akavish-postgres pg_restore --no-owner --no-privileges -U akavish \
+  -d akavish_restore < ~/Downloads/db_akavish-<date>.dump; echo "exit: $?"
+
+# Every migration in apps/cms/src/migrations should be listed, counts should match prod
+docker exec akavish-postgres psql -U akavish -d akavish_restore \
+  -c "select name from payload_migrations order by name;" \
+  -c "select (select count(*) from users) users, (select count(*) from articles) articles, (select count(*) from authors) authors, (select count(*) from media) media;"
+
+# Payload must see every migration as applied ("Ran: Yes")
+cd apps/cms && DATABASE_URL=postgresql://akavish:akavish@localhost:5432/akavish_restore pnpm migrate:status; cd ../..
+
+# Clean up: the dump holds prod emails and password hashes
+docker exec akavish-postgres dropdb -U akavish akavish_restore
+rm ~/Downloads/db_akavish-<date>.dump
 ```
 
-Needs a local `pg_restore` of the same major version (`brew install
-postgresql@17`), or run it through Docker:
-`docker run --rm -v "$PWD:/in" postgres:17 pg_restore … /in/<file>.dump`.
+`exit: 0` from `pg_restore` means a clean restore; a lone `schema "public"
+already exists` error is harmless. The `postgres:17` container provides
+`pg_restore`, so nothing needs installing on the Mac.
+
+**Real restore into prod** (only after the drill above passed on that same
+file). `--clean` drops existing objects first, so this **replaces** the target:
+
+```bash
+docker exec -i akavish-postgres pg_restore --clean --if-exists --no-owner --no-privileges \
+  --dbname "<direct prod connection string>" < ~/Downloads/db_akavish-<date>.dump
+```
+
+Use the **direct** Neon string (no `-pooler`), the same kind as
+`BACKUP_DATABASE_URL`. Take a fresh manual backup first (Actions → Database
+backup → Run workflow) so the current state can be recovered if the restore was
+the mistake.
 
 Media files are **not** in the dump — they live in the R2 media bucket.
 
