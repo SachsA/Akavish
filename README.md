@@ -236,8 +236,11 @@ GitHub Actions runs on every push to `main` and every pull request
   (that needs EAS).
 - **Database backup** (`.github/workflows/backup.yml`) — nightly `pg_dump` of
   production into a private R2 bucket. Setup and restore: `DEPLOYMENT.md` §9.
-- **Build** — `pnpm build` (web + CMS) against a throwaway Postgres service with
-  dummy env values; Meilisearch is left unset and degrades gracefully.
+- **Build & CMS tests** — `pnpm build` (web + CMS) against a throwaway Postgres
+  service with dummy env values (Meilisearch, R2, Resend, Sentry unset; each
+  degrades gracefully). Then, on that database: every migration applied from
+  scratch, `pnpm seed`, the CMS integration tests (`test:int`) and a Playwright
+  pass through the admin panel (`test:e2e`) on the production build.
 
 Run the same checks locally before pushing:
 

@@ -129,7 +129,7 @@ Last updated: **2026-11-06**.
 | ------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ✅     | GitHub Actions CI     | `.github/workflows/ci.yml` on push to `main` + every PR                                                                                                       |
 | ✅     | Lint + type-check job | Lint: web, CMS + mobile. Type-check: web, CMS, mobile + all shared packages (mobile back in CI since the Expo 58 upgrade).                                   |
-| ✅     | Build job             | `pnpm build` (web + CMS) with a Postgres service + dummy env                                                                                                  |
+| ✅     | Build job             | `pnpm build` (web + CMS) with a Postgres service + dummy env, then migrations from scratch, `pnpm seed`, CMS integration tests and a Playwright admin pass |
 | ✅     | ESLint flat configs   | web + cms use `eslint.config.mjs` importing `eslint-config-next`'s native flat presets (no FlatCompat, no `next lint`); web bumped to `eslint-config-next@16` |
 | ✅     | Link hygiene          | Internal `<a>` → `next/link` `<Link>` across web (fixes `no-html-link-for-pages`)                                                                             |
 | ✅     | `type-check` scripts  | Added to root (turbo) and CMS                                                                                                                                 |
@@ -384,7 +384,7 @@ Lint + type-check + build on PR are done (see [Done → CI/CD](#cicd)). Remainin
 | Pri | Item                     | Notes                                                                                            |
 | --- | ------------------------ | ------------------------------------------------------------------------------------------------ |
 | ✅  | Lint + type-check mobile | Done with the Expo 58 upgrade (roadmap #12): ESLint 9 flat config, mobile back in CI lint + type-check |
-| P2  | CMS tests in CI          | Unit tests (web + api-client) run in CI ✅. The CMS's own Vitest int + Playwright e2e suites aren't wired in yet — they need a seeded DB and browsers |
+| ✅  | CMS tests in CI          | Done (2026-11-06) — the Payload template's placeholder tests replaced: `test:int` covers slug generation + clash suffix, `publishedAt` stamping, `previousSlugs` on rename, public read access; `test:e2e` logs into the admin and opens the dashboard, users and articles. Both run in the CI build job after migrations + seed |
 | P2  | Preview deploys          | Vercel preview per PR                                                                            |
 | P3  | Dependabot / renovate    | Dependency updates                                                                               |
 
@@ -416,7 +416,7 @@ checklist it walks through.
 
 | Pri | Item                 | Notes                                                                  |
 | --- | -------------------- | ---------------------------------------------------------------------- |
-| ✅  | Unit tests           | vitest in `apps/web` and `packages/api-client`, `pnpm test`, run in CI. Next: e2e on key pages |
+| ✅  | Unit tests           | vitest in `apps/web` and `packages/api-client` (`pnpm test`) + CMS integration and admin e2e tests, all run in CI. Next: e2e on the public site's key pages |
 | ✅  | API contract checks  | The shared mapper is unit-tested, and a test fails if the web and CMS category lists drift |
 | P3  | Contributor docs     | How to add a collection, a page, run tests                             |
 | P3  | Architecture diagram | One picture of web ↔ CMS ↔ DB ↔ services                               |

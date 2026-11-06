@@ -211,4 +211,11 @@ pnpm migrate:fresh      # drop everything + re-run all migrations (destructive)
 pnpm generate:types     # regenerate src/payload-types.ts from collections
 pnpm generate:importmap # regenerate the admin import map
 pnpm build              # production build
+pnpm test:int           # LOCAL DB only: integration tests (slugs, publishedAt, previousSlugs, public access)
+pnpm test:e2e           # Playwright through the admin panel on :3001 (starts `pnpm dev` if nothing is running)
 ```
+
+Both test suites need the local Postgres migrated (`docker compose up -d` +
+`pnpm migrate`). `test:int` writes and deletes its own documents and refuses
+any non-localhost `DATABASE_URL`. The first `test:e2e` run needs a browser:
+`pnpm exec playwright install chromium`. CI runs both on every push.

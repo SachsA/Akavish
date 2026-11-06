@@ -44,10 +44,12 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-  # Verify the apps actually build. The CMS (Payload) needs a database, so we
-  # spin up a throwaway Postgres and feed dummy env values.
+  # Verify the apps actually build, then test the CMS against a real database:
+  # a throwaway Postgres with the committed migrations applied, the seed script,
+  # Payload integration tests (hooks, slugs, access control) and a Playwright
+  # pass through the admin panel on the production build.
   build:
-    name: Build
+    name: Build & CMS tests
     runs-on: ubuntu-latest
     needs: quality
 
@@ -103,3 +105,33 @@ jobs:
 
       - name: Build (web + cms)
         run: pnpm build
+
+      # Same command Railway runs before each deploy, on an empty database:
+      # proves every committed migration still applies from scratch.
+      - name: Apply migrations
+        run: pnpm --filter akavish-cms migrate
+
+      # Smoke test for `pnpm seed` (admin + sample content). Also gives the
+      # admin panel tests something to list.
+      - name: Seed
+        run: pnpm seed
+
+      - name: CMS integration tests
+        run: pnpm --filter akavish-cms test:int
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter akavish-cms exec playwright install --with-deps chromium
+
+      # `pnpm start` on :3001 (Railway sets PORT itself, so the script doesn't
+      # hard-code it). Playwright's webServer finds it already up and reuses it.
+      - name: Start the CMS
+        run: |
+          PORT=3001 pnpm --filter akavish-cms start > cms.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:3001/admin/login && exit 0
+            sleep 2
+          done
+          echo "::error::CMS did not start"; cat cms.log; exit 1
+
+      - name: CMS admin e2e (Playwright)
+        run: pnpm --filter akavish-cms test:e2e

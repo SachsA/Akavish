@@ -87,7 +87,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   fallback — Meilisearch Cloud has no free tier.
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web +
-  api-client), then build web + CMS (mobile isn't built — that needs EAS). `.github/workflows/backup.yml` dumps the prod DB nightly
+  api-client), then build web + CMS (mobile isn't built — that needs EAS) and,
+  on a throwaway Postgres: migrations from scratch, `pnpm seed`, CMS integration
+  tests (`test:int`) and a Playwright admin pass (`test:e2e`). `.github/workflows/backup.yml` dumps the prod DB nightly
   to a private R2 bucket and pings healthchecks.io, which emails if a night is
   missed (`DEPLOYMENT.md` §9). Uses `pnpm install
   --frozen-lockfile` on Node 22.
