@@ -457,6 +457,11 @@ Notes on how it's wired:
   bigger promise than "we log errors", and it's the heaviest thing the browser
   SDK can load. Turning it on means rewriting the privacy pages first.
 
+**Source maps confirmed (2026-11-06):** `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` /
+`SENTRY_PROJECT(_CMS)` set on Vercel and Railway, builds upload them, stack
+traces in Sentry show the real `.tsx` files. If traces ever turn minified again,
+check those three variables first, then the build log for "No auth token".
+
 Verify after deploying: throw a test error from a page, then check **Issues** in
 Sentry. `/api/search?q=x` and a normal page view should also appear under
 **Traces**.
