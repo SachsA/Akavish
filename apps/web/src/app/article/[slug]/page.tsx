@@ -13,6 +13,9 @@ import { ArticleCard } from '@/components/ArticleCard'
 import { ShareButtons } from '@/components/ShareButtons'
 import { countWords, readingTimeLabel, readingTimeMinutes } from '@/lib/reading-time'
 import { absoluteUrl, SITE_NAME } from '@/lib/site'
+import { categoryByValue } from '@/lib/categories'
+import { breadcrumbList } from '@/lib/structured-data'
+import { JsonLd } from '@/components/JsonLd'
 
 export const revalidate = 30
 
@@ -125,14 +128,17 @@ export default async function ArticlePage({
       : undefined,
   }
 
+  const category = categoryByValue(article.category)
+  const breadcrumbs = breadcrumbList([
+    ...(category ? [{ name: category.label, path: `/${category.slug}` }] : []),
+    { name: article.title, path: `/article/${article.slug}` },
+  ])
+
   return (
     // The <article> below wraps only the piece itself — share links, prev/next
     // and suggestions are page furniture, not part of the article.
     <div className="max-w-3xl mx-auto px-4 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={[jsonLd, breadcrumbs]} />
       <Link
         href="/"
         className="text-sm text-zinc-400 hover:text-white transition-colors inline-block py-1 mb-5"

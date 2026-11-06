@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { Article } from '@akavish/types'
 import { fetchAuthorBySlug, fetchArticles } from '@/lib/payload'
+import { breadcrumbList } from '@/lib/structured-data'
+import { JsonLd } from '@/components/JsonLd'
 import { ArticleCard } from '@/components/ArticleCard'
 
 export const revalidate = 30
@@ -49,6 +51,7 @@ export default async function AuthorPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      <JsonLd data={breadcrumbList([{ name: author.name, path: `/author/${slug}` }])} />
       <header className="flex items-center gap-5 mb-10">
         {author.avatar ? (
           <Image

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { Article } from '@akavish/types'
 import { fetchGameBySlug, fetchArticles } from '@/lib/payload'
+import { breadcrumbList } from '@/lib/structured-data'
+import { JsonLd } from '@/components/JsonLd'
 import { ArticleCard } from '@/components/ArticleCard'
 
 export const revalidate = 30
@@ -69,6 +71,7 @@ export default async function GamePage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      <JsonLd data={breadcrumbList([{ name: game.name, path: `/game/${slug}` }])} />
       <header className="flex flex-col sm:flex-row gap-6 mb-10">
         {game.cover && (
           <div className="relative w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-lg overflow-hidden shrink-0">

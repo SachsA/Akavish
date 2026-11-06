@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import type { Article } from '@akavish/types'
 import { fetchArticles } from '@/lib/payload'
 import { CATEGORIES, categoryBySlug } from '@/lib/categories'
+import { breadcrumbList } from '@/lib/structured-data'
+import { JsonLd } from '@/components/JsonLd'
 import { ArticleCard } from '@/components/ArticleCard'
 import { ContentUnavailable, NothingYet } from '@/components/StatusMessage'
 
@@ -49,6 +51,7 @@ export default async function CategoryPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      <JsonLd data={breadcrumbList([{ name: conf.label, path: `/${conf.slug}` }])} />
       <header className="mb-10">
         <h1 className="text-4xl font-black tracking-tight text-white">{conf.label}</h1>
         <p className="text-zinc-400 mt-2">{conf.blurb}</p>

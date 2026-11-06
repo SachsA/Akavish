@@ -78,7 +78,7 @@ Last updated: **2026-11-06**.
 | ✅     | Canonical URLs               | `alternates.canonical` on home, article, category, author, game, tag                       |
 | ✅     | CMS `seo` fields used        | Article metadata prefers `seo.title` / `seo.description`, falls back to title/excerpt      |
 | ✅     | Dynamic OG images            | Shared design in `lib/og.tsx`; site default + article, category, author, game, tag routes   |
-| ✅     | JSON-LD                      | `NewsArticle` structured data on article pages, incl. `wordCount` + `timeRequired`         |
+| ✅     | JSON-LD                      | `NewsArticle` on article pages (incl. `wordCount` + `timeRequired`) + `BreadcrumbList` on every detail page. Rendered through `components/JsonLd.tsx`, which escapes `<` |
 
 ### Search (Meilisearch)
 
@@ -292,7 +292,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item                            | Notes                                                     |
 | --- | ------------------------------- | --------------------------------------------------------- |
 | ✅  | OG images for non-article pages | Done — shared `lib/og.tsx`; default + category/author/game/tag |
-| P3  | Breadcrumb JSON-LD              | `BreadcrumbList` schema on detail pages                   |
+| ✅  | Breadcrumb JSON-LD              | Done (2026-11-06) — `BreadcrumbList` on article (Home › Category › Article), category, author, game and tag pages (`lib/structured-data.ts`, unit-tested) |
 | P3  | Per-locale hreflang             | Only once i18n lands (area 6)                             |
 
 ## 3. CMS / back-office (`apps/cms`)

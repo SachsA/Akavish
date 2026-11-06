@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { Article } from '@akavish/types'
 import { fetchTagBySlug, fetchArticles } from '@/lib/payload'
+import { breadcrumbList } from '@/lib/structured-data'
+import { JsonLd } from '@/components/JsonLd'
 import { ArticleCard } from '@/components/ArticleCard'
 
 export const revalidate = 30
@@ -48,6 +50,7 @@ export default async function TagPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      <JsonLd data={breadcrumbList([{ name: `#${tag.name}`, path: `/tag/${slug}` }])} />
       <header className="mb-10">
         <h1 className="text-4xl font-black tracking-tight text-white">#{tag.name}</h1>
         <p className="text-zinc-400 mt-2">Everything tagged {tag.name}.</p>
