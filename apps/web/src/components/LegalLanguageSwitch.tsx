@@ -32,7 +32,8 @@ export function LegalLanguageSwitch({
       <Link
         href={LEGAL_PAGES[page][other]}
         hrefLang={other}
-        className="text-zinc-500 hover:text-white transition-colors no-underline"
+        lang={other}
+        className="inline-block py-1 text-zinc-400 hover:text-white transition-colors no-underline"
       >
         {label} →
       </Link>

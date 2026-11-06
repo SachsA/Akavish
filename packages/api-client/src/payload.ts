@@ -29,6 +29,7 @@ export type PayloadMedia =
   | string
   | {
       url?: string
+      alt?: string | null
       sizes?: Record<string, { url?: string } | undefined>
     }
   | null
@@ -84,6 +85,13 @@ export function mediaUrl(
   return absolutise(m.url, cmsUrl)
 }
 
+/** Alt text of an uploaded file; undefined when unpopulated or blank. */
+export function mediaAlt(m: PayloadMedia): string | undefined {
+  if (!m || typeof m === 'string') return undefined
+  const alt = m.alt?.trim()
+  return alt ? alt : undefined
+}
+
 /** Normalise a raw Payload article into the shared `Article` shape. */
 export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
   const author = doc.author && typeof doc.author === 'object' ? doc.author : null
@@ -101,6 +109,7 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     // 'hero' (1920w) is a good source for both the article hero and the cards,
     // which are downscaled from it.
     coverImage: mediaUrl(doc.coverImage, cmsUrl, 'hero'),
+    coverImageAlt: mediaAlt(doc.coverImage),
     tags: Array.isArray(doc.tags)
       ? doc.tags.map((t) => (typeof t === 'string' ? t : (t.slug ?? ''))).filter(Boolean)
       : [],

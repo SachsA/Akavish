@@ -78,6 +78,6 @@ export const articlesApi = {
 // ─── Export ────────────────────────────────────────────────────────────────
 
 export { fetcher }
-export { mapArticle, mediaUrl, toPaginated } from './payload'
+export { mapArticle, mediaAlt, mediaUrl, toPaginated } from './payload'
 export type { MediaSize, PayloadArticle, PayloadListResponse, PayloadMedia } from './payload'
 export type { Article, ArticleCategory, PaginatedResponse, ApiError }

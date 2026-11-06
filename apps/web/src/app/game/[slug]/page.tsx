@@ -94,16 +94,16 @@ export default async function GamePage({
             ))}
           </div>
           {meta.length > 0 && (
-            <p className="text-sm text-zinc-500">{meta.join('  ·  ')}</p>
+            <p className="text-sm text-zinc-400">{meta.join('  ·  ')}</p>
           )}
         </div>
       </header>
 
-      <h2 className="text-xs uppercase tracking-widest text-zinc-600 mb-6 font-bold">
+      <h2 className="text-xs uppercase tracking-widest text-zinc-400 mb-6 font-bold">
         Coverage
       </h2>
       {articles.length === 0 ? (
-        <p className="text-zinc-500">No published articles about this game yet.</p>
+        <p className="text-zinc-400">No published articles about this game yet.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {articles.map((article) => (

@@ -17,7 +17,7 @@ export const OG_SIZE = { width: 1200, height: 630 }
 
 const BG = '#09090b'
 const WHITE = '#ffffff'
-const DIM = '#52525b'
+const DIM = '#71717a' // zinc-500, same as the Wordmark's "ish"
 const MUTED = '#a1a1aa'
 const FOOTER = '#71717a'
 const ACCENT = '#10b981'

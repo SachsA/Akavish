@@ -9,7 +9,7 @@
 
 function Box({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <div className="border border-zinc-800 rounded-lg p-8 text-center text-zinc-500">
+    <div className="border border-zinc-800 rounded-lg p-8 text-center text-zinc-400">
       <p className="font-medium text-zinc-400">{title}</p>
       {children && <p className="text-sm mt-1">{children}</p>}
     </div>

@@ -175,17 +175,14 @@ actually tackle it, best value-for-effort first.
 | 17  | ✅ **Local dev DB in Docker**       | Done — the Neon dev project and the Railway dev environment were deleted; local dev uses Postgres from `docker-compose.yml` | —      |
 | 18  | ✅ **Seed script**                  | Done — `pnpm seed`: admin (only on an empty DB) + 8 fictional articles across all 6 categories, with author, games, tags and generated covers. Re-runnable, refuses any non-localhost `DATABASE_URL` | —      |
 | 19  | ✅ **Uptime monitoring**            | Done — UptimeRobot (free, every 5 min, email alerts): HTTP probe on `akavish.gg`, Keyword probe on the CMS REST API so a DB outage counts too. Payload 404s on `HEAD`, hence Keyword, not HTTP — `DEPLOYMENT.md` §4d | —      |
-| 20  | ⬜ **Mobile + accessibility audit** | The site on a phone; keyboard navigation, focus states, contrast, screen-reader landmarks | 1–2 h  |
+| 20  | ✅ **Mobile + accessibility audit** | Done (2026-11-06) — axe-core (WCAG 2.1 AA) + iPhone 13/desktop pass on every page type, then fixed: contrast (no `text-zinc-500/600` for small text, darker Sign-up green), a swipeable section strip under the header on phones, underlined prose links, `lang="fr"` on the French pages, real cover alt text from the CMS (`coverImageAlt`) and empty alt on cards, skip link, heading order, 24 px tap targets in the footer, reduced-motion scrolling. Re-audit: 0 axe violations except the decorative 404 numeral | —      |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
 > (task 4) **sends** Payload's password resets from `mail.akavish.gg`. Cloudflare
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-**Order:** #20 audit. That's the whole
-list of work worth doing *now*.
-
-**After that, everything left waits on something:**
+**The "do now" list is done** (#1–#20). Everything left waits on something:
 
 | Waits on | Items (in the backlog below) |
 | --- | --- |
@@ -284,8 +281,8 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 | Pri | Item                    | Notes                                                                    |
 | --- | ----------------------- | ------------------------------------------------------------------------ |
-| P2  | Mobile responsive audit | Verify header nav, cards, article/game/author pages on small screens     |
-| P2  | Accessibility pass      | Alt text, focus states, color contrast, keyboard nav, semantic landmarks |
+| ✅  | Mobile responsive audit | Done — roadmap #20. Phones get a section strip under the header; no horizontal overflow on any page |
+| ✅  | Accessibility pass      | Done — roadmap #20 (axe-core clean). Re-run the audit after big UI changes |
 | ✅  | Analytics               | Vercel Web Analytics — cookieless, 50k events/month free, no consent banner needed. Enable it in the Vercel dashboard to start collecting |
 
 ## 2. SEO
@@ -446,6 +443,15 @@ checklist it walks through.
   options in `apps/cms/src/collections/Articles.ts`. A few components still keep
   their own singular-label map (`ArticleCard`, the article page, `SearchResults`,
   the OG image) — migrate them when next touched.
+- **Contrast on the dark theme:** small text on `zinc-950`/`zinc-900` must be
+  `text-zinc-400` or lighter. `zinc-500` (4.1:1) only passes for large bold text
+  (the Wordmark's "ish"); `zinc-600` (2.6:1) never does. White text on green
+  buttons needs `bg-emerald-700` (`600` is 3.8:1). Found by the #20 audit.
+- **Card images take `alt=""`** — the title is right next to them in the same
+  link. The article hero uses the editor's alt (`article.coverImageAlt`).
+- **A missing URL answers 200, not 404** (Next streams the page because of
+  `loading.tsx`, then `notFound()` can't change the status). The page carries
+  `noindex`, so search engines drop it; harmless, not worth fighting Next for.
 - **Never show operational details to readers.** Fallbacks go through
   `components/StatusMessage.tsx`; diagnostics belong in Sentry and the logs.
 - **`app/loading.tsx` mirrors the home layout** — change one, change the other,

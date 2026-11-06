@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapArticle, mediaUrl, toPaginated, type PayloadArticle } from './payload'
+import { mapArticle, mediaAlt, mediaUrl, toPaginated, type PayloadArticle } from './payload'
 
 const CMS = 'https://cms.test'
 
@@ -44,11 +44,24 @@ describe('mediaUrl', () => {
   })
 })
 
+describe('mediaAlt', () => {
+  it('returns the trimmed alt text of a populated upload', () => {
+    expect(mediaAlt({ url: '/a.jpg', alt: '  A cover  ' })).toBe('A cover')
+  })
+
+  it('is undefined when the upload is unpopulated, missing or has a blank alt', () => {
+    expect(mediaAlt('42')).toBeUndefined()
+    expect(mediaAlt(null)).toBeUndefined()
+    expect(mediaAlt({ url: '/a.jpg', alt: '   ' })).toBeUndefined()
+    expect(mediaAlt({ url: '/a.jpg' })).toBeUndefined()
+  })
+})
+
 describe('mapArticle', () => {
   it('maps a fully populated article', () => {
     const a = mapArticle(
       rawArticle({
-        coverImage: { url: '/a.jpg', sizes: { hero: { url: '/a-1920.jpg' } } },
+        coverImage: { url: '/a.jpg', alt: 'Trevor on a jet ski', sizes: { hero: { url: '/a-1920.jpg' } } },
         author: { id: 1, slug: 'akavish', name: 'Akavish', avatar: 'https://cdn.test/me.png' },
         game: { id: 2, name: 'GTA VI', slug: 'gta-vi' },
         tags: [{ slug: 'gta' }, { slug: 'openworld' }, {}],
@@ -59,6 +72,7 @@ describe('mapArticle', () => {
 
     expect(a.id).toBe('7')
     expect(a.coverImage).toBe(`${CMS}/a-1920.jpg`)
+    expect(a.coverImageAlt).toBe('Trevor on a jet ski')
     expect(a.author).toMatchObject({ id: '1', slug: 'akavish', name: 'Akavish' })
     expect(a.author.avatar).toBe('https://cdn.test/me.png')
     expect(a.game).toMatchObject({ id: '2', slug: 'gta-vi', name: 'GTA VI' })

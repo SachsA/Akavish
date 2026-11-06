@@ -34,7 +34,7 @@ export function ProcessorTable({ lang }: { lang: 'en' | 'fr' }) {
               </td>
               <td className="py-3 pr-4 text-zinc-400">{p.data[lang]}</td>
               <td className="py-3 pr-4 text-zinc-400">{p.purpose[lang]}</td>
-              <td className="py-3 text-zinc-500 whitespace-nowrap">{p.region}</td>
+              <td className="py-3 text-zinc-400 whitespace-nowrap">{p.region}</td>
             </tr>
           ))}
         </tbody>

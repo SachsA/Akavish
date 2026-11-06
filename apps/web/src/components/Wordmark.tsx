@@ -16,7 +16,9 @@
 export function Wordmark({
   className = '',
   primary = 'text-white',
-  muted = 'text-zinc-600',
+  // zinc-500: 4.1:1 on the zinc-950 background, enough for large bold text
+  // (WCAG 3:1). zinc-600 was 2.6:1. The mark is never rendered small.
+  muted = 'text-zinc-500',
 }: {
   className?: string
   /**

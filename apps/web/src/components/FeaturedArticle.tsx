@@ -26,7 +26,9 @@ export function FeaturedArticle({ article }: { article: Article }) {
         {article.coverImage ? (
           <Image
             src={article.coverImage}
-            alt={article.title}
+            // Decorative: the title sits right next to it inside the same
+            // link, so a real alt would make screen readers read it twice.
+            alt=""
             fill
             // Spans two of three columns on desktop.
             sizes="(max-width: 1024px) 100vw, 66vw"
@@ -35,7 +37,7 @@ export function FeaturedArticle({ article }: { article: Article }) {
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
             <Wordmark className="text-5xl" primary="text-zinc-700" muted="text-zinc-800" />
           </div>
         )}
@@ -47,14 +49,14 @@ export function FeaturedArticle({ article }: { article: Article }) {
             {category?.singular ?? article.category}
           </span>
           {article.publishedAt && (
-            <span className="text-zinc-600">· {formatDate(article.publishedAt)}</span>
+            <span className="text-zinc-400">· {formatDate(article.publishedAt)}</span>
           )}
         </div>
         <h2 className="text-3xl font-black tracking-tight text-white leading-tight group-hover:text-emerald-400 transition-colors">
           {article.title}
         </h2>
         <p className="text-zinc-400 line-clamp-3">{article.excerpt}</p>
-        <p className="text-sm text-zinc-600">By {article.author.name}</p>
+        <p className="text-sm text-zinc-400">By {article.author.name}</p>
       </div>
     </Link>
   )
@@ -73,7 +75,7 @@ export function ArticleListItem({ article }: { article: Article }) {
         {article.title}
       </h3>
       {article.publishedAt && (
-        <p className="mt-1 text-xs text-zinc-600">{formatDate(article.publishedAt)}</p>
+        <p className="mt-1 text-xs text-zinc-400">{formatDate(article.publishedAt)}</p>
       )}
     </Link>
   )

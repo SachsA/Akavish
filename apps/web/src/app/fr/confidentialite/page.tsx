@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 export default function ConfidentialitePage() {
   return (
     <ContentPage
+      lang="fr"
       title="Politique de confidentialité"
       subtitle={`Dernière mise à jour : ${LEGAL_LAST_UPDATED.fr}`}
     >

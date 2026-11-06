@@ -90,7 +90,7 @@ export default async function HomePage() {
               <aside aria-labelledby="top-stories">
                 <h2
                   id="top-stories"
-                  className="text-xs uppercase tracking-widest text-zinc-600 font-bold"
+                  className="text-xs uppercase tracking-widest text-zinc-400 font-bold"
                 >
                   Top stories
                 </h2>
@@ -115,7 +115,7 @@ export default async function HomePage() {
                 </h2>
                 <Link
                   href={`/${category.slug}`}
-                  className="text-sm text-zinc-500 hover:text-white transition-colors"
+                  className="inline-block py-1 text-sm text-zinc-400 hover:text-white transition-colors"
                 >
                   See all →
                 </Link>

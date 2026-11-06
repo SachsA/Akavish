@@ -54,13 +54,18 @@ export default async function TagPage({
       </header>
 
       {articles.length === 0 ? (
-        <p className="text-zinc-500">No published articles with this tag yet.</p>
+        <p className="text-zinc-400">No published articles with this tag yet.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        <>
+          {/* Cards use <h3>; this keeps the outline h1 → h2 → h3 for screen
+              readers without adding a visible heading. */}
+          <h2 className="sr-only">Articles</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

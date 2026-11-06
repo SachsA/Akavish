@@ -19,6 +19,8 @@ export interface Article {
   category: ArticleCategory
   status: ArticleStatus
   coverImage?: string
+  /** The editor's alt text for the cover (required on uploads in the CMS). */
+  coverImageAlt?: string
   tags: string[]
   game?: Game
   author: Author

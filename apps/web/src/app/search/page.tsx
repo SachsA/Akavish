@@ -14,7 +14,7 @@ export default function SearchPage() {
       fallback={
         <div className="max-w-3xl mx-auto px-4 py-12">
           <h1 className="text-3xl font-black tracking-tight text-white mb-2">Search</h1>
-          <p className="text-zinc-500">Loading…</p>
+          <p className="text-zinc-400">Loading…</p>
         </div>
       }
     >

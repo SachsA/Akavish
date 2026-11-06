@@ -31,13 +31,15 @@ export function ArticleCard({ article }: { article: Article }) {
         {article.coverImage ? (
           <Image
             src={article.coverImage}
-            alt={article.title}
+            // Decorative: the title sits right next to it inside the same
+            // link, so a real alt would make screen readers read it twice.
+            alt=""
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
             {/* Faint watermark when an article has no cover image. Both halves
                 are dimmed so it stays background, not a headline. */}
             <Wordmark className="text-2xl" primary="text-zinc-700" muted="text-zinc-800" />
@@ -50,14 +52,14 @@ export function ArticleCard({ article }: { article: Article }) {
             {CATEGORY_LABELS[article.category] ?? article.category}
           </span>
           {article.publishedAt && (
-            <span className="text-zinc-600">· {formatDate(article.publishedAt)}</span>
+            <span className="text-zinc-400">· {formatDate(article.publishedAt)}</span>
           )}
         </div>
         <h3 className="font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors">
           {article.title}
         </h3>
         <p className="text-sm text-zinc-400 line-clamp-2">{article.excerpt}</p>
-        <p className="text-xs text-zinc-600">By {article.author.name}</p>
+        <p className="text-xs text-zinc-400">By {article.author.name}</p>
       </div>
     </Link>
   )

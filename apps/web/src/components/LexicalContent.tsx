@@ -134,7 +134,7 @@ export function LexicalContent({ content }: { content: string }) {
   }
 
   if (!root || !root.children) {
-    return <p className="text-zinc-500">No content.</p>
+    return <p className="text-zinc-400">No content.</p>
   }
 
   return <div>{renderChildren(root.children)}</div>

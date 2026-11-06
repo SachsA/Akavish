@@ -135,7 +135,7 @@ export default async function ArticlePage({
       />
       <Link
         href="/"
-        className="text-sm text-zinc-500 hover:text-white transition-colors inline-block mb-6"
+        className="text-sm text-zinc-400 hover:text-white transition-colors inline-block py-1 mb-5"
       >
         ← Back
       </Link>
@@ -149,18 +149,18 @@ export default async function ArticlePage({
             {article.title}
           </h1>
           <p className="text-lg text-zinc-400">{article.excerpt}</p>
-          <div className="flex items-center gap-2 text-sm text-zinc-600 pt-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-400 pt-2">
             <span>
               By{' '}
               {article.author.slug ? (
                 <Link
                   href={`/author/${article.author.slug}`}
-                  className="text-zinc-400 hover:text-white transition-colors"
+                  className="text-zinc-200 hover:text-white transition-colors"
                 >
                   {article.author.name}
                 </Link>
               ) : (
-                <span className="text-zinc-400">{article.author.name}</span>
+                <span className="text-zinc-200">{article.author.name}</span>
               )}
             </span>
             {article.publishedAt && <span>· {formatDate(article.publishedAt)}</span>}
@@ -170,7 +170,7 @@ export default async function ArticlePage({
                 ·{' '}
                 <Link
                   href={`/game/${article.game.slug}`}
-                  className="text-zinc-400 hover:text-white transition-colors"
+                  className="text-zinc-200 hover:text-white transition-colors"
                 >
                   {article.game.name}
                 </Link>
@@ -183,7 +183,8 @@ export default async function ArticlePage({
           <div className="relative aspect-video bg-zinc-800 rounded-lg overflow-hidden mb-8">
             <Image
               src={article.coverImage}
-              alt={article.title}
+              // The editor's alt text (required on every upload in the CMS).
+              alt={article.coverImageAlt ?? ''}
               fill
               sizes="(max-width: 768px) 100vw, 768px"
               priority
@@ -227,7 +228,7 @@ export default async function ArticlePage({
               href={`/article/${adjacent.previous.slug}`}
               className="group rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors"
             >
-              <span className="block text-xs text-zinc-600 mb-1">← Previous</span>
+              <span className="block text-xs text-zinc-400 mb-1">← Previous</span>
               <span className="block font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
                 {adjacent.previous.title}
               </span>
@@ -241,7 +242,7 @@ export default async function ArticlePage({
               href={`/article/${adjacent.next.slug}`}
               className="group rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors sm:text-right"
             >
-              <span className="block text-xs text-zinc-600 mb-1">Next →</span>
+              <span className="block text-xs text-zinc-400 mb-1">Next →</span>
               <span className="block font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
                 {adjacent.next.title}
               </span>

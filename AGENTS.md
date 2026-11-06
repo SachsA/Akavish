@@ -126,4 +126,6 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `overrides` to `pnpm-workspace.yaml` (Expo pins its own exact React, 19.3 on
   SDK 58, while Next/Payload are on 19.2), and pnpm 11 needs an `.npmrc`
   migration first. Mobile = **Expo SDK 58**; on iPhone, Expo Go needs the same
-  Expo account signed in on phone and computer.
+  Expo account signed in on phone and computer. Accessibility: small text on the
+  dark background is `text-zinc-400` or lighter (never `zinc-500/600`), card
+  images get `alt=""`, French pages pass `lang="fr"` to `ContentPage`.

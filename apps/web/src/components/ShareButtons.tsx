@@ -73,7 +73,7 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-zinc-600 mr-1">Share</span>
+      <span className="text-xs text-zinc-400 mr-1">Share</span>
 
       {links.map((link) => (
         <a

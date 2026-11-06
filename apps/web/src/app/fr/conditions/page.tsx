@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 export default function ConditionsPage() {
   return (
     <ContentPage
+      lang="fr"
       title="Conditions d’utilisation"
       subtitle={`Dernière mise à jour : ${LEGAL_LAST_UPDATED.fr}`}
     >

@@ -55,23 +55,23 @@ export function SearchResults() {
     <div className="max-w-3xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-black tracking-tight text-white mb-2">Search</h1>
       {q ? (
-        <p className="text-zinc-500 mb-8">
+        <p className="text-zinc-400 mb-8">
           Results for <span className="text-zinc-300">“{q}”</span>
         </p>
       ) : (
-        <p className="text-zinc-500 mb-8">Type a query in the search box above.</p>
+        <p className="text-zinc-400 mb-8">Type a query in the search box above.</p>
       )}
 
-      {status === 'loading' && <p className="text-zinc-500">Searching…</p>}
+      {status === 'loading' && <p className="text-zinc-400">Searching…</p>}
 
       {status === 'error' && (
-        <p className="text-zinc-500">
+        <p className="text-zinc-400">
           Search is unavailable right now. Please try again in a moment.
         </p>
       )}
 
       {status === 'done' && hits.length === 0 && (
-        <p className="text-zinc-500">No results found for “{q}”.</p>
+        <p className="text-zinc-400">No results found for “{q}”.</p>
       )}
 
       {hits.length > 0 && (
@@ -87,7 +87,7 @@ export function SearchResults() {
                     <span className="text-emerald-500 font-bold uppercase tracking-wide">
                       {CATEGORY_LABELS[hit.category] ?? hit.category}
                     </span>
-                    {hit.game && <span className="text-zinc-600">· {hit.game}</span>}
+                    {hit.game && <span className="text-zinc-400">· {hit.game}</span>}
                   </div>
                   <h2 className="font-bold text-white group-hover:text-emerald-400 transition-colors">
                     {hit.title}

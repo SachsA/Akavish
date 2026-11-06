@@ -13,6 +13,7 @@ import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
 import { Wordmark } from '@/components/Wordmark'
 import { Analytics } from '@vercel/analytics/next'
 import { SearchBar } from '@/components/SearchBar'
+import { CATEGORIES } from '@/lib/categories'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -42,9 +43,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body>
+          {/* Skip link: first thing a keyboard user reaches, invisible until
+              focused. Saves tabbing through the whole header on every page. */}
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-md focus:bg-white focus:text-zinc-950 focus:font-semibold"
+          >
+            Skip to content
+          </a>
           <div className="min-h-screen flex flex-col">
             <Header />
-            <main className="flex-1">{children}</main>
+            {/* tabIndex -1 so the skip link actually moves focus here (Safari). */}
+            <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+              {children}
+            </main>
             <Footer />
           </div>
           {/* Vercel Web Analytics — cookieless and no personal data, so it
@@ -64,21 +76,21 @@ function Header() {
         <Link href="/" className="flex items-center gap-2" aria-label="Akavish — home">
           <Wordmark className="text-xl" />
         </Link>
-        <nav className="flex items-center gap-4 sm:gap-6 text-sm text-zinc-400">
-          <Link href="/news" className="hidden sm:inline hover:text-white transition-colors">News</Link>
-          <Link href="/leaks" className="hidden sm:inline hover:text-white transition-colors">Leaks</Link>
-          <Link href="/reviews" className="hidden sm:inline hover:text-white transition-colors">Reviews</Link>
-          <Link href="/esport" className="hidden sm:inline hover:text-white transition-colors">Esport</Link>
+        <nav aria-label="Main" className="flex items-center gap-4 sm:gap-6 text-sm text-zinc-400">
+          <Link href="/news" className="hidden sm:inline py-1 hover:text-white transition-colors">News</Link>
+          <Link href="/leaks" className="hidden sm:inline py-1 hover:text-white transition-colors">Leaks</Link>
+          <Link href="/reviews" className="hidden sm:inline py-1 hover:text-white transition-colors">Reviews</Link>
+          <Link href="/esport" className="hidden sm:inline py-1 hover:text-white transition-colors">Esport</Link>
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
           <div className="flex items-center gap-3 pl-3 border-l border-zinc-800">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="hover:text-white transition-colors">Log in</button>
+                <button className="py-1 hover:text-white transition-colors">Log in</button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <button className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-500 transition-colors">
+                <button className="px-3 py-1.5 rounded-md bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-600 transition-colors">
                   Sign up
                 </button>
               </SignUpButton>
@@ -89,6 +101,23 @@ function Header() {
           </div>
         </nav>
       </div>
+      {/* Phones: the section links above are hidden (no room next to search
+          and auth), so every section gets a swipeable strip instead. Without
+          it the only way to another section from an article was the footer. */}
+      <nav aria-label="All sections" className="sm:hidden border-t border-zinc-900">
+        <ul className="flex gap-1 overflow-x-auto px-2 py-1.5 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {CATEGORIES.map((c) => (
+            <li key={c.slug} className="shrink-0">
+              <Link
+                href={`/${c.slug}`}
+                className="block px-3 py-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+              >
+                {c.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
   )
 }
@@ -136,22 +165,22 @@ function Footer() {
           <div className="flex items-center gap-2">
             <Wordmark className="text-xl" />
           </div>
-          <p className="text-xs text-zinc-500 mt-3 max-w-[18ch]">
+          <p className="text-xs text-zinc-400 mt-3 max-w-[18ch]">
             Breaking gaming news, leaks &amp; reviews. No fluff.
           </p>
         </div>
 
         {sections.map((section) => (
           <div key={section.title}>
-            <h3 className="text-xs uppercase tracking-widest text-zinc-600 font-bold mb-3">
+            <h2 className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-3">
               {section.title}
-            </h3>
-            <ul className="space-y-2">
+            </h2>
+            <ul className="space-y-1">
               {section.links.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-zinc-400 hover:text-white transition-colors"
+                    className="inline-block py-1 text-sm text-zinc-400 hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -164,17 +193,17 @@ function Footer() {
 
       <div className="border-t border-zinc-900">
         <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-zinc-400">
             © {new Date().getFullYear()} Akavish. All rights reserved.
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {socials.map((s) => (
               <a
                 key={s.label}
                 href={s.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-zinc-500 hover:text-white transition-colors"
+                className="inline-block px-2 py-1 text-xs text-zinc-400 hover:text-white transition-colors"
               >
                 {s.label}
               </a>

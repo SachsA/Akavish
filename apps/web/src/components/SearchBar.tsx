@@ -30,7 +30,7 @@ export function SearchBar() {
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search…"
         aria-label="Search articles"
-        className="w-28 sm:w-44 bg-zinc-900 border border-zinc-800 rounded-md pl-3 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 focus:w-40 sm:focus:w-56 transition-all"
+        className="w-28 sm:w-44 bg-zinc-900 border border-zinc-800 rounded-md pl-3 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 focus:w-40 sm:focus:w-56 transition-all"
       />
     </form>
   )

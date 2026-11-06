@@ -59,11 +59,16 @@ export default async function CategoryPage({
       ) : articles.length === 0 ? (
         <NothingYet what={conf.label.toLowerCase()} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        <>
+          {/* Cards use <h3>; this keeps the outline h1 → h2 → h3 for screen
+              readers without adding a visible heading. */}
+          <h2 className="sr-only">Articles</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
