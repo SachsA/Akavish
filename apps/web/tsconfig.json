@@ -5,16 +5,7 @@
     "lib": ["dom", "dom.iterable", "ES2022"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      // The repo uses shamefully-hoist, which flattens one app's @types/react
-      // into the *root* node_modules/@types/react. Force React's type
-      // resolution to this app's own copies so tsc never mixes two React type
-      // versions. (It was added when mobile was on React 18; mobile is now on
-      // React 19.3 while web is on 19.2, so keep it until removal is tested.)
-      "react": ["./node_modules/@types/react"],
-      "react/*": ["./node_modules/@types/react/*"],
-      "react-dom": ["./node_modules/@types/react-dom"],
-      "react-dom/*": ["./node_modules/@types/react-dom/*"]
+      "@/*": ["./src/*"]
     },
     "typeRoots": ["./node_modules/@types"],
     "allowJs": true,

@@ -24,7 +24,7 @@ URLs, script names, env vars, versions:
   `pnpm-workspace.yaml`, `next.config.ts`, `tsconfig*` — keep commands/settings/comments accurate.
 - **Scripts:** `scripts/*.sh`, `apps/cms/scripts/*.mjs` — headers + usage strings.
 - **Code comments** describing behaviour (e.g. `payload.config.ts` push note,
-  `tsconfig` React-paths workaround) — keep them true.
+  the `vitest.setup.ts` localhost guard) — keep them true.
 - **Legal pages:** adding any third-party service that can see visitor data means
   adding it to `apps/web/src/lib/legal.ts` (`PROCESSORS`) **in the same commit** —
   both the EN and FR privacy pages render that list, so they stay in sync
@@ -124,12 +124,11 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `apps/cms` and commit the result — a stale `importMap.js` makes the admin panel
   render a blank page.
 - **Known gotchas** (details in `PROGRESS.md` → gotchas):
-  `shamefully-hoist` forces React-type `paths` in the web
-  tsconfig (don't remove them untested); Node 22 LTS ≥ 22.13 (Expo 58 needs it;
+  `.npmrc` is gitignored, so CI/Vercel/Railway install without hoisting;
+  Node 22 LTS ≥ 22.13 (Expo 58 needs it;
   25 OOMs the CMS); **pnpm 10** pinned via `packageManager` — don't re-add React
   `overrides` to `pnpm-workspace.yaml` (Expo pins its own exact React, 19.3 on
-  SDK 58, while Next/Payload are on 19.2), and pnpm 11 needs an `.npmrc`
-  migration first. Mobile = **Expo SDK 58**; on iPhone, Expo Go needs the same
+  SDK 58, while Next/Payload are on 19.2). Mobile = **Expo SDK 58**; on iPhone, Expo Go needs the same
   Expo account signed in on phone and computer. Accessibility: small text on the
   dark background is `text-zinc-400` or lighter (never `zinc-500/600`), card
   images get `alt=""`, French pages pass `lang="fr"` to `ContentPage`.
