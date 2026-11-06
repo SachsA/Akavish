@@ -254,6 +254,21 @@ Both apps lint via ESLint flat config (`eslint.config.mjs`) using
 > The build job uses `pnpm install --frozen-lockfile`, so commit an up-to-date
 > `pnpm-lock.yaml` whenever you change dependencies.
 
+### Dependency updates
+
+Dependabot (`.github/dependabot.yml`) opens update PRs every Monday morning,
+grouped: one PR for all minor/patch bumps, one for Payload (its packages must
+share a version), one for Sentry, and one PR per major version. GitHub Actions
+versions are checked monthly. Security fixes arrive on their own, right away.
+
+Each PR runs the full CI. **Green → merge** (squash). **Red → don't merge**:
+open the failing step, fix on the PR branch or close it. Majors deserve a look
+at the package's changelog even when green.
+
+React, React Native and Expo are **ignored on purpose**: Expo pins an exact React
+that must match React Native, so they move together through an Expo SDK upgrade
+(`npx expo install --fix`), not one bump at a time.
+
 ## Deployment
 
 Going to production? Follow **[DEPLOYMENT.md](./DEPLOYMENT.md)** — a step-by-step

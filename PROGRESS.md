@@ -386,7 +386,7 @@ Lint + type-check + build on PR are done (see [Done → CI/CD](#cicd)). Remainin
 | ✅  | Lint + type-check mobile | Done with the Expo 58 upgrade (roadmap #12): ESLint 9 flat config, mobile back in CI lint + type-check |
 | ✅  | CMS tests in CI          | Done (2026-11-06) — the Payload template's placeholder tests replaced: `test:int` covers slug generation + clash suffix, `publishedAt` stamping, `previousSlugs` on rename, public read access; `test:e2e` logs into the admin and opens the dashboard, users and articles. Both run in the CI build job after migrations + seed |
 | P2  | Preview deploys          | Vercel preview per PR                                                                            |
-| P3  | Dependabot / renovate    | Dependency updates                                                                               |
+| ✅  | Dependabot               | Done (2026-11-06) — `.github/dependabot.yml`: weekly grouped npm PRs (minor/patch, Payload, Sentry; majors one by one), monthly Actions. React/RN/Expo ignored (move with Expo SDK upgrades). How to handle the PRs: README → Dependency updates |
 
 ### Deployment (production)
 

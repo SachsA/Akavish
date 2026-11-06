@@ -1,0 +1,53 @@
+# Dependency update PRs. How to handle them: README.md → "Dependency updates".
+#
+# Weekly, grouped so a normal week is one or two PRs, not twenty. Each PR runs
+# the full CI (lint, type-check, tests, build, CMS tests): green = safe to merge.
+# Security fixes come separately and immediately (Dependabot security updates,
+# enabled in the repo settings), whatever the schedule below says.
+version: 2
+updates:
+  - package-ecosystem: npm # also handles pnpm: reads the root pnpm-lock.yaml
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    ignore:
+      # React, React Native and Expo move together, deliberately, through an
+      # Expo SDK upgrade (`npx expo install --fix`, PROGRESS.md §7): Expo pins
+      # an exact React that must match React Native, and web/CMS follow
+      # Next/Payload. A lone bump here would break one app or the other.
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
+      - dependency-name: '@types/react'
+      - dependency-name: '@types/react-dom'
+      - dependency-name: 'react-native'
+      - dependency-name: 'react-native-*'
+      - dependency-name: 'expo'
+      - dependency-name: 'expo-*'
+      - dependency-name: '@expo/*'
+    groups:
+      # Payload packages must all share one exact version.
+      payload:
+        patterns: ['payload', '@payloadcms/*']
+      sentry:
+        patterns: ['@sentry/*']
+      # Everything else that isn't a major version: one PR.
+      minor-and-patch:
+        update-types: ['minor', 'patch']
+        exclude-patterns: ['payload', '@payloadcms/*', '@sentry/*']
+    # Majors arrive one per PR, so each breaking change is reviewed on its own.
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'chore(ci)'
+    groups:
+      actions:
+        patterns: ['*']
