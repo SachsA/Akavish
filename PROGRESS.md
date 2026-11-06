@@ -174,7 +174,7 @@ actually tackle it, best value-for-effort first.
 | 16  | ✅ **Share images everywhere**      | Done — one design (`lib/og.tsx`) for a site-wide default plus category, author, game and tag pages. Fixed the wordmark rendering as "Akav ish" | —      |
 | 17  | ✅ **Local dev DB in Docker**       | Done — the Neon dev project and the Railway dev environment were deleted; local dev uses Postgres from `docker-compose.yml` | —      |
 | 18  | ✅ **Seed script**                  | Done — `pnpm seed`: admin (only on an empty DB) + 8 fictional articles across all 6 categories, with author, games, tags and generated covers. Re-runnable, refuses any non-localhost `DATABASE_URL` | —      |
-| 19  | ⬜ **Uptime monitoring**            | Free external check (UptimeRobot / Better Stack) on `akavish.gg` and `cms.akavish.gg` — the Railway outage was discovered by email | ~15 min |
+| 19  | ✅ **Uptime monitoring**            | Done — UptimeRobot (free, every 5 min, email alerts): HTTP probe on `akavish.gg`, Keyword probe on the CMS REST API so a DB outage counts too. Payload 404s on `HEAD`, hence Keyword, not HTTP — `DEPLOYMENT.md` §4d | —      |
 | 20  | ⬜ **Mobile + accessibility audit** | The site on a phone; keyboard navigation, focus states, contrast, screen-reader landmarks | 1–2 h  |
 
 > **Sending vs receiving — two different things, both now in place.** Resend
@@ -182,7 +182,7 @@ actually tackle it, best value-for-effort first.
 > Email Routing (task 3) only **receives**, forwarding `hello@`/`tips@`/`privacy@`
 > to a personal inbox. Neither can do the other's job.
 
-**Order:** #19 monitoring → #20 audit. That's the whole
+**Order:** #20 audit. That's the whole
 list of work worth doing *now*.
 
 **After that, everything left waits on something:**
@@ -410,7 +410,7 @@ checklist it walks through.
 | ✅  | Error monitoring   | Sentry on web (client + server + edge, tunnelled through `/monitoring`) and CMS (server only). Errors + performance tracing, sampled to fit the free tier. Session Replay off on privacy grounds |
 | ✅  | Secrets management | Prod secrets live only in Railway / Vercel / GitHub secrets, never in committed files; rotation runbook in `DEPLOYMENT.md` §8 |
 | P2  | Rate limiting      | On public API routes                                                   |
-| P2  | Uptime monitoring  | Healthcheck + alerting on web/CMS                                      |
+| ✅  | Uptime monitoring  | UptimeRobot probes on web + CMS/DB, email alerts (`DEPLOYMENT.md` §4d) |
 | ✅  | Legal pages        | Done — `/privacy`, `/terms`, `/legal` in EN + FR (roadmap #8)          |
 | ✅  | Cookie consent     | Not needed: cookieless analytics, only strictly necessary Clerk cookies — explained in `/privacy` |
 | P3  | Logging            | Structured logs shipped somewhere queryable                            |

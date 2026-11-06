@@ -16,7 +16,7 @@
 | Search   | CMS/Postgres by default · Meilisearch when configured               |
 | Storage  | Cloudflare R2                                                       |
 | Email    | Resend (sending) · Cloudflare Email Routing (receiving)             |
-| Monitoring | Vercel Web Analytics (traffic) · Sentry (errors + performance)    |
+| Monitoring | Vercel Web Analytics (traffic) · Sentry (errors + performance) · UptimeRobot (uptime) |
 | Hosting  | Vercel (web) + Expo EAS (mobile)                                    |
 | Monorepo | Turborepo + pnpm workspaces                                         |
 

@@ -394,10 +394,11 @@ should land in your inbox and its link should open the reset form.
 
 ---
 
-## 4d. Observability: analytics + error monitoring
+## 4d. Observability: analytics, errors, uptime
 
-Two separate concerns: **who visits** (Vercel Web Analytics) and **what breaks**
-(Sentry). Both run on free tiers and both no-op without configuration.
+Three separate concerns: **who visits** (Vercel Web Analytics), **what breaks**
+(Sentry) and **whether it's up at all** (UptimeRobot). All on free tiers; the
+first two no-op without configuration, the third lives entirely outside the code.
 
 ### Vercel Web Analytics (traffic)
 
@@ -453,6 +454,31 @@ Notes on how it's wired:
 Verify after deploying: throw a test error from a page, then check **Issues** in
 Sentry. `/api/search?q=x` and a normal page view should also appear under
 **Traces**.
+
+### UptimeRobot (is it up?)
+
+Sentry only reports errors from a process that is running; if Railway or Neon
+goes down, nothing reports anything (the October 2026 Railway outage was found
+by email). An external probe closes that gap. Set up on 2026-11-06, free plan
+(checks every 5 min, alerts by email), no code or env vars involved:
+
+| Monitor | Type | URL | Up when |
+| --- | --- | --- | --- |
+| `Akavish web` | HTTP(S) | `https://akavish.gg` | 2xx/3xx |
+| `Akavish CMS + DB` | **Keyword** | `https://cms.akavish.gg/api/articles?limit=1&depth=0` | the body contains `totalDocs` (alert when it doesn't) |
+
+The CMS probe hits the REST API rather than `/admin` because that query goes
+through Postgres: a Neon outage turns it red too.
+
+**Gotcha: don't make the CMS probe a plain HTTP(S) monitor.** UptimeRobot sends
+`HEAD` by default, and Payload's API answers `HEAD` with **404** (it only
+routes `GET`), so the monitor shows a permanent false "Down". A Keyword monitor
+downloads the page with `GET`. The web monitor is fine with `HEAD` (Next pages
+handle it).
+
+The probe sees no visitor data, so it isn't listed in `lib/legal.ts`.
+Planned maintenance (a risky migration, a DB restore): pause the monitors in
+the dashboard first, or you'll get "Down" emails.
 
 ---
 
@@ -648,6 +674,7 @@ domain change:
 
 - [ ] Migrations applied (`pnpm migrate:status` shows all run).
 - [ ] Created the first CMS admin user at `https://cms.akavish.gg/admin`.
+- [ ] Both UptimeRobot monitors green (§4d).
 - [ ] Published a test article → it appears on `https://akavish.gg`.
 - [ ] `https://akavish.gg/sitemap.xml` and `/robots.txt` return prod URLs.
 - [ ] Sign-up/login works on the live domain. Clerk currently runs on
@@ -910,5 +937,5 @@ Media files are **not** in the dump — they live in the R2 media bucket.
 5. R2 for media (§4b) + Resend for email (§4c) — both required in prod.
 6. (Optional) Meilisearch + `reindex:search`.
 7. Domains + DNS, then update URLs and redeploy.
-8. Nightly database backups to a private R2 bucket (§9).
+8. Nightly database backups to a private R2 bucket (§9) + UptimeRobot probes (§4d).
 9. Walk the post-deploy checklist.
