@@ -28,6 +28,8 @@ out
 
 # GitHub token the assistant reads to push and check CI — never commit it.
 .github-token
+# State file of Claude's scheduled maintenance task (local bookkeeping).
+.claude-maintenance.json
 
 # Database dumps — a full copy of production (emails, password hashes). The
 # usual `git add -A` would publish one downloaded here for a restore.

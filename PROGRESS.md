@@ -212,6 +212,21 @@ i18n (EN + FR) is its own project — §6.
 
 ---
 
+# Maintenance (automated)
+
+A scheduled Claude task runs twice a day (10:23 and 19:23, Paris time) on Alex's
+Mac and does whatever is due, recorded in the gitignored
+`.claude-maintenance.json` so a run missed because the Mac was off is caught up
+by the next one:
+
+- **Weekly** (from Monday): merge green Dependabot PRs (squash), investigate red
+  ones, check CI on `main` and that a backup succeeded every day.
+- **Monthly** (from the 2nd): security audit, fix new alerts, drop `overrides`
+  pins no longer needed, re-check the tolerated alerts.
+- **Every ~3 months:** remind Alex to run the restore drill (`DEPLOYMENT.md` §9).
+
+---
+
 # 🅿️ Parked — good ideas, deliberately not now
 
 Kept here so they aren't lost. Each one only pays off with **content and
