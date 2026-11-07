@@ -83,6 +83,10 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
   they're CSS variables that flip in light mode. Never hard-code a colour, and
   put `text-on-accent` (not `text-white`) on green buttons. Check both themes:
   the sun/moon button in the header switches.
+- **Server logs:** `log.info/warn/error` from `src/lib/log.ts` (JSON lines,
+  searchable in Vercel), not `console.log`. Never log IPs or search terms.
+- **A new public API route:** rate-limit it and set cache headers with
+  `src/lib/rate-limit.ts`, like `/api/search`.
 - **A new third-party service that sees visitors?** Add it to
   `src/lib/legal.ts` (`PROCESSORS`) in the same commit: both privacy pages
   render that list.

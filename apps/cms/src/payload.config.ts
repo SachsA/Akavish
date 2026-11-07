@@ -34,6 +34,13 @@ export default buildConfig({
   // is long-running on Railway. Payload only starts it in the web server
   // (`getPayload({ cron: true })`), so scripts (seed, migrations, tests) and
   // `next build` never run jobs.
+  // Production logs as one JSON object per line (Railway parses them, so
+  // `level` and the other fields become filterable). Dev keeps Payload's
+  // coloured output.
+  logger:
+    process.env.NODE_ENV === 'production'
+      ? { options: { level: 'info', formatters: { level: (label: string) => ({ level: label }) } } }
+      : undefined,
   jobs: {
     autoRun: [{ cron: '* * * * *', queue: 'default' }],
   },

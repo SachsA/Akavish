@@ -421,7 +421,7 @@ checklist it walks through.
 | Pri | Item                  | Notes                                                                                                                                              |
 | --- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ✅  | Custom domains + DNS      | Done — `akavish.gg` (web) + `cms.akavish.gg` (CMS) on Cloudflare DNS, prod URLs wired, `www` 308s to the apex, Email Routing forwarding          |
-| P2  | CDN / caching             | Cache headers + ISR tuning; R2/Cloudflare in front of media                                                                                        |
+| ✅  | CDN / caching             | Done (2026-11-07) — public API responses cached by Vercel's CDN (`s-maxage=60`, stale-while-revalidate). Optional: media on `media.akavish.gg` instead of `r2.dev` (`DEPLOYMENT.md` §4e) |
 | P2  | Mobile release            | Expo EAS build + store submission                                                                                                                  |
 | P3  | Staging environment       | Mirror of prod for QA                                                                                                                              |
 
@@ -431,11 +431,11 @@ checklist it walks through.
 | --- | ------------------ | ---------------------------------------------------------------------- |
 | ✅  | Error monitoring   | Sentry on web (client + server + edge, tunnelled through `/monitoring`) and CMS (server only). Errors + performance tracing, sampled to fit the free tier. Session Replay off on privacy grounds. Source maps upload confirmed 2026-11-06 (readable stack traces) |
 | ✅  | Secrets management | Prod secrets live only in Railway / Vercel / GitHub secrets, never in committed files; rotation runbook in `DEPLOYMENT.md` §8 |
-| P2  | Rate limiting      | On public API routes                                                   |
+| ✅  | Rate limiting      | Done (2026-11-07) — per-IP limits on `/api/search` (30/min) and `/api/articles*` (120/min), 429 + Retry-After; in-memory, so approximate on Vercel. Firewall rule as the upgrade (`DEPLOYMENT.md` §4e) |
 | ✅  | Uptime monitoring  | UptimeRobot probes on web + CMS/DB, email alerts (`DEPLOYMENT.md` §4d) |
 | ✅  | Legal pages        | Done — `/privacy`, `/terms`, `/legal` in EN + FR (roadmap #8)          |
 | ✅  | Cookie consent     | Not needed: cookieless analytics, only strictly necessary Clerk cookies — explained in `/privacy` |
-| P3  | Logging            | Structured logs shipped somewhere queryable                            |
+| ✅  | Logging            | Done (2026-11-07) — JSON logs on web (`lib/log.ts`) and CMS (Payload logger in production), searchable in Vercel and Railway; no IPs or search terms (`DEPLOYMENT.md` §4e) |
 
 ## 10. Testing & docs
 

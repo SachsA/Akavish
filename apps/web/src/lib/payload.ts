@@ -13,6 +13,8 @@ import {
   type PayloadMedia,
 } from '@akavish/api-client/payload'
 
+import { log } from './log'
+
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
 // Fail fast if the CMS is slow or down (esp. during a build), so callers hit
@@ -20,16 +22,25 @@ const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 // Uses Promise.race (not AbortSignal) to keep Next's fetch cache semantics —
 // a `signal` would mark the fetch dynamic and clash with generateStaticParams.
 const CMS_FETCH_TIMEOUT_MS = 8000
-function cmsFetch(url: string, init?: RequestInit): Promise<Response> {
-  return Promise.race([
-    fetch(url, init),
-    new Promise<Response>((_, reject) =>
-      setTimeout(
-        () => reject(new Error(`CMS fetch timed out after ${CMS_FETCH_TIMEOUT_MS}ms`)),
-        CMS_FETCH_TIMEOUT_MS
-      )
-    ),
-  ])
+async function cmsFetch(url: string, init?: RequestInit): Promise<Response> {
+  // Only the path in logs: the query string can carry search terms.
+  const path = url.replace(CMS_URL, '').split('?')[0]
+  try {
+    const res = await Promise.race([
+      fetch(url, init),
+      new Promise<Response>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`CMS fetch timed out after ${CMS_FETCH_TIMEOUT_MS}ms`)),
+          CMS_FETCH_TIMEOUT_MS
+        )
+      ),
+    ])
+    if (!res.ok && res.status !== 404) log.warn('CMS answered an error', { path, status: res.status })
+    return res
+  } catch (error) {
+    log.error('CMS unreachable', { path, error })
+    throw error
+  }
 }
 
 // The Payload → Article mapping is shared with the mobile app and lives in

@@ -119,6 +119,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`@payloadcms/email-resend`, `RESEND_API_KEY` unset → console fallback,
   `DEPLOYMENT.md` §4c); Cloudflare Email Routing only **receives**
   (`DEPLOYMENT.md` §6.6).
+- **Logs / limits:** server logs go through `apps/web/src/lib/log.ts` (JSON
+  lines; never log IPs or search terms); public API routes use
+  `lib/rate-limit.ts` (per-IP limit + CDN cache headers). `DEPLOYMENT.md` §4e.
 - **Observability:** Vercel Web Analytics (`<Analytics />` in the web layout,
   cookieless → no consent banner) + Sentry on both apps. Unset DSN → no-op. Web
   tunnels through `/monitoring` to survive ad blockers (excluded from the Clerk

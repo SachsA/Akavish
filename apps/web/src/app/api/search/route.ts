@@ -7,6 +7,8 @@ import {
   type SearchHit,
 } from '@/lib/search'
 import { searchArticles } from '@/lib/payload'
+import { log } from '@/lib/log'
+import { clientIp, publicCache, rateLimit, tooManyRequests } from '@/lib/rate-limit'
 
 // Site search, with two backends:
 //
@@ -26,13 +28,25 @@ async function searchViaCms(q: string, limit: number) {
 }
 
 function ok(q: string, hits: SearchHit[], engine: SearchEngine, total?: number) {
-  return NextResponse.json({ query: q, hits, total: total ?? hits.length, engine })
+  return NextResponse.json(
+    { query: q, hits, total: total ?? hits.length, engine },
+    { headers: publicCache(60) }
+  )
 }
 
 export async function GET(req: NextRequest) {
+  // Search is the one endpoint that runs a database query per distinct input,
+  // so it gets the tighter limit (cached repeats don't count, see publicCache).
+  const limited = rateLimit(`search:${clientIp(req)}`, 30, 60_000)
+  if (!limited.ok) {
+    log.warn('rate limited', { route: '/api/search' }) // no IP in logs: personal data
+    return tooManyRequests(limited.retryAfter)
+  }
+
   const { searchParams } = new URL(req.url)
   const q = (searchParams.get('q') ?? '').trim()
-  const limit = Math.min(Number(searchParams.get('limit') ?? 20), 50)
+  const rawLimit = Number(searchParams.get('limit') ?? 20)
+  const limit = Number.isInteger(rawLimit) && rawLimit >= 1 ? Math.min(rawLimit, 50) : 20
 
   if (!q) {
     return NextResponse.json({ query: q, hits: [], total: 0, engine: 'cms' })
@@ -57,17 +71,22 @@ export async function GET(req: NextRequest) {
       })
       const hits = res.hits as SearchHit[]
       return ok(q, hits, 'meilisearch', res.estimatedTotalHits ?? hits.length)
-    } catch {
+    } catch (error) {
       // Index missing (never reindexed), instance down, bad key… — don't fail
       // the request, just use the CMS below.
+      log.warn('meilisearch failed, falling back to the CMS', { route: '/api/search', error })
     }
   }
 
   try {
     return ok(q, await searchViaCms(q, limit), 'cms')
-  } catch {
+  } catch (error) {
     // Only reachable if the CMS itself is unreachable, in which case the whole
     // site is already degraded.
-    return NextResponse.json({ message: 'Search failed', status: 502 }, { status: 502 })
+    log.error('search failed', { route: '/api/search', error })
+    return NextResponse.json(
+      { message: 'Search failed', status: 502 },
+      { status: 502, headers: { 'Cache-Control': 'no-store' } }
+    )
   }
 }

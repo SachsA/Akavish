@@ -493,6 +493,42 @@ the dashboard first, or you'll get "Down" emails.
 
 ---
 
+## 4e. Rate limiting, caching, logs
+
+All three are in the code and need no setup; the optional upgrades below are
+dashboard settings for when traffic justifies them.
+
+**Rate limiting** (`apps/web/src/lib/rate-limit.ts`): per visitor IP, 30
+requests/minute on `/api/search` and 120 on `/api/articles*`, then a **429**
+with `Retry-After`. The counter lives in each server instance's memory, so on
+Vercel it's approximate; it stops one client hammering search, which is the
+realistic case today. *Upgrade:* Vercel → project → **Firewall → Rules → Add
+Rule → Rate limit** on path `/api/search` (counts across instances), or a
+shared store (Upstash Redis) behind the same helper.
+
+**Caching:** the API routes answer with `Cache-Control: public, s-maxage=60,
+stale-while-revalidate=300`, so Vercel's CDN serves repeat requests (same
+search, same article) without calling the function or the CMS; errors and
+429s are `no-store`. Pages keep their ISR settings (articles and lists 30 s,
+sitemap and RSS 5 min). *Upgrade (media):* serve uploads from
+`media.akavish.gg` instead of `*.r2.dev` (which Cloudflare rate-limits and
+doesn't cache): Cloudflare → R2 → the media bucket → **Settings → Custom
+Domains → Connect** `media.akavish.gg`, then set `R2_PUBLIC_URL` (Railway) and
+`NEXT_PUBLIC_R2_PUBLIC_URL` (Vercel) to `https://media.akavish.gg` and
+redeploy both. Existing images switch too: their URL is built from that
+variable at read time. `next.config.ts` already allows the domain.
+
+**Structured logs:** one JSON object per line on both apps, so fields are
+searchable. Web (`lib/log.ts`): CMS errors and timeouts, search falling back
+from Meilisearch, API failures, rate-limit hits; read them in Vercel →
+project → **Logs** (filter on `level:error` or the message). CMS: Payload's
+logger switches to JSON in production (`logger` in `payload.config.ts`), which
+Railway parses: service → **Logs**, filter `@level:error`. Visitor IPs and
+search terms are deliberately never logged. Retention is the platforms' own
+(about a day on Vercel Hobby): enough to investigate an incident the same
+day; ship them to an external store (e.g. Axiom's Vercel integration) if
+longer history is ever needed.
+
 ## 5. Database schema: migrations (READ THIS)
 
 Payload needs the DB tables (articles, users, media…) to exist. Akavish manages

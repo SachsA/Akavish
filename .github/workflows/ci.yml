@@ -140,6 +140,12 @@ jobs:
       # The public site on top of that CMS: home, categories + pagination,
       # article (alt text, JSON-LD), real 404s, search, slug-rename 308,
       # sitemap/RSS, theme toggle. Desktop + mobile viewports.
+      # Rebuild the web app now that the CMS is up and seeded, like Vercel in
+      # production: the first build ran with no CMS, so pages prerendered at
+      # build time (sitemap.xml, feed.xml: revalidated every 5 min) were empty.
+      - name: Rebuild the web app against the seeded CMS
+        run: pnpm --filter @akavish/web build
+
       - name: Start the web app
         run: |
           PORT=3000 pnpm --filter @akavish/web start > web.log 2>&1 &
