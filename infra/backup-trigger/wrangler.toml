@@ -1,0 +1,11 @@
+# Cloudflare Worker that triggers the nightly DB backup on time.
+# Deploy: `npx wrangler deploy` from this folder (or paste worker.js in the
+# dashboard). Secrets are set with `npx wrangler secret put GITHUB_TOKEN`
+# (and HC_PING_URL), never written here. DEPLOYMENT.md §9 step 9.
+name = "akavish-backup-trigger"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+[triggers]
+crons = ["17 3 * * *"] # 03:17 UTC, same as .github/workflows/backup.yml

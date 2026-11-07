@@ -94,7 +94,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`.github/dependabot.yml`) opens grouped update PRs weekly; React/RN/Expo are
   ignored on purpose (they move with Expo SDK upgrades). `.github/workflows/backup.yml` dumps the prod DB nightly
   to a private R2 bucket and pings healthchecks.io, which emails if a night is
-  missed (`DEPLOYMENT.md` §9). Uses `pnpm install
+  missed; a Cloudflare Worker (`infra/backup-trigger/`) triggers it on time
+  because GitHub's cron runs hours late (`DEPLOYMENT.md` §9). Uses `pnpm install
   --frozen-lockfile` on Node 22.
 - **Live:** web = `akavish.gg` (canonical apex; `www` 308s to it), CMS =
   `cms.akavish.gg`. DNS on Cloudflare; the platform URLs

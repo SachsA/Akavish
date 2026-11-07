@@ -32,6 +32,8 @@ akavish/
 │   ├── types/        # Shared TypeScript types
 │   ├── api-client/   # Shared API client (web & mobile consume same backend)
 │   └── ui/           # Shared React components
+├── infra/
+│   └── backup-trigger/ # Cloudflare Worker that starts the nightly DB backup on time
 ├── scripts/          # Repo-level shell scripts (clean)
 ├── docker-compose.yml # Local Postgres + Meilisearch
 ├── turbo.json

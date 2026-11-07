@@ -803,7 +803,9 @@ recover from a mistake noticed days later.
 > the 5 `BACKUP_*` secrets set; the first manual run succeeded. Restore rehearsed
 > on 2026-11-06 with the drill below: all 4 migrations present, `migrate:status`
 > clean, row counts matching prod. healthchecks.io check (step 8) added the same
-> day and confirmed by a manual run.
+> day and confirmed by a manual run. On 2026-11-07 it caught GitHub starting the
+> nightly cron **hours late** (the 03:17 run of the 6th started at 11:00 UTC),
+> hence the Cloudflare Worker trigger in step 9.
 
 1. **A separate, private bucket.** Cloudflare → R2 → **Create bucket** →
    `akavish-backups`. Do **not** enable public access, and never reuse the media
@@ -846,6 +848,33 @@ recover from a mistake noticed days later.
    and pings `/fail` when a run fails; no ping by ~06:17 UTC → email. Optional:
    unset, those steps do nothing. Run the workflow once by hand: the check
    turns green ("up").
+9. **On-time trigger (Cloudflare Worker).** GitHub's own cron can start hours
+   late, which also fires the healthchecks alert. `infra/backup-trigger/`
+   holds a Worker whose Cloudflare cron (03:17 UTC, on time) calls GitHub's
+   "Run workflow" API. The GitHub cron stays as a fallback; a late second run
+   just makes one more dump.
+   1. **A dedicated GitHub token.** GitHub → Settings → Developer settings →
+      Fine-grained tokens → Generate: name `akavish-backup-trigger`, expiry 1
+      year, **Only select repositories** → `Akavish`, **Repository
+      permissions → Actions: Read and write** (Metadata: read is added
+      automatically). Nothing else. Note the expiry date: an expired token
+      makes the dispatch fail, which pings healthchecks `/fail`.
+   2. **Create the Worker.** Cloudflare → Workers & Pages → **Create** →
+      Start with Hello World → name `akavish-backup-trigger` → Deploy →
+      **Edit code**, replace everything with `infra/backup-trigger/worker.js`
+      → Deploy.
+   3. **Secrets.** Worker → Settings → Variables and Secrets → **Add**, type
+      *Secret*: `GITHUB_TOKEN` (the token above) and `HC_PING_URL` (the
+      healthchecks ping URL, so a failed dispatch emails you at once).
+   4. **Schedule.** Worker → Settings → Trigger events → **Add** → Cron
+      Triggers → `17 3 * * *` (UTC).
+   5. **Test.** The schedule's page has a *Trigger scheduled event* button (or
+      wait for the night): a new "Database backup" run appears in GitHub
+      Actions within seconds, then the healthchecks check stays green.
+
+   With the CLI instead: `cd infra/backup-trigger && npx wrangler deploy`, then
+   `npx wrangler secret put GITHUB_TOKEN` and `… HC_PING_URL`
+   (`wrangler.toml` already declares the cron).
 
 ### Restoring
 
@@ -900,6 +929,9 @@ Media files are **not** in the dump — they live in the R2 media bucket.
 All of these are caught by the healthchecks.io check (step 8): no ping by
 ~06:17 UTC means an email, whatever the cause.
 
+- **GitHub starts scheduled runs late**, by hours on this repo. The Worker
+  (step 9) is what makes the backup punctual; if it ever stops (expired
+  token, Worker deleted), healthchecks emails you the same morning.
 - **GitHub disables scheduled workflows after 60 days without repository
   activity.** If you step away from the project, check Actions when you return
   and re-enable it. You also get an email.
