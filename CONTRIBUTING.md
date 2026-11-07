@@ -75,6 +75,11 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
   or lighter, never `zinc-500/600`; white on green buttons needs
   `bg-emerald-700`; one `h1`, then `h2` → `h3` in order; images that sit next to
   their own title get `alt=""`; French content passes `lang="fr"`.
+- **Light and dark themes:** use the same dark-theme classes as the rest of
+  the site (`bg-zinc-950`, `text-white`, `text-zinc-400`, `text-emerald-400`…):
+  they're CSS variables that flip in light mode. Never hard-code a colour, and
+  put `text-on-accent` (not `text-white`) on green buttons. Check both themes:
+  the sun/moon button in the header switches.
 - **A new third-party service that sees visitors?** Add it to
   `src/lib/legal.ts` (`PROCESSORS`) in the same commit: both privacy pages
   render that list.

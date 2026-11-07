@@ -137,4 +137,6 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   SDK 58, while Next/Payload are on 19.2). Mobile = **Expo SDK 58**; on iPhone, Expo Go needs the same
   Expo account signed in on phone and computer. Accessibility: small text on the
   dark background is `text-zinc-400` or lighter (never `zinc-500/600`), card
-  images get `alt=""`, French pages pass `lang="fr"` to `ContentPage`.
+  images get `alt=""`, French pages pass `lang="fr"` to `ContentPage`. Light
+  theme: keep writing the dark Tailwind classes (they're CSS variables that
+  flip), never raw hex; green-button text is `text-on-accent`.

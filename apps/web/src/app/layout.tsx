@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import {
@@ -13,6 +13,7 @@ import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
 import { Wordmark } from '@/components/Wordmark'
 import { Analytics } from '@vercel/analytics/next'
 import { SearchBar } from '@/components/SearchBar'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { CATEGORIES } from '@/lib/categories'
 import './globals.css'
 
@@ -38,10 +39,25 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 }
 
+// Browser UI colour (mobile address bar) matching each theme's background.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+  ],
+}
+
+// Runs before first paint: re-applies a theme the visitor picked earlier, so the
+// page never flashes the OS theme first. Mirrors ThemeToggle's localStorage key.
+const RESTORE_THEME = `try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: RESTORE_THEME }} />
+        </head>
         <body>
           {/* Skip link: first thing a keyboard user reaches, invisible until
               focused. Saves tabbing through the whole header on every page. */}
@@ -76,7 +92,7 @@ function Header() {
         <Link href="/" className="flex items-center gap-2" aria-label="Akavish — home">
           <Wordmark className="text-xl" />
         </Link>
-        <nav aria-label="Main" className="flex items-center gap-4 sm:gap-6 text-sm text-zinc-400">
+        <nav aria-label="Main" className="flex items-center gap-2 sm:gap-6 text-sm text-zinc-400">
           <Link href="/news" className="hidden sm:inline py-1 hover:text-white transition-colors">News</Link>
           <Link href="/leaks" className="hidden sm:inline py-1 hover:text-white transition-colors">Leaks</Link>
           <Link href="/reviews" className="hidden sm:inline py-1 hover:text-white transition-colors">Reviews</Link>
@@ -84,13 +100,18 @@ function Header() {
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
-          <div className="flex items-center gap-3 pl-3 border-l border-zinc-800">
+          <ThemeToggle />
+          <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-zinc-800">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="py-1 hover:text-white transition-colors">Log in</button>
+                {/* Hidden on the narrowest phones (< 360 px) so the header fits; the
+                    sign-up modal links to sign-in anyway. */}
+                <button className="hidden min-[360px]:inline py-1 whitespace-nowrap hover:text-white transition-colors">
+                  Log in
+                </button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <button className="px-3 py-1.5 rounded-md bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-600 transition-colors">
+                <button className="px-3 py-1.5 rounded-md bg-emerald-700 text-on-accent text-xs font-semibold whitespace-nowrap hover:bg-emerald-600 transition-colors">
                   Sign up
                 </button>
               </SignUpButton>

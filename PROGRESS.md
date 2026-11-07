@@ -297,7 +297,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
 | P3  | Search polish                | Highlighting, filters by category, instant/typeahead results                                |
-| P3  | Dark/light toggle            | Currently dark-only                                                                         |
+| ✅  | Dark/light toggle            | Done (2026-11-07) — follows the OS, sun/moon switch in the header remembers the choice (no flash on reload). Components keep the dark classes; `tailwind.config.ts` maps zinc/white/emerald text to CSS variables that flip in `globals.css`. axe-clean in both themes, header fits from 320 px |
 | P3  | Comments                     | Reader comments (needs reader auth + a comments store/service)                              |
 
 ### UX & quality
@@ -470,6 +470,13 @@ checklist it walks through.
   `text-zinc-400` or lighter. `zinc-500` (4.1:1) only passes for large bold text
   (the Wordmark's "ish"); `zinc-600` (2.6:1) never does. White text on green
   buttons needs `bg-emerald-700` (`600` is 3.8:1). Found by the #20 audit.
+- **Light/dark theme: write the dark classes, never raw hex.** `bg-zinc-950`,
+  `text-white`, `text-zinc-400`, `text-emerald-400`… are CSS variables that
+  flip for the light theme (`globals.css`). A hard-coded colour (`#09090b`,
+  `style={{ color }}`) stays dark in light mode. Text on the green buttons is
+  `text-on-accent` (always white), not `text-white` (which turns black).
+  Exceptions on purpose: `global-error.tsx` (renders outside the layout, dark
+  only) and the OG images (`lib/og.tsx`).
 - **Card images take `alt=""`** — the title is right next to them in the same
   link. The article hero uses the editor's alt (`article.coverImageAlt`).
 - **A missing URL answers 200, not 404** (Next streams the page because of
