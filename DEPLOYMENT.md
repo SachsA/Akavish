@@ -855,11 +855,12 @@ recover from a mistake noticed days later.
    "Run workflow" API. The GitHub cron stays as a fallback; a late second run
    just makes one more dump.
    1. **A dedicated GitHub token.** GitHub → Settings → Developer settings →
-      Fine-grained tokens → Generate: name `akavish-backup-trigger`, expiry 1
-      year, **Only select repositories** → `Akavish`, **Repository
+      Fine-grained tokens → Generate: name `akavish-backup-trigger`,
+      **Only select repositories** → `Akavish`, **Repository
       permissions → Actions: Read and write** (Metadata: read is added
-      automatically). Nothing else. Note the expiry date: an expired token
-      makes the dispatch fail, which pings healthchecks `/fail`.
+      automatically). Nothing else. The current token was created without an
+      expiry date. If it's ever revoked or replaced, the dispatch fails and
+      pings healthchecks `/fail`: update the `GITHUB_TOKEN` secret.
    2. **Create the Worker.** Cloudflare → Workers & Pages → **Create** →
       Start with Hello World → name `akavish-backup-trigger` → Deploy →
       **Edit code**, replace everything with `infra/backup-trigger/worker.js`
@@ -931,7 +932,7 @@ All of these are caught by the healthchecks.io check (step 8): no ping by
 ~06:17 UTC means an email, whatever the cause.
 
 - **GitHub starts scheduled runs late**, by hours on this repo. The Worker
-  (step 9) is what makes the backup punctual; if it ever stops (expired
+  (step 9) is what makes the backup punctual; if it ever stops (revoked
   token, Worker deleted), healthchecks emails you the same morning.
 - **GitHub disables scheduled workflows after 60 days without repository
   activity.** If you step away from the project, check Actions when you return
