@@ -805,7 +805,8 @@ recover from a mistake noticed days later.
 > clean, row counts matching prod. healthchecks.io check (step 8) added the same
 > day and confirmed by a manual run. On 2026-11-07 it caught GitHub starting the
 > nightly cron **hours late** (the 03:17 run of the 6th started at 11:00 UTC),
-> hence the Cloudflare Worker trigger in step 9.
+> hence the Cloudflare Worker trigger in step 9, set up and tested the same day
+> (its cron started a backup at 09:45:20 UTC, 20 seconds after the minute).
 
 1. **A separate, private bucket.** Cloudflare → R2 → **Create bucket** →
    `akavish-backups`. Do **not** enable public access, and never reuse the media
