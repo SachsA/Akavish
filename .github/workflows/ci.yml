@@ -44,10 +44,11 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-  # Verify the apps actually build, then test the CMS against a real database:
+  # Verify the apps actually build, then test them against a real database:
   # a throwaway Postgres with the committed migrations applied, the seed script,
-  # Payload integration tests (hooks, slugs, access control) and a Playwright
-  # pass through the admin panel on the production build.
+  # Payload integration tests (hooks, slugs, access control, scheduled publish),
+  # then Playwright on the production builds: the admin panel, then the public
+  # site.
   build:
     name: Build & CMS tests
     runs-on: ubuntu-latest
@@ -135,3 +136,18 @@ jobs:
 
       - name: CMS admin e2e (Playwright)
         run: pnpm --filter akavish-cms test:e2e
+
+      # The public site on top of that CMS: home, categories + pagination,
+      # article (alt text, JSON-LD), real 404s, search, slug-rename 308,
+      # sitemap/RSS, theme toggle. Desktop + mobile viewports.
+      - name: Start the web app
+        run: |
+          PORT=3000 pnpm --filter @akavish/web start > web.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:3000/ && exit 0
+            sleep 2
+          done
+          echo "::error::Web app did not start"; cat web.log; exit 1
+
+      - name: Public site e2e (Playwright)
+        run: pnpm --filter @akavish/web test:e2e

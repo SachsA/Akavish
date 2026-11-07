@@ -61,6 +61,16 @@ list on a miss and answers with a **308** to the current URL, so shared links,
 bookmarks and search rankings follow the rename. Renaming back to an old slug
 removes it from the list. Drafts that were never public aren't tracked.
 
+### Scheduling a publication
+
+Save the article first (Save Draft), with **Status** on Draft or Published.
+Then open the arrow next to **Publish changes** → **Schedule Publish**, pick
+the date and time. Payload queues a job; the CMS checks the queue every minute
+(`jobs.autoRun` in `payload.config.ts`) and publishes it then. Publishing also
+switches **Status** from Draft to Published, so the article appears on the
+site; Archived is never touched. Upcoming schedules show in the same drawer,
+where they can be cancelled.
+
 ### Picking the homepage lead story (`featured`)
 
 Tick **featured** in an article's sidebar to make it the big lead story on the

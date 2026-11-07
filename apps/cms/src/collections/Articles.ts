@@ -19,7 +19,9 @@ export const Articles: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'status', 'publishedAt', 'author'],
   },
-  versions: { drafts: true },
+  // schedulePublish: "Schedule publish" next to the Publish button. The job
+  // runs on the jobs queue (`jobs.autoRun` in payload.config.ts).
+  versions: { drafts: { schedulePublish: true } },
   hooks: {
     // Stamp `publishedAt` automatically. It used to be a sidebar field editors
     // had to remember, and in practice nobody did — every early article shipped
@@ -27,6 +29,16 @@ export const Articles: CollectionConfig = {
     // JSON-LD (the field Google leans on hardest for news), the prev/next
     // navigation, and any meaningful `-publishedAt` ordering.
     beforeChange: [
+      // Publishing (the button, or a scheduled publish job) makes the article
+      // public. The site filters on our own `status` field, not Payload's
+      // `_status`, so without this a draft scheduled for the morning would go
+      // "published" in Payload while `status` stayed "draft": invisible.
+      // Never touches "archived". Runs first so the date stamp below sees it.
+      ({ data }) => {
+        if (data._status === 'published' && data.status === 'draft') data.status = 'published'
+        return data
+      },
+
       ({ data, originalDoc }) => {
         if (data.status !== 'published' || data.publishedAt) return data
 
@@ -104,6 +116,10 @@ export const Articles: CollectionConfig = {
     },
     {
       name: 'status', type: 'select', required: true, defaultValue: 'draft',
+      // Own Postgres enum. Without it, `status` and Payload's `_status` (drafts)
+      // both generate `enum_articles_status`, the first one (draft/published)
+      // wins, and saving "Archived" fails. Fixed by migration editorial_status_enum.
+      enumName: 'enum_articles_editorial_status',
       options: [
         { label: 'Draft', value: 'draft' },
         { label: 'Published', value: 'published' },

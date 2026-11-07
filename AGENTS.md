@@ -90,7 +90,7 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web +
   api-client), then build web + CMS (mobile isn't built — that needs EAS) and,
   on a throwaway Postgres: migrations from scratch, `pnpm seed`, CMS integration
-  tests (`test:int`) and a Playwright admin pass (`test:e2e`). Dependabot
+  tests (`test:int`) and Playwright on the admin and the public site. Dependabot
   (`.github/dependabot.yml`) opens grouped update PRs weekly; React/RN/Expo are
   ignored on purpose (they move with Expo SDK upgrades). `.github/workflows/backup.yml` dumps the prod DB nightly
   to a private R2 bucket and pings healthchecks.io, which emails if a night is

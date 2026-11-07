@@ -29,6 +29,14 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Tags, Authors, Games, Articles],
+  // Jobs queue, used by scheduled publishing (Articles → "Schedule publish").
+  // autoRun checks the queue every minute inside the CMS server process, which
+  // is long-running on Railway. Payload only starts it in the web server
+  // (`getPayload({ cron: true })`), so scripts (seed, migrations, tests) and
+  // `next build` never run jobs.
+  jobs: {
+    autoRun: [{ cron: '* * * * *', queue: 'default' }],
+  },
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

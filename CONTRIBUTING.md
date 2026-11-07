@@ -69,8 +69,11 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
 - **SEO:** `generateMetadata` with a `canonical`; add the URL pattern to
   `app/sitemap.ts`; structured data through `components/JsonLd.tsx`
   (`breadcrumbList()` for detail pages).
-- **Loading:** a `loading.tsx` next to the page if it fetches. The home one
-  mirrors the home layout: change both together.
+- **No `loading.tsx`** on pages that can 404 or redirect (articles, lists):
+  it makes Next stream the page, and `notFound()` / redirects then answer 200.
+  Only the home has one (`app/(home)/loading.tsx`, mirrors the home layout).
+- **Lists** paginate with `lib/pagination.ts` + `components/Pagination.tsx`
+  (`?page=N`, 404 past the last page).
 - **Accessibility** (the bar the #20 audit set): small text is `text-zinc-400`
   or lighter, never `zinc-500/600`; white on green buttons needs
   `bg-emerald-700`; one `h1`, then `h2` → `h3` in order; images that sit next to
@@ -92,6 +95,7 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
 | `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper | `pnpm test` |
 | `apps/cms/tests/int/` | Payload against a real DB: slugs, publish date, redirects, access | `cd apps/cms && pnpm test:int` |
 | `apps/cms/tests/e2e/` | Playwright through the admin panel | `cd apps/cms && pnpm test:e2e` |
+| `apps/web/tests/e2e/` | Playwright on the public site (seeded CMS + web running) | `cd apps/web && pnpm test:e2e` |
 
 A bug fix should come with the test that would have caught it.
 

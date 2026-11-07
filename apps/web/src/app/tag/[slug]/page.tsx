@@ -5,32 +5,41 @@ import { fetchTagBySlug, fetchArticles } from '@/lib/payload'
 import { breadcrumbList } from '@/lib/structured-data'
 import { JsonLd } from '@/components/JsonLd'
 import { ArticleCard } from '@/components/ArticleCard'
+import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
+import { Pagination } from '@/components/Pagination'
 
 export const revalidate = 30
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ page?: string | string[] }>
 }): Promise<Metadata> {
   const { slug } = await params
+  const page = parsePage((await searchParams).page) ?? 1
   const tag = await fetchTagBySlug(slug).catch(() => null)
   if (!tag) return { title: 'Tag not found' }
   const description = `Articles tagged ${tag.name} on Akavish.`
   return {
-    title: `#${tag.name}`,
+    title: pagedTitle(`#${tag.name}`, page),
     description,
-    alternates: { canonical: `/tag/${slug}` },
-    openGraph: { title: `#${tag.name}`, description, url: `/tag/${slug}` },
+    alternates: { canonical: pageHref(`/tag/${slug}`, page) },
+    openGraph: { title: `#${tag.name}`, description, url: pageHref(`/tag/${slug}`, page) },
   }
 }
 
 export default async function TagPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ page?: string | string[] }>
 }) {
   const { slug } = await params
+  const page = parsePage((await searchParams).page)
+  if (page === null) notFound()
 
   let tag
   try {
@@ -41,12 +50,17 @@ export default async function TagPage({
   if (!tag) notFound()
 
   let articles: Article[] = []
+  let totalPages = 1
   try {
-    const result = await fetchArticles({ tagId: tag.id, limit: 24 })
+    const result = await fetchArticles({ tagId: tag.id, page, limit: PAGE_SIZE })
     articles = result.data
+    totalPages = result.totalPages
   } catch {
     // Tag still renders even if the article list fails.
   }
+
+  // Past the last page (or a later page of an empty list): no such URL.
+  if (page > 1 && page > totalPages) notFound()
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -68,6 +82,7 @@ export default async function TagPage({
               <ArticleCard key={article.id} article={article} />
             ))}
           </div>
+          <Pagination basePath={`/tag/${slug}`} page={page} totalPages={totalPages} />
         </>
       )}
     </div>

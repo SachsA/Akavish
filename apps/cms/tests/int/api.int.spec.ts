@@ -106,6 +106,28 @@ describe('articles', () => {
     expect(doc.featured).toBe(false)
   })
 
+  it('publishes a scheduled draft and makes it public', async () => {
+    // What the admin's "Schedule publish" does: queue the job with a date…
+    const draft = await createArticle({ title: `${RUN} scheduled` })
+    await payload.jobs.queue({
+      task: 'schedulePublish',
+      input: { type: 'publish', doc: { relationTo: 'articles', value: String(draft.id) } },
+      waitUntil: new Date(Date.now() - 1000),
+    } as never)
+    // …then the queue runner (autoRun, every minute in the CMS server) picks it up.
+    await payload.jobs.run()
+
+    const after = await payload.findByID({ collection: 'articles', id: draft.id, depth: 0 })
+    expect(after._status).toBe('published')
+    expect(after.status).toBe('published') // synced by the hook, so the site shows it
+    expect(after.publishedAt).toBeTruthy()
+  })
+
+  it('never un-archives an article on publish', async () => {
+    const doc = await createArticle({ title: `${RUN} archived`, status: 'archived', _status: 'published' })
+    expect(doc.status).toBe('archived')
+  })
+
   it('records the old slug when a published article is renamed', async () => {
     const doc = await createArticle({
       title: `${RUN} renamed`,

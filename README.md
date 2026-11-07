@@ -274,8 +274,10 @@ GitHub Actions runs on every push to `main` and every pull request
 - **Build & CMS tests** — `pnpm build` (web + CMS) against a throwaway Postgres
   service with dummy env values (Meilisearch, R2, Resend, Sentry unset; each
   degrades gracefully). Then, on that database: every migration applied from
-  scratch, `pnpm seed`, the CMS integration tests (`test:int`) and a Playwright
-  pass through the admin panel (`test:e2e`) on the production build.
+  scratch, `pnpm seed`, the CMS integration tests (`test:int`), then Playwright
+  on the production builds: the admin panel (`apps/cms`, `test:e2e`) and the
+  public site (`apps/web`, `test:e2e`: home, categories, articles, real 404s,
+  search, slug-rename 308, sitemap/RSS, theme toggle).
 
 Run the same checks locally before pushing:
 

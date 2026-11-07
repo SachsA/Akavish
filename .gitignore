@@ -30,6 +30,8 @@ out
 .github-token
 # State file of Claude's scheduled maintenance task (local bookkeeping).
 .claude-maintenance.json
+# Files the Claude desktop app saves into the folder (screenshots, exports).
+/Claude outputs/
 
 # Database dumps — a full copy of production (emails, password hashes). The
 # usual `git add -A` would publish one downloaded here for a restore.

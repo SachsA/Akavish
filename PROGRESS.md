@@ -62,7 +62,7 @@ Last updated: **2026-11-06**.
 | ✅     | Footer pages                          | `/about`, `/contact`, plus the legal set below                                       |
 | ✅     | Legal pages (EN + FR)                 | `/privacy`, `/terms`, `/legal` and `/fr/confidentialite`, `/fr/conditions`, `/fr/mentions-legales`. Facts (processors, publisher, date) live once in `lib/legal.ts`; hreflang pairs + language toggle via `LegalLanguageSwitch` |
 | ✅     | RSS feed `/feed.xml`                  | Route handler, latest 50 published articles                                         |
-| ✅     | Loading states                        | `loading.tsx` + `CardGridSkeleton` on home, category, article, author, game, tag    |
+| ✅     | Loading states                        | Home only (`app/(home)/loading.tsx`). The other routes dropped theirs on 2026-11-07 so `notFound()` and slug redirects answer real 404/308 statuses (see gotchas) |
 | ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
 | ✅     | `tsconfig` baseUrl fix                | `@/*` alias now resolves reliably at build                                          |
 | ✅     | Article page polish                   | Reading time (`lib/reading-time.ts`), share row (`ShareButtons`), "Read next" suggestions and prev/next nav (`fetchRelatedArticles` / `fetchAdjacentArticles`) |
@@ -185,7 +185,8 @@ actually tackle it, best value-for-effort first.
 
 **The "do now" list is done** (#1–#20), and so is everything that could be done
 without waiting (CMS tests in CI, Dependabot, previews, Docker, breadcrumbs,
-homepage `featured`, contributor docs, security cleanup — 2026-11-06).
+homepage `featured`, contributor docs, security cleanup — 2026-11-06; light
+theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07).
 
 **Next session:** the **AI news scout** (🅿️ Parked below). Answer its four open
 questions first, then design it.
@@ -197,7 +198,7 @@ Everything else waits on something:
 | **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
 | **The app being shipped** | Push notifications · store release (EAS) · app store assets · mobile feature parity |
 | **Traffic** | CDN / cache tuning · rate limiting on public APIs · reader accounts (`/account`, Clerk → DB sync) |
-| **Content and readers** | Everything in **🅿️ Parked**: AI news scout, scheduled publishing, newsletter, pagination, analytics review, comments, Clerk production |
+| **Content and readers** | Everything in **🅿️ Parked**: AI news scout, newsletter, analytics review, comments, Clerk production |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
 i18n (EN + FR) is its own project — §6.
@@ -235,9 +236,7 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 | Idea | Why it waits / what it depends on |
 | --- | --- |
 | **AI news scout** | A bot that watches the big news/leak sites and leaker accounts, drafts articles, and sends them for human approval before publishing. Ties together scheduled publishing and email. Open design questions (sources, copyright, X/Twitter API cost, AI-content disclosure) — see the discussion before building anything |
-| Scheduled publishing | Publish at a future `publishedAt` (cron or a Payload job). Most useful together with the AI scout: approve in the evening, publish in the morning |
 | Newsletter | Capture emails and send a digest (Resend can do it). The one channel that brings readers back without Google or social. Needs a consent flow and a `/privacy` update |
-| Pagination / infinite scroll | Pages cap at 24 articles — irrelevant until there are more |
 | Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
 | Comments | Needs traffic, paid Clerk production keys, moderation and anti-spam (§5) |
 | Clerk production instance | Paid; only needed once reader accounts do something (§8) |
@@ -329,6 +328,9 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | P3  | Author ↔ user link            | Connect a CMS `user` (editor) to an `author` profile. Only matters once there's more than one writer |
 | P2  | Editorial workflow            | Roles (admin / editor / writer) + access control per role; review/publish flow |
 | ✅  | Homepage curation             | Done (2026-11-06) — `featured` checkbox on articles (migration `article_featured`): the newest featured article is the homepage lead, else the newest article (`lib/home.ts`, tested). How-to in `apps/cms/README.md` |
+| ✅  | Scheduled publishing          | Done (2026-11-07) — "Schedule Publish" in the Publish menu of a saved article (`versions.drafts.schedulePublish`), run by Payload's jobs queue every minute inside the CMS (`jobs.autoRun`). Publishing also flips `status` draft → published so the site shows it. Migration `scheduled_publish`. How-to in `apps/cms/README.md` |
+| ✅  | "Archived" status works      | Fixed 2026-11-07: `status` and Payload's `_status` shared one Postgres enum (draft/published), so saving Archived failed. `status` now has its own (`enumName`, migration `editorial_status_enum`) |
+| ✅  | Pagination                    | Done (2026-11-07) — category, tag, author and game pages: 24 per page, `?page=N` with Newer/Older links, canonical per page, junk or out-of-range pages are 404s (`lib/pagination.ts`, tested) |
 | ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
 | P3  | i18n fields                   | Localized title/content if going bilingual (area 6)                            |
 | P3  | Related games/series taxonomy | Beyond single `game` relation                                                  |
@@ -439,7 +441,7 @@ checklist it walks through.
 
 | Pri | Item                 | Notes                                                                  |
 | --- | -------------------- | ---------------------------------------------------------------------- |
-| ✅  | Unit tests           | vitest in `apps/web` and `packages/api-client` (`pnpm test`) + CMS integration and admin e2e tests, all run in CI. Next: e2e on the public site's key pages |
+| ✅  | Unit tests           | vitest in `apps/web` and `packages/api-client` (`pnpm test`), CMS integration + admin e2e tests, and Playwright on the public site (`apps/web/tests/e2e/`, desktop + mobile), all in CI |
 | ✅  | API contract checks  | The shared mapper is unit-tested, and a test fails if the web and CMS category lists drift |
 | ✅  | Contributor docs     | Done (2026-11-06) — `CONTRIBUTING.md`: the loop, adding a field/collection (migration steps), adding a page (data, SEO, a11y rules), where the tests live, commits |
 | ✅  | Architecture diagram | Done (2026-11-06) — Mermaid diagram in the README ("How the pieces talk"): apps, hosts, every service, monitoring and backups |
@@ -479,12 +481,15 @@ checklist it walks through.
   only) and the OG images (`lib/og.tsx`).
 - **Card images take `alt=""`** — the title is right next to them in the same
   link. The article hero uses the editor's alt (`article.coverImageAlt`).
-- **A missing URL answers 200, not 404** (Next streams the page because of
-  `loading.tsx`, then `notFound()` can't change the status). The page carries
-  `noindex`, so search engines drop it; harmless, not worth fighting Next for.
+- **No `loading.tsx` on routes that can 404 or redirect.** A `loading.tsx`
+  makes Next stream the page, and once streaming has started `notFound()` and
+  `permanentRedirect()` can't change the status: a missing article answered
+  **200** and a renamed one did a client-side hop instead of a **308**. Only the
+  home page keeps one, inside the `(home)` route group so it covers nothing
+  else. The public e2e tests check the real 404 and 308.
 - **Never show operational details to readers.** Fallbacks go through
   `components/StatusMessage.tsx`; diagnostics belong in Sentry and the logs.
-- **`app/loading.tsx` mirrors the home layout** — change one, change the other,
+- **`app/(home)/loading.tsx` mirrors the home layout** — change one, change the other,
   or the page jumps when content arrives.
 - **`overrides` in `pnpm-workspace.yaml` are security pins only** (transitive
   packages with a known vulnerability, each kept to its parent's major — see
