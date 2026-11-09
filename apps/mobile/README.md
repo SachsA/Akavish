@@ -50,6 +50,14 @@ On a phone, `localhost` is the phone: point `EXPO_PUBLIC_CMS_URL` at
 needs the same Expo account signed in on the phone and the computer
 (`npx expo login`). More in the root README.
 
+## Troubleshooting
+
+`Unable to resolve module ./apps/mobile/node_modules/expo-router/entry` (or any
+module that's clearly installed) right after a `pnpm install`: Metro's cache
+still maps the old `node_modules`. Stop the server and run `npx expo start -c`
+(clears the cache). If Watchman is installed (`which watchman` prints a path),
+run `watchman watch-del-all` first: it keeps its own file list.
+
 ## Checks
 
 ```bash
