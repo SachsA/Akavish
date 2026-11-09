@@ -234,6 +234,7 @@ the computer are signed in to the **same Expo account** (free): `npx expo login`
 on the computer, then sign in inside Expo Go. Keep `EXPO_PUBLIC_CMS_URL` on the
 production CMS or your Mac's LAN IP — `localhost` on a phone is the phone
 (see `apps/mobile/.env.example`). Same Wi-Fi required, or `pnpm dev --tunnel`.
+What the app does and how it's built: [`apps/mobile/README.md`](./apps/mobile/README.md).
 
 ### Resetting
 
@@ -266,9 +267,9 @@ GitHub Actions runs on every push to `main` and every pull request
 (`.github/workflows/ci.yml`):
 
 - **Lint, type-check & tests** — lint runs on web + CMS; type-check runs on web,
-  CMS, and shared packages; `pnpm test` runs the vitest unit tests (web +
-  `api-client`). Lint and type-check include mobile; mobile isn't built in CI
-  (that needs EAS).
+  CMS, and shared packages; `pnpm test` runs the vitest unit tests (web,
+  mobile, `api-client`). Lint and type-check include mobile; mobile isn't built
+  in CI (that needs EAS).
 - **Database backup** (`.github/workflows/backup.yml`) — nightly `pg_dump` of
   production into a private R2 bucket. Setup and restore: `DEPLOYMENT.md` §9.
 - **Build & CMS tests** — `pnpm build` (web + CMS) against a throwaway Postgres

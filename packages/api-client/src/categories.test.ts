@@ -25,7 +25,7 @@ describe('CATEGORIES', () => {
   // CMS collection source directly so the two can't diverge silently.
   it('matches the category options of the CMS Articles collection', () => {
     const path = fileURLToPath(
-      new URL('../../../cms/src/collections/Articles.ts', import.meta.url)
+      new URL('../../../apps/cms/src/collections/Articles.ts', import.meta.url)
     )
     const source = readFileSync(path, 'utf8')
     const start = source.indexOf("name: 'category'")

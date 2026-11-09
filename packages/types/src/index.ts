@@ -19,6 +19,12 @@ export interface Article {
   category: ArticleCategory
   status: ArticleStatus
   coverImage?: string
+  /**
+   * Same cover, 960px wide ('card' variant). For lists on clients that can't
+   * resize on the fly (the mobile app): the hero is 1920px. The web doesn't
+   * need it, next/image resizes.
+   */
+  coverImageCard?: string
   /** The editor's alt text for the cover (required on uploads in the CMS). */
   coverImageAlt?: string
   tags: string[]

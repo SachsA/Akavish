@@ -87,8 +87,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   CMS). Meilisearch failures fall back to the CMS. Currently running on the
   fallback — Meilisearch Cloud has no free tier.
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
-  web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web +
-  api-client), then build web + CMS (mobile isn't built — that needs EAS) and,
+  web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web,
+  mobile and api-client), then build web + CMS (mobile isn't built — that needs EAS) and,
   on a throwaway Postgres: migrations from scratch, `pnpm seed`, CMS integration
   tests (`test:int`) and Playwright on the admin and the public site. Dependabot
   (`.github/dependabot.yml`) opens grouped update PRs weekly; React/RN/Expo are
@@ -104,8 +104,13 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`hello@` / `tips@` / `privacy@`, receive-only).
 - **Shared data mapping:** the Payload → `Article` mapper lives in
   `@akavish/api-client/payload` and is used by both web (`lib/payload.ts`) and
-  mobile. Article categories have one source: `apps/web/src/lib/categories.ts`
-  (must match the CMS `category` options).
+  mobile. Article categories and reading time are shared too:
+  `packages/api-client/src/{categories,reading-time}.ts` (the web's `lib/`
+  files re-export them); categories must match the CMS `category` options.
+- **Mobile:** a reading app (tabs, article screen, sections), described in
+  `apps/mobile/README.md`. Expo Router routes in `apps/mobile/app/`, the rest in
+  `apps/mobile/src/` (relative imports). Same dark palette as the web
+  (`src/theme.ts`). Pure helpers in `src/lib` have vitest tests.
 - **Docker (fallback only):** `apps/web/Dockerfile`, `apps/cms/Dockerfile`, built
   from the repo root; `NEXT_OUTPUT=standalone` is set only there (Vercel/Railway
   unchanged). `DEPLOYMENT.md` §10.

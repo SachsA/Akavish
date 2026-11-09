@@ -106,6 +106,7 @@ Last updated: **2026-11-06**.
 | Status | Item                        | Notes                         |
 | ------ | --------------------------- | ----------------------------- |
 | ✅     | Expo app consuming same API | Shares `api-client` + `types` |
+| ✅     | Reading app                 | 2026-11-09: tabs Home / News / Leaks / Reviews / Sections, article screen, every section, pull-to-refresh, infinite scroll, share. Details in §7 |
 | ⬜     | Clerk on mobile             | Reader auth parity with web   |
 | ⬜     | Push notifications          | Expo                          |
 
@@ -186,7 +187,8 @@ actually tackle it, best value-for-effort first.
 **The "do now" list is done** (#1–#20), and so is everything that could be done
 without waiting (CMS tests in CI, Dependabot, previews, Docker, breadcrumbs,
 homepage `featured`, contributor docs, security cleanup — 2026-11-06; light
-theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07).
+theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07;
+mobile reading app — 2026-11-09).
 
 **Next session:** the **AI news scout** (🅿️ Parked below). Answer its four open
 questions first, then design it.
@@ -196,7 +198,7 @@ Everything else waits on something:
 | Waits on | Items (in the backlog below) |
 | --- | --- |
 | **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
-| **The app being shipped** | Push notifications · store release (EAS) · app store assets · mobile feature parity |
+| **The app being shipped** | Push notifications · store release (EAS) · app store assets · universal links |
 | **Traffic** | Reader accounts (`/account`, Clerk → DB sync) · hosted Meilisearch |
 | **Content and readers** | Everything in **🅿️ Parked**: AI news scout, newsletter, analytics review, comments, Clerk production |
 | **Money / launch** | Legal review by a professional (before monetising) |
@@ -386,7 +388,7 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 | --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ✅  | Upgrade Expo SDK 52 → 58          | Done (Nov 2026) — Expo 58.0 / React 19.3 / RN 0.88 / TypeScript 6, Node ≥ 22.13 for the mobile app. Splash moved from `app.json#splash` to the `expo-splash-screen` plugin; ESLint 9 flat config (`eslint.config.js`); expo-router's peers (`expo-linking`, `expo-constants`, `@expo/metro-runtime`) declared explicitly; unused `expo-notifications` and `@react-navigation/native` removed (push notifications come back with the item below). `types/expo.d.ts` keeps Expo's global types available in CI, where the generated `expo-env.d.ts` doesn't exist. Validated on an iPhone in Expo Go (needs an Expo account signed in on both the phone and `npx expo login`). Back in CI lint + type-check |
 | ✅  | Fix api-client ↔ Payload shape    | Done — the Payload → `Article` mapper now lives in `@akavish/api-client/payload` and both web and mobile use it. `articlesApi.list` really returns `PaginatedResponse<Article>` (mobile's `res.data` was undefined), filters to published, populates relations; `get` no longer interpolates the slug raw into the URL |
-| P2  | Feature parity audit              | Home, category, article detail consuming the CMS API. Today: Home lists articles (no tap action — there is no article screen yet); Leaks / Reviews / Esport are "coming soon" placeholders                                                                            |
+| ✅  | Reading app (feature parity)      | Done (2026-11-09). Tabs: Home (latest, newest as a lead card), News, Leaks, Reviews, Sections (all six sections + About/Contact/Privacy/Terms on the site, app version). Article screen: cover, byline with reading time, native Lexical rendering (same node coverage as the web), share sheet, "Read on akavish.gg". Every list pages 12 at a time with infinite scroll, pull-to-refresh and reader-facing error/empty states. Deep links `akavish://article/<slug>` and `akavish://category/<slug>`. Categories and reading time now come from `@akavish/api-client` (shared with the web); lists load the 960px `card` cover (`coverImageCard`), not the 1920px hero. Unit tests on the pure helpers (`apps/mobile/src/lib`). Checked by bundling for iOS and rendering every screen on an iPhone viewport through Expo's web export; not yet on a real phone with this version. Not in it: search, reader accounts, offline cache, universal links (`akavish.gg/...` opening the app needs an associated domain, with the store release) |
 | ✅  | Drop the React `paths` workaround | Done (2026-11-06) — removed from the web and CMS tsconfigs; type-check passes with and without hoisting (see gotchas) |
 | P2  | Push notifications                | Expo notifications on new articles                                                                                                                                                                                                                                    |
 | P3  | App store assets                  | Icons, splash, screenshots, listing copy                                                                                                                                                                                                                              |
@@ -441,7 +443,7 @@ checklist it walks through.
 
 | Pri | Item                 | Notes                                                                  |
 | --- | -------------------- | ---------------------------------------------------------------------- |
-| ✅  | Unit tests           | vitest in `apps/web` and `packages/api-client` (`pnpm test`), CMS integration + admin e2e tests, and Playwright on the public site (`apps/web/tests/e2e/`, desktop + mobile), all in CI |
+| ✅  | Unit tests           | vitest in `apps/web`, `apps/mobile` and `packages/api-client` (`pnpm test`), CMS integration + admin e2e tests, and Playwright on the public site (`apps/web/tests/e2e/`, desktop + mobile), all in CI |
 | ✅  | API contract checks  | The shared mapper is unit-tested, and a test fails if the web and CMS category lists drift |
 | ✅  | Contributor docs     | Done (2026-11-06) — `CONTRIBUTING.md`: the loop, adding a field/collection (migration steps), adding a page (data, SEO, a11y rules), where the tests live, commits |
 | ✅  | Architecture diagram | Done (2026-11-06) — Mermaid diagram in the README ("How the pieces talk"): apps, hosts, every service, monitoring and backups |
@@ -468,9 +470,11 @@ checklist it walks through.
   Payload 3.93 migration, generated locally without R2, missed them and prod's
   `/api/media` answered 500 until 2026-11-09 (fix: `alwaysInsertFields: true` +
   migration `storage_object_key`). Check any new plugin for the same trap.
-- **Categories have one source: `apps/web/src/lib/categories.ts`.** Slug (`leaks`),
-  CMS value (`leak`) and labels live there; it must match the `category` select
-  options in `apps/cms/src/collections/Articles.ts`. A few components still keep
+- **Categories have one source: `packages/api-client/src/categories.ts`**
+  (web and mobile; the web's `lib/categories.ts` just re-exports it). Slug
+  (`leaks`), CMS value (`leak`) and labels live there; it must match the
+  `category` select options in `apps/cms/src/collections/Articles.ts` (a test
+  checks). A few components still keep
   their own singular-label map (`ArticleCard`, the article page, `SearchResults`,
   the OG image) — migrate them when next touched.
 - **Contrast on the dark theme:** small text on `zinc-950`/`zinc-900` must be

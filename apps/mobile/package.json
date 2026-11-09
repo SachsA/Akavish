@@ -11,12 +11,14 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "lint": "expo lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@akavish/api-client": "workspace:*",
     "@akavish/types": "workspace:*",
     "@expo/metro-runtime": "~58.0.17",
+    "@expo/vector-icons": "^15.1.1",
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
     "expo-linking": "~58.0.16",
@@ -34,6 +36,7 @@
     "@types/react": "~19.3.0",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~58.0.4",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "4.1.12"
   }
 }

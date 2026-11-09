@@ -53,7 +53,8 @@ collection, a relationship, an index) needs a migration. Production never
    `payload.test.ts`. Never import `apps/cms/src/payload-types.ts` from code
    that CI type-checks: it's generated and gitignored.
 5. Changed the article categories? They must match
-   `apps/web/src/lib/categories.ts`; a unit test fails if they drift.
+   `packages/api-client/src/categories.ts` (used by web and mobile); a unit
+   test fails if they drift.
 6. Added or removed a Payload **plugin**? Run `pnpm generate:importmap` and
    commit the result, or the admin panel renders blank.
 
@@ -95,8 +96,9 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
 
 | Where | What | Command |
 | --- | --- | --- |
-| `apps/web/src/lib/*.test.ts` | Pure logic: reading time, categories, homepage lead, JSON-LD | `pnpm test` |
-| `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper | `pnpm test` |
+| `apps/web/src/lib/*.test.ts` | Pure logic: homepage lead, JSON-LD, pagination, rate limiting | `pnpm test` |
+| `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper, categories (vs the CMS), reading time | `pnpm test` |
+| `apps/mobile/src/lib/*.test.ts` | App helpers: dates, feed paging, Lexical parsing, links | `pnpm test` |
 | `apps/cms/tests/int/` | Payload against a real DB: slugs, publish date, redirects, access | `cd apps/cms && pnpm test:int` |
 | `apps/cms/tests/e2e/` | Playwright through the admin panel | `cd apps/cms && pnpm test:e2e` |
 | `apps/web/tests/e2e/` | Playwright on the public site (seeded CMS + web running) | `cd apps/web && pnpm test:e2e` |

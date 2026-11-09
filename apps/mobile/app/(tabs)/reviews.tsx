@@ -1,14 +1,8 @@
-import { View, Text, StyleSheet } from 'react-native'
+import { categoryBySlug } from '@akavish/api-client/categories'
+import { CategoryFeed } from '../../src/components/CategoryFeed'
+
+const category = categoryBySlug('reviews')!
 
 export default function ReviewsScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Reviews — coming soon</Text>
-    </View>
-  )
+  return <CategoryFeed category={category} />
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#09090b' },
-  text: { color: '#71717a' },
-})

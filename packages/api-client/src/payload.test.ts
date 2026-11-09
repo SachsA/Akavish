@@ -61,7 +61,7 @@ describe('mapArticle', () => {
   it('maps a fully populated article', () => {
     const a = mapArticle(
       rawArticle({
-        coverImage: { url: '/a.jpg', alt: 'Trevor on a jet ski', sizes: { hero: { url: '/a-1920.jpg' } } },
+        coverImage: { url: '/a.jpg', alt: 'Trevor on a jet ski', sizes: { hero: { url: '/a-1920.jpg' }, card: { url: '/a-960.jpg' } } },
         author: { id: 1, slug: 'akavish', name: 'Akavish', avatar: 'https://cdn.test/me.png' },
         game: { id: 2, name: 'GTA VI', slug: 'gta-vi' },
         tags: [{ slug: 'gta' }, { slug: 'openworld' }, {}],
@@ -72,6 +72,7 @@ describe('mapArticle', () => {
 
     expect(a.id).toBe('7')
     expect(a.coverImage).toBe(`${CMS}/a-1920.jpg`)
+    expect(a.coverImageCard).toBe(`${CMS}/a-960.jpg`)
     expect(a.coverImageAlt).toBe('Trevor on a jet ski')
     expect(a.featured).toBe(false)
     expect(a.author).toMatchObject({ id: '1', slug: 'akavish', name: 'Akavish' })

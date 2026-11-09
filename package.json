@@ -6,7 +6,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "test": "turbo run test --filter=@akavish/web --filter=@akavish/api-client",
+    "test": "turbo run test --filter=@akavish/web --filter=@akavish/api-client --filter=@akavish/mobile",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "clean": "bash scripts/clean.sh",
     "reset:db": "node apps/cms/scripts/reset-db.mjs",

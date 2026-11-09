@@ -110,6 +110,7 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     // 'hero' (1920w) is a good source for both the article hero and the cards,
     // which are downscaled from it.
     coverImage: mediaUrl(doc.coverImage, cmsUrl, 'hero'),
+    coverImageCard: mediaUrl(doc.coverImage, cmsUrl, 'card'),
     coverImageAlt: mediaAlt(doc.coverImage),
     featured: doc.featured === true,
     tags: Array.isArray(doc.tags)
