@@ -1,6 +1,6 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 
 type Theme = 'light' | 'dark'
 
@@ -31,6 +31,23 @@ function subscribe(onChange: () => void) {
 export function ThemeToggle() {
   // Unknown on the server (null): an empty button of the same size until hydrated.
   const theme = useSyncExternalStore<Theme | null>(subscribe, currentTheme, () => null)
+
+  // Put the saved theme back if <html> lost it. When hydration fails (React
+  // #418), React re-renders the whole document on the client and resets
+  // <html>'s attributes, dropping the `data-theme` the inline script set. Next's
+  // own chunk loader can trigger that by removing <script> tags from <head>
+  // mid-hydration (~1 load in 30 in the e2e runs, Nov 2026), which is what made
+  // the theme e2e test flaky. The re-render remounts this component, so this
+  // runs again right after it.
+  useEffect(() => {
+    if (document.documentElement.dataset.theme) return
+    try {
+      const saved = localStorage.getItem('theme')
+      if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved
+    } catch {
+      // Storage blocked: nothing saved to restore.
+    }
+  }, [])
 
   const next: Theme = theme === 'light' ? 'dark' : 'light'
 

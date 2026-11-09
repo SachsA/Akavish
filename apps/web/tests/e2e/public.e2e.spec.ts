@@ -121,7 +121,18 @@ test('the theme toggle switches to light and remembers it', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Switch to dark theme' })).toBeVisible()
 })
 
+/**
+ * Each newsletter test posts from its own fake client IP: the sign-up route
+ * allows 5 requests a minute per IP, and desktop + mobile + CI retries (or two
+ * local runs back to back) would otherwise hit it. Vercel overwrites
+ * `x-real-ip` in production, so this only works against a local server.
+ */
+async function freshIp(page: import('@playwright/test').Page) {
+  await page.setExtraHTTPHeaders({ 'x-real-ip': `e2e-${Date.now()}-${Math.random()}` })
+}
+
 test('newsletter: signing up from the footer creates a pending subscriber', async ({ page, request }) => {
+  await freshIp(page)
   const email = `e2e-${Date.now().toString(36)}@example.com`
   await page.goto('/about')
   const form = page.locator('footer')
@@ -147,6 +158,7 @@ test('newsletter: signing up from the footer creates a pending subscriber', asyn
 })
 
 test('newsletter: no consent, no sign-up', async ({ page }) => {
+  await freshIp(page)
   await page.goto('/about')
   const form = page.locator('footer')
   await form.getByLabel('Email address').fill('e2e-noconsent@example.com')

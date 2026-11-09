@@ -478,10 +478,18 @@ checklist it walks through.
   checks). A few components still keep
   their own singular-label map (`ArticleCard`, the article page, `SearchResults`,
   the OG image) — migrate them when next touched.
-- **The theme-toggle e2e test is flaky on its first desktop run** (after a
-  reload, `data-theme` is sometimes missing); CI's retry passes it. Seen before
-  the newsletter and mobile work, cause not found yet. Don't mistake it for a
-  regression; do fix it if it starts failing retries too.
+- **Hydration can fail, rarely, for reasons outside our code.** Removing a
+  `<script>` from `<head>` while React is still hydrating makes it throw the
+  server HTML away (React #418) and re-render the whole document, which also
+  resets `<html>`'s attributes. Three sources were found (Nov 2026, through the
+  then-flaky theme e2e test): Next's chunk loader (~1 load in 30 locally, can't
+  be fixed on our side), Vercel Analytics' script failing to load (an ad
+  blocker does that: now mounted after `load`, `components/DeferredAnalytics.tsx`)
+  and Clerk's script failing to load (the e2e fixture now serves it empty
+  instead of aborting it). The page still works; what got lost was the reader's
+  light theme, and `ThemeToggle` now restores it after such a re-render. Rule:
+  anything set on `<html>` or `<body>` outside React must be re-applied on
+  mount, never set once by a script only.
 - **Contrast on the dark theme:** small text on `zinc-950`/`zinc-900` must be
   `text-zinc-400` or lighter. `zinc-500` (4.1:1) only passes for large bold text
   (the Wordmark's "ish"); `zinc-600` (2.6:1) never does. White text on green

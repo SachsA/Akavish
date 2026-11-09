@@ -417,7 +417,9 @@ first two no-op without configuration, the third lives entirely outside the code
 
 ### Vercel Web Analytics (traffic)
 
-`<Analytics />` sits in the web root layout. Nothing to configure in code —
+`<Analytics />` sits in the web root layout, mounted once the page has loaded
+(`components/DeferredAnalytics.tsx`: injected earlier, a blocked script could
+break hydration, see PROGRESS gotchas). Nothing to configure in code —
 enable it in the **Vercel dashboard → project → Analytics**, redeploy, done.
 
 - **Free tier: 50 000 events/month** on Hobby, shared across all projects on the

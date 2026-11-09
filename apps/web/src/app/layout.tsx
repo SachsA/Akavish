@@ -10,9 +10,9 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
+import { DeferredAnalytics } from '@/components/DeferredAnalytics'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { Wordmark } from '@/components/Wordmark'
-import { Analytics } from '@vercel/analytics/next'
 import { SearchBar } from '@/components/SearchBar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { CATEGORIES } from '@/lib/categories'
@@ -79,7 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Vercel Web Analytics — cookieless and no personal data, so it
               needs no consent banner. Only actually collects when deployed on
               Vercel; a no-op locally. 50k events/month on the Hobby plan. */}
-          <Analytics />
+          <DeferredAnalytics />
         </body>
       </html>
     </ClerkProvider>

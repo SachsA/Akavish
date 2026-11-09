@@ -135,7 +135,7 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Logs / limits:** server logs go through `apps/web/src/lib/log.ts` (JSON
   lines; never log IPs or search terms); public API routes use
   `lib/rate-limit.ts` (per-IP limit + CDN cache headers). `DEPLOYMENT.md` §4e.
-- **Observability:** Vercel Web Analytics (`<Analytics />` in the web layout,
+- **Observability:** Vercel Web Analytics (`<DeferredAnalytics />` in the web layout, mounted after `load`,
   cookieless → no consent banner) + Sentry on both apps. Unset DSN → no-op. Web
   tunnels through `/monitoring` to survive ad blockers (excluded from the Clerk
   matcher and `robots.ts`); the CMS is server-side only. UptimeRobot probes
