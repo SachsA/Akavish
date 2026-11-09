@@ -197,7 +197,7 @@ Everything else waits on something:
 | --- | --- |
 | **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
 | **The app being shipped** | Push notifications · store release (EAS) · app store assets · mobile feature parity |
-| **Traffic** | CDN / cache tuning · rate limiting on public APIs · reader accounts (`/account`, Clerk → DB sync) |
+| **Traffic** | Reader accounts (`/account`, Clerk → DB sync) · hosted Meilisearch |
 | **Content and readers** | Everything in **🅿️ Parked**: AI news scout, newsletter, analytics review, comments, Clerk production |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
