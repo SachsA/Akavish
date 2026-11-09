@@ -126,6 +126,12 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`@payloadcms/email-resend`, `RESEND_API_KEY` unset → console fallback,
   `DEPLOYMENT.md` §4c); Cloudflare Email Routing only **receives**
   (`DEPLOYMENT.md` §6.6).
+- **Newsletter:** double opt-in sign-up, rules in `apps/cms/src/lib/newsletter.ts`
+  (endpoints `/api/newsletter/*`, collection `subscribers`, int tests), web form
+  `components/NewsletterSignup.tsx` → `app/api/newsletter` (rate-limited) and
+  pages `/newsletter/confirm|unsubscribe`. The privacy policy (EN + FR) states
+  these rules: change one, change the other. Sending issues isn't built
+  (`PROGRESS.md` 🅿️).
 - **Logs / limits:** server logs go through `apps/web/src/lib/log.ts` (JSON
   lines; never log IPs or search terms); public API routes use
   `lib/rate-limit.ts` (per-IP limit + CDN cache headers). `DEPLOYMENT.md` §4e.

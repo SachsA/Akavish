@@ -7,6 +7,7 @@ import * as migration_20261106_134415_payload_3_93 from './20261106_134415_paylo
 import * as migration_20261107_161231_scheduled_publish from './20261107_161231_scheduled_publish';
 import * as migration_20261107_161315_editorial_status_enum from './20261107_161315_editorial_status_enum';
 import * as migration_20261109_094550_storage_object_key from './20261109_094550_storage_object_key';
+import * as migration_20261109_102521_newsletter_subscribers from './20261109_102521_newsletter_subscribers';
 
 export const migrations = [
   {
@@ -52,6 +53,11 @@ export const migrations = [
   {
     up: migration_20261109_094550_storage_object_key.up,
     down: migration_20261109_094550_storage_object_key.down,
-    name: '20261109_094550_storage_object_key'
+    name: '20261109_094550_storage_object_key',
+  },
+  {
+    up: migration_20261109_102521_newsletter_subscribers.up,
+    down: migration_20261109_102521_newsletter_subscribers.down,
+    name: '20261109_102521_newsletter_subscribers'
   },
 ];

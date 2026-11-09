@@ -8,8 +8,8 @@
 // gets you in trouble.
 
 export const LEGAL_LAST_UPDATED = {
-  en: 'September 2026',
-  fr: 'septembre 2026',
+  en: 'November 2026',
+  fr: 'novembre 2026',
 } as const
 
 /** Who publishes the site (LCEN art. 6 III — "directeur de la publication"). */
@@ -46,7 +46,9 @@ export type Processor = {
 /**
  * Every third party that can see visitor data, verified against the code:
  * `apps/web/src/app/layout.tsx` (Clerk, Analytics), `lib/sentry-shared.ts`,
- * `apps/cms/src/payload.config.ts` (R2, Resend), and the deployment setup.
+ * `apps/cms/src/payload.config.ts` (R2, Resend), `apps/cms/src/lib/newsletter.ts`
+ * (newsletter sign-ups, stored in Neon, emailed through Resend), and the
+ * deployment setup.
  */
 export const PROCESSORS: Processor[] = [
   {
@@ -106,8 +108,8 @@ export const PROCESSORS: Processor[] = [
     url: 'https://neon.tech/privacy-policy',
     region: 'EU/US',
     data: {
-      en: 'Article content and editor accounts. No reader data.',
-      fr: "Contenu des articles et comptes des rédacteurs. Aucune donnée de lecteur.",
+      en: 'Article content, editor accounts, and the email address of newsletter subscribers.',
+      fr: "Contenu des articles, comptes des rédacteurs et adresse e-mail des abonnés à la newsletter.",
     },
     purpose: {
       en: 'Hosts the database behind the site.',
@@ -119,12 +121,12 @@ export const PROCESSORS: Processor[] = [
     url: 'https://resend.com/legal/privacy-policy',
     region: 'US',
     data: {
-      en: 'Editor email addresses only — used for password resets on the admin panel. Readers are never emailed through it.',
-      fr: "Uniquement les adresses e-mail des rédacteurs, pour les réinitialisations de mot de passe de l'administration. Aucun e-mail n'est envoyé aux lecteurs par ce biais.",
+      en: 'Email addresses of editors (password resets on the admin panel) and of newsletter subscribers (confirmation email, then the newsletter itself).',
+      fr: "Adresses e-mail des rédacteurs (réinitialisation de mot de passe de l'administration) et des abonnés à la newsletter (e-mail de confirmation, puis la newsletter elle-même).",
     },
     purpose: {
-      en: 'Sends transactional email for the editorial back-office.',
-      fr: "Envoie les e-mails transactionnels du back-office éditorial.",
+      en: 'Sends the back-office emails and the newsletter.',
+      fr: "Envoie les e-mails du back-office et la newsletter.",
     },
   },
 ]

@@ -21,7 +21,9 @@ export default function PrivacyPage() {
         Reading Akavish requires no account and no tracking. We do not sell or
         share your data for advertising, we do not build profiles of readers, and
         we do not use advertising cookies. If you create an account, we hold your
-        email address so you can log back in — nothing more.
+        email address so you can log back in. If you subscribe to the newsletter,
+        we hold your email address to send it, until you unsubscribe. Nothing
+        more.
       </p>
 
       <h2>Who is responsible</h2>
@@ -47,6 +49,16 @@ export default function PrivacyPage() {
         by Clerk. It holds your email address and whatever name or avatar you
         choose to provide. Reader accounts currently unlock nothing beyond being
         signed in.
+      </p>
+      <p>
+        <strong>If you subscribe to the newsletter.</strong> We store your email
+        address, when you gave your consent, where on the site you signed up, and
+        when you confirmed. Nothing is sent until you click the link in the
+        confirmation email we send you (double opt-in). The address is stored in
+        our database (Neon) and the emails are sent through Resend. It is used
+        for the newsletter only: never sold, shared or used for advertising.
+        Every newsletter carries an unsubscribe link, and unsubscribing deletes
+        your address.
       </p>
       <p>
         <strong>If you email us.</strong> Messages sent to an @akavish.gg address
@@ -84,17 +96,20 @@ export default function PrivacyPage() {
       <p>
         Serving the site and keeping it secure and working rests on our legitimate
         interest in running a functioning publication. Your account exists because
-        you asked for it — that is performance of a contract. Where we ever rely
-        on consent, we will ask for it plainly and you will be able to withdraw
-        it.
+        you asked for it — that is performance of a contract. The newsletter
+        rests on your consent, given by ticking the box on the sign-up form; you
+        can withdraw it at any time with the unsubscribe link or by writing to
+        us.
       </p>
 
       <h2>How long we keep it</h2>
       <p>
         Server logs and error reports are kept for a short operational period —
         Sentry retains events for 30 days on our plan. Account data lives for as
-        long as your account does; delete it and it goes. Emails you send us are
-        kept while the conversation is useful.
+        long as your account does; delete it and it goes. A newsletter
+        subscription is kept until you unsubscribe, which deletes it at once; a
+        sign-up you never confirm is deleted after 30 days. Emails you send us
+        are kept while the conversation is useful.
       </p>
 
       <h2>Your rights</h2>

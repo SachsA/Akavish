@@ -10,6 +10,7 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
+import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { Wordmark } from '@/components/Wordmark'
 import { Analytics } from '@vercel/analytics/next'
 import { SearchBar } from '@/components/SearchBar'
@@ -181,6 +182,11 @@ function Footer() {
 
   return (
     <footer className="border-t border-zinc-800 mt-16">
+      <div className="max-w-7xl mx-auto px-4 pt-12">
+        <div className="max-w-2xl">
+          <NewsletterSignup source="footer" />
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8">
         <div className="col-span-2 sm:col-span-1">
           <div className="flex items-center gap-2">

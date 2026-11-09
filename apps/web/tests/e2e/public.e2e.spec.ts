@@ -120,3 +120,46 @@ test('the theme toggle switches to light and remembers it', async ({ page }) => 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   await expect(page.getByRole('button', { name: 'Switch to dark theme' })).toBeVisible()
 })
+
+test('newsletter: signing up from the footer creates a pending subscriber', async ({ page, request }) => {
+  const email = `e2e-${Date.now().toString(36)}@example.com`
+  await page.goto('/about')
+  const form = page.locator('footer')
+  await form.getByLabel('Email address').fill(email)
+  await form.getByLabel(/I agree to receive the Akavish newsletter/).check()
+  await form.getByRole('button', { name: 'Subscribe' }).click()
+  await expect(form.getByRole('status')).toContainText('Check your inbox')
+
+  // Pending until the emailed link is clicked (double opt-in).
+  const login = await request.post(`${CMS_URL}/api/users/login`, { data: SEED_ADMIN })
+  const auth = { Authorization: `JWT ${(await login.json()).token}` }
+  const list = await request.get(
+    `${CMS_URL}/api/subscribers?where[email][equals]=${encodeURIComponent(email)}`,
+    { headers: auth }
+  )
+  const sub = (await list.json()).docs[0]
+  try {
+    expect(sub).toMatchObject({ email, status: 'pending', source: 'footer' })
+    expect(sub.tokenHash).toBeUndefined() // hidden field, never in the API
+  } finally {
+    if (sub) await request.delete(`${CMS_URL}/api/subscribers/${sub.id}`, { headers: auth })
+  }
+})
+
+test('newsletter: no consent, no sign-up', async ({ page }) => {
+  await page.goto('/about')
+  const form = page.locator('footer')
+  await form.getByLabel('Email address').fill('e2e-noconsent@example.com')
+  await form.getByRole('button', { name: 'Subscribe' }).click()
+  await expect(form.getByRole('alert')).toContainText('Tick the box')
+})
+
+test('newsletter: dead confirm and unsubscribe links say so', async ({ page }) => {
+  await page.goto('/newsletter/confirm?token=not-a-real-token-at-all-0000')
+  await expect(page.getByRole('heading', { name: 'This link no longer works' })).toBeVisible()
+
+  await page.goto('/newsletter/unsubscribe?token=1.forged')
+  await page.getByRole('button', { name: 'Unsubscribe' }).click()
+  await expect(page.getByRole('heading', { name: 'Already unsubscribed' })).toBeVisible()
+  expect(page.url()).not.toContain('token=') // the result page doesn't carry the token
+})

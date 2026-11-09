@@ -50,7 +50,10 @@ workspace exposes a `type-check` script so CI covers apps _and_ shared packages.
 The **CMS** (Payload, port 3001) owns the content and the database. It exposes a
 REST API at `http://localhost:3001/api`. The **web** app (port 3000) is a thin
 frontend: its server components fetch published articles from the CMS via
-`CMS_URL` and render them. The **mobile** app hits the same CMS API. Reader auth
+`CMS_URL` and render them. The **mobile** app hits the same CMS API. Newsletter
+sign-ups go from the web's `/api/newsletter` to the CMS, which stores them and
+sends the confirmation email through Resend (`apps/cms/README.md` →
+Newsletter). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately.
 

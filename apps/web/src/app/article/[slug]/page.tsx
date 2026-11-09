@@ -10,6 +10,7 @@ import {
 } from '@/lib/payload'
 import { LexicalContent } from '@/components/LexicalContent'
 import { ArticleCard } from '@/components/ArticleCard'
+import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { ShareButtons } from '@/components/ShareButtons'
 import { countWords, readingTimeLabel, readingTimeMinutes } from '@/lib/reading-time'
 import { absoluteUrl, SITE_NAME } from '@/lib/site'
@@ -222,6 +223,10 @@ export default async function ArticlePage({
         className={`mt-8 ${article.tags.length > 0 ? '' : 'pt-6 border-t border-zinc-800'}`}
       >
         <ShareButtons url={shareUrl} title={article.title} />
+      </div>
+
+      <div className="mt-10">
+        <NewsletterSignup source="article" title="Liked this? Get the newsletter" />
       </div>
 
       {(adjacent.previous || adjacent.next) && (

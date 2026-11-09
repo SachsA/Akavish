@@ -29,6 +29,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `tags`     | Free-form taxonomy.                                                                                                                                |
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). Password resets go out via Resend — see below.                             |
+| `subscribers` | Newsletter sign-ups (double opt-in). Editors can read them; nobody can add one by hand. See "Newsletter" below. |
 
 ### Slugs
 
@@ -87,6 +88,9 @@ Public (unauthenticated) read access is intentionally scoped:
   editors see drafts and archived items too.
 - **authors / games / tags / media** — publicly readable (non-sensitive content
   populated into article cards and pages).
+
+- **subscribers** — no public access at all, and `create` is closed even to
+  editors: rows only come from the newsletter endpoints (below).
 
 This is why the public site can render articles without a CMS login. If you add a
 new collection that the frontend needs to read, remember to set its
@@ -156,6 +160,40 @@ template module so the config and the "expires in one hour" copy can't drift.
 
 Only CMS editors ever receive this; reader accounts are handled by Clerk on the
 web app and never touch Payload auth.
+
+## Newsletter (double opt-in)
+
+Readers sign up on the web (footer and end of articles). The rules live in
+`src/lib/newsletter.ts`, behind three public endpoints declared in
+`payload.config.ts`:
+
+| Endpoint | Does |
+| --- | --- |
+| `POST /api/newsletter/subscribe` `{ email, consent: true, source }` | Creates (or refreshes) a `pending` subscriber and emails a confirmation link (`src/lib/emails/newsletter-confirm.ts`) to `${WEB_URL}/newsletter/confirm?token=…` |
+| `POST /api/newsletter/confirm` `{ token }` | `pending` → `confirmed`; returns the subscriber's unsubscribe token |
+| `POST /api/newsletter/unsubscribe` `{ token }` | Deletes the subscriber |
+
+What the privacy policy promises, and where it's enforced (all in
+`lib/newsletter.ts`, tested in `tests/int/newsletter.int.spec.ts`):
+
+- nobody is subscribed without clicking the emailed link; consent must be
+  `true` (the unticked box on the form);
+- "subscribe" answers the same for new, pending and confirmed addresses, so it
+  can't tell anyone who's on the list; a confirmed address gets no email;
+- at most one confirmation email per address per 10 minutes (the web adds a
+  per-IP limit, but these endpoints can be called directly);
+- unsubscribing deletes the row; unconfirmed rows are deleted after 30 days
+  (swept on each new sign-up);
+- the confirmation token is stored as a SHA-256 hash (`tokenHash`, hidden from
+  the API and the admin); unsubscribe links are `<id>.<HMAC>` signed with
+  `PAYLOAD_SECRET`, so every future issue can carry one without storing
+  anything. Rotating `PAYLOAD_SECRET` breaks unsubscribe links already sent.
+
+`WEB_URL` must be the public site (`https://akavish.gg` in prod) or the
+confirmation link points at the wrong host. Locally, without
+`RESEND_API_KEY`, the email is only logged (subject and address, not the
+link). Sending issues isn't built yet: when it is, send to
+`status: confirmed` only and put `unsubscribeUrl(id)` in each one.
 
 ## ⚠️ After adding or removing a Payload plugin
 

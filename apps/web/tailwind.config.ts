@@ -33,6 +33,9 @@ const config: Config = {
           400: 'rgb(var(--emerald-400) / <alpha-value>)',
           500: 'rgb(var(--emerald-500) / <alpha-value>)',
         },
+        // Error text (form messages): red-400 on dark, red-700 on light, so it
+        // passes contrast on both (globals.css).
+        danger: 'rgb(var(--danger) / <alpha-value>)',
         // Text on the green buttons: always white, unlike `white` above.
         'on-accent': '#ffffff',
         // Akavish brand

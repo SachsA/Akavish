@@ -13,6 +13,8 @@ import { Tags } from './collections/Tags'
 import { Authors } from './collections/Authors'
 import { Games } from './collections/Games'
 import { Articles } from './collections/Articles'
+import { Subscribers } from './collections/Subscribers'
+import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -28,7 +30,14 @@ export default buildConfig({
       titleSuffix: '— Akavish CMS',
     },
   },
-  collections: [Users, Media, Tags, Authors, Games, Articles],
+  collections: [Users, Media, Tags, Authors, Games, Articles, Subscribers],
+  // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).
+  // Public on purpose: no login, no access to the collection itself.
+  endpoints: [
+    { path: '/newsletter/subscribe', method: 'post', handler: subscribeHandler },
+    { path: '/newsletter/confirm', method: 'post', handler: confirmHandler },
+    { path: '/newsletter/unsubscribe', method: 'post', handler: unsubscribeHandler },
+  ],
   // Jobs queue, used by scheduled publishing (Articles → "Schedule publish").
   // autoRun checks the queue every minute inside the CMS server process, which
   // is long-running on Railway. Payload only starts it in the web server

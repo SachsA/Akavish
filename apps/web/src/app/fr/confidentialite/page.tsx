@@ -27,7 +27,9 @@ export default function ConfidentialitePage() {
         partageons vos données à des fins publicitaires, nous ne constituons pas
         de profils de lecteurs et nous n’utilisons aucun cookie publicitaire. Si
         vous créez un compte, nous conservons votre adresse e-mail pour vous
-        permettre de vous reconnecter — rien de plus.
+        permettre de vous reconnecter. Si vous vous abonnez à la newsletter, nous
+        conservons votre adresse e-mail pour vous l’envoyer, jusqu’à votre
+        désinscription. Rien de plus.
       </p>
 
       <h2>Responsable du traitement</h2>
@@ -54,6 +56,17 @@ export default function ConfidentialitePage() {
         sont gérées par Clerk, qui conserve votre adresse e-mail ainsi que le nom
         et l’avatar que vous choisissez de fournir. À ce jour, un compte lecteur
         ne débloque rien d’autre que le fait d’être connecté.
+      </p>
+      <p>
+        <strong>Si vous vous abonnez à la newsletter.</strong> Nous enregistrons
+        votre adresse e-mail, la date de votre consentement, l’endroit du site où
+        vous vous êtes inscrit et la date de votre confirmation. Rien ne vous est
+        envoyé avant que vous ayez cliqué sur le lien de l’e-mail de
+        confirmation (double opt-in). L’adresse est stockée dans notre base de
+        données (Neon) et les e-mails partent via Resend. Elle ne sert qu’à la
+        newsletter : jamais vendue, partagée ni utilisée à des fins
+        publicitaires. Chaque newsletter contient un lien de désinscription, et
+        se désinscrire supprime votre adresse.
       </p>
       <p>
         <strong>Si vous nous écrivez.</strong> Les messages adressés à une adresse
@@ -95,8 +108,9 @@ export default function ConfidentialitePage() {
         Servir le site, le sécuriser et le maintenir en état de marche relève de
         notre intérêt légitime à faire fonctionner une publication. Votre compte
         existe parce que vous l’avez demandé : il s’agit de l’exécution d’un
-        contrat. Si nous devions un jour nous fonder sur votre consentement, nous
-        vous le demanderions clairement et vous pourriez le retirer.
+        contrat. La newsletter repose sur votre consentement, donné en cochant la
+        case du formulaire d’inscription ; vous pouvez le retirer à tout moment
+        avec le lien de désinscription ou en nous écrivant.
       </p>
 
       <h2>Durées de conservation</h2>
@@ -104,8 +118,11 @@ export default function ConfidentialitePage() {
         Les journaux serveur et les rapports d’erreur sont conservés sur une durée
         opérationnelle courte — Sentry conserve les événements 30 jours sur notre
         formule. Les données de compte vivent aussi longtemps que le compte :
-        supprimez-le et elles disparaissent. Les e-mails que vous nous adressez
-        sont conservés le temps utile à l’échange.
+        supprimez-le et elles disparaissent. Un abonnement à la newsletter est
+        conservé jusqu’à votre désinscription, qui le supprime aussitôt ; une
+        inscription jamais confirmée est supprimée au bout de 30 jours. Les
+        e-mails que vous nous adressez sont conservés le temps utile à
+        l’échange.
       </p>
 
       <h2>Vos droits</h2>

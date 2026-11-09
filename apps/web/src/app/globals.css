@@ -34,6 +34,7 @@
   --emerald-300: 110 231 183;
   --emerald-400: 52 211 153;
   --emerald-500: 16 185 129;
+  --danger: 248 113 113;
 }
 
 @media (prefers-color-scheme: light) {
@@ -54,6 +55,7 @@
     --emerald-300: 6 95 70;
     --emerald-400: 4 120 87;
     --emerald-500: 4 120 87;
+    --danger: 185 28 28;
   }
 }
 
@@ -74,6 +76,7 @@
   --emerald-300: 6 95 70;
   --emerald-400: 4 120 87;
   --emerald-500: 4 120 87;
+  --danger: 185 28 28;
 }
 
 html {

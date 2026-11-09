@@ -394,6 +394,13 @@ should land in your inbox and its link should open the reset form.
 > you a good-looking email with a dead link. Worth clicking once after any
 > domain change.
 
+> **Newsletter.** The same setup sends the newsletter confirmation emails
+> (`apps/cms/src/lib/newsletter.ts`), with links to `${WEB_URL}/newsletter/confirm`:
+> `WEB_URL` on Railway must be `https://akavish.gg`. Test once after deploying:
+> sign up in the site's footer with your own address, click the link, and check
+> the subscriber shows as *Confirmed* in `/admin` → Subscribers. Mind the free
+> tier (100 emails/day) once real issues go out.
+
 > Sends fail with a 4xx from Resend if `EMAIL_FROM_ADDRESS` isn't on a verified
 > domain — Payload surfaces it as an `APIError` in the CMS logs (§ "Where to read
 > production errors"). Until the domain is verified, Resend only accepts sends to

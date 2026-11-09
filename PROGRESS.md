@@ -188,7 +188,7 @@ actually tackle it, best value-for-effort first.
 without waiting (CMS tests in CI, Dependabot, previews, Docker, breadcrumbs,
 homepage `featured`, contributor docs, security cleanup — 2026-11-06; light
 theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07;
-mobile reading app — 2026-11-09).
+mobile reading app, newsletter sign-up — 2026-11-09).
 
 **Next session:** the **AI news scout** (🅿️ Parked below). Answer its four open
 questions first, then design it.
@@ -200,7 +200,7 @@ Everything else waits on something:
 | **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
 | **The app being shipped** | Push notifications · store release (EAS) · app store assets · universal links |
 | **Traffic** | Reader accounts (`/account`, Clerk → DB sync) · hosted Meilisearch |
-| **Content and readers** | Everything in **🅿️ Parked**: AI news scout, newsletter, analytics review, comments, Clerk production |
+| **Content and readers** | Everything in **🅿️ Parked**: AI news scout, sending the newsletter, analytics review, comments, Clerk production |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
 i18n (EN + FR) is its own project — §6.
@@ -238,7 +238,7 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 | Idea | Why it waits / what it depends on |
 | --- | --- |
 | **AI news scout** | A bot that watches the big news/leak sites and leaker accounts, drafts articles, and sends them for human approval before publishing. Ties together scheduled publishing and email. Open design questions (sources, copyright, X/Twitter API cost, AI-content disclosure) — see the discussion before building anything |
-| Newsletter | Capture emails and send a digest (Resend can do it). The one channel that brings readers back without Google or social. Needs a consent flow and a `/privacy` update |
+| Newsletter: the digest | Sign-ups are live since 2026-11-09 (see §1); what waits is **sending** issues: a digest template with the per-subscriber unsubscribe link (`unsubscribeUrl(id)` in `apps/cms/src/lib/newsletter.ts`) and a `List-Unsubscribe` header, sent to `status: confirmed` only. Resend's free tier is 100 emails/day, so a list past ~100 needs its paid plan or batched sends. The AI scout can feed it |
 | Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
 | Comments | Needs traffic, paid Clerk production keys, moderation and anti-spam (§5) |
 | Clerk production instance | Paid; only needed once reader accounts do something (§8) |
@@ -294,6 +294,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 | Pri | Item                         | Notes                                                                                       |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------- |
+| ✅  | Newsletter sign-up           | Done (2026-11-09). Form in the footer of every page and at the end of articles: email + unticked consent box + honeypot, `/api/newsletter` (5/min per IP) → CMS `/api/newsletter/subscribe`. **Double opt-in**: a confirmation email (`lib/emails/newsletter-confirm.ts`), nobody is subscribed until they click it (`/newsletter/confirm`). Same answer whether the address is new, pending or already in, so the form can't reveal who's subscribed; one confirmation email per address per 10 min. Unsubscribe (`/newsletter/unsubscribe`, asks for a click) **deletes** the row; unconfirmed sign-ups are deleted after 30 days. Confirm token stored hashed; unsubscribe links are HMAC-signed with `PAYLOAD_SECRET`. `subscribers` collection, editors can read, nobody can add. `/privacy` (EN + FR) and the processor list updated. Sending issues: 🅿️ Parked |
 | ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/WhatsApp + native share sheet + copy link), "Read next" suggestions and prev/next navigation |
 | P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
@@ -443,7 +444,7 @@ checklist it walks through.
 
 | Pri | Item                 | Notes                                                                  |
 | --- | -------------------- | ---------------------------------------------------------------------- |
-| ✅  | Unit tests           | vitest in `apps/web`, `apps/mobile` and `packages/api-client` (`pnpm test`), CMS integration + admin e2e tests, and Playwright on the public site (`apps/web/tests/e2e/`, desktop + mobile), all in CI |
+| ✅  | Unit tests           | vitest in `apps/web`, `apps/mobile` and `packages/api-client` (`pnpm test`), CMS integration (articles, newsletter) + admin e2e tests, and Playwright on the public site (`apps/web/tests/e2e/`, desktop + mobile), all in CI |
 | ✅  | API contract checks  | The shared mapper is unit-tested, and a test fails if the web and CMS category lists drift |
 | ✅  | Contributor docs     | Done (2026-11-06) — `CONTRIBUTING.md`: the loop, adding a field/collection (migration steps), adding a page (data, SEO, a11y rules), where the tests live, commits |
 | ✅  | Architecture diagram | Done (2026-11-06) — Mermaid diagram in the README ("How the pieces talk"): apps, hosts, every service, monitoring and backups |
@@ -477,6 +478,10 @@ checklist it walks through.
   checks). A few components still keep
   their own singular-label map (`ArticleCard`, the article page, `SearchResults`,
   the OG image) — migrate them when next touched.
+- **The theme-toggle e2e test is flaky on its first desktop run** (after a
+  reload, `data-theme` is sometimes missing); CI's retry passes it. Seen before
+  the newsletter and mobile work, cause not found yet. Don't mistake it for a
+  regression; do fix it if it starts failing retries too.
 - **Contrast on the dark theme:** small text on `zinc-950`/`zinc-900` must be
   `text-zinc-400` or lighter. `zinc-500` (4.1:1) only passes for large bold text
   (the Wordmark's "ish"); `zinc-600` (2.6:1) never does. White text on green
