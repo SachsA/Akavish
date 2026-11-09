@@ -113,8 +113,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Status / roadmap:** single source of truth is **`PROGRESS.md`**. Deployment
   runbook is **`DEPLOYMENT.md`**.
 - **Media:** uploads go to Cloudflare R2 via `@payloadcms/storage-s3` (the CMS
-  host's disk is ephemeral). Set `R2_*` on the CMS; unset `R2_BUCKET` falls back
-  to local disk. See `DEPLOYMENT.md` §4b.
+  host's disk is ephemeral), served from `media.akavish.gg`. Set `R2_*` on the
+  CMS; unset `R2_BUCKET` falls back to local disk. `alwaysInsertFields: true`
+  keeps the media schema identical with or without R2: a migration generated
+  without it once broke prod's media API. See `DEPLOYMENT.md` §4b and §5.
 - **Email:** two separate things — the CMS **sends** via Resend
   (`@payloadcms/email-resend`, `RESEND_API_KEY` unset → console fallback,
   `DEPLOYMENT.md` §4c); Cloudflare Email Routing only **receives**

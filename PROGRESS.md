@@ -209,7 +209,7 @@ i18n (EN + FR) is its own project — §6.
 
 | Status | Item            | Notes                                                                                                                                            |
 | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ✅     | **Media on R2** | Live — uploads go to Cloudflare R2 and are served from `*.r2.dev`; images now survive Railway redeploys. Setup documented in `DEPLOYMENT.md` §4b. |
+| ✅     | **Media on R2** | Live — uploads go to Cloudflare R2 and are served from `media.akavish.gg` (custom domain, cached by Cloudflare); images now survive Railway redeploys. Setup documented in `DEPLOYMENT.md` §4b. |
 
 ---
 
@@ -421,7 +421,7 @@ checklist it walks through.
 | Pri | Item                  | Notes                                                                                                                                              |
 | --- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ✅  | Custom domains + DNS      | Done — `akavish.gg` (web) + `cms.akavish.gg` (CMS) on Cloudflare DNS, prod URLs wired, `www` 308s to the apex, Email Routing forwarding          |
-| ✅  | CDN / caching             | Done (2026-11-07) — public API responses cached by Vercel's CDN (`s-maxage=60`, stale-while-revalidate). Optional: media on `media.akavish.gg` instead of `r2.dev` (`DEPLOYMENT.md` §4e) |
+| ✅  | CDN / caching             | Done (2026-11-07) — public API responses cached by Vercel's CDN (`s-maxage=60`, stale-while-revalidate). Media served from `media.akavish.gg`, cached by Cloudflare (2026-11-09, `DEPLOYMENT.md` §4e) |
 | P2  | Mobile release            | Expo EAS build + store submission                                                                                                                  |
 | P3  | Staging environment       | Mirror of prod for QA                                                                                                                              |
 
@@ -431,7 +431,7 @@ checklist it walks through.
 | --- | ------------------ | ---------------------------------------------------------------------- |
 | ✅  | Error monitoring   | Sentry on web (client + server + edge, tunnelled through `/monitoring`) and CMS (server only). Errors + performance tracing, sampled to fit the free tier. Session Replay off on privacy grounds. Source maps upload confirmed 2026-11-06 (readable stack traces) |
 | ✅  | Secrets management | Prod secrets live only in Railway / Vercel / GitHub secrets, never in committed files; rotation runbook in `DEPLOYMENT.md` §8 |
-| ✅  | Rate limiting      | Done (2026-11-07) — per-IP limits on `/api/search` (30/min) and `/api/articles*` (120/min), 429 + Retry-After; in-memory, so approximate on Vercel. Firewall rule as the upgrade (`DEPLOYMENT.md` §4e) |
+| ✅  | Rate limiting      | Done (2026-11-07) — per-IP limits on `/api/search` (30/min) and `/api/articles*` (120/min), 429 + Retry-After; in-memory, so approximate on Vercel; a Vercel Firewall rule (30/min on `/api/search`, 429) counts across instances since 2026-11-09 (`DEPLOYMENT.md` §4e) |
 | ✅  | Uptime monitoring  | UptimeRobot probes on web + CMS/DB, email alerts (`DEPLOYMENT.md` §4d) |
 | ✅  | Legal pages        | Done — `/privacy`, `/terms`, `/legal` in EN + FR (roadmap #8)          |
 | ✅  | Cookie consent     | Not needed: cookieless analytics, only strictly necessary Clerk cookies — explained in `/privacy` |
@@ -463,6 +463,11 @@ checklist it walks through.
 - The CMS schema is managed by **versioned migrations** (`push: false`). Change a
   collection → `pnpm migrate:create <name>` + `pnpm migrate`, commit; Railway's
   pre-deploy applies them to prod. See `DEPLOYMENT.md` §5.
+- **A plugin's schema must not depend on an env var.** The R2 storage plugin
+  only added `prefix` / `_objectKey` to `media` when `R2_BUCKET` was set, so the
+  Payload 3.93 migration, generated locally without R2, missed them and prod's
+  `/api/media` answered 500 until 2026-11-09 (fix: `alwaysInsertFields: true` +
+  migration `storage_object_key`). Check any new plugin for the same trap.
 - **Categories have one source: `apps/web/src/lib/categories.ts`.** Slug (`leaks`),
   CMS value (`leak`) and labels live there; it must match the `category` select
   options in `apps/cms/src/collections/Articles.ts`. A few components still keep

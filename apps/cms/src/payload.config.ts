@@ -83,6 +83,11 @@ export default buildConfig({
     // so a fresh clone still works with local storage.
     s3Storage({
       enabled: Boolean(process.env.R2_BUCKET),
+      // Keep the plugin's fields (e.g. `_objectKey`) in the schema even when
+      // R2 is off locally. Without it, the schema depends on R2_BUCKET: a
+      // migration generated on a laptop missed `_objectkey` and the media API
+      // broke in production (Payload 3.93, Nov 2026). Default in Payload v4.
+      alwaysInsertFields: true,
       collections: {
         media: {
           // Serve files straight from the public R2 domain rather than proxying

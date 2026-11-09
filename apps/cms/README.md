@@ -115,8 +115,9 @@ files disappear on every redeploy.
 - `R2_ENDPOINT` is the S3 API endpoint — used for **uploads only**, never to
   serve files.
 
-Set the same `R2_*` values in dev and prod so the media collection's schema stays
-identical across environments. Full setup (bucket, public URL, API token) in
+The media schema is the same with or without R2 (`alwaysInsertFields: true` in
+`payload.config.ts`), so a migration generated on a laptop without R2 matches
+prod. Before that flag, one didn't, and prod's media API broke (`DEPLOYMENT.md` §5). Full setup (bucket, public URL, API token) in
 [`DEPLOYMENT.md`](../../DEPLOYMENT.md) §4b.
 
 ## Transactional email (Resend)

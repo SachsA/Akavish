@@ -307,9 +307,10 @@ is unset**, so a fresh clone still runs on local disk.
 
 1. Cloudflare dashboard → **R2** → **Create bucket** (e.g. `akavish-media`).
 2. **Make the files publicly readable** — R2 buckets are private by default:
-   bucket → **Settings** → either enable the **r2.dev subdomain** (quick, gives
-   `https://<hash>.r2.dev`) or connect a **custom domain** (e.g.
-   `media.akavish.gg`). This public URL is what serves the images.
+   bucket → **Settings → Custom Domains → Connect** `media.akavish.gg` (what
+   prod uses: cached by Cloudflare). The **r2.dev subdomain** also works for a
+   quick test, but Cloudflare rate-limits it and doesn't cache it. This public
+   URL is what serves the images.
 3. **R2 → Manage API tokens** → create a token with **Object Read & Write** scoped
    to that bucket. Note the **Access Key ID**, **Secret Access Key**, and the
    **S3 API endpoint** (`https://<accountId>.r2.cloudflarestorage.com`).
@@ -323,13 +324,13 @@ R2_BUCKET=akavish-media
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 R2_ENDPOINT=https://<accountId>.r2.cloudflarestorage.com   # uploads only
-R2_PUBLIC_URL=https://<hash>.r2.dev                        # serves the files
+R2_PUBLIC_URL=https://media.akavish.gg                     # serves the files
 ```
 
 On the **web** (Vercel), so `next/image` is allowed to load from that host:
 
 ```bash
-NEXT_PUBLIC_R2_PUBLIC_URL=https://<hash>.r2.dev
+NEXT_PUBLIC_R2_PUBLIC_URL=https://media.akavish.gg
 ```
 
 Redeploy both. New uploads now land in R2 and survive redeploys.
@@ -502,21 +503,22 @@ dashboard settings for when traffic justifies them.
 requests/minute on `/api/search` and 120 on `/api/articles*`, then a **429**
 with `Retry-After`. The counter lives in each server instance's memory, so on
 Vercel it's approximate; it stops one client hammering search, which is the
-realistic case today. *Upgrade:* Vercel → project → **Firewall → Rules → Add
-Rule → Rate limit** on path `/api/search` (counts across instances), or a
-shared store (Upstash Redis) behind the same helper.
+realistic case today. On top of it, a **Vercel Firewall rule** counts across
+instances (in place since 2026-11-09): Vercel → project → **Firewall → Rules**
+→ rate limit on path `/api/search`, fixed window, 60 s, 30 requests, key IP,
+action **429** (not 403: a 429 tells clients to slow down and retry). Further
+upgrade if ever needed: a shared store (Upstash Redis) behind the same helper.
 
 **Caching:** the API routes answer with `Cache-Control: public, s-maxage=60,
 stale-while-revalidate=300`, so Vercel's CDN serves repeat requests (same
 search, same article) without calling the function or the CMS; errors and
 429s are `no-store`. Pages keep their ISR settings (articles and lists 30 s,
-sitemap and RSS 5 min). *Upgrade (media):* serve uploads from
-`media.akavish.gg` instead of `*.r2.dev` (which Cloudflare rate-limits and
-doesn't cache): Cloudflare → R2 → the media bucket → **Settings → Custom
-Domains → Connect** `media.akavish.gg`, then set `R2_PUBLIC_URL` (Railway) and
-`NEXT_PUBLIC_R2_PUBLIC_URL` (Vercel) to `https://media.akavish.gg` and
-redeploy both. Existing images switch too: their URL is built from that
-variable at read time. `next.config.ts` already allows the domain.
+sitemap and RSS 5 min). **Media** is served from `media.akavish.gg` (since
+2026-11-09), the R2 bucket's custom domain, which Cloudflare caches; `*.r2.dev`
+would be rate-limited and uncached. `R2_PUBLIC_URL` (Railway) and
+`NEXT_PUBLIC_R2_PUBLIC_URL` (Vercel, type *Config*: a `NEXT_PUBLIC_` variable
+can't be *Sensitive*, so recreate it rather than edit it) both point there.
+Existing images followed: their URL is built from that variable at read time.
 
 **Structured logs:** one JSON object per line on both apps, so fields are
 searchable. Web (`lib/log.ts`): CMS errors and timeouts, search falling back
@@ -597,6 +599,15 @@ commands are `pnpm migrate:fresh` and `pnpm reset:db`, which you run deliberatel
 Useful commands: `pnpm migrate:status` (what's applied), `pnpm migrate:fresh`
 (drop everything and re-run all migrations — destructive, for a clean rebuild).
 
+**Plugins add columns too.** A migration is generated from the schema *as your
+machine sees it*. The R2 storage plugin used to add its fields (`prefix`,
+`_objectKey` on `media`) only when `R2_BUCKET` was set, so a migration generated
+without R2 missed them and prod's media API answered 500 (`column "_objectkey"
+does not exist`) from the Payload 3.93 upgrade until 2026-11-09.
+`alwaysInsertFields: true` in `payload.config.ts` now keeps the schema the same
+with or without R2. Same rule for any future plugin: its schema must not depend
+on an env var, or the migration will differ between machines.
+
 ---
 
 ## 6. Domains & DNS
@@ -608,7 +619,7 @@ nameservers point to Cloudflare). Target layout:
 | ---------------------- | ------------- | -------------------------- |
 | `akavish.gg` (+ `www`) | Vercel        | Public site                |
 | `cms.akavish.gg`       | Railway       | CMS admin + API            |
-| `media.akavish.gg`     | Cloudflare R2 | Media CDN (optional, later) |
+| `media.akavish.gg`     | Cloudflare R2 | Media CDN (R2 custom domain) |
 
 > **Proxy status.** Vercel records are **DNS only** (grey cloud) — Vercel
 > terminates its own TLS and runs its own CDN, and stacking Cloudflare's proxy in
@@ -846,7 +857,7 @@ recover from a mistake noticed days later.
 
 1. **A separate, private bucket.** Cloudflare → R2 → **Create bucket** →
    `akavish-backups`. Do **not** enable public access, and never reuse the media
-   bucket: it's public (`r2.dev`), so a dump there would publish the database.
+   bucket: it's public (`media.akavish.gg`), so a dump there would publish the database.
 2. **Retention.** In that bucket → **Settings → Object lifecycle rules** → delete
    objects under prefix `db/` after **30 days**. Without it dumps pile up forever.
 3. **A dedicated R2 token.** R2 → Manage API tokens → *Object Read & Write*,
@@ -1065,7 +1076,7 @@ Two things that differ from the platforms:
 | `R2_ACCESS_KEY_ID`    | `…`                              | R2 API token                        |
 | `R2_SECRET_ACCESS_KEY`| `…`                              | R2 API token                        |
 | `R2_ENDPOINT`         | `https://<accountId>.r2.cloudflarestorage.com` | Uploads only          |
-| `R2_PUBLIC_URL`       | `https://<hash>.r2.dev`          | Serves the files                    |
+| `R2_PUBLIC_URL`       | `https://media.akavish.gg`       | Serves the files                    |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | — | **Local `.env` only**, never on Railway: `pnpm seed` refuses non-localhost databases |
 | `SENTRY_DSN`          | `https://…ingest.sentry.io/…`    | Unset → Sentry off (§4d). Not `NEXT_PUBLIC_` |
 | `SENTRY_ENVIRONMENT`  | `production`                     | Optional, defaults to `NODE_ENV`    |
