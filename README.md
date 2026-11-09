@@ -307,9 +307,13 @@ that must match React Native, so they move together through an Expo SDK upgrade
 (`npx expo install --fix`), not one bump at a time.
 
 A Dependabot run that fails with `ERR_PNPM_NO_MATURE_MATCHING_VERSION` isn't
-our bug: a package in the lockfile is younger than Dependabot's release-age
-window (it happened with Expo 58.0.23 two days after its release). It clears
-itself on a later run once that version is old enough.
+our bug: Dependabot only takes versions at least 3 days old, and a package in
+the lockfile is younger than that (Expo 58.0.23 once, two days after its
+release). A one-off clears itself on a later run. If it's a package that
+publishes every week (it was `caniuse-lite` on 2026-11-09, which blocked every
+npm update that run), it would keep coming back: list it under
+`minimumReleaseAgeExclude` in `pnpm-workspace.yaml`, only for data-only
+packages like that one.
 
 **Security alerts** (GitHub → Security → Dependabot) are separate from the weekly
 PRs. A direct dependency gets fixed by bumping it; a vulnerable *transitive*

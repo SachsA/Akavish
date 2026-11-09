@@ -10,6 +10,16 @@ onlyBuiltDependencies:
   - esbuild
   - unrs-resolver
 
+# Dependabot only proposes versions at least 3 days old (it runs pnpm with
+# minimum-release-age=4320) and applies that to the whole lockfile it rebuilds.
+# These two browser-data packages, pulled in by Next, publish nearly every
+# week, so a fresh release blocked *every* npm update on 2026-11-09
+# (ERR_PNPM_NO_MATURE_MATCHING_VERSION on caniuse-lite). They're data tables,
+# not code, so taking them fresh is safe. Add a package here only on that basis.
+minimumReleaseAgeExclude:
+  - caniuse-lite
+  - baseline-browser-mapping
+
 # Security pins for vulnerable *transitive* dependencies (2026-11-06 audit of
 # GitHub's Dependabot alerts). Each one stays inside the major version its
 # parents expect (^x.y.z) — never a blanket ">=" that could jump a major.
