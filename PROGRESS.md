@@ -260,7 +260,7 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 | 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
 | 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps, weekly report on Saturdays + `/api/scout/report` (2026-11-10) |
 | 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings |
-| 3. Leakers + style | Later | X accounts (pay-per-use API), learning from published / rejected drafts |
+| 3. Leakers + style | Later | X accounts (pay-per-use API), learning from published / rejected drafts, tags picked by the model from the existing ones (drafts have none for now: add them in /admin before publishing) |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
 | 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |
 

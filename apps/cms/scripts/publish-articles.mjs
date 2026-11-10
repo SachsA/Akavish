@@ -35,6 +35,7 @@
  *   cover: gta-vice-city.jpg
  *   coverAlt: …
  *   aiAssisted: true
+ *   tags: Rockstar Games, PS5       # created if new, matched by name
  *   publishAt: now                  # now | an ISO date (scheduled) | draft
  *   ---
  *   Body: paragraphs, ## / ### headings (both become h2), "- " lists,
@@ -227,6 +228,16 @@ async function main() {
   const author = await findOne('authors', 'slug', 'akavish')
   if (!author) throw new Error('Author "akavish" not found.')
   const games = {}
+  const tagIds = {}
+  async function tag(name) {
+    if (tagIds[name]) return tagIds[name]
+    const found = await findOne('tags', 'name', name)
+    if (found) return (tagIds[name] = found.id)
+    if (dry) return `(create tag ${name})`
+    const res = await call('/tags', { method: 'POST', body: JSON.stringify({ name }) })
+    console.log(`tag    ${name}: created (${res.doc.id})`)
+    return (tagIds[name] = res.doc.id)
+  }
 
   for (const { meta, body } of blocks) {
     if (meta.type === 'game') {
@@ -269,6 +280,15 @@ async function main() {
       coverImage: await media(meta.cover, meta.coverAlt),
       aiAssisted: meta.aiAssisted === 'true',
       seo: { title: meta.title, description: meta.seo },
+      tags: meta.tags
+        ? await Promise.all(
+            meta.tags
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+              .map(tag),
+          )
+        : undefined,
     }
     const existing = await findOne('articles', 'slug', meta.slug)
     const live = existing?.status === 'published'

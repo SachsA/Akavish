@@ -26,7 +26,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, tags, SEO. Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
 | `games`    | Game metadata articles can be tagged to.                                                                                                           |
-| `tags`     | Free-form taxonomy.                                                                                                                                |
+| `tags`     | Cross-cutting topics, 2 to 5 per article: publisher or studio (Rockstar Games, Riot Games), platform (PS5, Switch 2), event (Worlds 2026, CS2 Major) or theme (Release dates, Trailers, Earnings). Not the game (that's `game`) nor the type (that's `category`). Each tag has its public page `/tag/<slug>`, linked from the article (#chips) and listed in the sitemap once it has a published article. |
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). Password resets go out via Resend — see below.                             |
 | `subscribers` | Newsletter sign-ups (double opt-in). Editors can read them; nobody can add one by hand. See "Newsletter" below. |
@@ -91,7 +91,8 @@ node apps/cms/scripts/publish-articles.mjs import-images/articles.md --images im
 It logs in with `CMS_EMAIL` / `CMS_PASSWORD` from the environment or from
 `.cms-import` at the repo root (gitignored), against `CMS_URL`
 (default `https://cms.akavish.gg`): use a dedicated editor account. The file
-format (front matter per game or article, Markdown body with `##` headings,
+format (front matter per game or article, `tags:` as a comma list matched by
+name and created if new, Markdown body with `##` headings,
 `- ` lists, `**bold**` and links) is documented at the top of the script.
 Re-running is safe: games and media are reused, articles updated in place;
 to fix one article, re-run with `--only <slug>`.
