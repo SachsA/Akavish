@@ -92,7 +92,8 @@ It logs in with `CMS_EMAIL` / `CMS_PASSWORD` from the environment or from
 (default `https://cms.akavish.gg`): use a dedicated editor account. The file
 format (front matter per game or article, Markdown body with `##` headings,
 `- ` lists, `**bold**` and links) is documented at the top of the script.
-Re-running is safe: games and media are reused, articles updated in place.
+Re-running is safe: games and media are reused, articles updated in place;
+to fix one article, re-run with `--only <slug>`.
 `import-images/` (the images and the Markdown) is gitignored.
 
 ### Picking the homepage lead story (`featured`)

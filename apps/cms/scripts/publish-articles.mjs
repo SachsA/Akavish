@@ -4,7 +4,7 @@
  * its REST API, with their cover images and games. No dependencies: plain
  * Node ≥ 20 (fetch, FormData, fs.openAsBlob).
  *
- *   node apps/cms/scripts/publish-articles.mjs <articles.md> [--images <dir>] [--dry]
+ *   node apps/cms/scripts/publish-articles.mjs <articles.md> [--images <dir>] [--only <slug,slug>] [--dry]
  *
  * Login: CMS_EMAIL / CMS_PASSWORD from the environment or from `.cms-import`
  * at the repo root (gitignored, never printed). CMS_URL defaults to
@@ -41,7 +41,9 @@
  *   **bold** and [links](https://…).
  *
  * Re-running is safe: games and media are reused by slug / alt text, and
- * articles are updated in place (a published one stays published).
+ * articles are updated in place (a published one stays published). A
+ * scheduled article gets its publish queued again on each run (harmless, it
+ * publishes once), so to fix one piece pass --only <its slug>.
  */
 import { existsSync, openAsBlob, readFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -157,10 +159,19 @@ function credentials() {
 
 async function main() {
   const args = process.argv.slice(2)
-  const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--images')
+  const file = args.find(
+    (a, i) => !a.startsWith('--') && args[i - 1] !== '--images' && args[i - 1] !== '--only',
+  )
   const imagesDir = args.includes('--images') ? args[args.indexOf('--images') + 1] : null
   const dry = args.includes('--dry')
-  if (!file) throw new Error('Usage: publish-articles.mjs <articles.md> [--images <dir>] [--dry]')
+  // --only a,b: touch just these articles (an edit to one piece doesn't
+  // re-queue the scheduled publishes of all the others).
+  const only = args.includes('--only') ? new Set(args[args.indexOf('--only') + 1].split(',')) : null
+  if (!file) {
+    throw new Error(
+      'Usage: publish-articles.mjs <articles.md> [--images <dir>] [--only <slug,slug>] [--dry]',
+    )
+  }
   const blocks = parseFile(readFileSync(file, 'utf8'))
   const { email, password, url } = credentials()
   const api = `${url.replace(/\/+$/, '')}/api`
@@ -244,7 +255,7 @@ async function main() {
       continue
     }
 
-    if (meta.type !== 'article') continue
+    if (meta.type !== 'article' || (only && !only.has(meta.slug))) continue
     const data = {
       title: meta.title,
       slug: meta.slug,
