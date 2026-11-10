@@ -1148,8 +1148,9 @@ call. Mute a feed: untick *active* on it. Logs: Railway, lines starting with
 **Feeds that refuse the scout.** It always says who it is
 (`AkavishScout/1.0 (+https://akavish.gg)`). A feed that answers 403 shows it in
 its status: untick it, and never switch to a browser User-Agent to get through.
-Check the statuses after the first day in production: the dev sandbox got 403s
-that curl, with the same User-Agent, didn't, so only production tells.
+The dev sandbox got 403s that curl, with the same User-Agent, didn't, so only
+production tells: on 2026-11-10 all 38 were `ok` or `not modified` in
+production. Re-check when you add a feed.
 
 ---
 

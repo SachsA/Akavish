@@ -191,9 +191,9 @@ theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07;
 mobile reading app, newsletter sign-up — 2026-11-09).
 
 **In progress: the AI news scout** (section below). Steps 1 (observation) and
-2 (drafts + Discord buttons) are built. Automatic drafts stay **off** until the
-weekend review of the digests (Nov 14-15), so they're ready for GTA VI on
-Thursday Nov 19.
+2 (drafts + Discord buttons) are live in production since 2026-11-10, bot set
+up. Automatic drafts stay **off** until the weekend review of the digests
+(Nov 14-15), so they're ready for GTA VI on Thursday Nov 19.
 
 Everything else waits on something:
 
@@ -252,18 +252,26 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 
 | Step | Status | What |
 | --- | --- | --- |
-| 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook |
-| 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds, grouping + score (Haiku), digests at 8 am / 8 pm, budget caps |
-| 2. Drafts + validation | ✅ built 2026-11-10, **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings |
+| 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
+| 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps |
+| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings |
 | 3. Leakers + style | Later | X accounts (pay-per-use API), learning from published / rejected drafts |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
 | 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |
 
-**Timeline to GTA VI (Thu Nov 19):** Nov 10-14 digests only (observation cut
-to 4-5 days) · Nov 11 check the feed statuses in prod · the bot is set up
-meanwhile and tested by hand with the "Rédiger…" menu (one draft at a time) ·
-Nov 14-15 review: tune the threshold, then tick `draftsEnabled` · Nov 16-18
-running-in with automatic drafts · Nov 19 ready.
+**Timeline to GTA VI (Thu Nov 19):**
+
+- ✅ Nov 10: step 1 and step 2 live, bot set up, default author *Akavish*,
+  feed statuses checked (all fine).
+- Nov 10, 8 pm: first digest sent by the bot. Test the whole chain by hand
+  with its "Rédiger…" menu: one draft, one *Modifier* (V2 as a reply), then
+  *Rejeter*. Nothing is published.
+- Nov 11-14: digests only (observation cut to 4-5 days). Note the stories that
+  should have scored higher or lower. Before the review, test *Publier* once
+  on a real story and check the article and its AI note on akavish.gg.
+- Nov 14-15: review. Tune the threshold, then tick `draftsEnabled`.
+- Nov 16-18: running-in with automatic drafts.
+- Nov 19: ready.
 
 **AI transparency:** articles drafted by the scout carry `aiAssisted`, which
 shows a one-line note under the article (web and app); `/terms` and
