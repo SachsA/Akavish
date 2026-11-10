@@ -211,7 +211,7 @@ i18n (EN + FR) is its own project — §6.
 > articles from October 2026 until the launch batch: 11 AI-assisted articles
 > (4 on GTA VI, plus Worlds, Valorant, the CS2 Major, PS Plus, the releases
 > left in 2026, the 2026 review and 2027), posted with
-> `apps/cms/scripts/publish-articles.mjs` and scheduled from Nov 10 to Nov 18
+> `apps/cms/scripts/publish-articles.mjs` on Nov 10: 3 live, 8 scheduled until Nov 17
 > so the site isn't empty for GTA VI. Drafts and sources:
 > [Akavish : articles de lancement](https://claude.ai/artifact/7xqDrjALBdwL33reFUC6jf).
 > After that, the AI scout keeps the rhythm.
