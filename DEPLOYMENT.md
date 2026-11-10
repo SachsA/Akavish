@@ -227,9 +227,9 @@ commands and env vars.
    `NEXT_PUBLIC_APP_URL`, and search keys if used. See the reference below.
 4. Deploy. Vercel gives you a `*.vercel.app` URL; add your domain in §6.
 
-> Clerk keys: **production** (`pk_live_…` / `sk_live_…`) is the end state, but a
-> development instance does work on a custom domain and Akavish deliberately
-> still runs on `pk_test_…` — see §6.5 for the reasoning and the switch steps.
+> Clerk keys: **production** (`pk_live_…` / `sk_live_…`) on the Production scope,
+> development (`pk_test_…`) on Preview, since live keys only work on the real
+> domain. The switch to production is in progress since 2026-11-10 — §6.5.
 
 **Preview deploys.** Vercel builds every branch and pull request on its own and
 posts the link on the PR ("Vercel Preview Comments"); confirmed on 2026-11-06
@@ -682,19 +682,41 @@ nameservers point to Cloudflare). Target layout:
 Env changes only apply to a new build — **redeploy Vercel and Railway** after
 saving. This is what makes canonical URLs, the sitemap, OG tags and CORS correct.
 
-### 6.5 Clerk — staying on the development instance (current choice)
+### 6.5 Clerk — production instance
 
-The site currently runs with Clerk **development** keys (`pk_test_…`), on purpose:
-creating a production instance was gated behind a paid plan, and reader accounts
-aren't used for anything yet (no comments, no favourites). Development instances
-do work on a custom domain, with caveats — a "development mode" banner, lower
-limits, and sessions not meant for real users.
+**Status: switch in progress since 2026-11-10** (paid plan taken, instance being
+set up). Until the Vercel keys are swapped, the site keeps running on the
+development instance (`pk_test_…`), which works but shows a "development mode"
+banner and isn't meant for real users.
 
-Move to a production instance when readers actually need accounts:
+1. **Create the instance.** Clerk dashboard → *Go to production* → Application
+   domain: **`akavish.gg`** (the apex, no `www`: `www` 308s to it). Clerk then
+   serves its Frontend API from `clerk.akavish.gg` and the account pages from
+   `accounts.akavish.gg`.
+2. **DNS.** Clerk → *Configure → Domains* lists the records (about five CNAMEs:
+   `clerk`, `accounts`, `clkmail`, `clk._domainkey`, `clk2._domainkey`). Add each
+   in Cloudflare → DNS **with the proxy off** (grey cloud, *DNS only*): Clerk
+   issues its own certificates and fails behind Cloudflare's proxy. Then
+   *Verify configuration* in Clerk; the SSL certificates can take from a few
+   minutes to a few hours.
+3. **Settings.** A production instance starts from the development settings,
+   except social logins: each provider (Google, Discord…) needs its own OAuth
+   client ID and secret in production. Check *User & authentication* (email
+   and/or password, sign-up allowed) and *Paths* (`/sign-in`, `/sign-up`, also
+   set by `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `_UP_URL`).
+4. **Keys on Vercel.** Clerk → *API Keys* of the **production** instance →
+   Vercel → Project → Settings → Environment Variables:
+   `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` = `pk_live_…` and `CLERK_SECRET_KEY` =
+   `sk_live_…`, **Production scope only**. Keep the `pk_test_…` / `sk_test_…`
+   pair on *Preview* and *Development*: live keys only work on `akavish.gg`, so
+   preview deploys on `*.vercel.app` would break with them.
+5. **Redeploy** production (the publishable key is baked in at build time) and
+   check: the banner is gone, sign-up sends the code email from Clerk, sign-in
+   and sign-out work, the page source loads `clerk.akavish.gg`.
 
-1. Clerk dashboard → **Create production instance**.
-2. Add the DNS records Clerk provides (CNAMEs like `clerk.akavish.gg`) in Cloudflare.
-3. Replace the keys on Vercel with `pk_live_…` / `sk_live_…`, redeploy.
+Users created on the development instance are not carried over (they were
+tests). Nothing else in the code changes: the CMS doesn't use Clerk, and the
+mobile app has no reader accounts yet.
 
 ### 6.6 Email on the domain (free, via Cloudflare)
 
@@ -745,9 +767,8 @@ domain change:
 - [ ] Both UptimeRobot monitors green (§4d).
 - [ ] Published a test article → it appears on `https://akavish.gg`.
 - [ ] `https://akavish.gg/sitemap.xml` and `/robots.txt` return prod URLs.
-- [ ] Sign-up/login works on the live domain. Clerk currently runs on
-      **development** keys by choice (§6.5) — switch to `pk_live_…` when reader
-      accounts start to matter.
+- [ ] Sign-up/login works on the live domain with the Clerk **production**
+      keys (`pk_live_…`, §6.5): no "development mode" banner.
 - [ ] CORS: the CMS `WEB_URL` matches the live web origin (else the browser
       blocks client calls — server-side fetches are unaffected).
 - [ ] Search backfilled (if enabled) and the header search returns results.
@@ -1167,8 +1188,8 @@ production. Re-check when you add a feed.
 | `CMS_URL`                           | `https://cms.akavish.gg`  | Server-side fetch target  |
 | `NEXT_PUBLIC_SITE_URL`              | `https://akavish.gg`      | Canonical/SEO base        |
 | `NEXT_PUBLIC_APP_URL`               | `https://akavish.gg`      |                           |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_…` / `pk_live_…` | Currently the dev key — §6.5 |
-| `CLERK_SECRET_KEY`                  | `sk_test_…` / `sk_live_…` | Currently the dev key — §6.5 |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_live_…` / `pk_test_…` | Live on Production, test on Preview — §6.5 |
+| `CLERK_SECRET_KEY`                  | `sk_live_…` / `sk_test_…` | Live on Production, test on Preview — §6.5 |
 | `MEILISEARCH_HOST`                  | `https://…meilisearch.io` | Optional                  |
 | `MEILISEARCH_SEARCH_KEY`            | `…`                       | Optional, search-only key |
 | `NEXT_PUBLIC_SENTRY_DSN`            | `https://…ingest.sentry.io/…` | Unset → Sentry off (§4d) |
