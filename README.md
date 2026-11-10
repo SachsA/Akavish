@@ -54,8 +54,8 @@ frontend: its server components fetch published articles from the CMS via
 sign-ups go from the web's `/api/newsletter` to the CMS, which stores them and
 sends the confirmation email through Resend (`apps/cms/README.md` →
 Newsletter). The **AI scout** runs inside the CMS too: it reads games news
-feeds, groups and scores stories with Claude, and reports to a private Discord
-channel (`apps/cms/README.md` → AI scout). Reader auth
+feeds, groups and scores stories with Claude, drafts the best ones, and asks
+for a Publish / Edit / Reject click in a private Discord channel (`apps/cms/README.md` → AI scout). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately.
 
@@ -79,8 +79,9 @@ flowchart LR
   cms --> db[(Postgres · Neon)]
   cms -->|uploads| media[(R2 · media, public)]
   cms -->|password resets, newsletter confirmations| resend[Resend]
-  cms -->|AI scout: triage| claude[Claude API]
-  cms -->|AI scout: digests| discord[Discord · private channel]
+  cms -->|AI scout: triage, drafts| claude[Claude API]
+  cms -->|AI scout: digests, drafts| discord[Discord · private channel]
+  discord -->|Publish / Edit / Reject| cms
   web -. errors .-> sentry[Sentry]
   cms -. errors .-> sentry
 

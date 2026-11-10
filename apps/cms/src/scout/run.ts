@@ -1,7 +1,7 @@
 // ─── One scout run ───────────────────────────────────────────────────────────
 // Called every 5 minutes by the `scoutTick` job (payload.config.ts), or by
-// hand with `pnpm scout:run`. Order: collect → triage → digest if due →
-// housekeeping. Each step logs a JSON line; an error in one step is logged and
+// hand with `pnpm scout:run`. Order: collect → triage → drafts (step 2, when
+// switched on) → digest if due → housekeeping. Each step logs a JSON line; an error in one step is logged and
 // doesn't stop the others.
 
 import type { Payload } from 'payload'
@@ -9,6 +9,7 @@ import { collect, ensureSources } from './collect'
 import { scoutConfig, type ScoutConfig } from './config'
 import type { ScoutContext, SettingsDoc } from './context'
 import { maybeSendDigest } from './digest'
+import { autoDraft } from './draft'
 import { postToDiscord, type DiscordMessage } from './discord'
 import { purgeOld } from './retention'
 import { triage } from './triage'
@@ -35,13 +36,13 @@ export interface RunReport {
     skipped: number
     skippedReason?: string
   }
+  drafted?: number
   digest?: string | null
 }
 
-export async function runScout(payload: Payload, opts: RunOptions = {}): Promise<RunReport> {
+/** The run context: real network and clock unless the caller (a test) passes its own. */
+export function makeContext(payload: Payload, opts: RunOptions = {}): ScoutContext {
   const config = opts.config ?? scoutConfig()
-  if (!config.enabled && !opts.force) return { ran: false, reason: 'SCOUT_ENABLED is not true' }
-
   const notify =
     opts.notify ??
     (async (message: DiscordMessage) => {
@@ -51,13 +52,13 @@ export async function runScout(payload: Payload, opts: RunOptions = {}): Promise
       }
       await postToDiscord(config.discordWebhook, message)
     })
-  const ctx: ScoutContext = {
-    payload,
-    config,
-    now: opts.now ?? new Date(),
-    fetch: opts.fetch ?? fetch,
-    notify,
-  }
+  return { payload, config, now: opts.now ?? new Date(), fetch: opts.fetch ?? fetch, notify }
+}
+
+export async function runScout(payload: Payload, opts: RunOptions = {}): Promise<RunReport> {
+  const ctx = makeContext(payload, opts)
+  const { config } = ctx
+  if (!config.enabled && !opts.force) return { ran: false, reason: 'SCOUT_ENABLED is not true' }
 
   const settings = (await payload.findGlobal({
     slug: 'scout-settings',
@@ -81,6 +82,7 @@ export async function runScout(payload: Payload, opts: RunOptions = {}): Promise
   await step('sources', () => ensureSources(ctx))
   report.collected = await step('collect', () => collect(ctx))
   report.triaged = await step('triage', () => triage(ctx, settings))
+  report.drafted = await step('drafts', () => autoDraft(ctx, settings))
   report.digest = (await step('digest', () => maybeSendDigest(ctx, settings, opts.digest))) ?? null
   await step('retention', () => purgeOld(ctx))
 

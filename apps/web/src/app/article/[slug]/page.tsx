@@ -74,11 +74,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function ArticlePage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
   let article
@@ -185,7 +181,7 @@ export default async function ArticlePage({
             )}
           </div>
         </div>
-  
+
         {article.coverImage && (
           <div className="relative aspect-video bg-zinc-800 rounded-lg overflow-hidden mb-8">
             <Image
@@ -199,11 +195,19 @@ export default async function ArticlePage({
             />
           </div>
         )}
-  
+
         <div className="prose-invert">
           <LexicalContent content={article.content} />
         </div>
-  
+
+        {article.aiAssisted && (
+          // Transparency about AI-assisted writing (EU AI Act art. 50, /terms).
+          <p className="mt-8 text-sm text-zinc-400 italic">
+            Drafted with the help of an AI tool from the sources cited above, then reviewed and
+            approved by the Akavish editors.
+          </p>
+        )}
+
         {article.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-10 pt-6 border-t border-zinc-800">
             {article.tags.map((tag) => (
@@ -219,9 +223,7 @@ export default async function ArticlePage({
         )}
       </article>
 
-      <div
-        className={`mt-8 ${article.tags.length > 0 ? '' : 'pt-6 border-t border-zinc-800'}`}
-      >
+      <div className={`mt-8 ${article.tags.length > 0 ? '' : 'pt-6 border-t border-zinc-800'}`}>
         <ShareButtons url={shareUrl} title={article.title} />
       </div>
 

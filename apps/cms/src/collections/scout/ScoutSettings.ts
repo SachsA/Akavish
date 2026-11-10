@@ -19,6 +19,33 @@ export const ScoutSettings: GlobalConfig = {
       },
     },
     {
+      name: 'draftsEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description:
+          'Step 2: write a draft automatically for every story at or above the threshold and send it to Discord with Publish / Edit / Reject. Off: the digests still list everything, and the "Write" menu in them still works.',
+      },
+    },
+    {
+      name: 'maxDraftsPerDay',
+      type: 'number',
+      defaultValue: 20,
+      min: 0,
+      admin: {
+        description: 'Automatic drafts per day, at most (manual ones from Discord not counted).',
+      },
+    },
+    {
+      name: 'defaultAuthor',
+      type: 'relationship',
+      relationTo: 'authors',
+      admin: {
+        description:
+          'Author of the scout’s drafts. Empty: the first author in the CMS (created as "Akavish Newsroom" if there is none).',
+      },
+    },
+    {
       name: 'threshold',
       type: 'number',
       defaultValue: 60,

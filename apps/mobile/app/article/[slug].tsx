@@ -133,6 +133,13 @@ export default function ArticleScreen() {
 
           <LexicalContent content={article.content} />
 
+          {article.aiAssisted ? (
+            <Text style={styles.aiNote}>
+              Drafted with the help of an AI tool from the sources cited above, then reviewed and
+              approved by the Akavish editors.
+            </Text>
+          ) : null}
+
           <Pressable
             onPress={() => void Linking.openURL(url)}
             accessibilityRole="link"
@@ -156,6 +163,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, lineHeight: 34, fontWeight: '900', color: colors.text },
   excerpt: { fontSize: 18, lineHeight: 26, color: colors.muted },
   meta: { fontSize: 13, color: colors.muted },
+  aiNote: { marginTop: spacing.xl, fontSize: 13, fontStyle: 'italic', color: colors.muted },
   separator: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
   webLink: {
     marginTop: spacing.xl,

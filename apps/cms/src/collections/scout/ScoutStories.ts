@@ -90,6 +90,47 @@ export const ScoutStories: CollectionConfig = {
     },
     { name: 'lastItemAt', type: 'date', admin: { readOnly: true } },
     {
+      type: 'collapsible',
+      label: 'Draft (step 2)',
+      fields: [
+        {
+          name: 'article',
+          type: 'relationship',
+          relationTo: 'articles',
+          admin: { readOnly: true, description: 'The draft the scout wrote for this story.' },
+        },
+        { name: 'draftedAt', type: 'date', index: true, admin: { readOnly: true } },
+        {
+          name: 'version',
+          type: 'number',
+          defaultValue: 0,
+          admin: { readOnly: true, description: '1 for the first draft, +1 per revision.' },
+        },
+        {
+          name: 'discordMessageId',
+          type: 'text',
+          admin: { readOnly: true, description: 'Discord message holding the current version.' },
+        },
+        {
+          name: 'feedback',
+          type: 'array',
+          admin: { readOnly: true, description: 'What you asked to change, version by version.' },
+          fields: [
+            { name: 'text', type: 'textarea', required: true },
+            { name: 'version', type: 'number' },
+          ],
+        },
+        { name: 'rejectionReason', type: 'text', admin: { readOnly: true } },
+        {
+          // The current version's text as the scout wrote it, so a revision
+          // shows the model what it wrote before the feedback.
+          name: 'lastDraftText',
+          type: 'textarea',
+          admin: { readOnly: true },
+        },
+      ],
+    },
+    {
       name: 'items',
       type: 'join',
       collection: 'scout-items',

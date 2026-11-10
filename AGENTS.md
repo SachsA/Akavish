@@ -128,8 +128,12 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`DEPLOYMENT.md` §6.6).
 - **AI scout:** `apps/cms/src/scout/`, the `scoutTick` job (every 5 min, queue
   `scout`, off unless `SCOUT_ENABLED=true`). Step 1 = observation: RSS → Haiku
-  grouping + score → Discord digests at 8 am / 8 pm, budget caps. Design and
-  steps in `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
+  grouping + score → Discord digests at 8 am / 8 pm, budget caps. Step 2 =
+  Sonnet **draft** articles (`aiAssisted`) validated on Discord by a bot
+  (Publish / Edit → V2 / Reject, endpoint `/api/scout/discord`, `scoutDraft`
+  job), automatic drafts off unless *Scout settings → draftsEnabled*. Never
+  publish without the owner's click. Design and steps in `PROGRESS.md`, setup
+  in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.
 - **Newsletter:** double opt-in sign-up, rules in `apps/cms/src/lib/newsletter.ts`
   (endpoints `/api/newsletter/*`, collection `subscribers`, int tests), web form

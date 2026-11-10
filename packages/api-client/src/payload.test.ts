@@ -61,13 +61,17 @@ describe('mapArticle', () => {
   it('maps a fully populated article', () => {
     const a = mapArticle(
       rawArticle({
-        coverImage: { url: '/a.jpg', alt: 'Trevor on a jet ski', sizes: { hero: { url: '/a-1920.jpg' }, card: { url: '/a-960.jpg' } } },
+        coverImage: {
+          url: '/a.jpg',
+          alt: 'Trevor on a jet ski',
+          sizes: { hero: { url: '/a-1920.jpg' }, card: { url: '/a-960.jpg' } },
+        },
         author: { id: 1, slug: 'akavish', name: 'Akavish', avatar: 'https://cdn.test/me.png' },
         game: { id: 2, name: 'GTA VI', slug: 'gta-vi' },
         tags: [{ slug: 'gta' }, { slug: 'openworld' }, {}],
         seo: { title: null, description: 'Custom description' },
       }),
-      CMS
+      CMS,
     )
 
     expect(a.id).toBe('7')
@@ -75,6 +79,7 @@ describe('mapArticle', () => {
     expect(a.coverImageCard).toBe(`${CMS}/a-960.jpg`)
     expect(a.coverImageAlt).toBe('Trevor on a jet ski')
     expect(a.featured).toBe(false)
+    expect(a.aiAssisted).toBe(false)
     expect(a.author).toMatchObject({ id: '1', slug: 'akavish', name: 'Akavish' })
     expect(a.author.avatar).toBe('https://cdn.test/me.png')
     expect(a.game).toMatchObject({ id: '2', slug: 'gta-vi', name: 'GTA VI' })
@@ -104,7 +109,7 @@ describe('toPaginated', () => {
   it("converts Payload's envelope into the shared shape", () => {
     const res = toPaginated(
       { docs: [1, 2], totalDocs: 12, page: 2, limit: 2, totalPages: 6 },
-      (n: number) => n * 10
+      (n: number) => n * 10,
     )
     expect(res).toEqual({ data: [10, 20], total: 12, page: 2, perPage: 2, totalPages: 6 })
   })

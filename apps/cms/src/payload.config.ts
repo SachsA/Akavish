@@ -19,6 +19,7 @@ import { ScoutSettings } from './collections/scout/ScoutSettings'
 import { ScoutSources } from './collections/scout/ScoutSources'
 import { ScoutStories } from './collections/scout/ScoutStories'
 import { ScoutUsage } from './collections/scout/ScoutUsage'
+import { discordInteractionsHandler, runDraftJob } from './scout/interactions'
 import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 
@@ -57,6 +58,9 @@ export default buildConfig({
     { path: '/newsletter/subscribe', method: 'post', handler: subscribeHandler },
     { path: '/newsletter/confirm', method: 'post', handler: confirmHandler },
     { path: '/newsletter/unsubscribe', method: 'post', handler: unsubscribeHandler },
+    // AI scout, step 2: Discord's "Interactions Endpoint URL" (button clicks).
+    // Signature-checked; only the owner's clicks are accepted.
+    { path: '/scout/discord', method: 'post', handler: discordInteractionsHandler },
   ],
   // Jobs queue, used by scheduled publishing (Articles → "Schedule publish").
   // autoRun checks the queue every minute inside the CMS server process, which
@@ -86,6 +90,19 @@ export default buildConfig({
         retries: 0,
         handler: async ({ req }) => {
           await runScout(req.payload)
+          return { output: {} }
+        },
+      },
+      {
+        // One draft or revision, queued from Discord (src/scout/interactions.ts).
+        slug: 'scoutDraft',
+        retries: 0,
+        inputSchema: [
+          { name: 'storyId', type: 'number', required: true },
+          { name: 'feedback', type: 'textarea' },
+        ],
+        handler: async ({ input, req }) => {
+          await runDraftJob(req.payload, input as { storyId: number; feedback?: string })
           return { output: {} }
         },
       },

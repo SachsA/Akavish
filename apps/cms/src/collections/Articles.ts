@@ -1,10 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { slugField } from '../fields/slug'
-import {
-  syncArticleToSearch,
-  removeArticleFromSearch,
-} from '../lib/article-search-sync'
+import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-search-sync'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -48,9 +45,7 @@ export const Articles: CollectionConfig = {
         // happening now, so it gets now.
         const isBackfill = originalDoc?.status === 'published'
         data.publishedAt =
-          isBackfill && originalDoc?.createdAt
-            ? originalDoc.createdAt
-            : new Date().toISOString()
+          isBackfill && originalDoc?.createdAt ? originalDoc.createdAt : new Date().toISOString()
 
         return data
       },
@@ -97,13 +92,17 @@ export const Articles: CollectionConfig = {
     { name: 'title', type: 'text', required: true },
     slugField('title'),
     {
-      name: 'excerpt', type: 'textarea', required: true,
+      name: 'excerpt',
+      type: 'textarea',
+      required: true,
       admin: { description: 'Short summary shown in cards (~160 chars)' },
     },
     { name: 'content', type: 'richText', editor: lexicalEditor(), required: true },
     { name: 'coverImage', type: 'upload', relationTo: 'media' },
     {
-      name: 'category', type: 'select', required: true,
+      name: 'category',
+      type: 'select',
+      required: true,
       options: [
         { label: 'News', value: 'news' },
         { label: 'Leak', value: 'leak' },
@@ -115,7 +114,10 @@ export const Articles: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     {
-      name: 'status', type: 'select', required: true, defaultValue: 'draft',
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'draft',
       // Own Postgres enum. Without it, `status` and Payload's `_status` (drafts)
       // both generate `enum_articles_status`, the first one (draft/published)
       // wins, and saving "Archived" fails. Fixed by migration editorial_status_enum.
@@ -128,7 +130,8 @@ export const Articles: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     {
-      name: 'publishedAt', type: 'date',
+      name: 'publishedAt',
+      type: 'date',
       admin: {
         position: 'sidebar',
         date: { pickerAppearance: 'dayAndTime' },
@@ -139,18 +142,46 @@ export const Articles: CollectionConfig = {
     {
       // Homepage curation: the newest published article with this ticked is the
       // big lead story; without one, the lead is simply the newest article.
-      name: 'featured', type: 'checkbox', defaultValue: false, index: true,
+      name: 'featured',
+      type: 'checkbox',
+      defaultValue: false,
+      index: true,
       admin: {
         position: 'sidebar',
         description:
           'Show as the big lead story on the homepage. If several are ticked, the most recent one wins. Untick it when the story is no longer the headline.',
       },
     },
-    { name: 'author', type: 'relationship', relationTo: 'authors', required: true, admin: { position: 'sidebar' } },
-    { name: 'game', type: 'relationship', relationTo: 'games', admin: { position: 'sidebar' } },
-    { name: 'tags', type: 'relationship', relationTo: 'tags', hasMany: true, admin: { position: 'sidebar' } },
     {
-      name: 'seo', type: 'group',
+      name: 'author',
+      type: 'relationship',
+      relationTo: 'authors',
+      required: true,
+      admin: { position: 'sidebar' },
+    },
+    {
+      // Set on the AI scout's drafts. The site then shows a one-line note under
+      // the article (EU AI Act transparency, see /terms); untick it if you
+      // rewrite the piece yourself.
+      name: 'aiAssisted',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Drafted with the AI scout. Shows a short note under the article.',
+      },
+    },
+    { name: 'game', type: 'relationship', relationTo: 'games', admin: { position: 'sidebar' } },
+    {
+      name: 'tags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'seo',
+      type: 'group',
       fields: [
         { name: 'title', type: 'text' },
         { name: 'description', type: 'textarea' },

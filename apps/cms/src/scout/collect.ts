@@ -5,9 +5,9 @@
 import { DEFAULT_SOURCES, isGamingItem } from './default-sources'
 import type { ScoutContext, SourceDoc } from './context'
 import { parseFeed, type FeedItem } from './feeds'
+import { USER_AGENT } from './extract'
 import { isDue } from './schedule'
 
-const USER_AGENT = 'AkavishScout/1.0 (+https://akavish.gg)'
 const CONCURRENCY = 6
 /** Per feed and run: a feed that dumps 100 items at once doesn't flood the triage. */
 const MAX_ITEMS_PER_FEED = 30

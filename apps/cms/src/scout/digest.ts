@@ -1,10 +1,14 @@
 // ─── Digests (8 am and 8 pm, Paris time) ─────────────────────────────────────
-// Step 1 ("observation"): every story found since the previous digest, best
-// score first, so you can judge whether the right ones come out on top before
-// the scout starts writing. Stories listed once are marked "listed".
+// Every story found since the previous digest, best score first, so you can
+// judge whether the right ones come out on top. Stories listed once are marked
+// "listed". With the Discord bot set up (step 2), the digest goes through the
+// bot and ends with a "Rédiger…" menu: pick a story and its draft arrives in
+// the channel with the Publish / Edit / Reject buttons. Without the bot, the
+// webhook sends the same digest, read-only.
 
 import type { ItemDoc, ScoutContext, SettingsDoc, SourceDoc, StoryDoc } from './context'
 import { digestMessages, type DigestStory } from './discord'
+import { pickMenu, sendBotMessage } from './discord-bot'
 import { dueDigest, parisClock, type DigestSlot } from './schedule'
 
 export async function maybeSendDigest(
@@ -54,8 +58,24 @@ export async function maybeSendDigest(
     })
   }
 
-  for (const message of digestMessages(slot, digest, settings.threshold ?? 60)) {
-    await ctx.notify(message)
+  const messages = digestMessages(slot, digest, settings.threshold ?? 60)
+  if (ctx.config.bot && !ctx.config.dryRun) {
+    // Through the bot, the last message carries a "Write one of these" menu
+    // (step 2): picking a story drafts it even below the threshold.
+    const menu = pickMenu(
+      [...stories]
+        .sort((a, b) => b.score - a.score)
+        .map((s) => ({ id: Number(s.id), score: s.score, title: s.title })),
+    )
+    for (const [i, message] of messages.entries()) {
+      await sendBotMessage(
+        ctx.config.bot,
+        { ...message, ...(i === messages.length - 1 ? { components: menu } : {}) },
+        ctx.fetch,
+      )
+    }
+  } else {
+    for (const message of messages) await ctx.notify(message)
   }
 
   for (const s of stories) {

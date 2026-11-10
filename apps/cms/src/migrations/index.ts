@@ -9,6 +9,7 @@ import * as migration_20261107_161315_editorial_status_enum from './20261107_161
 import * as migration_20261109_094550_storage_object_key from './20261109_094550_storage_object_key';
 import * as migration_20261109_102521_newsletter_subscribers from './20261109_102521_newsletter_subscribers';
 import * as migration_20261110_095447_scout_step1 from './20261110_095447_scout_step1';
+import * as migration_20261110_103703_scout_step2 from './20261110_103703_scout_step2';
 
 export const migrations = [
   {
@@ -64,6 +65,11 @@ export const migrations = [
   {
     up: migration_20261110_095447_scout_step1.up,
     down: migration_20261110_095447_scout_step1.down,
-    name: '20261110_095447_scout_step1'
+    name: '20261110_095447_scout_step1',
+  },
+  {
+    up: migration_20261110_103703_scout_step2.up,
+    down: migration_20261110_103703_scout_step2.down,
+    name: '20261110_103703_scout_step2'
   },
 ];

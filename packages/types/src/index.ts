@@ -1,12 +1,6 @@
 // ─── Article ───────────────────────────────────────────────────────────────
 
-export type ArticleCategory =
-  | 'news'
-  | 'leak'
-  | 'review'
-  | 'preview'
-  | 'conference'
-  | 'esport'
+export type ArticleCategory = 'news' | 'leak' | 'review' | 'preview' | 'conference' | 'esport'
 
 export type ArticleStatus = 'draft' | 'published' | 'archived'
 
@@ -36,6 +30,8 @@ export interface Article {
   seo?: { title?: string; description?: string }
   /** Picked by the editor as the homepage lead story. */
   featured?: boolean
+  /** Drafted with the AI scout and approved by an editor: the article shows a note. */
+  aiAssisted?: boolean
 }
 
 // ─── Game ──────────────────────────────────────────────────────────────────

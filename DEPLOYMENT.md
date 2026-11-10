@@ -1055,9 +1055,12 @@ Two things that differ from the platforms:
 
 The scout (`apps/cms/src/scout/`, design doc linked in `PROGRESS.md`) runs
 inside the CMS as the `scoutTick` job, every 5 minutes, in its own `scout`
-queue. It is **off** until `SCOUT_ENABLED=true`. Step 1 only observes: it collects 38 RSS feeds, groups items into
-stories with Claude Haiku, scores them, and posts a digest to Discord at 8 am
-and 8 pm (Paris time). It writes no article.
+queue. It is **off** until `SCOUT_ENABLED=true`. Step 1 observes: it collects
+38 RSS feeds, groups items into stories with Claude Haiku, scores them, and
+posts a digest to Discord at 8 am and 8 pm (Paris time). Step 2 writes: a story
+above the threshold becomes a **draft** article (Claude Sonnet), sent to Discord
+with Publish / Edit / Reject buttons. Nothing goes live without your click.
+Automatic drafts are **off** until you tick *Scout settings → draftsEnabled*.
 
 **Set it up (once):**
 
@@ -1082,7 +1085,59 @@ and 8 pm (Paris time). It writes no article.
 | `SCOUT_MONTHLY_BUDGET_USD` | `50` | Past it the scout pauses itself and says so on Discord; an 80 % warning first. |
 | `SCOUT_DAILY_BUDGET_USD` | `5` | Past it, triage stops until the next UTC day. |
 | `SCOUT_TRIAGE_MODEL` | `claude-haiku-5-5` | Model for grouping and scoring. |
+| `SCOUT_DRAFT_MODEL` | `claude-sonnet-5-5` | Model for drafts and revisions. |
 | `SCOUT_DRY_RUN` | off | `true`: no AI call, no Discord post, everything logged. |
+| `DISCORD_BOT_TOKEN` | — | **Secret.** Step 2 bot. The five bot variables go together; any missing → no bot, drafts announced through the webhook without buttons. |
+| `DISCORD_APPLICATION_ID` | — | Developer portal → General Information. |
+| `DISCORD_PUBLIC_KEY` | — | Same page. Checks that clicks really come from Discord. |
+| `SCOUT_DISCORD_CHANNEL_ID` | — | The private channel (Developer Mode → Copy Channel ID). |
+| `SCOUT_DISCORD_OWNER_ID` | — | Your user ID: only your clicks count. |
+
+**Step 2, the Discord bot (once).** A webhook can only post; buttons need a
+bot. Discord calls the CMS when you click, at `/api/scout/discord`.
+
+1. [discord.com/developers/applications](https://discord.com/developers/applications)
+   → *New Application* → `Akavish Scout`. On *General Information*, copy the
+   **Application ID** and the **Public Key**.
+2. *Bot* → *Reset Token* → copy the **token** (shown once, it's a secret).
+   No privileged intent is needed.
+3. *OAuth2 → URL Generator*: scope `bot`, permissions *View Channel*, *Send
+   Messages*, *Embed Links*, *Read Message History*. Open the URL, add the bot
+   to the Akavish server. In the private channel's permissions, add the bot.
+4. Discord → Settings → Advanced → **Developer Mode** on. Right-click the
+   channel → *Copy Channel ID*; right-click yourself → *Copy User ID*.
+5. **Railway → CMS → Variables:** `DISCORD_BOT_TOKEN`, `DISCORD_APPLICATION_ID`,
+   `DISCORD_PUBLIC_KEY`, `SCOUT_DISCORD_CHANNEL_ID`, `SCOUT_DISCORD_OWNER_ID`.
+   Redeploy.
+6. **After** that deploy: back in the developer portal → *General Information* →
+   **Interactions Endpoint URL** = `https://cms.akavish.gg/api/scout/discord` →
+   Save. Discord pings the URL and only saves it if the CMS answers with the
+   right signature, so a save that fails means a variable is wrong (usually
+   the public key) or the deploy isn't live yet.
+7. `/admin` → *Scout settings*: pick the **default author** of drafts (else the
+   first author, else an "Akavish Newsroom" author is created).
+
+From then on, digests come from the bot and end with a **"Rédiger…"** menu:
+pick a story and its draft arrives within a minute or two. That works even
+with `draftsEnabled` off, so you can test drafts one at a time.
+
+**How a draft works.** The scout reads up to 6 sources (official first, the
+pages themselves for the first 4, same honest User-Agent), asks Sonnet for a
+150-300 word article in English with a *Sources* list at the end, and saves it
+as a **draft** article with `aiAssisted` ticked (the site then shows a one-line
+note under it, see `/terms`). On Discord:
+
+- **Publier**: the article goes live, the message shows its URL.
+- **Modifier**: a form asks what's wrong; V2 arrives as a reply, with the same
+  buttons. Revise as many times as needed.
+- **Rejeter**: optional reason; the draft article is deleted.
+- **Ouvrir dans /admin**: edit it by hand, then publish from `/admin` or the
+  button.
+
+Only `SCOUT_DISCORD_OWNER_ID` can click; anyone else gets a private refusal.
+Automatic drafts (`draftsEnabled`): at most 3 per run and `maxDraftsPerDay`
+(20) a day, only stories at or above the threshold, under 24 h old, not drafted
+yet. A draft costs about 0.05-0.10 $ with Sonnet.
 
 **Day to day:** pause or resume with *Scout settings → paused* in `/admin`
 (the scout ticks it itself when the monthly budget is spent); move the draft
@@ -1143,6 +1198,9 @@ that curl, with the same User-Agent, didn't, so only production tells.
 | `ANTHROPIC_API_KEY`   | `sk-ant-…`                       | **Secret**, AI scout (§11)          |
 | `SCOUT_DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/…` | AI scout digests (§11) |
 | `SCOUT_MONTHLY_BUDGET_USD` / `SCOUT_DAILY_BUDGET_USD` | `50` / `5` | Optional caps (§11) |
+| `DISCORD_BOT_TOKEN`   | `…`                              | **Secret**, scout bot (§11)         |
+| `DISCORD_APPLICATION_ID` / `DISCORD_PUBLIC_KEY` | `…` | Scout bot, developer portal (§11) |
+| `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |
 
 ---
 

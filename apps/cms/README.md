@@ -200,7 +200,8 @@ link). Sending issues isn't built yet: when it is, send to
 
 `src/scout/` watches games news, groups it into stories and scores them
 (design doc and steps: `PROGRESS.md` → AI news scout; setup and variables:
-`DEPLOYMENT.md` §11). Step 1 is observation only: no article is written.
+`DEPLOYMENT.md` §11). Step 2 turns the best stories into **draft** articles
+and asks for validation on Discord; nothing is published without a click.
 
 How a run goes (`src/scout/run.ts`, the `scoutTick` job every 5 minutes in its
 own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
@@ -217,11 +218,29 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
 4. **Score** (`score.ts`): significance (the model's estimate) + independent
    sources + best reliability − age, out of 100. Threshold 60 by default
    (*Scout settings*).
-5. **Digest** (`digest.ts`, `discord.ts`): at 8 am and 8 pm Paris time, the
-   new stories by score to the Discord webhook, green above the threshold.
-6. **Budget** (`budget.ts`, `pricing.ts`): every call logged in `scout-usage`
+5. **Drafts** (`draft.ts`, `draft-prompt.ts`, `extract.ts`), only when
+   *Scout settings → draftsEnabled* is ticked (off by default): up to 3 stories
+   per run (and `maxDraftsPerDay`) at or above the threshold, under 24 h old.
+   Up to 6 sources, official first, page text read for the first 4; Claude
+   Sonnet answers with a forced `write_article` tool call, turned into Lexical
+   with a *Sources* list. Saved as a **draft** article, `aiAssisted` ticked,
+   author from *Scout settings → defaultAuthor*.
+6. **Digest** (`digest.ts`, `discord.ts`): at 8 am and 8 pm Paris time, the
+   new stories by score, green above the threshold. Through the bot when it's
+   set up (with a "Rédiger…" menu to draft one by hand), else the webhook.
+7. **Budget** (`budget.ts`, `pricing.ts`): every call logged in `scout-usage`
    with its cost; 80 % warning, auto-pause at the monthly cap, daily cap.
-7. **Retention** (`retention.ts`): hourly clean-up of old items and stories.
+8. **Retention** (`retention.ts`): hourly clean-up of old items and stories.
+
+**Discord validation** (`discord-bot.ts`, `interactions.ts`). Each draft is a
+bot message with **Publier** / **Modifier** / **Rejeter** and a link to
+`/admin`. Discord posts the clicks to `POST /api/scout/discord` (declared in
+`payload.config.ts`): Ed25519 signature checked against `DISCORD_PUBLIC_KEY`
+(401 otherwise), PING answered, only `SCOUT_DISCORD_OWNER_ID` accepted.
+Publish sets the article live; Edit opens a form and queues a `scoutDraft` job
+whose V2 comes back as a reply; Reject deletes the draft article. Anything
+that calls the model runs as a `scoutDraft` job (Discord wants an answer within
+3 s). The story keeps `version`, `feedback`, `lastDraftText` and the article.
 
 ```bash
 pnpm scout:run            # LOCAL DB only: one run on the real feeds, dry (no AI, no Discord)
@@ -230,8 +249,9 @@ pnpm scout:run --digest   # also print (or send, with --live) the digest now
 ```
 
 Tests: `pnpm test` (pure logic: feeds, score, Paris clock, triage answers,
-digest messages, pricing) and `tests/int/scout.int.spec.ts` (the whole run with
-the network faked). ⚠ The integration test empties the scout tables of the
+digest messages, pricing, draft cleaning, Lexical, page text, Discord
+signatures and buttons) and `tests/int/scout.int.spec.ts` (the whole run, then
+drafts, revisions and signed clicks, with the network faked). ⚠ The integration test empties the scout tables of the
 local database it runs on.
 
 ## ⚠️ After adding or removing a Payload plugin
