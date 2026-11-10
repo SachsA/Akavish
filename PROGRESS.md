@@ -160,7 +160,7 @@ actually tackle it, best value-for-effort first.
 | --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                                                   | —      |
 | 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context                                             | —      |
-| 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk production instance: switch in progress since 2026-11-10 (`DEPLOYMENT.md` §6.5) | —      |
+| 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk production instance live since 2026-11-10, social logins pending (`DEPLOYMENT.md` §6.5) | —      |
 | 4   | ✅ **Email adapter**                | Done — `@payloadcms/email-resend` wired in `payload.config.ts`; password resets are really sent, with a branded HTML template (`lib/emails/forgot-password.ts`). Off when `RESEND_API_KEY` is unset (console fallback). Setup + DNS in `DEPLOYMENT.md` §4c | —      |
 | 5   | ✅ **Search works in prod**         | Done — `/api/search` falls back to the CMS (Postgres `ILIKE`) when Meilisearch isn't configured, and when it errors. The header search box was returning 503 on every page; now it works for free. `DEPLOYMENT.md` §4 | —      |
 | 6   | ✅ **Article page polish**          | Done — reading time (+ `wordCount`/`timeRequired` in the JSON-LD), share row, "Read next" suggestions, prev/next nav. Suggestions fail soft: a CMS error drops them instead of breaking the page | —      |
@@ -190,9 +190,10 @@ homepage `featured`, contributor docs, security cleanup — 2026-11-06; light
 theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07;
 mobile reading app, newsletter sign-up — 2026-11-09).
 
-**In progress: Clerk production instance** (paid plan taken 2026-11-10): domain
-`akavish.gg`, DNS records in Cloudflare (proxy off), then the `pk_live_…` /
-`sk_live_…` keys on Vercel's Production scope. Steps in `DEPLOYMENT.md` §6.5.
+**Clerk is in production since 2026-11-10** (`pk_live_…` on `akavish.gg`,
+Frontend API on `clerk.akavish.gg`). **Left: the social logins** (Google,
+Discord, Twitch, X) need their own OAuth apps, `DEPLOYMENT.md` §6.5 step 6;
+until then a button without credentials fails.
 
 **In progress: the AI news scout** (section below). Steps 1 (observation) and
 2 (drafts + Discord buttons) are live in production since 2026-11-10, bot set
@@ -303,7 +304,7 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 | --- | --- |
 | Newsletter: the digest | Sign-ups are live since 2026-11-09 (see §1); what waits is **sending** issues: a digest template with the per-subscriber unsubscribe link (`unsubscribeUrl(id)` in `apps/cms/src/lib/newsletter.ts`) and a `List-Unsubscribe` header, sent to `status: confirmed` only. Resend's free tier is 100 emails/day, so a list past ~100 needs its paid plan or batched sends. The AI scout can feed it |
 | Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
-| Comments | Needs traffic, moderation and anti-spam (§5). Clerk production is being set up (`DEPLOYMENT.md` §6.5) |
+| Comments | Needs traffic, moderation and anti-spam (§5). Clerk production is live since 2026-11-10 |
 
 ---
 

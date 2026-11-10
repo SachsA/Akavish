@@ -47,8 +47,10 @@ export default function PrivacyPage() {
       <p>
         <strong>If you create an account.</strong> Sign-up and login are handled
         by Clerk. It holds your email address and whatever name or avatar you
-        choose to provide. Reader accounts currently unlock nothing beyond being
-        signed in.
+        choose to provide. If you sign in with Google, Discord, Twitch or X, that
+        service tells Clerk your email address, name and avatar, under its own
+        privacy policy; we never see your password there. Reader accounts
+        currently unlock nothing beyond being signed in.
       </p>
       <p>
         <strong>If you subscribe to the newsletter.</strong> We store your email

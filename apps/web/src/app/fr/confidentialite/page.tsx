@@ -54,8 +54,12 @@ export default function ConfidentialitePage() {
       <p>
         <strong>Si vous créez un compte.</strong> L’inscription et la connexion
         sont gérées par Clerk, qui conserve votre adresse e-mail ainsi que le nom
-        et l’avatar que vous choisissez de fournir. À ce jour, un compte lecteur
-        ne débloque rien d’autre que le fait d’être connecté.
+        et l’avatar que vous choisissez de fournir. Si vous vous connectez avec
+        Google, Discord, Twitch ou X, ce service transmet à Clerk votre adresse
+        e-mail, votre nom et votre avatar, selon sa propre politique de
+        confidentialité ; nous ne voyons jamais votre mot de passe chez lui. À ce
+        jour, un compte lecteur ne débloque rien d’autre que le fait d’être
+        connecté.
       </p>
       <p>
         <strong>Si vous vous abonnez à la newsletter.</strong> Nous enregistrons

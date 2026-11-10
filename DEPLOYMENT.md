@@ -229,7 +229,7 @@ commands and env vars.
 
 > Clerk keys: **production** (`pk_live_…` / `sk_live_…`) on the Production scope,
 > development (`pk_test_…`) on Preview, since live keys only work on the real
-> domain. The switch to production is in progress since 2026-11-10 — §6.5.
+> domain. Production since 2026-11-10 — §6.5.
 
 **Preview deploys.** Vercel builds every branch and pull request on its own and
 posts the link on the PR ("Vercel Preview Comments"); confirmed on 2026-11-06
@@ -684,10 +684,10 @@ saving. This is what makes canonical URLs, the sitemap, OG tags and CORS correct
 
 ### 6.5 Clerk — production instance
 
-**Status: switch in progress since 2026-11-10** (paid plan taken, instance being
-set up). Until the Vercel keys are swapped, the site keeps running on the
-development instance (`pk_test_…`), which works but shows a "development mode"
-banner and isn't meant for real users.
+**Status: live since 2026-11-10.** `akavish.gg` serves `pk_live_…`, Clerk's
+Frontend API answers on `clerk.akavish.gg`, no "development mode" banner.
+**Pending:** the social logins (Google, Discord, Twitch, X) show on the forms
+but need their own OAuth apps in production (step 6).
 
 1. **Create the instance.** Clerk dashboard → *Go to production* → Application
    domain: **`akavish.gg`** (the apex, no `www`: `www` 308s to it). Clerk then
@@ -713,6 +713,31 @@ banner and isn't meant for real users.
 5. **Redeploy** production (the publishable key is baked in at build time) and
    check: the banner is gone, sign-up sends the code email from Clerk, sign-in
    and sign-out work, the page source loads `clerk.akavish.gg`.
+
+6. **Social logins.** In production each provider needs its own OAuth app; the
+   development instance used Clerk's shared ones. For each: Clerk → *User &
+   authentication → SSO connections* → the provider → *Use custom credentials*,
+   which shows the **redirect URI** to paste on the provider's side
+   (`https://clerk.akavish.gg/v1/oauth_callback`), then paste back the client
+   ID and secret.
+   - **Google**: Google Cloud Console → new project `Akavish` → *Google Auth
+     Platform*: app name, support email, authorized domain `akavish.gg`, home
+     page, `/privacy` and `/terms` links, audience *External*, then
+     *Publish app* (basic scopes need no review) → *Clients → Create client*,
+     type *Web application*, the redirect URI.
+   - **Discord**: discord.com/developers → *New Application* `Akavish` (not the
+     scout bot's app) → *OAuth2*: add the redirect URI, copy client ID and
+     secret.
+   - **Twitch**: dev.twitch.tv/console → *Register your application*, category
+     *Website Integration*, the redirect URI → client ID, *New Secret*.
+   - **X**: developer.x.com → a project and app → *User authentication
+     settings*: OAuth 2.0, type *Web App*, callback = the redirect URI,
+     website `https://akavish.gg` → *Keys and tokens* → OAuth 2.0 client ID
+     and secret. If X asks for a paid tier, disable X in Clerk instead.
+
+   A provider without credentials shows its button but fails: switch it off
+   in Clerk until its app is ready. `/privacy` (EN + FR) and the processor list
+   (`lib/legal.ts`) name the four providers; change them if the list changes.
 
 Users created on the development instance are not carried over (they were
 tests). Nothing else in the code changes: the CMS doesn't use Clerk, and the
@@ -767,8 +792,10 @@ domain change:
 - [ ] Both UptimeRobot monitors green (§4d).
 - [ ] Published a test article → it appears on `https://akavish.gg`.
 - [ ] `https://akavish.gg/sitemap.xml` and `/robots.txt` return prod URLs.
-- [ ] Sign-up/login works on the live domain with the Clerk **production**
-      keys (`pk_live_…`, §6.5): no "development mode" banner.
+- [x] Sign-up/login works on the live domain with the Clerk **production**
+      keys (`pk_live_…`, §6.5): no "development mode" banner (2026-11-10).
+- [ ] Social logins (Google, Discord, Twitch, X) have their own OAuth apps
+      (§6.5 step 6).
 - [ ] CORS: the CMS `WEB_URL` matches the live web origin (else the browser
       blocks client calls — server-side fetches are unaffected).
 - [ ] Search backfilled (if enabled) and the header search returns results.

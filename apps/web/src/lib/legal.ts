@@ -69,8 +69,8 @@ export const PROCESSORS: Processor[] = [
     url: 'https://clerk.com/legal/privacy',
     region: 'US',
     data: {
-      en: 'Email address, and any name or avatar you provide. Only if you create an account.',
-      fr: "Adresse e-mail, ainsi que le nom et l'avatar que vous fournissez. Uniquement si vous créez un compte.",
+      en: 'Email address, and any name or avatar you provide or that Google, Discord, Twitch or X shares if you sign in with them. Only if you create an account.',
+      fr: "Adresse e-mail, ainsi que le nom et l'avatar que vous fournissez ou que Google, Discord, Twitch ou X transmet si vous vous connectez avec. Uniquement si vous créez un compte.",
     },
     purpose: {
       en: 'Handles reader sign-up, sign-in and sessions.',
