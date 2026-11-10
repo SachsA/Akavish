@@ -274,7 +274,10 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 - Nov 19: ready.
 
 **AI transparency:** articles drafted by the scout carry `aiAssisted`, which
-shows a one-line note under the article (web and app); `/terms` and
+shows a one-line note under the article (web and app): "Researched and drafted
+with AI assistance, then fact-checked, edited and approved by an Akavish
+editor, who is responsible for it." Untick it if you rewrite the piece
+yourself. Never claim a scout draft is human-written. `/terms` and
 `/fr/conditions` say drafts may be AI-assisted and are always approved by a
 human (EU AI Act art. 50).
 

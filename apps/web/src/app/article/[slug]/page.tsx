@@ -203,8 +203,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {article.aiAssisted && (
           // Transparency about AI-assisted writing (EU AI Act art. 50, /terms).
           <p className="mt-8 text-sm text-zinc-400 italic">
-            Drafted with the help of an AI tool from the sources cited above, then reviewed and
-            approved by the Akavish editors.
+            Researched and drafted with AI assistance, then fact-checked, edited and approved by an
+            Akavish editor, who is responsible for it.
           </p>
         )}
 
