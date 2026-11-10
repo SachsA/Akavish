@@ -88,7 +88,7 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   fallback — Meilisearch Cloud has no free tier.
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web,
-  mobile and api-client), then build web + CMS (mobile isn't built — that needs EAS) and,
+  mobile, CMS and api-client), then build web + CMS (mobile isn't built — that needs EAS) and,
   on a throwaway Postgres: migrations from scratch, `pnpm seed`, CMS integration
   tests (`test:int`) and Playwright on the admin and the public site. Dependabot
   (`.github/dependabot.yml`) opens grouped update PRs weekly; React/RN/Expo are
@@ -126,6 +126,11 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`@payloadcms/email-resend`, `RESEND_API_KEY` unset → console fallback,
   `DEPLOYMENT.md` §4c); Cloudflare Email Routing only **receives**
   (`DEPLOYMENT.md` §6.6).
+- **AI scout:** `apps/cms/src/scout/`, the `scoutTick` job (every 5 min, queue
+  `scout`, off unless `SCOUT_ENABLED=true`). Step 1 = observation: RSS → Haiku
+  grouping + score → Discord digests at 8 am / 8 pm, budget caps. Design and
+  steps in `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
+  bot only (no browser User-Agent), no Reddit, X through its paid API only.
 - **Newsletter:** double opt-in sign-up, rules in `apps/cms/src/lib/newsletter.ts`
   (endpoints `/api/newsletter/*`, collection `subscribers`, int tests), web form
   `components/NewsletterSignup.tsx` → `app/api/newsletter` (rate-limited) and

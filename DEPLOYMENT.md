@@ -1051,6 +1051,53 @@ Two things that differ from the platforms:
 
 ---
 
+## 11. AI scout
+
+The scout (`apps/cms/src/scout/`, design doc linked in `PROGRESS.md`) runs
+inside the CMS as the `scoutTick` job, every 5 minutes, in its own `scout`
+queue. It is **off** until `SCOUT_ENABLED=true`. Step 1 only observes: it collects 38 RSS feeds, groups items into
+stories with Claude Haiku, scores them, and posts a digest to Discord at 8 am
+and 8 pm (Paris time). It writes no article.
+
+**Set it up (once):**
+
+1. **Anthropic API key.** [platform.claude.com](https://platform.claude.com) →
+   billing: prepaid credit; limits: a **monthly spend limit (50 $)**; API keys:
+   create `akavish-scout`. The spend limit is the last safety net if the code's
+   own caps ever fail.
+2. **Discord webhook.** A private channel (only you) → Edit channel →
+   Integrations → Webhooks → New webhook → copy its URL. A webhook URL can only
+   post to that channel; if it ever leaks, delete the webhook and create a new one.
+3. **Railway → CMS service → Variables:** `ANTHROPIC_API_KEY`,
+   `SCOUT_DISCORD_WEBHOOK_URL`, `SCOUT_ENABLED=true`. Redeploy.
+4. Within 5 minutes, `/admin` → **Scout** → *Scout sources* fills with the 38
+   default feeds and their status (`ok, 12 new`, `HTTP 403`…). The first digest
+   comes at the next 8 am or 8 pm.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `SCOUT_ENABLED` | off | `true` turns the job on. Anything else: the job does nothing. |
+| `ANTHROPIC_API_KEY` | — | **Secret.** Unset → dry run (no AI call, each item its own story). |
+| `SCOUT_DISCORD_WEBHOOK_URL` | — | **Secret-ish** (lets anyone post to the channel). Unset → digests only logged. |
+| `SCOUT_MONTHLY_BUDGET_USD` | `50` | Past it the scout pauses itself and says so on Discord; an 80 % warning first. |
+| `SCOUT_DAILY_BUDGET_USD` | `5` | Past it, triage stops until the next UTC day. |
+| `SCOUT_TRIAGE_MODEL` | `claude-haiku-5-5` | Model for grouping and scoring. |
+| `SCOUT_DRY_RUN` | off | `true`: no AI call, no Discord post, everything logged. |
+
+**Day to day:** pause or resume with *Scout settings → paused* in `/admin`
+(the scout ticks it itself when the monthly budget is spent); move the draft
+threshold there too (60 by default). Spending: *Scout usage*, one row per
+call. Mute a feed: untick *active* on it. Logs: Railway, lines starting with
+`[scout]`.
+
+**Feeds that refuse the scout.** It always says who it is
+(`AkavishScout/1.0 (+https://akavish.gg)`). A feed that answers 403 shows it in
+its status: untick it, and never switch to a browser User-Agent to get through.
+Check the statuses after the first day in production: the dev sandbox got 403s
+that curl, with the same User-Agent, didn't, so only production tells.
+
+---
+
 ## Environment variable reference
 
 **Web (Vercel)**
@@ -1092,6 +1139,10 @@ Two things that differ from the platforms:
 | `SENTRY_ENVIRONMENT`  | `production`                     | Optional, defaults to `NODE_ENV`    |
 | `SENTRY_ORG` / `SENTRY_PROJECT_CMS` | `…`                | Build-time, source maps             |
 | `SENTRY_AUTH_TOKEN`   | `sntrys_…`                       | **Secret**, build-time only         |
+| `SCOUT_ENABLED`       | `true`                           | AI scout on; unset → off (§11)      |
+| `ANTHROPIC_API_KEY`   | `sk-ant-…`                       | **Secret**, AI scout (§11)          |
+| `SCOUT_DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/…` | AI scout digests (§11) |
+| `SCOUT_MONTHLY_BUDGET_USD` / `SCOUT_DAILY_BUDGET_USD` | `50` / `5` | Optional caps (§11) |
 
 ---
 

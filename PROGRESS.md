@@ -190,8 +190,9 @@ homepage `featured`, contributor docs, security cleanup — 2026-11-06; light
 theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07;
 mobile reading app, newsletter sign-up — 2026-11-09).
 
-**Next session:** the **AI news scout** (🅿️ Parked below). Answer its four open
-questions first, then design it.
+**In progress: the AI news scout** (section below). Step 1 (observation) is
+built; next, a week of digests to tune the score, then step 2 (drafts and the
+Discord buttons).
 
 Everything else waits on something:
 
@@ -200,7 +201,7 @@ Everything else waits on something:
 | **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
 | **The app being shipped** | Push notifications · store release (EAS) · app store assets · universal links |
 | **Traffic** | Reader accounts (`/account`, Clerk → DB sync) · hosted Meilisearch |
-| **Content and readers** | Everything in **🅿️ Parked**: AI news scout, sending the newsletter, analytics review, comments, Clerk production |
+| **Content and readers** | Everything in **🅿️ Parked**: sending the newsletter, analytics review, comments, Clerk production |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
 i18n (EN + FR) is its own project — §6.
@@ -230,6 +231,35 @@ by the next one:
 
 ---
 
+# AI news scout (in progress)
+
+**Design doc (validated by Alex, Nov 2026):**
+[Akavish : scout IA (design)](https://claude.ai/artifact/RF8xyEFTqjg7MTR1Ud7j8w).
+A bot inside the CMS that watches news and leak sources, groups what it reads
+into stories, scores them, writes drafts and sends them to Alex on Discord.
+**Nothing is published without his click.** Code: `apps/cms/src/scout/`, setup
+and variables: `DEPLOYMENT.md` §11.
+
+**Decisions:** articles in English (French with the bilingual project) ·
+budget capped at 50 $/month (auto-pause + 80 % warning, 5 $/day, Anthropic
+spend limit) · validation on Discord: Publish / Edit (free-text feedback → V2)
+/ Reject · official sources read every 5 min, the rest every 15 · "maybe"
+lists at 8 am and 8 pm Paris · esport at launch: CS2, LoL, Valorant, Rocket
+League (R6 next; Fortnite, Dota 2, Overwatch, PUBG as news only) · no Reddit
+(commercial use needs Reddit's written agreement) · the scout always says who
+it is (no browser User-Agent, a feed that refuses it gets unticked).
+
+| Step | Status | What |
+| --- | --- | --- |
+| 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook |
+| 1. Observation | ✅ built 2026-11-10, running a week | 38 RSS feeds, grouping + score (Haiku), digests at 8 am / 8 pm, budget caps. No drafts yet |
+| 2. Drafts + validation | Next | Sonnet drafts in the CMS, Discord bot with Publish / Edit / Reject |
+| 3. Leakers + style | Later | X accounts (pay-per-use API), learning from published / rejected drafts |
+| 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
+| 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |
+
+---
+
 # 🅿️ Parked — good ideas, deliberately not now
 
 Kept here so they aren't lost. Each one only pays off with **content and
@@ -237,49 +267,10 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 
 | Idea | Why it waits / what it depends on |
 | --- | --- |
-| **AI news scout** | A bot that watches the big news/leak sites and leaker accounts, drafts articles, and sends them for human approval before publishing. Ties together scheduled publishing and email. Open design questions (sources, copyright, X/Twitter API cost, AI-content disclosure) — see the discussion before building anything |
 | Newsletter: the digest | Sign-ups are live since 2026-11-09 (see §1); what waits is **sending** issues: a digest template with the per-subscriber unsubscribe link (`unsubscribeUrl(id)` in `apps/cms/src/lib/newsletter.ts`) and a `List-Unsubscribe` header, sent to `status: confirmed` only. Resend's free tier is 100 emails/day, so a list past ~100 needs its paid plan or batched sends. The AI scout can feed it |
 | Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
 | Comments | Needs traffic, paid Clerk production keys, moderation and anti-spam (§5) |
 | Clerk production instance | Paid; only needed once reader accounts do something (§8) |
-
-### AI news scout — brief and open questions
-
-**The idea (Alex, Nov 2026):** a bot — an AI assistant — that regularly goes
-through the best-known gaming news and leak sites, and the X/Twitter profiles of
-known leakers and news accounts, picks up stories worth covering, **writes the
-articles**, and sends them to Alex **for validation** before anything is
-published. Linked to scheduled publishing (approved drafts go out at a set time)
-and to the newsletter (the same pipeline can feed a digest).
-
-**Likely shape:** a scheduled job collects sources → an LLM deduplicates against
-what's already on the site, ranks, and drafts → each draft is created in the CMS
-as a **draft** (never published by the bot) → Alex gets a summary with links,
-edits/approves in `/admin`. Nothing goes live without a human.
-
-**Constraints already identified:**
-
-- **X/Twitter:** the API is paid and scraping breaks their terms of service.
-  Start with RSS feeds of news sites and Reddit (e.g. r/GamingLeaksAndRumours),
-  which are meant to be consumed; add X only if the cost is justified.
-- **Copyright / duplicate content:** drafts must **synthesise and cite** several
-  sources with links, never paraphrase a single competitor's article — a legal
-  requirement and what keeps Google from treating the pages as copies.
-- **Leaks:** the bot will surface unverified claims; drafts must name their
-  sources and follow the leak-labelling commitment in `/terms`.
-- **AI-content transparency:** EU rules require disclosure for AI-generated text,
-  with lighter obligations when a human reviews it and takes editorial
-  responsibility — check precisely before launch, and update `/terms` (and
-  `lib/legal.ts` if a new service ever sees visitor data).
-- **Cost:** LLM API usage per draft, plus any paid source API.
-
-**Questions to answer before designing it:**
-
-1. How many drafts a day are wanted?
-2. Which sources exactly — sites, subreddits, accounts?
-3. How should validation happen — email digest, or the Akavish Discord server
-   with "publish / reject" buttons?
-4. What monthly API budget is acceptable?
 
 ---
 
@@ -444,7 +435,7 @@ checklist it walks through.
 
 | Pri | Item                 | Notes                                                                  |
 | --- | -------------------- | ---------------------------------------------------------------------- |
-| ✅  | Unit tests           | vitest in `apps/web`, `apps/mobile` and `packages/api-client` (`pnpm test`), CMS integration (articles, newsletter) + admin e2e tests, and Playwright on the public site (`apps/web/tests/e2e/`, desktop + mobile), all in CI |
+| ✅  | Unit tests           | vitest in `apps/web`, `apps/mobile`, `apps/cms` (`src/**/*.test.ts`) and `packages/api-client` (`pnpm test`), CMS integration (articles, newsletter, scout) + admin e2e tests, and Playwright on the public site (`apps/web/tests/e2e/`, desktop + mobile), all in CI |
 | ✅  | API contract checks  | The shared mapper is unit-tested, and a test fails if the web and CMS category lists drift |
 | ✅  | Contributor docs     | Done (2026-11-06) — `CONTRIBUTING.md`: the loop, adding a field/collection (migration steps), adding a page (data, SEO, a11y rules), where the tests live, commits |
 | ✅  | Architecture diagram | Done (2026-11-06) — Mermaid diagram in the README ("How the pieces talk"): apps, hosts, every service, monitoring and backups |
@@ -478,6 +469,13 @@ checklist it walks through.
   checks). A few components still keep
   their own singular-label map (`ArticleCard`, the article page, `SearchResults`,
   the OG image) — migrate them when next touched.
+- **The scout fetches as an identified bot, and takes no for an answer.** Its
+  User-Agent is `AkavishScout/1.0 (+https://akavish.gg)`. A site that answers
+  403 to it doesn't want automated readers: drop the feed, never switch to a
+  browser User-Agent to get through. Same spirit as Reddit (left out because
+  commercial use needs their agreement) and X (official API only).
+- **`pnpm test` in `apps/cms` is the unit tests now** (`src/**/*.test.ts`, no
+  database); the integration and admin tests stay `test:int` and `test:e2e`.
 - **Hydration can fail, rarely, for reasons outside our code.** Removing a
   `<script>` from `<head>` while React is still hydrating makes it throw the
   server HTML away (React #418) and re-render the whole document, which also

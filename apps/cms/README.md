@@ -30,6 +30,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). Password resets go out via Resend — see below.                             |
 | `subscribers` | Newsletter sign-ups (double opt-in). Editors can read them; nobody can add one by hand. See "Newsletter" below. |
+| `scout-sources`, `scout-items`, `scout-stories`, `scout-usage` + global `scout-settings` | The AI scout (admin group **Scout**). See "AI scout" below. |
 
 ### Slugs
 
@@ -195,6 +196,44 @@ confirmation link points at the wrong host. Locally, without
 link). Sending issues isn't built yet: when it is, send to
 `status: confirmed` only and put `unsubscribeUrl(id)` in each one.
 
+## AI scout
+
+`src/scout/` watches games news, groups it into stories and scores them
+(design doc and steps: `PROGRESS.md` → AI news scout; setup and variables:
+`DEPLOYMENT.md` §11). Step 1 is observation only: no article is written.
+
+How a run goes (`src/scout/run.ts`, the `scoutTick` job every 5 minutes in its
+own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
+
+1. **Sources** (`default-sources.ts`): loaded into `scout-sources` the first
+   time, then edited in the admin. Official feeds every 5 min, the rest every 15.
+2. **Collect** (`collect.ts`, `feeds.ts`): conditional GET, RSS/Atom parsed,
+   URLs normalised, items older than 48 h or already seen skipped, general
+   outlets filtered to games stories. Stored as `scout-items` (kept 30 days).
+3. **Triage** (`triage.ts`, `triage-prompt.ts`): up to 40 new items per run go
+   to Claude Haiku with the open stories of the last 3 days; the answer is a
+   forced tool call (JSON). Each item joins a story, starts one, or is skipped.
+   Anything odd in the answer becomes a skip, never a crash.
+4. **Score** (`score.ts`): significance (the model's estimate) + independent
+   sources + best reliability − age, out of 100. Threshold 60 by default
+   (*Scout settings*).
+5. **Digest** (`digest.ts`, `discord.ts`): at 8 am and 8 pm Paris time, the
+   new stories by score to the Discord webhook, green above the threshold.
+6. **Budget** (`budget.ts`, `pricing.ts`): every call logged in `scout-usage`
+   with its cost; 80 % warning, auto-pause at the monthly cap, daily cap.
+7. **Retention** (`retention.ts`): hourly clean-up of old items and stories.
+
+```bash
+pnpm scout:run            # LOCAL DB only: one run on the real feeds, dry (no AI, no Discord)
+pnpm scout:run --live     # uses ANTHROPIC_API_KEY / SCOUT_DISCORD_WEBHOOK_URL from .env
+pnpm scout:run --digest   # also print (or send, with --live) the digest now
+```
+
+Tests: `pnpm test` (pure logic: feeds, score, Paris clock, triage answers,
+digest messages, pricing) and `tests/int/scout.int.spec.ts` (the whole run with
+the network faked). ⚠ The integration test empties the scout tables of the
+local database it runs on.
+
 ## ⚠️ After adding or removing a Payload plugin
 
 Run **`pnpm generate:importmap`** and commit the regenerated
@@ -268,7 +307,9 @@ pnpm migrate:fresh      # drop everything + re-run all migrations (destructive)
 pnpm generate:types     # regenerate src/payload-types.ts from collections
 pnpm generate:importmap # regenerate the admin import map
 pnpm build              # production build
-pnpm test:int           # LOCAL DB only: integration tests (slugs, publishedAt, featured default, previousSlugs, public access)
+pnpm scout:run          # LOCAL DB only: one AI-scout run, dry by default (see "AI scout")
+pnpm test               # unit tests (src/**/*.test.ts), no database
+pnpm test:int           # LOCAL DB only: integration tests (slugs, publishedAt, featured default, previousSlugs, public access, newsletter, scout)
 pnpm test:e2e           # Playwright through the admin panel on :3001 (starts `pnpm dev` if nothing is running)
 ```
 

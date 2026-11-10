@@ -19,13 +19,15 @@
     "migrate:fresh": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:fresh",
     "reindex:search": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/scripts/reindex-search.ts",
     "reset:db": "node scripts/reset-db.mjs",
+    "scout:run": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/scripts/scout-run.ts",
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/scripts/seed.ts",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "test": "pnpm run test:int && pnpm run test:e2e",
+    "test": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.unit.config.mts",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.93.0",
     "@payloadcms/email-resend": "3.93.0",
     "@payloadcms/next": "3.93.0",
     "@payloadcms/richtext-lexical": "3.93.0",
@@ -34,14 +36,14 @@
     "@sentry/nextjs": "^10.78.0",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
+    "fast-xml-parser": "^5.12.0",
     "graphql": "^16.8.1",
     "meilisearch": "^0.45.0",
     "next": "16.4.5",
     "payload": "3.93.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "sharp": "0.35.5",
-    "@payloadcms/db-postgres": "3.93.0"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",

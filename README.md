@@ -53,7 +53,9 @@ frontend: its server components fetch published articles from the CMS via
 `CMS_URL` and render them. The **mobile** app hits the same CMS API. Newsletter
 sign-ups go from the web's `/api/newsletter` to the CMS, which stores them and
 sends the confirmation email through Resend (`apps/cms/README.md` →
-Newsletter). Reader auth
+Newsletter). The **AI scout** runs inside the CMS too: it reads games news
+feeds, groups and scores stories with Claude, and reports to a private Discord
+channel (`apps/cms/README.md` → AI scout). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately.
 
@@ -76,7 +78,9 @@ flowchart LR
   web -->|reader login| clerk[Clerk]
   cms --> db[(Postgres · Neon)]
   cms -->|uploads| media[(R2 · media, public)]
-  cms -->|password resets| resend[Resend]
+  cms -->|password resets, newsletter confirmations| resend[Resend]
+  cms -->|AI scout: triage| claude[Claude API]
+  cms -->|AI scout: digests| discord[Discord · private channel]
   web -. errors .-> sentry[Sentry]
   cms -. errors .-> sentry
 
@@ -271,7 +275,7 @@ GitHub Actions runs on every push to `main` and every pull request
 
 - **Lint, type-check & tests** — lint runs on web + CMS; type-check runs on web,
   CMS, and shared packages; `pnpm test` runs the vitest unit tests (web,
-  mobile, `api-client`). Lint and type-check include mobile; mobile isn't built
+  mobile, CMS, `api-client`). Lint and type-check include mobile; mobile isn't built
   in CI (that needs EAS).
 - **Database backup** (`.github/workflows/backup.yml`) — nightly `pg_dump` of
   production into a private R2 bucket. Setup and restore: `DEPLOYMENT.md` §9.

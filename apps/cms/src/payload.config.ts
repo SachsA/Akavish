@@ -14,6 +14,12 @@ import { Authors } from './collections/Authors'
 import { Games } from './collections/Games'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
+import { ScoutItems } from './collections/scout/ScoutItems'
+import { ScoutSettings } from './collections/scout/ScoutSettings'
+import { ScoutSources } from './collections/scout/ScoutSources'
+import { ScoutStories } from './collections/scout/ScoutStories'
+import { ScoutUsage } from './collections/scout/ScoutUsage'
+import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 
 const filename = fileURLToPath(import.meta.url)
@@ -30,7 +36,21 @@ export default buildConfig({
       titleSuffix: '— Akavish CMS',
     },
   },
-  collections: [Users, Media, Tags, Authors, Games, Articles, Subscribers],
+  collections: [
+    Users,
+    Media,
+    Tags,
+    Authors,
+    Games,
+    Articles,
+    Subscribers,
+    // The AI scout (src/scout/, design doc linked in PROGRESS.md).
+    ScoutSources,
+    ScoutItems,
+    ScoutStories,
+    ScoutUsage,
+  ],
+  globals: [ScoutSettings],
   // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).
   // Public on purpose: no login, no access to the collection itself.
   endpoints: [
@@ -51,7 +71,25 @@ export default buildConfig({
       ? { options: { level: 'info', formatters: { level: (label: string) => ({ level: label }) } } }
       : undefined,
   jobs: {
-    autoRun: [{ cron: '* * * * *', queue: 'default' }],
+    autoRun: [
+      { cron: '* * * * *', queue: 'default' },
+      // The AI scout's own queue, so a slow run never delays a scheduled publish.
+      { cron: '* * * * *', queue: 'scout' },
+    ],
+    tasks: [
+      {
+        // Every 5 minutes: collect, triage, digest if due (src/scout/run.ts).
+        // Does nothing unless SCOUT_ENABLED=true. The schedule is declared
+        // either way so the database schema doesn't depend on an env var.
+        slug: 'scoutTick',
+        schedule: [{ cron: '0 */5 * * * *', queue: 'scout' }],
+        retries: 0,
+        handler: async ({ req }) => {
+          await runScout(req.payload)
+          return { output: {} }
+        },
+      },
+    ],
   },
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
