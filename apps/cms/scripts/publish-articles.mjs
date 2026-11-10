@@ -41,9 +41,9 @@
  *   **bold** and [links](https://…).
  *
  * Re-running is safe: games and media are reused by slug / alt text, and
- * articles are updated in place (a published one stays published). A
- * scheduled article gets its publish queued again on each run (harmless, it
- * publishes once), so to fix one piece pass --only <its slug>.
+ * articles are updated in place (a published one stays published). A new
+ * publishAt replaces the article's pending schedule (`now` or `draft` clears
+ * it). To touch only some pieces, pass --only <slug,slug>.
  */
 import { existsSync, openAsBlob, readFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -295,10 +295,12 @@ async function main() {
           body: JSON.stringify({ ...data, ...state }),
         })
     const id = res.doc.id
-    if (schedule && !live) {
+    // Set (or clear) the schedule: the endpoint cancels this article's
+    // pending publishes first, so a moved date leaves nothing behind.
+    if (existing || (schedule && !live)) {
       await call('/articles-schedule', {
         method: 'POST',
-        body: JSON.stringify({ id, publishAt: schedule }),
+        body: JSON.stringify({ id, publishAt: schedule && !live ? schedule : null }),
       })
     }
     console.log(

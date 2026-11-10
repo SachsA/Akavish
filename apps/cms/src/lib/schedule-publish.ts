@@ -7,7 +7,10 @@
 // publishes them, exactly as if the button had been used.
 //
 //   POST /api/articles-schedule  { "id": 12, "publishAt": "2026-11-12T09:00:00Z" }
+//   POST /api/articles-schedule  { "id": 12, "publishAt": null }   cancel
 //
+// It sets the schedule rather than adding one: the article's pending publish
+// jobs are cancelled first, so moving a date never leaves the old one behind.
 // Editors only (a logged-in `users` session or JWT). The date must be in the
 // future and within a year; the article must exist.
 
@@ -28,12 +31,15 @@ export const schedulePublishHandler: PayloadHandler = async (req) => {
     return json({ error: 'bad json' }, 400)
   }
   const id = Number(body.id)
-  const when = new Date(String(body.publishAt ?? ''))
   if (!Number.isInteger(id) || id <= 0) return json({ error: 'id must be an article id' }, 400)
-  if (Number.isNaN(when.getTime())) return json({ error: 'publishAt must be an ISO date' }, 400)
-  const now = Date.now()
-  if (when.getTime() <= now || when.getTime() > now + YEAR) {
-    return json({ error: 'publishAt must be in the future, within a year' }, 400)
+  const cancelOnly = body.publishAt === null
+  const when = new Date(String(body.publishAt ?? ''))
+  if (!cancelOnly) {
+    if (Number.isNaN(when.getTime())) return json({ error: 'publishAt must be an ISO date' }, 400)
+    const now = Date.now()
+    if (when.getTime() <= now || when.getTime() > now + YEAR) {
+      return json({ error: 'publishAt must be in the future, within a year' }, 400)
+    }
   }
 
   try {
@@ -41,6 +47,36 @@ export const schedulePublishHandler: PayloadHandler = async (req) => {
   } catch {
     return json({ error: 'article not found' }, 404)
   }
+
+  // Pending publishes of this article (few: filtered here rather than with a
+  // query on the JSON `input` column).
+  const { docs: pending } = await req.payload.find({
+    collection: 'payload-jobs' as never,
+    where: {
+      taskSlug: { equals: 'schedulePublish' },
+      completedAt: { exists: false },
+      processing: { equals: false },
+    } as never,
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const mine = (
+    pending as unknown as Array<{
+      id: number | string
+      input?: { doc?: { relationTo?: string; value?: unknown } }
+    }>
+  ).filter(
+    (j) => j.input?.doc?.relationTo === 'articles' && String(j.input.doc.value) === String(id),
+  )
+  for (const j of mine) {
+    await req.payload.delete({
+      collection: 'payload-jobs' as never,
+      id: j.id,
+      overrideAccess: true,
+    })
+  }
+  if (cancelOnly) return json({ ok: true, cancelled: mine.length })
 
   const job = (await req.payload.jobs.queue({
     task: 'schedulePublish' as never,
@@ -52,5 +88,5 @@ export const schedulePublishHandler: PayloadHandler = async (req) => {
     waitUntil: when,
   })) as { id: number | string }
 
-  return json({ ok: true, job: job.id, publishAt: when.toISOString() })
+  return json({ ok: true, job: job.id, publishAt: when.toISOString(), cancelled: mine.length })
 }

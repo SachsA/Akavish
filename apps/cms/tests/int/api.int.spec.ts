@@ -231,4 +231,32 @@ describe('schedule publish endpoint', () => {
     )
     await payload.delete({ collection: 'payload-jobs' as never, id: job })
   })
+
+  it('replaces the previous schedule, and null cancels it', async () => {
+    const doc = await createArticle({ title: `${RUN} schedule move` })
+    const pending = async () =>
+      (
+        await payload.find({
+          collection: 'payload-jobs' as never,
+          where: { taskSlug: { equals: 'schedulePublish' } } as never,
+          pagination: false,
+        })
+      ).docs.filter(
+        (j) =>
+          (j as unknown as { input: { doc: { value: string } } }).input.doc.value ===
+          String(doc.id),
+      )
+    const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString()
+    await call(editor, { id: doc.id, publishAt: day(1) })
+    const moved = await call(editor, { id: doc.id, publishAt: day(2) })
+    expect(await moved.json()).toMatchObject({ cancelled: 1 })
+    const left = await pending()
+    expect(left).toHaveLength(1)
+    expect(
+      new Date((left[0] as unknown as { waitUntil: string }).waitUntil).getTime(),
+    ).toBeGreaterThan(Date.now() + 1.5 * 86_400_000)
+    const cancelled = await call(editor, { id: doc.id, publishAt: null })
+    expect(await cancelled.json()).toMatchObject({ ok: true, cancelled: 1 })
+    expect(await pending()).toHaveLength(0)
+  })
 })

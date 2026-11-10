@@ -75,7 +75,8 @@ where they can be cancelled.
 
 Scripts can do the same: `POST /api/articles-schedule` with
 `{ "id": 12, "publishAt": "<ISO date>" }`, logged in as an editor
-(`src/lib/schedule-publish.ts`), queues the exact job the button queues.
+(`src/lib/schedule-publish.ts`), queues the exact job the button queues. A
+new date replaces the article's pending one; `"publishAt": null` cancels it.
 
 ### Publishing articles from Markdown
 
