@@ -207,9 +207,14 @@ Everything else waits on something:
 
 i18n (EN + FR) is its own project — §6.
 
-> **The real bottleneck is content, not code.** The production CMS has had zero
-> articles since October 2026. Pagination, analytics and search polish only mean
-> something once there's a steady publishing rhythm.
+> **The real bottleneck is content, not code.** The production CMS had zero
+> articles from October 2026 until the launch batch: 11 AI-assisted articles
+> (4 on GTA VI, plus Worlds, Valorant, the CS2 Major, PS Plus, the releases
+> left in 2026, the 2026 review and 2027), posted with
+> `apps/cms/scripts/publish-articles.mjs` and scheduled from Nov 10 to Nov 18
+> so the site isn't empty for GTA VI. Drafts and sources:
+> [Akavish : articles de lancement](https://claude.ai/artifact/7xqDrjALBdwL33reFUC6jf).
+> After that, the AI scout keeps the rhythm.
 
 | Status | Item            | Notes                                                                                                                                            |
 | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |

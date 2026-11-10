@@ -82,3 +82,8 @@ yarn-error.log*
 # Misc
 .vercel
 .npmrc
+
+# Login of the CMS user Claude uses to post articles (never committed)
+.cms-import
+# Images and Markdown for scripts/publish-articles.mjs (publisher assets, not ours to commit)
+import-images/

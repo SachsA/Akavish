@@ -136,6 +136,11 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   Saturdays, `GET /api/scout/report` for editors. Design and steps in
   `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.
+- **Articles from Markdown:** `apps/cms/scripts/publish-articles.mjs` posts
+  articles (covers, games, publish now / schedule / draft) over REST with a
+  dedicated editor login in the gitignored `.cms-import`; scheduling goes
+  through `POST /api/articles-schedule` (same job as the admin button).
+  AI-drafted pieces always carry `aiAssisted`.
 - **Newsletter:** double opt-in sign-up, rules in `apps/cms/src/lib/newsletter.ts`
   (endpoints `/api/newsletter/*`, collection `subscribers`, int tests), web form
   `components/NewsletterSignup.tsx` → `app/api/newsletter` (rate-limited) and

@@ -22,6 +22,7 @@ import { ScoutUsage } from './collections/scout/ScoutUsage'
 import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
 import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
+import { schedulePublishHandler } from './lib/schedule-publish'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -58,6 +59,8 @@ export default buildConfig({
     { path: '/newsletter/subscribe', method: 'post', handler: subscribeHandler },
     { path: '/newsletter/confirm', method: 'post', handler: confirmHandler },
     { path: '/newsletter/unsubscribe', method: 'post', handler: unsubscribeHandler },
+    // Schedule an article's publication from a script (src/lib/schedule-publish.ts).
+    { path: '/articles-schedule', method: 'post', handler: schedulePublishHandler },
     // AI scout, step 2: Discord's "Interactions Endpoint URL" (button clicks).
     // Signature-checked; only the owner's clicks are accepted.
     { path: '/scout/discord', method: 'post', handler: discordInteractionsHandler },

@@ -9,6 +9,7 @@
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 import { slugify } from '@/fields/slug'
+import { schedulePublishHandler } from '@/lib/schedule-publish'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -31,7 +32,17 @@ const richText = {
         indent: 0,
         version: 1,
         direction: 'ltr',
-        children: [{ type: 'text', text: 'Body', format: 0, style: '', mode: 'normal', detail: 0, version: 1 }],
+        children: [
+          {
+            type: 'text',
+            text: 'Body',
+            format: 0,
+            style: '',
+            mode: 'normal',
+            detail: 0,
+            version: 1,
+          },
+        ],
       },
     ],
   },
@@ -57,7 +68,10 @@ async function createArticle(data: Record<string, unknown>) {
 beforeAll(async () => {
   payload = await getPayload({ config })
   // Articles require an author.
-  const author = await payload.create({ collection: 'authors', data: { name: `${RUN} Author` } as never })
+  const author = await payload.create({
+    collection: 'authors',
+    data: { name: `${RUN} Author` } as never,
+  })
   authorId = author.id
   created.push({ collection: 'authors', id: author.id })
 })
@@ -70,7 +84,9 @@ afterAll(async () => {
 
 describe('slugify', () => {
   it('lowercases, strips accents and collapses punctuation into dashes', () => {
-    expect(slugify('  Élden Ring: Shadow of the Erdtree! ')).toBe('elden-ring-shadow-of-the-erdtree')
+    expect(slugify('  Élden Ring: Shadow of the Erdtree! ')).toBe(
+      'elden-ring-shadow-of-the-erdtree',
+    )
     expect(slugify('GTA VI -- 2026')).toBe('gta-vi-2026')
   })
 })
@@ -78,9 +94,15 @@ describe('slugify', () => {
 describe('slug field', () => {
   it('generates the slug from the title and suffixes it on a clash', async () => {
     // Two different names (tag names are unique) that slugify to the same thing.
-    const a = await payload.create({ collection: 'tags', data: { name: `${RUN} Same Name` } as never })
+    const a = await payload.create({
+      collection: 'tags',
+      data: { name: `${RUN} Same Name` } as never,
+    })
     created.push({ collection: 'tags', id: a.id })
-    const b = await payload.create({ collection: 'tags', data: { name: `${RUN} same-name!` } as never })
+    const b = await payload.create({
+      collection: 'tags',
+      data: { name: `${RUN} same-name!` } as never,
+    })
     created.push({ collection: 'tags', id: b.id })
 
     expect(a.slug).toBe(`${RUN}-same-name`)
@@ -124,7 +146,11 @@ describe('articles', () => {
   })
 
   it('never un-archives an article on publish', async () => {
-    const doc = await createArticle({ title: `${RUN} archived`, status: 'archived', _status: 'published' })
+    const doc = await createArticle({
+      title: `${RUN} archived`,
+      status: 'archived',
+      _status: 'published',
+    })
     expect(doc.status).toBe('archived')
   })
 
@@ -141,7 +167,9 @@ describe('articles', () => {
       data: { slug: `${RUN}-new` } as never,
     })
     expect(renamed.slug).toBe(`${RUN}-new`)
-    expect((renamed.previousSlugs ?? []).map((s: { slug?: string | null }) => s.slug)).toEqual([`${RUN}-old`])
+    expect((renamed.previousSlugs ?? []).map((s: { slug?: string | null }) => s.slug)).toEqual([
+      `${RUN}-old`,
+    ])
   })
 
   it('does not record old slugs for drafts (they never had a public URL)', async () => {
@@ -167,5 +195,40 @@ describe('articles', () => {
     const titles = asPublic.docs.map((d) => d.title)
     expect(titles).toContain(`${RUN} public`)
     expect(titles).not.toContain(`${RUN} hidden`)
+  })
+})
+
+describe('schedule publish endpoint', () => {
+  const call = (user: unknown, body: unknown) =>
+    schedulePublishHandler({ payload, user, json: async () => body } as never)
+  const editor = { id: 1, collection: 'users' }
+
+  it('only lets editors schedule', async () => {
+    expect((await call(null, {})).status).toBe(401)
+  })
+
+  it('refuses a past date, a bad id and a missing article', async () => {
+    const doc = await createArticle({ title: `${RUN} schedule bad` })
+    expect((await call(editor, { id: doc.id, publishAt: '2020-01-01T00:00:00Z' })).status).toBe(400)
+    expect((await call(editor, { id: 'x', publishAt: '2099-01-01T00:00:00Z' })).status).toBe(400)
+    const later = new Date(Date.now() + 86_400_000).toISOString()
+    expect((await call(editor, { id: 99_999_999, publishAt: later })).status).toBe(404)
+  })
+
+  it('queues the same schedulePublish job as the admin button', async () => {
+    const doc = await createArticle({ title: `${RUN} schedule ok` })
+    const later = new Date(Date.now() + 86_400_000)
+    const res = await call(editor, { id: doc.id, publishAt: later.toISOString() })
+    expect(res.status).toBe(200)
+    const { job } = (await res.json()) as { job: number }
+    const queued = await payload.findByID({ collection: 'payload-jobs' as never, id: job })
+    expect(queued).toMatchObject({
+      taskSlug: 'schedulePublish',
+      input: { type: 'publish', doc: { relationTo: 'articles', value: String(doc.id) } },
+    })
+    expect(new Date((queued as unknown as { waitUntil: string }).waitUntil).getTime()).toBe(
+      later.getTime(),
+    )
+    await payload.delete({ collection: 'payload-jobs' as never, id: job })
   })
 })

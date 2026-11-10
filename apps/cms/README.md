@@ -73,6 +73,28 @@ switches **Status** from Draft to Published, so the article appears on the
 site; Archived is never touched. Upcoming schedules show in the same drawer,
 where they can be cancelled.
 
+Scripts can do the same: `POST /api/articles-schedule` with
+`{ "id": 12, "publishAt": "<ISO date>" }`, logged in as an editor
+(`src/lib/schedule-publish.ts`), queues the exact job the button queues.
+
+### Publishing articles from Markdown
+
+`scripts/publish-articles.mjs` posts articles written in Markdown to a running
+CMS over REST, with their cover images and games, and publishes them now,
+schedules them, or leaves them as drafts. No dependencies, plain Node:
+
+```bash
+node apps/cms/scripts/publish-articles.mjs import-images/articles.md --images import-images [--dry]
+```
+
+It logs in with `CMS_EMAIL` / `CMS_PASSWORD` from the environment or from
+`.cms-import` at the repo root (gitignored), against `CMS_URL`
+(default `https://cms.akavish.gg`): use a dedicated editor account. The file
+format (front matter per game or article, Markdown body with `##` headings,
+`- ` lists, `**bold**` and links) is documented at the top of the script.
+Re-running is safe: games and media are reused, articles updated in place.
+`import-images/` (the images and the Markdown) is gitignored.
+
 ### Picking the homepage lead story (`featured`)
 
 Tick **featured** in an article's sidebar to make it the big lead story on the
@@ -337,7 +359,7 @@ pnpm generate:types     # regenerate src/payload-types.ts from collections
 pnpm generate:importmap # regenerate the admin import map
 pnpm build              # production build
 pnpm scout:run          # LOCAL DB only: one AI-scout run, dry by default (see "AI scout")
-pnpm test               # unit tests (src/**/*.test.ts), no database
+pnpm test               # unit tests (src/**/*.test.ts, scripts/**/*.test.mjs), no database
 pnpm test:int           # LOCAL DB only: integration tests (slugs, publishedAt, featured default, previousSlugs, public access, newsletter, scout)
 pnpm test:e2e           # Playwright through the admin panel on :3001 (starts `pnpm dev` if nothing is running)
 ```
