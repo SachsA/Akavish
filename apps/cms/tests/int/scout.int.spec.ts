@@ -15,7 +15,8 @@ import { scoutConfig } from '@/scout/config'
 import type { ScoutContext } from '@/scout/context'
 import { maybeSendDigest } from '@/scout/digest'
 import { autoDraft, draftStory } from '@/scout/draft'
-import { handleInteraction } from '@/scout/interactions'
+import { handleInteraction, scoutReportHandler } from '@/scout/interactions'
+import { gatherReport } from '@/scout/report'
 import type { DiscordMessage } from '@/scout/discord'
 import { checkBudget } from '@/scout/budget'
 import { runScout } from '@/scout/run'
@@ -522,5 +523,63 @@ describe('scout step 2 (drafts)', () => {
     await expect(
       payload.findByID({ collection: 'articles', id: draftId, draft: true, overrideAccess: true }),
     ).rejects.toThrow()
+  })
+})
+
+// ─── Weekly report ───────────────────────────────────────────────────────────
+
+describe('scout weekly report', () => {
+  beforeAll(async () => {
+    const at = new Date().toISOString()
+    for (const [title, score, status] of [
+      ['Big story', 85, 'published'],
+      ['Duplicate story', 64, 'rejected'],
+      ['Small story', 40, 'listed'],
+    ] as const) {
+      await payload.create({
+        collection: 'scout-stories',
+        data: {
+          title,
+          score,
+          status,
+          firstSeenAt: at,
+          ...(status === 'listed' ? {} : { draftedAt: at, version: 1 }),
+        },
+        overrideAccess: true,
+      })
+    }
+  })
+
+  it('counts the week, drafts included', async () => {
+    // Created at the real time: report from now so they fall in the window.
+    const r = await gatherReport({ ...ctx(), now: new Date() }, 60, 7)
+    expect(r.totals.stories).toBeGreaterThanOrEqual(3)
+    expect(r.totals.aboveThreshold).toBeGreaterThanOrEqual(2)
+    expect(r.drafts).toMatchObject({ published: 1, rejected: 1 })
+    expect(r.top[0].title).toBe('Big story')
+  })
+
+  it('is served to logged-in editors only', async () => {
+    const req = (user: unknown) =>
+      ({ payload, user, searchParams: new URLSearchParams('days=3') }) as never
+    expect((await scoutReportHandler(req(null))).status).toBe(401)
+    const res = await scoutReportHandler(req({ id: 1, collection: 'users' }))
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('3 jours, seuil 60')
+  })
+
+  it('goes out with the first digest on Saturday', async () => {
+    // The next Saturday, 9:30 in Paris (within the week of the stories above).
+    const saturday = new Date()
+    saturday.setUTCDate(saturday.getUTCDate() + ((6 - saturday.getUTCDay() + 7) % 7 || 7))
+    saturday.setUTCHours(8, 30, 0, 0)
+    const settings = (await payload.findGlobal({
+      slug: 'scout-settings',
+      overrideAccess: true,
+    })) as never
+    sent.length = 0
+    expect(await maybeSendDigest(ctx(saturday), settings)).toBe('morning')
+    expect(sent.at(-1)?.content).toContain('bilan de la semaine')
+    expect(sent.at(-1)?.embeds).toHaveLength(5)
   })
 })

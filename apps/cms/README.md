@@ -231,6 +231,13 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
 7. **Budget** (`budget.ts`, `pricing.ts`): every call logged in `scout-usage`
    with its cost; 80 % warning, auto-pause at the monthly cap, daily cap.
 8. **Retention** (`retention.ts`): hourly clean-up of old items and stories.
+9. **Weekly report** (`report.ts`): with the first digest on Saturday, the
+   numbers behind the threshold review: stories per day, score spread, how
+   many would pass at 45 to 75, best stories and those just below, drafts
+   published / rejected, cost and 30-day pace, feeds that brought nothing or
+   fail. Any time in the browser, logged into `/admin`:
+   `GET /api/scout/report?days=7` (plain text, `&format=json` for JSON; 401
+   without an editor session).
 
 **Discord validation** (`discord-bot.ts`, `interactions.ts`). Each draft is a
 bot message with **Publier** / **Modifier** / **Rejeter** and a link to
@@ -246,12 +253,14 @@ that calls the model runs as a `scoutDraft` job (Discord wants an answer within
 pnpm scout:run            # LOCAL DB only: one run on the real feeds, dry (no AI, no Discord)
 pnpm scout:run --live     # uses ANTHROPIC_API_KEY / SCOUT_DISCORD_WEBHOOK_URL from .env
 pnpm scout:run --digest   # also print (or send, with --live) the digest now
+pnpm scout:run --report   # only print the weekly report (--days=N), no run
 ```
 
 Tests: `pnpm test` (pure logic: feeds, score, Paris clock, triage answers,
 digest messages, pricing, draft cleaning, Lexical, page text, Discord
-signatures and buttons) and `tests/int/scout.int.spec.ts` (the whole run, then
-drafts, revisions and signed clicks, with the network faked). ⚠ The integration test empties the scout tables of the
+signatures and buttons, weekly report) and `tests/int/scout.int.spec.ts` (the
+whole run, then drafts, revisions and signed clicks, the report endpoint and
+the Saturday report, with the network faked). ⚠ The integration test empties the scout tables of the
 local database it runs on.
 
 ## ⚠️ After adding or removing a Payload plugin

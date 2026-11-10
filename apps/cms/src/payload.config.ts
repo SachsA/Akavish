@@ -19,7 +19,7 @@ import { ScoutSettings } from './collections/scout/ScoutSettings'
 import { ScoutSources } from './collections/scout/ScoutSources'
 import { ScoutStories } from './collections/scout/ScoutStories'
 import { ScoutUsage } from './collections/scout/ScoutUsage'
-import { discordInteractionsHandler, runDraftJob } from './scout/interactions'
+import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
 import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 
@@ -61,6 +61,7 @@ export default buildConfig({
     // AI scout, step 2: Discord's "Interactions Endpoint URL" (button clicks).
     // Signature-checked; only the owner's clicks are accepted.
     { path: '/scout/discord', method: 'post', handler: discordInteractionsHandler },
+    { path: '/scout/report', method: 'get', handler: scoutReportHandler },
   ],
   // Jobs queue, used by scheduled publishing (Articles → "Schedule publish").
   // autoRun checks the queue every minute inside the CMS server process, which

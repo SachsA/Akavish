@@ -18,6 +18,7 @@ import {
   verifyDiscordSignature,
   type Embed,
 } from './discord-bot'
+import { gatherReport, reportText } from './report'
 import { makeContext } from './run'
 
 interface Interaction {
@@ -173,6 +174,30 @@ export async function handleInteraction(
 export const discordInteractionsHandler: PayloadHandler = async (req) => {
   const raw = req.text ? await req.text() : ''
   return handleInteraction(req.payload, raw, req.headers)
+}
+
+/**
+ * GET /api/scout/report?days=7: the weekly numbers as plain text (or JSON with
+ * &format=json). Editors only: open it in the browser while logged into /admin.
+ */
+export const scoutReportHandler: PayloadHandler = async (req) => {
+  if (!req.user) {
+    return new Response('Connecte-toi à /admin d’abord, puis recharge cette page.', {
+      status: 401,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    })
+  }
+  const raw = Number(req.searchParams?.get('days'))
+  const days = Number.isFinite(raw) && raw >= 1 ? Math.min(Math.floor(raw), 30) : 7
+  const settings = (await req.payload.findGlobal({
+    slug: 'scout-settings',
+    overrideAccess: true,
+  })) as unknown as SettingsDoc
+  const report = await gatherReport(makeContext(req.payload), settings.threshold ?? 60, days)
+  if (req.searchParams?.get('format') === 'json') return json(report)
+  return new Response(reportText(report), {
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+  })
 }
 
 /** The `scoutDraft` job: one draft or revision, reported on Discord if it fails. */

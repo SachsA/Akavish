@@ -6,14 +6,16 @@
  *   pnpm scout:run --live   with ANTHROPIC_API_KEY and SCOUT_DISCORD_WEBHOOK_URL
  *                           from apps/cms/.env: real triage, real Discord post
  *
- * Add --digest to send the digest now, whatever the time. Production doesn't
+ * Add --digest to send the digest now, whatever the time, or --report to only
+ * print the weekly report (last 7 days, or --days=N) without running the scout. Production doesn't
  * use this: the `scoutTick` job runs every 5 minutes inside the CMS.
  */
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config'
 import { scoutConfig } from '../scout/config'
-import { runScout } from '../scout/run'
+import { gatherReport, reportText } from '../scout/report'
+import { makeContext, runScout } from '../scout/run'
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]', 'host.docker.internal'])
 
@@ -26,10 +28,20 @@ if (!LOCAL_HOSTS.has(host)) {
   )
 }
 
+const payload = await getPayload({ config })
+
+if (process.argv.includes('--report')) {
+  const days = Number(process.argv.find((a) => a.startsWith('--days='))?.slice(7)) || 7
+  const settings = (await payload.findGlobal({ slug: 'scout-settings' })) as {
+    threshold?: number | null
+  }
+  console.log(reportText(await gatherReport(makeContext(payload), settings.threshold ?? 60, days)))
+  process.exit(0)
+}
+
 const live = process.argv.includes('--live')
 const forceDigest = process.argv.includes('--digest')
 
-const payload = await getPayload({ config })
 const base = scoutConfig()
 const cfg = { ...base, enabled: true, dryRun: live ? base.dryRun : true }
 

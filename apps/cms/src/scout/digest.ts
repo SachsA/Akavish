@@ -9,6 +9,7 @@
 import type { ItemDoc, ScoutContext, SettingsDoc, SourceDoc, StoryDoc } from './context'
 import { digestMessages, type DigestStory } from './discord'
 import { pickMenu, sendBotMessage } from './discord-bot'
+import { gatherReport, isReportDay, reportMessages } from './report'
 import { dueDigest, parisClock, type DigestSlot } from './schedule'
 
 export async function maybeSendDigest(
@@ -93,11 +94,31 @@ export async function maybeSendDigest(
   // Stamp the slot (and, for the evening, the morning too: one digest after
   // 8 pm covers the whole day, see `dueDigest`).
   const { date } = parisClock(ctx.now)
+  // Saturday's first digest also brings the weekly report (threshold review).
+  const weekly = isReportDay(ctx.now) && settings.lastMorningDigest !== date
   const stamp =
     slot === 'evening'
       ? { lastEveningDigest: date, lastMorningDigest: date }
       : { lastMorningDigest: date }
   await ctx.payload.updateGlobal({ slug: 'scout-settings', data: stamp, overrideAccess: true })
   Object.assign(settings, stamp)
+
+  if (weekly) {
+    try {
+      const report = await gatherReport(ctx, settings.threshold ?? 60, 7)
+      for (const message of reportMessages(report)) {
+        if (ctx.config.bot && !ctx.config.dryRun) {
+          await sendBotMessage(ctx.config.bot, message, ctx.fetch)
+        } else {
+          await ctx.notify(message)
+        }
+      }
+    } catch (err) {
+      ctx.payload.logger.error({
+        msg: '[scout] weekly report failed',
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
   return slot
 }

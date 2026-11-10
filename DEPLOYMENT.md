@@ -1143,7 +1143,11 @@ yet. A draft costs about 0.05-0.10 $ with Sonnet.
 (the scout ticks it itself when the monthly budget is spent); move the draft
 threshold there too (60 by default). Spending: *Scout usage*, one row per
 call. Mute a feed: untick *active* on it. Logs: Railway, lines starting with
-`[scout]`.
+`[scout]`. **Weekly report:** posted on Discord with the first digest every
+Saturday; the full version any time at
+`https://cms.akavish.gg/api/scout/report?days=7`, in a browser logged into
+`/admin` (stories per day, how many would pass at each threshold, drafts,
+cost, silent or failing feeds).
 
 **Feeds that refuse the scout.** It always says who it is
 (`AkavishScout/1.0 (+https://akavish.gg)`). A feed that answers 403 shows it in

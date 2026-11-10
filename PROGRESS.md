@@ -253,7 +253,7 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 | Step | Status | What |
 | --- | --- | --- |
 | 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
-| 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps |
+| 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps, weekly report on Saturdays + `/api/scout/report` (2026-11-10) |
 | 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings |
 | 3. Leakers + style | Later | X accounts (pay-per-use API), learning from published / rejected drafts |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
@@ -269,7 +269,9 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 - Nov 11-14: digests only (observation cut to 4-5 days). Note the stories that
   should have scored higher or lower. Before the review, test *Publier* once
   on a real story and check the article and its AI note on akavish.gg.
-- Nov 14-15: review. Tune the threshold, then tick `draftsEnabled`.
+- Nov 14-15: review, from the weekly report (Discord, Saturday 8 am, or
+  `cms.akavish.gg/api/scout/report`): stories per day at each threshold,
+  score spread, cost. Tune the threshold, then tick `draftsEnabled`.
 - Nov 16-18: running-in with automatic drafts.
 - Nov 19: ready.
 

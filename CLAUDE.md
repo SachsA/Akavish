@@ -132,8 +132,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   Sonnet **draft** articles (`aiAssisted`) validated on Discord by a bot
   (Publish / Edit → V2 / Reject, endpoint `/api/scout/discord`, `scoutDraft`
   job), automatic drafts off unless *Scout settings → draftsEnabled*. Never
-  publish without the owner's click. Design and steps in `PROGRESS.md`, setup
-  in `DEPLOYMENT.md` §11. Fetch as an identified
+  publish without the owner's click. Weekly report (`report.ts`): Discord on
+  Saturdays, `GET /api/scout/report` for editors. Design and steps in
+  `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.
 - **Newsletter:** double opt-in sign-up, rules in `apps/cms/src/lib/newsletter.ts`
   (endpoints `/api/newsletter/*`, collection `subscribers`, int tests), web form
