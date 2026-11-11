@@ -149,7 +149,10 @@ export async function duplicateReason(
       model: ctx.config.triageModel,
       system: DEDUPE_SYSTEM,
       prompt: dedupePrompt(
-        { title: story.title, sourceTitles: items.map((i) => (i as { title: string }).title) },
+        {
+          title: story.title,
+          sourceTitles: items.map((i) => (i as unknown as { title: string }).title),
+        },
         covered,
       ),
       tool: DEDUPE_TOOL as unknown as Parameters<typeof callTool>[0]['tool'],
