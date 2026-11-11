@@ -160,7 +160,7 @@ actually tackle it, best value-for-effort first.
 | --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                                                   | —      |
 | 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context                                             | —      |
-| 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk production instance live since 2026-11-10, social logins pending (`DEPLOYMENT.md` §6.5) | —      |
+| 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk production instance live since 2026-11-10, Google / Discord / Twitch / X sign-in since 2026-11-11 (`DEPLOYMENT.md` §6.5) | —      |
 | 4   | ✅ **Email adapter**                | Done — `@payloadcms/email-resend` wired in `payload.config.ts`; password resets are really sent, with a branded HTML template (`lib/emails/forgot-password.ts`). Off when `RESEND_API_KEY` is unset (console fallback). Setup + DNS in `DEPLOYMENT.md` §4c | —      |
 | 5   | ✅ **Search works in prod**         | Done — `/api/search` falls back to the CMS (Postgres `ILIKE`) when Meilisearch isn't configured, and when it errors. The header search box was returning 503 on every page; now it works for free. `DEPLOYMENT.md` §4 | —      |
 | 6   | ✅ **Article page polish**          | Done — reading time (+ `wordCount`/`timeRequired` in the JSON-LD), share row, "Read next" suggestions, prev/next nav. Suggestions fail soft: a CMS error drops them instead of breaking the page | —      |
@@ -191,9 +191,8 @@ theme, public-site e2e tests, scheduled publishing, pagination — 2026-11-07;
 mobile reading app, newsletter sign-up — 2026-11-09).
 
 **Clerk is in production since 2026-11-10** (`pk_live_…` on `akavish.gg`,
-Frontend API on `clerk.akavish.gg`). **Left: the social logins** (Google,
-Discord, Twitch, X) need their own OAuth apps, `DEPLOYMENT.md` §6.5 step 6;
-until then a button without credentials fails.
+Frontend API on `clerk.akavish.gg`), with Google, Discord, Twitch and X
+sign-in on Akavish's own OAuth apps since 2026-11-11 (`DEPLOYMENT.md` §6.5).
 
 **In progress: the AI news scout** (section below). Steps 1 (observation) and
 2 (drafts + Discord buttons) are live in production since 2026-11-10, bot set

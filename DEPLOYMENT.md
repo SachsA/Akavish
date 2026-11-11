@@ -685,9 +685,10 @@ saving. This is what makes canonical URLs, the sitemap, OG tags and CORS correct
 ### 6.5 Clerk — production instance
 
 **Status: live since 2026-11-10.** `akavish.gg` serves `pk_live_…`, Clerk's
-Frontend API answers on `clerk.akavish.gg`, no "development mode" banner.
-**Pending:** the social logins (Google, Discord, Twitch, X) show on the forms
-but need their own OAuth apps in production (step 6).
+Frontend API answers on `clerk.akavish.gg`, no "development mode" banner. The
+four social logins (Google, Discord, Twitch, X) have their own OAuth apps since
+2026-11-11: each button sends to the provider with Akavish's client ID and
+`https://clerk.akavish.gg/v1/oauth_callback` (step 6).
 
 1. **Create the instance.** Clerk dashboard → *Go to production* → Application
    domain: **`akavish.gg`** (the apex, no `www`: `www` 308s to it). Clerk then
@@ -794,8 +795,8 @@ domain change:
 - [ ] `https://akavish.gg/sitemap.xml` and `/robots.txt` return prod URLs.
 - [x] Sign-up/login works on the live domain with the Clerk **production**
       keys (`pk_live_…`, §6.5): no "development mode" banner (2026-11-10).
-- [ ] Social logins (Google, Discord, Twitch, X) have their own OAuth apps
-      (§6.5 step 6).
+- [x] Social logins (Google, Discord, Twitch, X) have their own OAuth apps
+      (§6.5 step 6, 2026-11-11).
 - [ ] CORS: the CMS `WEB_URL` matches the live web origin (else the browser
       blocks client calls — server-side fetches are unaffected).
 - [ ] Search backfilled (if enabled) and the header search returns results.
