@@ -230,7 +230,7 @@ i18n (EN + FR) is its own project — §6.
 > on its own when it goes live. On Nov 11 every article (live, scheduled and
 > the first scout ones) was completed: tags, game (Marathon added to *Games*),
 > cover alt text, publishers, and covers for the CS2, League of Legends and
-> Marathon game pages; Valorant's game page still has no cover. Drafts and sources:
+> Marathon game pages (Valorant's from the official key art Alex supplied). Drafts and sources:
 > [Akavish : articles de lancement](https://claude.ai/artifact/7xqDrjALBdwL33reFUC6jf).
 > After that, the AI scout keeps the rhythm.
 
@@ -277,7 +277,7 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 | --- | --- | --- |
 | 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
 | 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps, weekly report on Saturdays + `/api/scout/report` (2026-11-10) |
-| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings. **Media** (2026-11-11): a cover on every draft (official source's `og:image`, else the game's cover, never a press outlet's image), official YouTube videos in a *Watch* section, an image URL field in *Modifier*, Publish refused without a cover. **Tags and game** (2026-11-11): Sonnet picks 2 to 5 tags from the existing ones (never creates one, never the game nor the category) and the story's game from *Games* |
+| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings. **Media** (2026-11-11): a cover on every draft (official source's `og:image`, else the game's cover, never a press outlet's image), official YouTube videos in a *Watch* section, an image URL field in *Modifier*, Publish refused without a cover. **Tags and game** (2026-11-11): Sonnet picks 2 to 5 tags from the existing ones (never creates one, never the game nor the category) and the story's game from *Games*; cover alt text from the publisher's `og:image:alt`. Field by field: `DEPLOYMENT.md` §11 |
 | 3. Leakers + style | Later | X accounts (pay-per-use API; when it's paid, also switch X sign-in back on in Clerk, `DEPLOYMENT.md` §6.5), learning from published / rejected drafts |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
 | 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |

@@ -136,7 +136,7 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `og:image` or the game's cover, never a press outlet's image (`media.ts`);
   official YouTube videos go in a *Watch* section. Tags and game: picked by
   the model from the existing ones only (`matchTags`, `matchGame`), never
-  created by the scout. Weekly report (`report.ts`): Discord on
+  created by the scout. Every field a draft fills: `DEPLOYMENT.md` §11. Weekly report (`report.ts`): Discord on
   Saturdays, `GET /api/scout/report` for editors. Design and steps in
   `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.

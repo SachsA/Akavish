@@ -1207,7 +1207,24 @@ lists them, and a revision picks again. A tag the site lacks: create it in
 story's game from *Games* ("GTA 6" → Grand Theft Auto VI); it's set on the
 article, shown on the card, and its cover is the fallback image. A game not in
 *Games* stays empty: add it there (with a cover) and the next drafts use it. The Discord card shows the cover, where
-it came from, and the videos; with no image it says so in orange. On Discord:
+it came from, and the videos; with no image it says so in orange.
+
+**What a scout draft fills, field by field:**
+
+| Field | Filled by | When it can stay empty |
+| --- | --- | --- |
+| Title, excerpt, content, SEO title + description | Sonnet | never |
+| Slug | the slug hook, from the title | never |
+| Category | Sonnet (news, leak, review, preview, conference, esport), else the triage's | never |
+| Cover image + alt text | official source's `og:image` (alt: the publisher's `og:image:alt`, else "Official image from <source>: <title>"), else the game's cover, else the URL given in *Modifier* | no official image and no game cover: orange warning, Publish refused |
+| Game | Sonnet, from *Games* only | story about several games, a platform or a service, or a game not in *Games* |
+| Tags (2 to 5) | Sonnet, from the existing tags only | none fits |
+| Author | *Scout settings → defaultAuthor* | never |
+| `aiAssisted` | always ticked | never |
+| Status, `publishedAt` | draft; set on *Publier* | until published |
+| `featured` | never (the homepage lead stays an editor's choice) | always |
+
+On Discord:
 
 - **Publier**: the article goes live, the message shows its URL. Refused,
   privately, while the article has no cover.

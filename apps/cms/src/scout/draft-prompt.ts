@@ -13,6 +13,8 @@ export interface DraftSource {
   reliability: 'official' | 'high' | 'variable'
   /** The page's share image (og:image), when it was read. */
   image?: string | null
+  /** The publisher's own description of that image (og:image:alt), if any. */
+  imageAlt?: string | null
   /** YouTube ids embedded or linked in the article. */
   videos?: string[]
 }

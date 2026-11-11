@@ -62,6 +62,21 @@ export function extractShareImage(html: string, pageUrl: string): string | null 
   return null
 }
 
+/** The share image's own description (og:image:alt, else twitter:image:alt), if the page gives one. Pure. */
+export function extractShareImageAlt(html: string): string | null {
+  const head = html.slice(0, 200_000)
+  for (const prop of ['og:image:alt', 'twitter:image:alt']) {
+    const re = new RegExp(
+      `<meta[^>]+(?:property|name)=["']${prop}["'][^>]*content=["']([^"']+)["']|<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${prop}["']`,
+      'i',
+    )
+    const m = head.match(re)
+    const raw = decode(m?.[1] ?? m?.[2] ?? '')
+    if (raw) return raw.slice(0, 200)
+  }
+  return null
+}
+
 /** YouTube video ids embedded or linked in the article body (not the sidebar). Pure. */
 export function extractYouTubeIds(html: string): string[] {
   const scope =
@@ -78,12 +93,13 @@ export function extractYouTubeIds(html: string): string[] {
 export interface PageRead {
   text: string
   image: string | null
+  imageAlt: string | null
   videos: string[]
 }
 
 /** Fetch a page: its text, share image and YouTube videos; empty on any failure. */
 export async function fetchPage(url: string, fetchImpl: FetchLike): Promise<PageRead> {
-  const empty = { text: '', image: null, videos: [] }
+  const empty = { text: '', image: null, imageAlt: null, videos: [] }
   try {
     const res = await fetchImpl(url, {
       headers: { 'user-agent': USER_AGENT, accept: 'text/html,application/xhtml+xml' },
@@ -96,6 +112,7 @@ export async function fetchPage(url: string, fetchImpl: FetchLike): Promise<Page
     return {
       text: extractArticleText(html),
       image: extractShareImage(html, url),
+      imageAlt: extractShareImageAlt(html),
       videos: extractYouTubeIds(html),
     }
   } catch {

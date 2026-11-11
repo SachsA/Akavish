@@ -60,7 +60,7 @@ async function sourcesFor(ctx: ScoutContext, storyId: number, read = true): Prom
   picked.sort((a, b) => RANK[a.source.reliability] - RANK[b.source.reliability])
   const chosen = picked.slice(0, MAX_SOURCES)
 
-  const empty: PageRead = { text: '', image: null, videos: [] }
+  const empty: PageRead = { text: '', image: null, imageAlt: null, videos: [] }
   const pages = await Promise.all(
     chosen.map(({ item }, i) =>
       read && i < PAGES_TO_READ && !ctx.config.dryRun
@@ -75,6 +75,7 @@ async function sourcesFor(ctx: ScoutContext, storyId: number, read = true): Prom
     text: pages[i].text || item.summary || '',
     reliability: source.reliability,
     image: pages[i].image,
+    imageAlt: pages[i].imageAlt,
     videos: pages[i].videos,
   }))
 }

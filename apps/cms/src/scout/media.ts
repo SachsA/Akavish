@@ -117,7 +117,9 @@ export async function pickCover(
   for (const s of sources) {
     if (s.reliability !== 'official' || !s.image) continue
     try {
-      const up = await uploadImage(ctx, s.image, `${story.title} (official image, ${s.name})`)
+      // Alt text: the publisher's own description when the page has one.
+      const alt = s.imageAlt?.trim() || `Official image from ${s.name}: ${story.title}`
+      const up = await uploadImage(ctx, s.image, alt)
       return { ...up, origin: `visuel officiel, ${s.name}` }
     } catch (err) {
       ctx.payload.logger.info({

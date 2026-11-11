@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractShareImage, extractYouTubeIds } from './extract'
+import { extractShareImage, extractShareImageAlt, extractYouTubeIds } from './extract'
 
 describe('extractShareImage', () => {
   it('reads og:image, attributes in either order, relative URLs resolved', () => {
@@ -31,6 +31,20 @@ describe('extractShareImage', () => {
       ),
     ).toBeNull()
     expect(extractShareImage('<p>nothing</p>', 'https://site.example')).toBeNull()
+  })
+})
+
+describe('extractShareImageAlt', () => {
+  it("reads the publisher's description of the share image, else null", () => {
+    expect(
+      extractShareImageAlt(
+        '<meta content="Jason &amp; Lucia on a rooftop" property="og:image:alt">',
+      ),
+    ).toBe('Jason & Lucia on a rooftop')
+    expect(extractShareImageAlt('<meta name="twitter:image:alt" content="Key art">')).toBe(
+      'Key art',
+    )
+    expect(extractShareImageAlt('<meta property="og:image" content="https://x/a.jpg">')).toBeNull()
   })
 })
 

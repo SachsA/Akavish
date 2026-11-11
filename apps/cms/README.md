@@ -261,7 +261,10 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    picks again (tags set by hand in `/admin` are replaced by a *Modifier*).
    **Game:** the *Games* names go to the prompt too; `matchGame` takes the
    model's `game` (exact name, any case), else the triage's, sets the
-   article's `game` and uses that game's cover as the fallback image. Claude Sonnet 5.5 refuses a *forced* tool call
+   article's `game` and uses that game's cover as the fallback image.
+   **Alt text** of an official cover: the publisher's `og:image:alt`, else
+   "Official image from <source>: <title>". Every field a draft fills (and
+   when one can stay empty) is listed in `DEPLOYMENT.md` §11. Claude Sonnet 5.5 refuses a *forced* tool call
    (400), so `anthropic.ts` falls back to `tool_choice: auto` with an explicit
    instruction and up-front thinking off (`between_tools`) for any model that
    refuses, and remembers it. Saved as a **draft** article, `aiAssisted` ticked,

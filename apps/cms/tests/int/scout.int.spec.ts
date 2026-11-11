@@ -286,7 +286,7 @@ describe('scout step 2 (drafts)', () => {
     }
     if (url === 'https://scout-test.invalid/page/gta') {
       return new Response(
-        '<head><meta property="og:image" content="https://scout-test.invalid/img/scouttest-gta.png"></head><article><p>Rockstar has released the third trailer for Grand Theft Auto VI on Tuesday afternoon.</p><iframe src="https://www.youtube.com/embed/QdBZY2fkU-0"></iframe></article>',
+        '<head><meta property="og:image" content="https://scout-test.invalid/img/scouttest-gta.png"><meta property="og:image:alt" content="Jason and Lucia in Vice City"></head><article><p>Rockstar has released the third trailer for Grand Theft Auto VI on Tuesday afternoon.</p><iframe src="https://www.youtube.com/embed/QdBZY2fkU-0"></iframe></article>',
       )
     }
     if (url.startsWith('https://scout-test.invalid/page/')) {
@@ -474,6 +474,8 @@ describe('scout step 2 (drafts)', () => {
     const embed = (discordPosts[0].body.embeds as Array<Record<string, unknown>>)[0]
     expect((embed.image as { url: string }).url).toMatch(/scouttest-gta.*\.png$/)
     expect(JSON.stringify(embed.fields)).toContain('visuel officiel, Rockstar')
+    const coverDoc = article.coverImage as { alt: string } // populated (depth 2)
+    expect(coverDoc.alt).toBe('Jason and Lucia in Vice City') // the publisher's og:image:alt
     // Tags: picked from the existing ones only, never created.
     const tagged = (await payload.findByID({
       collection: 'articles',
