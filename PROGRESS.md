@@ -204,8 +204,9 @@ Publish). Drafts carry a cover and the official videos since 2026-11-11.
 **Instant site refresh** (2026-11-11): the CMS pings `/api/revalidate` after
 every public change, so a new article shows on its category page at the first
 reload instead of after 30 s and a few reloads. Needs `REVALIDATE_SECRET`
-(same value) on Railway and Vercel — `DEPLOYMENT.md` §4e. Automatic drafts stay **off** until the weekend review of the digests
-(Nov 14-15), so they're ready for GTA VI on Thursday Nov 19.
+(same value) on Railway and Vercel — `DEPLOYMENT.md` §4e. **Automatic drafts are on since 2026-11-11** (threshold 60, at most 20 a
+day), a few days ahead of the plan; the weekend review (Nov 14-15) tunes
+them, so they're ready for GTA VI on Thursday Nov 19.
 
 Everything else waits on something:
 
@@ -277,7 +278,7 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 | --- | --- | --- |
 | 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
 | 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps, weekly report on Saturdays + `/api/scout/report` (2026-11-10) |
-| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings. **Media** (2026-11-11): a cover on every draft (official source's `og:image`, else the game's cover, never a press outlet's image), official YouTube videos in a *Watch* section, an image URL field in *Modifier*, Publish refused without a cover. **Tags and game** (2026-11-11): Sonnet picks 2 to 5 tags from the existing ones (never creates one, never the game nor the category) and the story's game from *Games*; cover alt text from the publisher's `og:image:alt`. Field by field: `DEPLOYMENT.md` §11 |
+| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **on** since 2026-11-11 (threshold 60, 20/day) | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings. **Media** (2026-11-11): a cover on every draft (official source's `og:image`, else the game's cover, never a press outlet's image), official YouTube videos in a *Watch* section, an image URL field in *Modifier*, Publish refused without a cover. **Tags and game** (2026-11-11): Sonnet picks 2 to 5 tags from the existing ones (never creates one, never the game nor the category) and the story's game from *Games*; cover alt text from the publisher's `og:image:alt`. Field by field: `DEPLOYMENT.md` §11 |
 | 3. Leakers + style | Later | X accounts (pay-per-use API; when it's paid, also switch X sign-in back on in Clerk, `DEPLOYMENT.md` §6.5), learning from published / rejected drafts |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
 | 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |
@@ -300,10 +301,12 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   result.
 - Nov 14-15: review, from the weekly report (Discord, Saturday 8 am, or
   `cms.akavish.gg/api/scout/report`): stories per day at each threshold,
-  score spread, cost. Already noted: the grouping split one story in two
-  (Fairgames at 80 and 76), and many single-source stories score 33. Tune the
-  threshold, then tick `draftsEnabled`.
-- Nov 16-18: running-in with automatic drafts.
+  score spread, cost, and how many automatic drafts were published or
+  rejected. Already noted: the grouping split one story in two (Fairgames at
+  80 and 76), and many single-source stories score 33. Tune the threshold and
+  `maxDraftsPerDay`.
+- ✅ Nov 11: `draftsEnabled` ticked (threshold 60, `maxDraftsPerDay` 20).
+- Nov 11-18: running-in with automatic drafts.
 - ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for
   Nov 18, 11:00 UTC (midnight in New Zealand, the first unlock; Rockstar:
   "midnight local time … in all regions"), `featured` already ticked so it
