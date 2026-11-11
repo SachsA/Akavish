@@ -160,7 +160,7 @@ actually tackle it, best value-for-effort first.
 | --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 1   | ✅ Railway pre-deploy migrate       | Done — future schema changes reach prod automatically                                                                                                   | —      |
 | 2   | ✅ **Image sizes** (`imageSizes`)   | Done — `thumbnail`/`card`/`hero`/`square` variants generated on upload; web picks the right one per context                                             | —      |
-| 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk production instance live since 2026-11-10, Google / Discord / Twitch sign-in since 2026-11-11, X once the X API is paid (`DEPLOYMENT.md` §6.5) | —      |
+| 3   | ✅ **Custom domain + email**        | Live on `akavish.gg` (web, Vercel) + `cms.akavish.gg` (Railway), DNS on Cloudflare, DNSSEC on, env vars swapped, `www` 308s to the apex, and `hello@`/`tips@`/`privacy@` forward via Cloudflare Email Routing. Clerk production instance live since 2026-11-10, Google / Discord / Twitch sign-in since 2026-11-11, X off until the X API is paid (`DEPLOYMENT.md` §6.5) | —      |
 | 4   | ✅ **Email adapter**                | Done — `@payloadcms/email-resend` wired in `payload.config.ts`; password resets are really sent, with a branded HTML template (`lib/emails/forgot-password.ts`). Off when `RESEND_API_KEY` is unset (console fallback). Setup + DNS in `DEPLOYMENT.md` §4c | —      |
 | 5   | ✅ **Search works in prod**         | Done — `/api/search` falls back to the CMS (Postgres `ILIKE`) when Meilisearch isn't configured, and when it errors. The header search box was returning 503 on every page; now it works for free. `DEPLOYMENT.md` §4 | —      |
 | 6   | ✅ **Article page polish**          | Done — reading time (+ `wordCount`/`timeRequired` in the JSON-LD), share row, "Read next" suggestions, prev/next nav. Suggestions fail soft: a CMS error drops them instead of breaking the page | —      |
@@ -192,9 +192,9 @@ mobile reading app, newsletter sign-up — 2026-11-09).
 
 **Clerk is in production since 2026-11-10** (`pk_live_…` on `akavish.gg`,
 Frontend API on `clerk.akavish.gg`), with Google, Discord and Twitch sign-in
-on Akavish's own OAuth apps since 2026-11-11. The X button is on but fails
-until the paid X API plan (also needed by the scout's step 3) —
-`DEPLOYMENT.md` §6.5.
+on Akavish's own OAuth apps since 2026-11-11. X sign-in is **switched off**
+(credentials kept in Clerk): switch it back on when the paid X API plan is
+taken, the same plan the scout's step 3 needs — `DEPLOYMENT.md` §6.5.
 
 **In progress: the AI news scout** (section below). Steps 1 (observation) and
 2 (drafts + Discord buttons) are live in production since 2026-11-10, bot set
@@ -266,7 +266,7 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 | 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
 | 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps, weekly report on Saturdays + `/api/scout/report` (2026-11-10) |
 | 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings |
-| 3. Leakers + style | Later | X accounts (pay-per-use API), learning from published / rejected drafts, tags picked by the model from the existing ones (drafts have none for now: add them in /admin before publishing) |
+| 3. Leakers + style | Later | X accounts (pay-per-use API; when it's paid, also switch X sign-in back on in Clerk, `DEPLOYMENT.md` §6.5), learning from published / rejected drafts, tags picked by the model from the existing ones (drafts have none for now: add them in /admin before publishing) |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
 | 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |
 

@@ -687,11 +687,12 @@ saving. This is what makes canonical URLs, the sitemap, OG tags and CORS correct
 **Status: live since 2026-11-10.** `akavish.gg` serves `pk_live_…`, Clerk's
 Frontend API answers on `clerk.akavish.gg`, no "development mode" banner.
 Google, Discord and Twitch sign-in run on Akavish's own OAuth apps since
-2026-11-11, tested end to end. **X: app created, button left on, sign-in fails
-for now**, most likely because X's free API tier doesn't cover it. It should
-start working once the paid X API plan (also needed by the scout's step 3) is
-taken; test it then. To hide the button meanwhile: Clerk → SSO connections →
-X → off (the credentials stay saved).
+2026-11-11, tested end to end. **X is switched off** (2026-11-11): its app is
+created and its credentials stay saved in Clerk, but sign-in failed, most
+likely because X's free API tier doesn't cover it. **When the paid X API plan
+is taken** (the scout's step 3 needs it too): Clerk → SSO connections → X →
+on, then test a sign-in. `/privacy` (EN + FR) and `lib/legal.ts` already
+name X, so nothing else changes.
 
 1. **Create the instance.** Clerk dashboard → *Go to production* → Application
    domain: **`akavish.gg`** (the apex, no `www`: `www` 308s to it). Clerk then
@@ -800,7 +801,8 @@ domain change:
       keys (`pk_live_…`, §6.5): no "development mode" banner (2026-11-10).
 - [x] Social logins (Google, Discord, Twitch) have their own OAuth apps
       (§6.5 step 6, 2026-11-11).
-- [ ] X sign-in works (needs the paid X API plan).
+- [ ] X sign-in: switched off in Clerk, credentials saved. Switch it back on
+      and test once the paid X API plan is taken.
 - [ ] CORS: the CMS `WEB_URL` matches the live web origin (else the browser
       blocks client calls — server-side fetches are unaffected).
 - [ ] Search backfilled (if enabled) and the header search returns results.
