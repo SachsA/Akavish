@@ -5,6 +5,7 @@ import {
   blocksToText,
   cleanDraft,
   draftPrompt,
+  matchGame,
   matchTags,
   toLexical,
   type DraftAnswer,
@@ -45,6 +46,13 @@ describe('cleanDraft', () => {
       cleanDraft(answer({ blocks: [{ type: 'heading', text: 'Only a heading' }] }), 'news'),
     ).toThrow()
     expect(() => cleanDraft({} as never, 'news')).toThrow()
+  })
+
+  it('keeps the named game, trimmed, empty when missing', () => {
+    expect(cleanDraft(answer({ game: ' Grand Theft Auto VI ' }), 'news').game).toBe(
+      'Grand Theft Auto VI',
+    )
+    expect(cleanDraft(answer(), 'news').game).toBe('')
   })
 
   it('keeps the picked tag names, trimmed, strings only', () => {
@@ -141,6 +149,15 @@ describe('draftPrompt', () => {
     })
     expect(p).toContain('[1] "Trailer 3" (YouTube channel: Rockstar Games)')
     expect(draftPrompt({ storyTitle: 'x', sources })).not.toContain('Videos found')
+  })
+
+  it('lists the existing games to pick from', () => {
+    expect(
+      draftPrompt({ storyTitle: 'x', sources, games: ['Grand Theft Auto VI', 'Valorant'] }),
+    ).toContain(
+      '--- Existing games (the one this story is about, exact name, or none)\nGrand Theft Auto VI, Valorant',
+    )
+    expect(draftPrompt({ storyTitle: 'x', sources })).not.toContain('Existing games')
   })
 
   it('lists the existing tags to pick from, and nothing when there are none', () => {
@@ -270,5 +287,19 @@ describe('matchTags', () => {
       matchTags(['Rockstar Games', 'Trailers', 'PS5', 'Xbox', 'Release dates', 'PC'], existing),
     ).toEqual([1, 2, 3, 4, 5])
     expect(matchTags(undefined, existing)).toEqual([])
+  })
+})
+
+describe('matchGame', () => {
+  const games = [
+    { id: 4, name: 'Grand Theft Auto VI' },
+    { id: 6, name: 'Valorant' },
+  ]
+
+  it("takes the model's pick, else the triage's game, by exact name in any case", () => {
+    expect(matchGame('grand theft auto vi', 'GTA 6', games)).toBe(4)
+    expect(matchGame('', 'Valorant', games)).toBe(6)
+    expect(matchGame('Made Up', 'GTA 6', games)).toBeNull()
+    expect(matchGame(undefined, null, games)).toBeNull()
   })
 })

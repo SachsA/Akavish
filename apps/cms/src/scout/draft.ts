@@ -14,6 +14,7 @@ import {
   DRAFT_SYSTEM,
   DRAFT_TOOL,
   draftPrompt,
+  matchGame,
   matchTags,
   toLexical,
   type DraftAnswer,
@@ -105,6 +106,21 @@ export interface DraftResult {
   messageId?: string
 }
 
+/** The site's games, for the model to pick the story's one. */
+async function existingGames(ctx: ScoutContext): Promise<Array<{ id: number; name: string }>> {
+  const { docs } = await ctx.payload.find({
+    collection: 'games',
+    limit: 300,
+    sort: 'name',
+    depth: 0,
+    overrideAccess: true,
+  })
+  return (docs as unknown as Array<{ id: number; name: string }>).map((g) => ({
+    id: Number(g.id),
+    name: g.name,
+  }))
+}
+
 /** The site's tags, for the model to pick from (it never creates one). */
 async function existingTags(ctx: ScoutContext): Promise<Array<{ id: number; name: string }>> {
   const { docs } = await ctx.payload.find({
@@ -180,6 +196,7 @@ export async function draftStory(
   if (sources.length === 0) throw new Error(`story ${storyId} has no items`)
   const videos: Video[] = ctx.config.dryRun ? [] : await videoCandidates(sources, ctx.fetch)
   const tagList = await existingTags(ctx)
+  const gameList = await existingGames(ctx)
 
   // The previous version, for a revision: as stored by the last draft (any
   // edit made in /admin since then isn't seen, the feedback is about V(n)).
@@ -230,6 +247,7 @@ export async function draftStory(
         feedback,
         videos,
         tags: tagList.map((t) => t.name),
+        games: gameList.map((g) => g.name),
       }),
       tool: DRAFT_TOOL as unknown as Parameters<typeof callTool>[0]['tool'],
       maxTokens: 4000,
@@ -247,7 +265,9 @@ export async function draftStory(
   const clean = cleanDraft(draft, story.category)
   const watch = (clean.videos ?? []).map((n) => videos[n - 1]).filter(Boolean)
   const content = toLexical(clean.blocks, sources, watch)
-  const tagIds = matchTags(clean.tags, tagList, [story.game, clean.category])
+  const gameId = matchGame(clean.game, story.game, gameList)
+  const gameName = gameList.find((g) => g.id === gameId)?.name
+  const tagIds = matchTags(clean.tags, tagList, [story.game, gameName, clean.category])
 
   // Cover: the editor's URL, else the one already set (a revision keeps it),
   // else an official source's image or the game's cover.
@@ -263,7 +283,7 @@ export async function draftStory(
   }
   if (!cover && articleRef) cover = await currentCover(ctx, Number(articleRef))
   if (!cover && !ctx.config.dryRun) {
-    cover = await pickCover(ctx, { title: clean.title, game: story.game }, sources)
+    cover = await pickCover(ctx, { title: clean.title, game: gameName ?? story.game }, sources)
   }
 
   const data = {
@@ -276,6 +296,7 @@ export async function draftStory(
     ...(cover ? { coverImage: cover.id } : {}),
     // The model's pick from the existing tags; a revision picks again.
     ...(tagIds.length ? { tags: tagIds } : {}),
+    ...(gameId ? { game: gameId } : {}),
   }
 
   let articleId: number
@@ -312,6 +333,7 @@ export async function draftStory(
     sources: sources.map((s) => ({ name: s.name, url: s.url })),
     videos: watch,
     tags: tagList.filter((t) => tagIds.includes(t.id)).map((t) => t.name),
+    game: gameName,
     cover,
     imageError,
     feedback,
@@ -388,6 +410,7 @@ async function postCard(
     sources: Array<{ name: string; url: string }>
     videos: Video[]
     tags?: string[]
+    game?: string
     cover: Cover | null
     imageError?: string
     imageChange?: boolean
@@ -425,6 +448,7 @@ async function postCard(
     imageChange: c.imageChange,
     videos: c.videos.map((v) => ({ title: v.title, channel: v.channel, url: v.url })),
     tags: c.tags,
+    game: c.game,
   }
   if (ctx.config.bot && !ctx.config.dryRun) {
     messageId = await sendBotMessage(

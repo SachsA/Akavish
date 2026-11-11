@@ -40,6 +40,8 @@ export interface DraftAnswer {
   videos?: number[]
   /** Names picked from the site's existing tags. */
   tags?: string[]
+  /** The game the story is about, copied from the existing games list. */
+  game?: string
 }
 
 export const DRAFT_SYSTEM = `You write news articles for Akavish, an English-language video game news site. Tone: direct, factual, no fluff, no hype words ("insane", "epic"), no clickbait, no emoji. Readers are gamers who want the facts fast.
@@ -56,6 +58,7 @@ Hard rules:
 - SEO description: under 155 characters.
 - Write in English even when sources are in French or another language.
 - Tags: pick 2 to 5 from the existing tags listed, copied exactly: cross-cutting topics such as the publisher or studio, the platform, the event, the theme (Release dates, Trailers, Earnings…). Never the game itself, never the category, never a tag that doesn't fit the story, never one that isn't in the list. Fewer is fine when few fit; none if the list is empty.
+- Game: when the story is about one game in the existing games list, put its exact name in "game" (match "GTA 6" to "Grand Theft Auto VI"). Leave it empty for a story about several games, a platform, a service or a game that isn't listed.
 - Videos: when videos found in the sources are listed, put in "videos" the numbers of those that are official (the publisher's, studio's, platform holder's or tournament organiser's own channel) AND directly about this story, such as the trailer the article is about. None otherwise. Do not mention a video in the text unless you selected it.
 Do not add a sources list or video links: they are appended automatically.`
 
@@ -70,6 +73,8 @@ export function draftPrompt(args: {
   videos?: VideoRef[]
   /** Names of the site's existing tags, to pick from. */
   tags?: string[]
+  /** Names of the site's existing games, to pick from. */
+  games?: string[]
 }): string {
   const sources = args.sources
     .map(
@@ -82,6 +87,9 @@ export function draftPrompt(args: {
     prompt += `\n\n--- Videos found in the sources\n${args.videos
       .map((v, i) => `[${i + 1}] "${v.title}" (YouTube channel: ${v.channel || 'unknown'})`)
       .join('\n')}`
+  }
+  if (args.games?.length) {
+    prompt += `\n\n--- Existing games (the one this story is about, exact name, or none)\n${args.games.join(', ')}`
   }
   if (args.tags?.length) {
     prompt += `\n\n--- Existing tags (pick 2 to 5, exact names)\n${args.tags.join(', ')}`
@@ -119,6 +127,10 @@ export const DRAFT_TOOL = {
         type: 'array',
         items: { type: 'integer' },
         description: 'Numbers of the listed official videos about this story; empty if none.',
+      },
+      game: {
+        type: 'string',
+        description: 'Exact name from the existing games list, or empty.',
       },
       tags: {
         type: 'array',
@@ -177,6 +189,7 @@ export function cleanDraft(
         ),
       ),
     ],
+    game: typeof answer?.game === 'string' ? answer.game.trim() : '',
     tags: (Array.isArray(answer?.tags) ? answer.tags : [])
       .filter((t): t is string => typeof t === 'string')
       .map((t) => t.trim())
@@ -298,4 +311,22 @@ export function matchTags(
     if (ids.length === 5) break
   }
   return ids
+}
+
+/**
+ * The id of the game the model named (exact name, case-insensitive), else of
+ * the game the triage noted on the story, else null. Pure.
+ */
+export function matchGame(
+  picked: string | undefined,
+  storyGame: string | null | undefined,
+  existing: Array<{ id: number; name: string }>,
+): number | null {
+  const norm = (s: string) => s.trim().toLowerCase()
+  for (const name of [picked, storyGame]) {
+    if (!name?.trim()) continue
+    const hit = existing.find((g) => norm(g.name) === norm(name))
+    if (hit) return hit.id
+  }
+  return null
 }

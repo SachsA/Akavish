@@ -272,7 +272,8 @@ describe('scout step 2 (drafts)', () => {
               seo_description: 'The third GTA VI trailer.',
               ...(withVideo ? { videos: [1] } : {}),
               // One real tag in another case, one the site doesn't have.
-              tags: ['scouttest rockstar', 'Scouttest Invented'],
+              tags: ['scouttest rockstar', 'Scouttest Invented', 'Scouttest Grand Theft'],
+              game: 'scouttest grand theft',
             },
           },
         ],
@@ -400,9 +401,14 @@ describe('scout step 2 (drafts)', () => {
       })
       return Number(s.id)
     }
-    for (const name of ['Scouttest Rockstar', 'Scouttest Esport']) {
+    for (const name of ['Scouttest Rockstar', 'Scouttest Esport', 'Scouttest Grand Theft']) {
       await payload.create({ collection: 'tags', data: { name } as never, overrideAccess: true })
     }
+    await payload.create({
+      collection: 'games',
+      data: { name: 'Scouttest Grand Theft' } as never,
+      overrideAccess: true,
+    })
     gtaId = await mk('GTA VI third trailer', 85, 'gta')
     smallId = await mk('Small indie patch', 30, 'indie')
   })
@@ -424,6 +430,11 @@ describe('scout step 2 (drafts)', () => {
     })
     await payload.delete({
       collection: 'tags',
+      where: { name: { like: 'Scouttest' } },
+      overrideAccess: true,
+    })
+    await payload.delete({
+      collection: 'games',
       where: { name: { like: 'Scouttest' } },
       overrideAccess: true,
     })
@@ -470,8 +481,10 @@ describe('scout step 2 (drafts)', () => {
       draft: true,
       depth: 1,
       overrideAccess: true,
-    })) as unknown as { tags: Array<{ name: string }> }
+    })) as unknown as { tags: Array<{ name: string }>; game: { name: string } | null }
+    // The game's own name is never a tag; the game goes in its own field.
     expect(tagged.tags.map((t) => t.name)).toEqual(['Scouttest Rockstar'])
+    expect(tagged.game?.name).toBe('Scouttest Grand Theft')
     expect(JSON.stringify(embed.fields)).toContain('Scouttest Rockstar')
     const invented = await payload.count({
       collection: 'tags',

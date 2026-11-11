@@ -91,6 +91,8 @@ export interface DraftCard {
   videos?: Array<{ title: string; channel: string; url: string }>
   /** Tags the model picked (undefined: not shown, e.g. an image-only change). */
   tags?: string[]
+  /** The game set on the article, if any. */
+  game?: string
 }
 
 const NO_IMAGE =
@@ -122,6 +124,7 @@ export function draftMessage(card: DraftCard): BotMessage {
           { name: 'Score', value: String(card.score), inline: true },
           { name: 'Catégorie', value: card.category, inline: true },
           { name: 'Version', value: `V${card.version}`, inline: true },
+          ...(card.game ? [{ name: 'Jeu', value: clip(card.game, 1024), inline: true }] : []),
           { name: 'Image', value: clip(image, 1024) },
           ...(card.tags
             ? [

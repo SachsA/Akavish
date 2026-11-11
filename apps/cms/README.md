@@ -258,7 +258,10 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    existing tag names go to the prompt, Sonnet answers `tags` with 2 to 5 of
    them, `matchTags` keeps only real ones (case-insensitive), never the game
    nor the category, at most 5; the model never creates a tag. A revision
-   picks again (tags set by hand in `/admin` are replaced by a *Modifier*). Claude Sonnet 5.5 refuses a *forced* tool call
+   picks again (tags set by hand in `/admin` are replaced by a *Modifier*).
+   **Game:** the *Games* names go to the prompt too; `matchGame` takes the
+   model's `game` (exact name, any case), else the triage's, sets the
+   article's `game` and uses that game's cover as the fallback image. Claude Sonnet 5.5 refuses a *forced* tool call
    (400), so `anthropic.ts` falls back to `tool_choice: auto` with an explicit
    instruction and up-front thinking off (`between_tools`) for any model that
    refuses, and remembers it. Saved as a **draft** article, `aiAssisted` ticked,

@@ -1203,7 +1203,10 @@ key); Sonnet keeps the official ones about the story and the article links them
 in a **Watch** section above *Sources*. **Tags:** Sonnet picks 2 to 5 from the
 existing tags (never creates one, never the game or the category); the card
 lists them, and a revision picks again. A tag the site lacks: create it in
-`/admin` and the next drafts can use it. The Discord card shows the cover, where
+`/admin` and the next drafts can use it. **Game:** Sonnet also names the
+story's game from *Games* ("GTA 6" → Grand Theft Auto VI); it's set on the
+article, shown on the card, and its cover is the fallback image. A game not in
+*Games* stays empty: add it there (with a cover) and the next drafts use it. The Discord card shows the cover, where
 it came from, and the videos; with no image it says so in orange. On Discord:
 
 - **Publier**: the article goes live, the message shows its URL. Refused,
