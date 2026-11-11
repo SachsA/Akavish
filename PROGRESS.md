@@ -280,17 +280,28 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 
 - ✅ Nov 10: step 1 and step 2 live, bot set up, default author *Akavish*,
   feed statuses checked (all fine).
-- Nov 10, 8 pm: first digest sent by the bot. Test the whole chain by hand
-  with its "Rédiger…" menu: one draft, one *Modifier* (V2 as a reply), then
-  *Rejeter*. Nothing is published.
-- Nov 11-14: digests only (observation cut to 4-5 days). Note the stories that
-  should have scored higher or lower. Before the review, test *Publier* once
-  on a real story and check the article and its AI note on akavish.gg.
+- ✅ Nov 10-11: the whole chain tested by hand from the "Rédiger…" menu: a
+  draft, a *Modifier* (V2 as a reply), *Rejeter*, and *Publier* on a real
+  story (Fairgames, its cover added in `/admin` afterwards). Fixed on the way:
+  Sonnet 5.5 refusing forced tool calls, drafts without images (now a cover
+  and official videos on every draft), category pages slow to refresh
+  (on-demand revalidation, `REVALIDATE_SECRET` set on both apps).
+- Nov 12-14: digests only. Note the stories that should have scored higher or
+  lower. Draft one story with an official source (ideally a trailer) to see the
+  new media on a real case: cover and its origin on the card, *Watch* links,
+  *Modifier* with an image URL only.
+- Nov 14 (after the Worlds final): update the Worlds article (id 9) with the
+  result.
 - Nov 14-15: review, from the weekly report (Discord, Saturday 8 am, or
   `cms.akavish.gg/api/scout/report`): stories per day at each threshold,
-  score spread, cost. Tune the threshold, then tick `draftsEnabled`.
-- Nov 16-18: running-in with automatic drafts.
-- Nov 19: ready.
+  score spread, cost. Already noted: the grouping split one story in two
+  (Fairgames at 80 and 76), and many single-source stories score 33. Tune the
+  threshold, then tick `draftsEnabled`.
+- Nov 16-18: running-in with automatic drafts. Prepare the launch-day article,
+  scheduled at the official unlock time.
+- Nov 19: launch day. `maxDraftsPerDay` to 40 for the day (then 20 or 30 from
+  the review); untick `featured` on "GTA VI: everything we know" (id 5) and
+  feature the launch article instead.
 
 **AI transparency:** articles drafted by the scout carry `aiAssisted`, which
 shows a one-line note under the article (web and app): "Researched and drafted
