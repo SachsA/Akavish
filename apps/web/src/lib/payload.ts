@@ -14,6 +14,7 @@ import {
 } from '@akavish/api-client/payload'
 
 import { log } from './log'
+import { CMS_TAG } from './revalidate'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
@@ -23,6 +24,9 @@ const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 // a `signal` would mark the fetch dynamic and clash with generateStaticParams.
 const CMS_FETCH_TIMEOUT_MS = 8000
 async function cmsFetch(url: string, init?: RequestInit): Promise<Response> {
+  // Every CMS read carries the `cms` cache tag, so /api/revalidate (pinged by
+  // the CMS after a change) can drop them all at once.
+  init = { ...init, next: { ...init?.next, tags: [CMS_TAG, ...(init?.next?.tags ?? [])] } }
   // Only the path in logs: the query string can carry search terms.
   const path = url.replace(CMS_URL, '').split('?')[0]
   try {

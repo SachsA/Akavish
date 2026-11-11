@@ -50,11 +50,13 @@ workspace exposes a `type-check` script so CI covers apps _and_ shared packages.
 The **CMS** (Payload, port 3001) owns the content and the database. It exposes a
 REST API at `http://localhost:3001/api`. The **web** app (port 3000) is a thin
 frontend: its server components fetch published articles from the CMS via
-`CMS_URL` and render them. The **mobile** app hits the same CMS API. Newsletter
+`CMS_URL` and render them, cached 30 s; the CMS pings the web's
+`/api/revalidate` after each public change so new articles show at once. The **mobile** app hits the same CMS API. Newsletter
 sign-ups go from the web's `/api/newsletter` to the CMS, which stores them and
 sends the confirmation email through Resend (`apps/cms/README.md` →
 Newsletter). The **AI scout** runs inside the CMS too: it reads games news
-feeds, groups and scores stories with Claude, drafts the best ones, and asks
+feeds, groups and scores stories with Claude, drafts the best ones (with a
+cover and the official videos), and asks
 for a Publish / Edit / Reject click in a private Discord channel (`apps/cms/README.md` → AI scout). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately.
@@ -75,6 +77,7 @@ flowchart LR
   end
 
   web -->|REST, server side| cms
+  cms -->|revalidate after a change| web
   web -->|reader login| clerk[Clerk]
   cms --> db[(Postgres · Neon)]
   cms -->|uploads| media[(R2 · media, public)]

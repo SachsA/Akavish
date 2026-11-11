@@ -96,11 +96,11 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
 
 | Where | What | Command |
 | --- | --- | --- |
-| `apps/web/src/lib/*.test.ts` | Pure logic: homepage lead, JSON-LD, pagination, rate limiting | `pnpm test` |
+| `apps/web/src/lib/*.test.ts` | Pure logic: homepage lead, JSON-LD, pagination, rate limiting, revalidation secret | `pnpm test` |
 | `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper, categories (vs the CMS), reading time | `pnpm test` |
 | `apps/mobile/src/lib/*.test.ts` | App helpers: dates, feed paging, Lexical parsing, links | `pnpm test` |
-| `apps/cms/src/**/*.test.ts`, `apps/cms/scripts/**/*.test.mjs` | CMS pure logic: the AI scout's feeds parsing, score, clock, triage answers, digests, drafts, Discord signatures and buttons, weekly report; the Markdown → Lexical article importer | `pnpm test` |
-| `apps/cms/tests/int/` | Payload against a real DB: slugs, publish date, redirects, access, newsletter opt-in, the AI scout run, drafts and Discord clicks (network faked; empties the local scout tables) | `cd apps/cms && pnpm test:int` |
+| `apps/cms/src/**/*.test.ts`, `apps/cms/scripts/**/*.test.mjs` | CMS pure logic: the AI scout's feeds parsing, score, clock, triage answers, digests, drafts (Watch videos, share image, YouTube ids), Discord signatures and buttons, weekly report, which saves refresh the site; the Markdown → Lexical article importer | `pnpm test` |
+| `apps/cms/tests/int/` | Payload against a real DB: slugs, publish date, redirects, access, newsletter opt-in, the AI scout run, drafts with their cover and videos, Discord clicks, the no-cover Publish refusal (network faked; empties the local scout tables) | `cd apps/cms && pnpm test:int` |
 | `apps/cms/tests/e2e/` | Playwright through the admin panel | `cd apps/cms && pnpm test:e2e` |
 | `apps/web/tests/e2e/` | Playwright on the public site, newsletter form included (seeded CMS + web running) | `cd apps/web && pnpm test:e2e` |
 

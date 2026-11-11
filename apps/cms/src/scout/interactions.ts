@@ -7,13 +7,14 @@
 
 import type { Payload, PayloadHandler } from 'payload'
 import type { SettingsDoc, StoryDoc } from './context'
-import { draftStory, publishStory, rejectStory } from './draft'
+import { draftStory, NO_COVER, publishStory, rejectStory, setStoryImage } from './draft'
 import {
   closedMessage,
   COLORS,
   ephemeral,
   InteractionType,
   modal,
+  modalValues,
   ResponseType,
   verifyDiscordSignature,
   type Embed,
@@ -37,10 +38,14 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
 /** Queue a draft or a revision and start it now rather than at the next minute's tick. */
-async function queueDraft(payload: Payload, storyId: number, feedback?: string) {
+async function queueDraft(payload: Payload, storyId: number, feedback?: string, imageUrl?: string) {
   const job = (await payload.jobs.queue({
     task: 'scoutDraft' as never,
-    input: { storyId, ...(feedback ? { feedback } : {}) } as never,
+    input: {
+      storyId,
+      ...(feedback ? { feedback } : {}),
+      ...(imageUrl ? { imageUrl } : {}),
+    } as never,
     queue: 'scout',
   })) as { id: number | string }
   void payload.jobs.runByID({ id: job.id }).catch(() => {
@@ -88,7 +93,19 @@ export async function handleInteraction(
   try {
     // ── Buttons ──
     if (i.type === InteractionType.COMPONENT && action === 'publish') {
-      const url = await publishStory(ctx, storyId)
+      let url: string
+      try {
+        url = await publishStory(ctx, storyId)
+      } catch (err) {
+        if (err instanceof Error && err.message === NO_COVER) {
+          return json(
+            ephemeral(
+              'Pas d’image sur cet article, je ne publie pas. **Modifier** → colle l’URL d’une image officielle (ou ajoute-la dans /admin), puis Publier.',
+            ),
+          )
+        }
+        throw err
+      }
       return json({
         type: ResponseType.UPDATE_MESSAGE,
         data: closedMessage(original, `Publié · ${url}`, COLORS.published),
@@ -96,24 +113,33 @@ export async function handleInteraction(
     }
     if (i.type === InteractionType.COMPONENT && action === 'edit') {
       return json(
-        modal(
-          `scout:editmodal:${storyId}`,
-          'Modifier le brouillon',
-          'Qu’est-ce qui ne va pas ?',
-          true,
-          'Trop long, le titre spoile, ajoute le prix…',
-        ),
+        modal(`scout:editmodal:${storyId}`, 'Modifier le brouillon', [
+          {
+            id: 'text',
+            label: 'Qu’est-ce qui ne va pas ?',
+            required: false,
+            placeholder: 'Trop long, le titre spoile, ajoute le prix… (vide = image seule)',
+          },
+          {
+            id: 'image',
+            label: 'Image (URL officielle, facultatif)',
+            required: false,
+            placeholder: 'https://… visuel officiel (éditeur, studio, organisateur)',
+            short: true,
+          },
+        ]),
       )
     }
     if (i.type === InteractionType.COMPONENT && action === 'reject') {
       return json(
-        modal(
-          `scout:rejectmodal:${storyId}`,
-          'Rejeter le sujet',
-          'Pourquoi ? (facultatif)',
-          false,
-          'Doublon, pas intéressant, source pas fiable…',
-        ),
+        modal(`scout:rejectmodal:${storyId}`, 'Rejeter le sujet', [
+          {
+            id: 'text',
+            label: 'Pourquoi ? (facultatif)',
+            required: false,
+            placeholder: 'Doublon, pas intéressant, source pas fiable…',
+          },
+        ]),
       )
     }
     // ── "Write one of these" menu under a digest ──
@@ -134,14 +160,25 @@ export async function handleInteraction(
     }
 
     // ── Forms ──
-    const text = i.data?.components?.[0]?.components?.[0]?.value?.trim() ?? ''
+    const values = modalValues(i.data)
+    const text = values.text ?? ''
     if (i.type === InteractionType.MODAL_SUBMIT && action === 'editmodal') {
-      await queueDraft(payload, storyId, text)
+      const image = values.image ?? ''
+      if (!text && !image) {
+        return json(ephemeral('Rien à changer : écris un retour ou colle une URL d’image.'))
+      }
+      if (image && !/^https:\/\/\S+$/i.test(image)) {
+        return json(ephemeral('L’image doit être une URL en https://…'))
+      }
+      await queueDraft(payload, storyId, text || undefined, image || undefined)
+      const asked = [text ? `révision « ${text} »` : '', image ? 'nouvelle image' : '']
+        .filter(Boolean)
+        .join(' + ')
       return json({
         type: ResponseType.UPDATE_MESSAGE,
         data: closedMessage(
           original,
-          `Révision demandée : « ${text} ». La nouvelle version arrive en réponse.`,
+          `Demandé : ${asked}. La nouvelle version arrive en réponse.`,
           COLORS.working,
         ),
       })
@@ -201,14 +238,24 @@ export const scoutReportHandler: PayloadHandler = async (req) => {
 }
 
 /** The `scoutDraft` job: one draft or revision, reported on Discord if it fails. */
-export async function runDraftJob(payload: Payload, input: { storyId: number; feedback?: string }) {
+export async function runDraftJob(
+  payload: Payload,
+  input: { storyId: number; feedback?: string | null; imageUrl?: string | null },
+) {
   const ctx = makeContext(payload)
   const settings = (await payload.findGlobal({
     slug: 'scout-settings',
     overrideAccess: true,
   })) as unknown as SettingsDoc
   try {
-    await draftStory(ctx, settings, Number(input.storyId), input.feedback)
+    if (input.imageUrl && !input.feedback) {
+      // Image only: no model call, the text stays as it is.
+      await setStoryImage(ctx, settings, Number(input.storyId), input.imageUrl)
+    } else {
+      await draftStory(ctx, settings, Number(input.storyId), input.feedback ?? undefined, {
+        imageUrl: input.imageUrl ?? undefined,
+      })
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     payload.logger.error({ msg: '[scout] draft job failed', story: input.storyId, error: message })

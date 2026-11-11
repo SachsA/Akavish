@@ -39,6 +39,11 @@ describe('cleanDraft', () => {
     ).toThrow()
     expect(() => cleanDraft({} as never, 'news')).toThrow()
   })
+
+  it('keeps the picked video numbers, valid and once each', () => {
+    expect(cleanDraft(answer({ videos: [2, 2, 0, 1.5, -1, 1] }), 'news').videos).toEqual([2, 1])
+    expect(cleanDraft(answer(), 'news').videos).toEqual([])
+  })
 })
 
 describe('toLexical', () => {
@@ -56,6 +61,31 @@ describe('toLexical', () => {
       type: 'link',
       fields: { url: 'https://ign.example/gta', newTab: true },
     })
+  })
+
+  it('adds a Watch list of video links before the Sources', () => {
+    const { root } = toLexical(
+      [{ type: 'paragraph', text: 'x' }],
+      [{ name: 'IGN', url: 'https://ign.example/gta', title: 'GTA 6 trailer 3' }],
+      [
+        {
+          title: 'Grand Theft Auto VI Trailer 3',
+          channel: 'Rockstar Games',
+          url: 'https://www.youtube.com/watch?v=QdBZY2fkU-0',
+        },
+      ],
+    )
+    const kids = root.children as Array<{
+      type: string
+      children: Array<{ text?: string; children: Array<Record<string, unknown>> }>
+    }>
+    expect(kids.map((c) => c.type)).toEqual(['paragraph', 'heading', 'list', 'heading', 'list'])
+    expect(kids[1].children[0].text).toBe('Watch')
+    expect(kids[2].children[0].children[1]).toMatchObject({
+      type: 'link',
+      fields: { url: 'https://www.youtube.com/watch?v=QdBZY2fkU-0', newTab: true },
+    })
+    expect(kids[3].children[0].text).toBe('Sources')
   })
 
   it('has no Sources heading when there are no sources', () => {
@@ -88,6 +118,16 @@ describe('draftPrompt', () => {
     expect(p).toContain('Source 2: Leaker (leaker / unverified)')
     expect(p).toContain('(no text available, title only)')
     expect(p).not.toContain('feedback')
+  })
+
+  it('lists the videos found, numbered, with their channel', () => {
+    const p = draftPrompt({
+      storyTitle: 'x',
+      sources,
+      videos: [{ title: 'Trailer 3', channel: 'Rockstar Games', url: 'https://youtu.be/x' }],
+    })
+    expect(p).toContain('[1] "Trailer 3" (YouTube channel: Rockstar Games)')
+    expect(draftPrompt({ storyTitle: 'x', sources })).not.toContain('Videos found')
   })
 
   it('includes the previous version and the feedback for a revision', () => {

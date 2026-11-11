@@ -198,7 +198,13 @@ taken, the same plan the scout's step 3 needs — `DEPLOYMENT.md` §6.5.
 
 **In progress: the AI news scout** (section below). Steps 1 (observation) and
 2 (drafts + Discord buttons) are live in production since 2026-11-10, bot set
-up. Automatic drafts stay **off** until the weekend review of the digests
+up, whole Discord flow tested by hand on 2026-11-11 (draft, V2, Reject,
+Publish). Drafts carry a cover and the official videos since 2026-11-11.
+
+**Instant site refresh** (2026-11-11): the CMS pings `/api/revalidate` after
+every public change, so a new article shows on its category page at the first
+reload instead of after 30 s and a few reloads. Needs `REVALIDATE_SECRET`
+(same value) on Railway and Vercel — `DEPLOYMENT.md` §4e. Automatic drafts stay **off** until the weekend review of the digests
 (Nov 14-15), so they're ready for GTA VI on Thursday Nov 19.
 
 Everything else waits on something:
@@ -265,7 +271,7 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 | --- | --- | --- |
 | 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
 | 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps, weekly report on Saturdays + `/api/scout/report` (2026-11-10) |
-| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings |
+| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings. **Media** (2026-11-11): a cover on every draft (official source's `og:image`, else the game's cover, never a press outlet's image), official YouTube videos in a *Watch* section, an image URL field in *Modifier*, Publish refused without a cover |
 | 3. Leakers + style | Later | X accounts (pay-per-use API; when it's paid, also switch X sign-in back on in Clerk, `DEPLOYMENT.md` §6.5), learning from published / rejected drafts, tags picked by the model from the existing ones (drafts have none for now: add them in /admin before publishing) |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
 | 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |
@@ -480,6 +486,12 @@ checklist it walks through.
 ## Known notes / gotchas
 
 - Run the CMS and web as **two separate processes** (ports 3001 and 3000).
+- **ISR serves stale once.** With `revalidate = 30`, the first visit after 30 s
+  gets the old page while Next rebuilds it in the background, and the CMS
+  fetch cache has its own 30 s on top: that's why a category page needed 2-3
+  reloads to show a new article (Nov 2026). Fixed with on-demand revalidation
+  (`/api/revalidate`, `cms` cache tag); every web read of the CMS must go
+  through `cmsFetch` to get the tag.
 - Articles must be **Published** to appear publicly; drafts are editor-only.
 - **CI and Ubuntu's apt mirrors.** GitHub runners sometimes can't resolve the
   Ubuntu mirrors; `playwright install --with-deps` then hung 25 min and failed

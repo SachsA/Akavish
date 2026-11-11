@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { slugField } from '../fields/slug'
 import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-search-sync'
+import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-web'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -80,12 +81,15 @@ export const Articles: CollectionConfig = {
         void syncArticleToSearch(req.payload, doc.id)
         return doc
       },
+      // Refresh the website's cache now rather than within 30 s (lib/revalidate-web.ts).
+      revalidateAfterChange,
     ],
     afterDelete: [
       ({ doc, req }) => {
         void removeArticleFromSearch(req.payload, doc.id)
         return doc
       },
+      revalidateAfterDelete,
     ],
   },
   fields: [

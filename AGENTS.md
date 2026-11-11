@@ -132,10 +132,17 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   Sonnet **draft** articles (`aiAssisted`) validated on Discord by a bot
   (Publish / Edit → V2 / Reject, endpoint `/api/scout/discord`, `scoutDraft`
   job), automatic drafts off unless *Scout settings → draftsEnabled*. Never
-  publish without the owner's click. Weekly report (`report.ts`): Discord on
+  publish without the owner's click, nor without a cover: official source's
+  `og:image` or the game's cover, never a press outlet's image (`media.ts`);
+  official YouTube videos go in a *Watch* section. Weekly report (`report.ts`): Discord on
   Saturdays, `GET /api/scout/report` for editors. Design and steps in
   `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.
+- **Site refresh:** the CMS pings the web's `POST /api/revalidate` after any
+  public change (articles, games, tags, authors; `lib/revalidate-web.ts`),
+  `REVALIDATE_SECRET` identical on both apps. Every web CMS fetch carries the
+  `cms` tag (`cmsFetch` in `apps/web/src/lib/payload.ts`); a new CMS read must
+  go through `cmsFetch` to be refreshed.
 - **Articles from Markdown:** `apps/cms/scripts/publish-articles.mjs` posts
   articles (covers, games, publish now / schedule / draft) over REST with a
   dedicated editor login in the gitignored `.cms-import`; scheduling goes

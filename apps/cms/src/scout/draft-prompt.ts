@@ -11,6 +11,17 @@ export interface DraftSource {
   /** Page text, or the feed summary when the page couldn't be read. */
   text: string
   reliability: 'official' | 'high' | 'variable'
+  /** The page's share image (og:image), when it was read. */
+  image?: string | null
+  /** YouTube ids embedded or linked in the article. */
+  videos?: string[]
+}
+
+/** A YouTube video found in the sources, with its oEmbed title and channel. */
+export interface VideoRef {
+  title: string
+  channel: string
+  url: string
 }
 
 export type Block =
@@ -25,6 +36,8 @@ export interface DraftAnswer {
   category: Category
   blocks: Block[]
   seo_description: string
+  /** Numbers (1-based) of the listed videos to show in "Watch". */
+  videos?: number[]
 }
 
 export const DRAFT_SYSTEM = `You write news articles for Akavish, an English-language video game news site. Tone: direct, factual, no fluff, no hype words ("insane", "epic"), no clickbait, no emoji. Readers are gamers who want the facts fast.
@@ -40,7 +53,8 @@ Hard rules:
 - Excerpt: one or two sentences, under 200 characters, not a copy of the first paragraph.
 - SEO description: under 155 characters.
 - Write in English even when sources are in French or another language.
-Do not add a sources list: it is appended automatically.`
+- Videos: when videos found in the sources are listed, put in "videos" the numbers of those that are official (the publisher's, studio's, platform holder's or tournament organiser's own channel) AND directly about this story, such as the trailer the article is about. None otherwise. Do not mention a video in the text unless you selected it.
+Do not add a sources list or video links: they are appended automatically.`
 
 /** The user turn: story, sources, and for a revision the previous version + feedback. */
 export function draftPrompt(args: {
@@ -50,6 +64,7 @@ export function draftPrompt(args: {
   sources: DraftSource[]
   previous?: { title: string; body: string }
   feedback?: string
+  videos?: VideoRef[]
 }): string {
   const sources = args.sources
     .map(
@@ -58,6 +73,11 @@ export function draftPrompt(args: {
     )
     .join('\n\n')
   let prompt = `Story: ${args.storyTitle}\nSuggested category: ${args.category ?? 'news'}${args.game ? `\nGame: ${args.game}` : ''}\n\n${sources}`
+  if (args.videos?.length) {
+    prompt += `\n\n--- Videos found in the sources\n${args.videos
+      .map((v, i) => `[${i + 1}] "${v.title}" (YouTube channel: ${v.channel || 'unknown'})`)
+      .join('\n')}`
+  }
   if (args.previous && args.feedback) {
     prompt += `\n\n--- Your previous version\nHeadline: ${args.previous.title}\n${args.previous.body}\n\n--- The editor's feedback (apply it, keep the hard rules)\n${args.feedback}`
   }
@@ -87,6 +107,11 @@ export const DRAFT_TOOL = {
         },
       },
       seo_description: { type: 'string' },
+      videos: {
+        type: 'array',
+        items: { type: 'integer' },
+        description: 'Numbers of the listed official videos about this story; empty if none.',
+      },
     },
     required: ['title', 'excerpt', 'category', 'blocks', 'seo_description'],
   },
@@ -132,6 +157,13 @@ export function cleanDraft(
     category,
     blocks,
     seo_description: clip(answer.seo_description, 160),
+    videos: [
+      ...new Set(
+        (Array.isArray(answer?.videos) ? answer.videos : []).filter(
+          (n) => Number.isInteger(n) && n > 0,
+        ),
+      ),
+    ],
   }
 }
 
@@ -171,9 +203,23 @@ const element = (type: string, children: unknown[], extra: Record<string, unknow
 const paragraph = (children: unknown[]) => element('paragraph', children, { textFormat: 0 })
 
 /** The article body: the draft's blocks, then "Sources" with a link to each source. */
+const linkItem = (label: string, linkText: string, url: string, i: number) =>
+  element(
+    'listitem',
+    [
+      text(label),
+      element('link', [text(linkText)], {
+        version: 3,
+        fields: { linkType: 'custom', url, newTab: true },
+      }),
+    ],
+    { value: i + 1 },
+  )
+
 export function toLexical(
   blocks: Block[],
   sources: Array<{ name: string; url: string; title: string }>,
+  videos: VideoRef[] = [],
 ) {
   const children: unknown[] = blocks.map((b) => {
     switch (b.type) {
@@ -191,24 +237,22 @@ export function toLexical(
         return paragraph([text(b.text)])
     }
   })
+  if (videos.length) {
+    children.push(element('heading', [text('Watch')], { tag: 'h2' }))
+    children.push(
+      element(
+        'list',
+        videos.map((v, i) => linkItem(v.channel ? `${v.channel}: ` : '', v.title, v.url, i)),
+        { listType: 'bullet', start: 1, tag: 'ul' },
+      ),
+    )
+  }
   if (sources.length) {
     children.push(element('heading', [text('Sources')], { tag: 'h2' }))
     children.push(
       element(
         'list',
-        sources.map((s, i) =>
-          element(
-            'listitem',
-            [
-              text(`${s.name}: `),
-              element('link', [text(s.title)], {
-                version: 3,
-                fields: { linkType: 'custom', url: s.url, newTab: true },
-              }),
-            ],
-            { value: i + 1 },
-          ),
-        ),
+        sources.map((s, i) => linkItem(`${s.name}: `, s.title, s.url, i)),
         { listType: 'bullet', start: 1, tag: 'ul' },
       ),
     )

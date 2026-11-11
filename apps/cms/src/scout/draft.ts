@@ -18,7 +18,8 @@ import {
   type DraftAnswer,
   type DraftSource,
 } from './draft-prompt'
-import { fetchArticleText } from './extract'
+import { fetchPage, type PageRead } from './extract'
+import { pickCover, uploadImage, videoCandidates, type Cover, type Video } from './media'
 import { periodStarts } from './schedule'
 
 const MAX_SOURCES = 6
@@ -37,7 +38,7 @@ type StoryWithDraft = StoryDoc & {
 const RANK = { official: 0, high: 1, variable: 2 } as const
 
 /** The story's best sources: one item per outlet, official first, oldest first. */
-async function sourcesFor(ctx: ScoutContext, storyId: number): Promise<DraftSource[]> {
+async function sourcesFor(ctx: ScoutContext, storyId: number, read = true): Promise<DraftSource[]> {
   const { docs } = await ctx.payload.find({
     collection: 'scout-items',
     where: { story: { equals: storyId } },
@@ -57,19 +58,22 @@ async function sourcesFor(ctx: ScoutContext, storyId: number): Promise<DraftSour
   picked.sort((a, b) => RANK[a.source.reliability] - RANK[b.source.reliability])
   const chosen = picked.slice(0, MAX_SOURCES)
 
-  const texts = await Promise.all(
+  const empty: PageRead = { text: '', image: null, videos: [] }
+  const pages = await Promise.all(
     chosen.map(({ item }, i) =>
-      i < PAGES_TO_READ && !ctx.config.dryRun
-        ? fetchArticleText(item.url, ctx.fetch)
-        : Promise.resolve(''),
+      read && i < PAGES_TO_READ && !ctx.config.dryRun
+        ? fetchPage(item.url, ctx.fetch)
+        : Promise.resolve(empty),
     ),
   )
   return chosen.map(({ item, source }, i) => ({
     name: source.name,
     url: item.url,
     title: item.title,
-    text: texts[i] || item.summary || '',
+    text: pages[i].text || item.summary || '',
     reliability: source.reliability,
+    image: pages[i].image,
+    videos: pages[i].videos,
   }))
 }
 
@@ -100,6 +104,35 @@ export interface DraftResult {
   messageId?: string
 }
 
+/** The article's current cover, as stored (id and URL). */
+async function currentCover(ctx: ScoutContext, articleId: number): Promise<Cover | null> {
+  const art = (await ctx.payload.findByID({
+    collection: 'articles',
+    id: articleId,
+    depth: 1,
+    draft: true,
+    overrideAccess: true,
+  })) as unknown as { coverImage?: { id: number; url?: string | null } | number | null }
+  const c = art.coverImage
+  if (!c) return null
+  return typeof c === 'object'
+    ? { id: Number(c.id), url: c.url, origin: 'image actuelle' }
+    : { id: Number(c), origin: 'image actuelle' }
+}
+
+/**
+ * Change only the cover of a story's draft, from an image URL the editor
+ * pasted in Discord. No model call; the card is posted again with the image.
+ */
+export async function setStoryImage(
+  ctx: ScoutContext,
+  settings: SettingsDoc,
+  storyId: number,
+  imageUrl: string,
+): Promise<DraftResult> {
+  return draftStory(ctx, settings, storyId, undefined, { imageUrl, imageOnly: true })
+}
+
 /**
  * Draft (or, with feedback, revise) the article for a story. Throws when the
  * budget is spent or the model's answer is unusable; the caller reports it.
@@ -109,6 +142,7 @@ export async function draftStory(
   settings: SettingsDoc,
   storyId: number,
   feedback?: string,
+  opts: { imageUrl?: string; imageOnly?: boolean } = {},
 ): Promise<DraftResult> {
   const story = (await ctx.payload.findByID({
     collection: 'scout-stories',
@@ -121,8 +155,14 @@ export async function draftStory(
       ? story.article.id
       : story.article
     : null
+  if (opts.imageOnly) {
+    if (!articleRef) throw new Error('no draft for this story')
+    if (!opts.imageUrl) throw new Error('image: no URL')
+    return imageOnly(ctx, story, storyId, Number(articleRef), opts.imageUrl)
+  }
   const sources = await sourcesFor(ctx, storyId)
   if (sources.length === 0) throw new Error(`story ${storyId} has no items`)
+  const videos: Video[] = ctx.config.dryRun ? [] : await videoCandidates(sources, ctx.fetch)
 
   // The previous version, for a revision: as stored by the last draft (any
   // edit made in /admin since then isn't seen, the feedback is about V(n)).
@@ -171,6 +211,7 @@ export async function draftStory(
         sources,
         previous,
         feedback,
+        videos,
       }),
       tool: DRAFT_TOOL as unknown as Parameters<typeof callTool>[0]['tool'],
       maxTokens: 4000,
@@ -186,7 +227,26 @@ export async function draftStory(
   }
 
   const clean = cleanDraft(draft, story.category)
-  const content = toLexical(clean.blocks, sources)
+  const watch = (clean.videos ?? []).map((n) => videos[n - 1]).filter(Boolean)
+  const content = toLexical(clean.blocks, sources, watch)
+
+  // Cover: the editor's URL, else the one already set (a revision keeps it),
+  // else an official source's image or the game's cover.
+  let cover: Cover | null = null
+  let imageError: string | undefined
+  if (opts.imageUrl) {
+    try {
+      const up = await uploadImage(ctx, opts.imageUrl, clean.title)
+      cover = { ...up, origin: 'URL donnée sur Discord' }
+    } catch (err) {
+      imageError = err instanceof Error ? err.message : String(err)
+    }
+  }
+  if (!cover && articleRef) cover = await currentCover(ctx, Number(articleRef))
+  if (!cover && !ctx.config.dryRun) {
+    cover = await pickCover(ctx, { title: clean.title, game: story.game }, sources)
+  }
+
   const data = {
     title: clean.title,
     excerpt: clean.excerpt,
@@ -194,6 +254,7 @@ export async function draftStory(
     category: clean.category,
     seo: { title: clean.title, description: clean.seo_description },
     aiAssisted: true,
+    ...(cover ? { coverImage: cover.id } : {}),
   }
 
   let articleId: number
@@ -221,31 +282,125 @@ export async function draftStory(
     articleId = Number(created.id)
   }
 
-  const version = (story.version ?? 0) + 1
   const bodyText = blocksToText(clean.blocks)
+  return postCard(ctx, story, storyId, articleId, {
+    title: clean.title,
+    excerpt: clean.excerpt,
+    body: bodyText,
+    category: clean.category,
+    sources: sources.map((s) => ({ name: s.name, url: s.url })),
+    videos: watch,
+    cover,
+    imageError,
+    feedback,
+    storyUpdate: {
+      lastDraftText: bodyText,
+      ...(feedback
+        ? {
+            feedback: [
+              ...(story.feedback ?? []),
+              { text: feedback, version: (story.version ?? 0) + 1 },
+            ],
+          }
+        : {}),
+    },
+  })
+}
+
+/** New cover only: upload, set it on the draft, post the card again. */
+async function imageOnly(
+  ctx: ScoutContext,
+  story: StoryWithDraft,
+  storyId: number,
+  articleId: number,
+  imageUrl: string,
+): Promise<DraftResult> {
+  const art = (await ctx.payload.findByID({
+    collection: 'articles',
+    id: articleId,
+    depth: 0,
+    draft: true,
+    overrideAccess: true,
+  })) as unknown as { title: string; excerpt?: string | null; category?: string | null }
+  let cover: Cover | null = null
+  let imageError: string | undefined
+  try {
+    const up = await uploadImage(ctx, imageUrl, art.title)
+    cover = { ...up, origin: 'URL donnée sur Discord' }
+    await ctx.payload.update({
+      collection: 'articles',
+      id: articleId,
+      data: { coverImage: cover.id } as never,
+      draft: true,
+      overrideAccess: true,
+    })
+  } catch (err) {
+    imageError = err instanceof Error ? err.message : String(err)
+    cover = await currentCover(ctx, articleId)
+  }
+  return postCard(ctx, story, storyId, articleId, {
+    title: art.title,
+    excerpt: art.excerpt ?? '',
+    body: story.lastDraftText ?? '',
+    category: art.category ?? story.category ?? 'news',
+    sources: (await sourcesFor(ctx, storyId, false)).map((s) => ({ name: s.name, url: s.url })),
+    videos: [],
+    cover,
+    imageError,
+    imageChange: true,
+    storyUpdate: {},
+  })
+}
+
+/** Post the draft's card on Discord (as a reply to the last one) and update the story. */
+async function postCard(
+  ctx: ScoutContext,
+  story: StoryWithDraft,
+  storyId: number,
+  articleId: number,
+  c: {
+    title: string
+    excerpt: string
+    body: string
+    category: string
+    sources: Array<{ name: string; url: string }>
+    videos: Video[]
+    cover: Cover | null
+    imageError?: string
+    imageChange?: boolean
+    feedback?: string
+    storyUpdate: Record<string, unknown>
+  },
+): Promise<DraftResult> {
+  const version = (story.version ?? 0) + 1
   const storyUpdate: Record<string, unknown> = {
     article: articleId,
     status: 'drafted',
     version,
-    lastDraftText: bodyText,
     ...(story.draftedAt ? {} : { draftedAt: ctx.now.toISOString() }),
-    ...(feedback ? { feedback: [...(story.feedback ?? []), { text: feedback, version }] } : {}),
+    ...c.storyUpdate,
   }
 
   const adminUrl = `${ctx.config.serverUrl}/admin/collections/articles/${articleId}`
+  const absolute = (u?: string | null) =>
+    !u ? undefined : u.startsWith('http') ? u : `${ctx.config.serverUrl}${u}`
   let messageId: string | undefined
   const card = {
     storyId,
     articleId,
     version,
     score: story.score,
-    title: clean.title,
-    excerpt: clean.excerpt,
-    body: bodyText,
-    category: clean.category,
-    sources: sources.map((s) => ({ name: s.name, url: s.url })),
+    title: c.title,
+    excerpt: c.excerpt,
+    body: c.body,
+    category: c.category,
+    sources: c.sources,
     adminUrl,
-    feedback,
+    feedback: c.feedback,
+    image: c.cover ? { url: absolute(c.cover.url), origin: c.cover.origin } : null,
+    imageError: c.imageError,
+    imageChange: c.imageChange,
+    videos: c.videos.map((v) => ({ title: v.title, channel: v.channel, url: v.url })),
   }
   if (ctx.config.bot && !ctx.config.dryRun) {
     messageId = await sendBotMessage(
@@ -322,7 +477,9 @@ export async function autoDraft(ctx: ScoutContext, settings: SettingsDoc): Promi
   return drafted
 }
 
-/** Publish a story's draft now. Returns the public URL. */
+export const NO_COVER = 'no cover image'
+
+/** Publish a story's draft now (never without a cover). Returns the public URL. */
 export async function publishStory(ctx: ScoutContext, storyId: number): Promise<string> {
   const story = (await ctx.payload.findByID({
     collection: 'scout-stories',
@@ -336,6 +493,7 @@ export async function publishStory(ctx: ScoutContext, storyId: number): Promise<
       : story.article
     : null
   if (!articleRef) throw new Error('no draft for this story')
+  if (!(await currentCover(ctx, Number(articleRef)))) throw new Error(NO_COVER)
   const article = await ctx.payload.update({
     collection: 'articles',
     id: articleRef,

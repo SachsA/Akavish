@@ -523,7 +523,18 @@ upgrade if ever needed: a shared store (Upstash Redis) behind the same helper.
 stale-while-revalidate=300`, so Vercel's CDN serves repeat requests (same
 search, same article) without calling the function or the CMS; errors and
 429s are `no-store`. Pages keep their ISR settings (articles and lists 30 s,
-sitemap and RSS 5 min). **Media** is served from `media.akavish.gg` (since
+sitemap and RSS 5 min). Past those 30 s Next serves the old page once while it
+rebuilds, which is why a new article took a few reloads to show on a category
+page. **On-demand revalidation** (since 2026-11-11) fixes it: after a public
+change (article published, edited, unpublished or deleted, game, tag, author)
+the CMS posts to `https://akavish.gg/api/revalidate` with the header
+`x-revalidate-secret`, and the site drops its CMS cache at once
+(`apps/cms/src/lib/revalidate-web.ts`, `apps/web/src/app/api/revalidate`).
+Needs **`REVALIDATE_SECRET`, the same value on Railway and Vercel**
+(`openssl rand -hex 32`); unset on either side, nothing breaks, the 30 s timer
+still applies. Check: publish something, the category page shows it on the
+first reload; Railway logs say `[revalidate] web refused` if the secrets
+differ. **Media** is served from `media.akavish.gg` (since
 2026-11-09), the R2 bucket's custom domain, which Cloudflare caches; `*.r2.dev`
 would be rate-limited and uncached. `R2_PUBLIC_URL` (Railway) and
 `NEXT_PUBLIC_R2_PUBLIC_URL` (Vercel, type *Config*: a `NEXT_PUBLIC_` variable
@@ -835,6 +846,7 @@ Neon, R2 or Resend, never through the CMS. Check *those* services' logs.
 | `SENTRY_AUTH_TOKEN` | Railway **and** Vercel | Sentry → Settings → Developer Settings → Organization Tokens | Nothing at runtime — build-time only | 🟡 |
 | `CLERK_SECRET_KEY` | Vercel | Clerk → API Keys → roll | Reader sign-in, until Vercel redeploys | 🟠 reader accounts |
 | `MEILISEARCH_API_KEY` | (unset today) | Meilisearch → keys | Search falls back to the CMS | 🟡 |
+| `REVALIDATE_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Instant refresh only, the 30 s cache still works | 🟡 flush the site's cache |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Railway / Vercel | Sentry → Client Keys | Nothing | ⚪ public by design |
 | `BACKUP_DATABASE_URL` | GitHub secrets | Neon (same reset as above, or the `backup_ro` role) | Nightly backups fail | 🔴 if the owner role, 🟠 if read-only |
 | `BACKUP_R2_*` | GitHub secrets | Cloudflare → R2 → the backups-bucket token | Nightly backups fail | 🔴 every past dump |
@@ -1180,11 +1192,23 @@ with `draftsEnabled` off, so you can test drafts one at a time.
 pages themselves for the first 4, same honest User-Agent), asks Sonnet for a
 150-300 word article in English with a *Sources* list at the end, and saves it
 as a **draft** article with `aiAssisted` ticked (the site then shows a one-line
-note under it, see `/terms`). On Discord:
+note under it, see `/terms`).
 
-- **Publier**: the article goes live, the message shows its URL.
-- **Modifier**: a form asks what's wrong; V2 arrives as a reply, with the same
-  buttons. Revise as many times as needed.
+**Media.** Every article needs a cover, so the scout picks one: the share image
+(`og:image`) of an **official** source (publisher, studio, platform, tournament
+organiser), else the cover of the story's game in *Games*. Never a press
+outlet's image: their photos aren't ours to reuse. YouTube videos embedded or
+linked in the sources are looked up (title and channel, YouTube oEmbed, no
+key); Sonnet keeps the official ones about the story and the article links them
+in a **Watch** section above *Sources*. The Discord card shows the cover, where
+it came from, and the videos; with no image it says so in orange. On Discord:
+
+- **Publier**: the article goes live, the message shows its URL. Refused,
+  privately, while the article has no cover.
+- **Modifier**: a form with two optional boxes, what's wrong and an **image
+  URL** (official visual, https). Text → V2 rewritten as a reply, with the same
+  buttons; image only → the cover changes, text untouched, no AI call. Revise as
+  many times as needed.
 - **Rejeter**: optional reason; the draft article is deleted.
 - **Ouvrir dans /admin**: edit it by hand, then publish from `/admin` or the
   button.
@@ -1230,6 +1254,7 @@ production. Re-check when you add a feed.
 | `NEXT_PUBLIC_SENTRY_ENVIRONMENT`    | `production`              | Optional, defaults to `NODE_ENV` |
 | `SENTRY_ORG` / `SENTRY_PROJECT`     | `…`                       | Build-time, source maps   |
 | `SENTRY_AUTH_TOKEN`                 | `sntrys_…`                | **Secret**, build-time only |
+| `REVALIDATE_SECRET`                 | `openssl rand -hex 32`    | **Secret**, same as the CMS's; unset → `/api/revalidate` off (§4e) |
 
 **CMS (Railway/Render)**
 
@@ -1261,6 +1286,7 @@ production. Re-check when you add a feed.
 | `DISCORD_BOT_TOKEN`   | `…`                              | **Secret**, scout bot (§11)         |
 | `DISCORD_APPLICATION_ID` / `DISCORD_PUBLIC_KEY` | `…` | Scout bot, developer portal (§11) |
 | `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |
+| `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
 
 ---
 

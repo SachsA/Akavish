@@ -104,9 +104,14 @@ export default buildConfig({
         inputSchema: [
           { name: 'storyId', type: 'number', required: true },
           { name: 'feedback', type: 'textarea' },
+          // An image URL pasted in Discord (Modifier): becomes the cover.
+          { name: 'imageUrl', type: 'text' },
         ],
         handler: async ({ input, req }) => {
-          await runDraftJob(req.payload, input as { storyId: number; feedback?: string })
+          await runDraftJob(
+            req.payload,
+            input as { storyId: number; feedback?: string; imageUrl?: string },
+          )
           return { output: {} }
         },
       },

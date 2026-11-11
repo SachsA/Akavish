@@ -14,7 +14,7 @@ import { collect } from '@/scout/collect'
 import { scoutConfig } from '@/scout/config'
 import type { ScoutContext } from '@/scout/context'
 import { maybeSendDigest } from '@/scout/digest'
-import { autoDraft, draftStory } from '@/scout/draft'
+import { autoDraft, draftStory, setStoryImage } from '@/scout/draft'
 import { handleInteraction, scoutReportHandler } from '@/scout/interactions'
 import { gatherReport } from '@/scout/report'
 import type { DiscordMessage } from '@/scout/discord'
@@ -22,6 +22,7 @@ import { checkBudget } from '@/scout/budget'
 import { runScout } from '@/scout/run'
 import { triage } from '@/scout/triage'
 
+import sharp from 'sharp'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 let payload: Payload
@@ -250,10 +251,12 @@ describe('scout', () => {
 
 describe('scout step 2 (drafts)', () => {
   const discordPosts: Array<{ url: string; body: Record<string, unknown> }> = []
+  let png: Buffer // a real image (noise, so it isn't tiny once compressed)
   const draftFetch: ScoutContext['fetch'] = async (url, init) => {
     if (url === 'https://api.anthropic.com/v1/messages') {
       const body = JSON.parse(String(init.body)) as { messages: Array<{ content: string }> }
       const revision = body.messages[0].content.includes("The editor's feedback")
+      const withVideo = body.messages[0].content.includes('Grand Theft Auto VI Trailer 3')
       return Response.json({
         content: [
           {
@@ -267,6 +270,7 @@ describe('scout step 2 (drafts)', () => {
                 { type: 'paragraph', text: 'Rockstar released the third trailer for GTA VI.' },
               ],
               seo_description: 'The third GTA VI trailer.',
+              ...(withVideo ? { videos: [1] } : {}),
             },
           },
         ],
@@ -277,10 +281,24 @@ describe('scout step 2 (drafts)', () => {
       discordPosts.push({ url, body: JSON.parse(String(init.body)) })
       return Response.json({ id: `msg-${discordPosts.length}` })
     }
+    if (url === 'https://scout-test.invalid/page/gta') {
+      return new Response(
+        '<head><meta property="og:image" content="https://scout-test.invalid/img/scouttest-gta.png"></head><article><p>Rockstar has released the third trailer for Grand Theft Auto VI on Tuesday afternoon.</p><iframe src="https://www.youtube.com/embed/QdBZY2fkU-0"></iframe></article>',
+      )
+    }
     if (url.startsWith('https://scout-test.invalid/page/')) {
       return new Response(
-        '<article><p>Rockstar has released the third trailer for Grand Theft Auto VI on Tuesday afternoon.</p></article>',
+        '<article><p>A small patch for a small indie game, nothing more.</p></article>',
       )
+    }
+    if (url.startsWith('https://scout-test.invalid/img/')) {
+      return new Response(new Uint8Array(png), { headers: { 'content-type': 'image/png' } })
+    }
+    if (url.startsWith('https://www.youtube.com/oembed')) {
+      return Response.json({
+        title: 'Grand Theft Auto VI Trailer 3',
+        author_name: 'Rockstar Games',
+      })
     }
     return new Response('nope', { status: 404 })
   }
@@ -328,6 +346,14 @@ describe('scout step 2 (drafts)', () => {
 
   beforeAll(async () => {
     await wipe()
+    png = await sharp(
+      Buffer.from(Array.from({ length: 160 * 90 * 3 }, () => (Math.random() * 256) | 0)),
+      {
+        raw: { width: 160, height: 90, channels: 3 },
+      },
+    )
+      .png()
+      .toBuffer()
     for (const [k, v] of Object.entries(BOT_ENV)) {
       savedEnv[k] = process.env[k]
       process.env[k] = v
@@ -386,6 +412,11 @@ describe('scout step 2 (drafts)', () => {
       where: { aiAssisted: { equals: true } },
       overrideAccess: true,
     })
+    await payload.delete({
+      collection: 'media',
+      where: { filename: { like: 'scouttest' } },
+      overrideAccess: true,
+    })
     await wipe()
   })
 
@@ -415,6 +446,13 @@ describe('scout step 2 (drafts)', () => {
       aiAssisted: true,
     })
     expect(JSON.stringify(article.content)).toContain('https://scout-test.invalid/page/gta') // Sources block
+    // Media: the official source's og:image became the cover, the trailer is linked.
+    expect(article.coverImage).toBeTruthy()
+    expect(JSON.stringify(article.content)).toContain('"text":"Watch"')
+    expect(JSON.stringify(article.content)).toContain('https://www.youtube.com/watch?v=QdBZY2fkU-0')
+    const embed = (discordPosts[0].body.embeds as Array<Record<string, unknown>>)[0]
+    expect((embed.image as { url: string }).url).toMatch(/scouttest-gta.*\.png$/)
+    expect(JSON.stringify(embed.fields)).toContain('visuel officiel, Rockstar')
 
     expect(discordPosts[0].url).toBe('https://discord.com/api/v10/channels/42/messages')
     expect(JSON.stringify(discordPosts[0].body)).toContain('scout:publish:' + gtaId)
@@ -490,8 +528,54 @@ describe('scout step 2 (drafts)', () => {
     expect(article.publishedAt).toBeTruthy()
   })
 
-  it('Edit opens a form; Reject deletes the draft and keeps the reason', async () => {
+  it('never publishes without an image, and takes one from Modifier', async () => {
     await draftStory(ctx2(), await settings(), smallId) // a manual draft (the digest menu)
+    expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain('Aucune image officielle')
+    const owner = { member: { user: { id: 'owner' } } }
+
+    const refused = await (
+      await interact({ type: 3, ...owner, data: { custom_id: `scout:publish:${smallId}` } })
+    ).json()
+    expect(refused.data.flags).toBe(64)
+    expect(refused.data.content).toContain('Pas d’image')
+    expect((await story(smallId)).status).toBe('drafted')
+
+    const modal = (values: Record<string, string>) =>
+      interact({
+        type: 5,
+        ...owner,
+        data: {
+          custom_id: `scout:editmodal:${smallId}`,
+          components: Object.entries(values).map(([custom_id, value]) => ({
+            components: [{ custom_id, value }],
+          })),
+        },
+      }).then((r) => r.json())
+    expect((await modal({ text: '', image: '' })).data.content).toContain('Rien à changer')
+    expect((await modal({ text: '', image: 'http://x.example/a.png' })).data.content).toContain(
+      'https://',
+    )
+
+    const before = (await story(smallId)).lastDraftText
+    await setStoryImage(
+      ctx2(),
+      await settings(),
+      smallId,
+      'https://scout-test.invalid/img/scouttest-cover.png',
+    )
+    const s = await story(smallId)
+    expect(s.lastDraftText).toBe(before) // the text is untouched
+    const article = (await payload.findByID({
+      collection: 'articles',
+      id: s.article as number,
+      draft: true,
+      overrideAccess: true,
+    })) as unknown as Record<string, unknown>
+    expect(article.coverImage).toBeTruthy()
+    expect(String(discordPosts.at(-1)!.body.content)).toContain('image changée')
+  })
+
+  it('Edit opens a form; Reject deletes the draft and keeps the reason', async () => {
     const draftId = (await story(smallId)).article as number
 
     const form = await (

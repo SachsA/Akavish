@@ -248,7 +248,11 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    per run (and `maxDraftsPerDay`) at or above the threshold, under 24 h old.
    Up to 6 sources, official first, page text read for the first 4; Claude
    Sonnet answers with a `write_article` tool call, turned into Lexical
-   with a *Sources* list. Claude Sonnet 5.5 refuses a *forced* tool call
+   with a *Watch* list (videos) and a *Sources* list. **Media** (`media.ts`):
+   the cover is the `og:image` of an official source, else the game's cover
+   in *Games* (never a press outlet's image); YouTube videos found in the
+   sources go to the prompt with their oEmbed title and channel, Sonnet picks
+   the official ones about the story (`videos` in the tool). Claude Sonnet 5.5 refuses a *forced* tool call
    (400), so `anthropic.ts` falls back to `tool_choice: auto` with an explicit
    instruction and up-front thinking off (`between_tools`) for any model that
    refuses, and remembers it. Saved as a **draft** article, `aiAssisted` ticked,
@@ -272,8 +276,12 @@ bot message with **Publier** / **Modifier** / **Rejeter** and a link to
 `/admin`. Discord posts the clicks to `POST /api/scout/discord` (declared in
 `payload.config.ts`): Ed25519 signature checked against `DISCORD_PUBLIC_KEY`
 (401 otherwise), PING answered, only `SCOUT_DISCORD_OWNER_ID` accepted.
-Publish sets the article live; Edit opens a form and queues a `scoutDraft` job
-whose V2 comes back as a reply; Reject deletes the draft article. Anything
+Publish sets the article live, and refuses (privately) while it has no cover;
+Edit opens a form (feedback and/or an image URL, both optional, one needed) and
+queues a `scoutDraft` job (`storyId`, `feedback`, `imageUrl`): feedback → V2
+rewritten as a reply; image only → `setStoryImage`, the cover changes without
+an AI call. Reject deletes the draft article. The card shows the cover (embed
+image), its origin or an orange "no image" warning, and the videos. Anything
 that calls the model runs as a `scoutDraft` job (Discord wants an answer within
 3 s). The story keeps `version`, `feedback`, `lastDraftText` and the article.
 
@@ -285,11 +293,23 @@ pnpm scout:run --report   # only print the weekly report (--days=N), no run
 ```
 
 Tests: `pnpm test` (pure logic: feeds, score, Paris clock, triage answers,
-digest messages, pricing, draft cleaning, Lexical, page text, Discord
-signatures and buttons, weekly report) and `tests/int/scout.int.spec.ts` (the
-whole run, then drafts, revisions and signed clicks, the report endpoint and
-the Saturday report, with the network faked). ⚠ The integration test empties the scout tables of the
+digest messages, pricing, draft cleaning, Lexical, page text, share image and
+YouTube ids, Discord signatures and buttons, weekly report) and
+`tests/int/scout.int.spec.ts` (the whole run, then drafts with their cover and
+Watch list, revisions, the no-cover Publish refusal, an image-only change and
+signed clicks, the report endpoint and the Saturday report, with the network
+faked). ⚠ The integration test empties the scout tables of the
 local database it runs on.
+
+## Site refresh (on-demand revalidation)
+
+The site caches its CMS reads for 30 s and serves the stale copy once past
+that, so a new article could take a few reloads to show. `src/lib/revalidate-web.ts`
+hooks `afterChange` / `afterDelete` on articles, games, tags and authors: when
+the change is public (drafts of never-published articles are skipped) it posts
+to `WEB_URL/api/revalidate` with `x-revalidate-secret: REVALIDATE_SECRET`,
+fire-and-forget. The web route drops the `cms` cache tag and the whole layout.
+Same secret on both apps; unset → no ping, nothing breaks. `DEPLOYMENT.md` §4e.
 
 ## ⚠️ After adding or removing a Payload plugin
 

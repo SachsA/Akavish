@@ -51,6 +51,7 @@ export interface Embed {
   color?: number
   fields?: Array<{ name: string; value: string; inline?: boolean }>
   footer?: { text: string }
+  image?: { url: string }
 }
 
 export interface BotMessage {
@@ -80,15 +81,35 @@ export interface DraftCard {
   sources: Array<{ name: string; url: string }>
   adminUrl: string
   feedback?: string
+  /** The cover set on the draft, if any, and where it came from. */
+  image?: { url?: string; origin: string } | null
+  /** Why the image the editor gave couldn't be used. */
+  imageError?: string
+  /** This card only follows a change of image. */
+  imageChange?: boolean
+  /** Official videos linked in the article's "Watch" section. */
+  videos?: Array<{ title: string; channel: string; url: string }>
 }
+
+const NO_IMAGE =
+  '⚠️ Aucune image officielle trouvée. **Modifier** → colle l’URL d’une image officielle (ou ajoute-la dans /admin). Publier est bloqué d’ici là.'
 
 /** A draft with its three buttons and a link to the admin. */
 export function draftMessage(card: DraftCard): BotMessage {
   const sources = card.sources.map((s) => `[${s.name}](${s.url})`).join(' · ')
+  const videos = (card.videos ?? [])
+    .map((v) => `[${clip(v.title, 90)}](${v.url})${v.channel ? ` · ${v.channel}` : ''}`)
+    .join('\n')
+  const image = card.image
+    ? `${card.image.origin}${card.imageError ? `\n⚠️ L’URL donnée n’a pas marché (${card.imageError}).` : ''}`
+    : `${card.imageError ? `⚠️ L’URL donnée n’a pas marché (${card.imageError}).\n` : ''}${NO_IMAGE}`
+  const content = card.imageChange
+    ? `**V${card.version}** : image changée.`
+    : card.feedback
+      ? `**V${card.version}** après ton retour : « ${clip(card.feedback, 300)} »`
+      : undefined
   return {
-    ...(card.feedback
-      ? { content: `**V${card.version}** après ton retour : « ${clip(card.feedback, 300)} »` }
-      : {}),
+    ...(content ? { content } : {}),
     embeds: [
       {
         title: clip(card.title, 256),
@@ -99,8 +120,11 @@ export function draftMessage(card: DraftCard): BotMessage {
           { name: 'Score', value: String(card.score), inline: true },
           { name: 'Catégorie', value: card.category, inline: true },
           { name: 'Version', value: `V${card.version}`, inline: true },
+          { name: 'Image', value: clip(image, 1024) },
+          ...(videos ? [{ name: 'Vidéos', value: clip(videos, 1024) }] : []),
           ...(sources ? [{ name: 'Sources', value: clip(sources, 1024) }] : []),
         ],
+        ...(card.image?.url ? { image: { url: card.image.url } } : {}),
         footer: { text: 'Brouillon du scout · rien n’est publié sans ton clic' },
       },
     ],
@@ -167,37 +191,48 @@ export function pickMenu(stories: Array<{ id: number; score: number; title: stri
   ]
 }
 
-/** A modal with one paragraph input. */
-export function modal(
-  customId: string,
-  title: string,
-  label: string,
-  required: boolean,
-  placeholder: string,
-) {
+export interface ModalField {
+  id: string
+  label: string
+  required: boolean
+  placeholder: string
+  /** One line (a URL) rather than a paragraph. */
+  short?: boolean
+}
+
+/** A modal with one or more text inputs. */
+export function modal(customId: string, title: string, fields: ModalField[]) {
   return {
     type: ResponseType.MODAL,
     data: {
       custom_id: customId,
       title: clip(title, 45),
-      components: [
-        {
-          type: 1,
-          components: [
-            {
-              type: 4,
-              custom_id: 'text',
-              style: 2,
-              label: clip(label, 45),
-              required,
-              max_length: 1000,
-              placeholder: clip(placeholder, 100),
-            },
-          ],
-        },
-      ],
+      components: fields.map((f) => ({
+        type: 1,
+        components: [
+          {
+            type: 4,
+            custom_id: f.id,
+            style: f.short ? 1 : 2,
+            label: clip(f.label, 45),
+            required: f.required,
+            max_length: f.short ? 500 : 1000,
+            placeholder: clip(f.placeholder, 100),
+          },
+        ],
+      })),
     },
   }
+}
+
+/** The values of a submitted modal, by input id. */
+export function modalValues(data?: {
+  components?: Array<{ components?: Array<{ custom_id?: string; value?: string }> }>
+}): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const row of data?.components ?? [])
+    for (const c of row.components ?? []) if (c.custom_id) out[c.custom_id] = (c.value ?? '').trim()
+  return out
 }
 
 export const ephemeral = (content: string) => ({
