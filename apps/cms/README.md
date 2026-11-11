@@ -255,13 +255,22 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    in *Games* (never a press outlet's image); YouTube videos found in the
    sources go to the prompt with their oEmbed title and channel, Sonnet picks
    the official ones about the story (`videos` in the tool). **Tags:** the
-   existing tag names go to the prompt, Sonnet answers `tags` with 2 to 5 of
-   them, `matchTags` keeps only real ones (case-insensitive), never the game
-   nor the category, at most 5; the model never creates a tag. A revision
-   picks again (tags set by hand in `/admin` are replaced by a *Modifier*).
-   **Game:** the *Games* names go to the prompt too; `matchGame` takes the
-   model's `game` (exact name, any case), else the triage's, sets the
-   article's `game` and uses that game's cover as the fallback image.
+   existing tag names go to the prompt; Sonnet answers `tags` (existing,
+   kept by `matchTags`, case-insensitive) and `new_tags` (created, at most 2,
+   filtered by `cleanNewTags`: not existing, not the game, the category or a
+   vague word), 5 in all. **Game:** the *Games* names go to the prompt too;
+   `matchGame` matches the model's `game` on letters and digits; an empty
+   answer means no game (the triage's game is only a dry-run fallback). A
+   game not listed comes back with `game_is_new` and `new_game` (developer,
+   publisher, platforms and genres from the collection's options,
+   `cleanNewGame`) and is created, with the official cover as its own. Both
+   are set on every draft and revision (a *Modifier* replaces tags set by
+   hand). `rejectStory` deletes the tags and game created since the story's
+   first draft that no article uses any more. **Duplicates** (`dedupe.ts`):
+   before each automatic draft, Haiku compares the story with the articles of
+   the last 21 days and the stories rejected in the last 10; a repeat becomes
+   `rejected` with "auto : doublon de l'article …" and no Discord card. Usage
+   purpose `dedupe`. Menu picks skip it.
    **Alt text** of an official cover: the publisher's `og:image:alt`, else
    "Official image from <source>: <title>". Every field a draft fills (and
    when one can stay empty) is listed in `DEPLOYMENT.md` §11. Claude Sonnet 5.5 refuses a *forced* tool call

@@ -42,9 +42,29 @@ export interface DraftAnswer {
   videos?: number[]
   /** Names picked from the site's existing tags. */
   tags?: string[]
-  /** The game the story is about, copied from the existing games list. */
+  /** The game the story is about: an existing name, or a new official title. */
   game?: string
+  /** `game` isn't in the list: create it with what the sources say. */
+  game_is_new?: boolean
+  new_game?: { developer?: string; publisher?: string; platforms?: string[]; genres?: string[] }
+  /** Tags the site doesn't have yet (at most 2 kept). */
+  new_tags?: string[]
 }
+
+/** The `platform` and `genre` options of the Games collection. */
+export const GAME_PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Nintendo Switch', 'Mobile'] as const
+export const GAME_GENRES = [
+  'FPS',
+  'RPG',
+  'Action',
+  'Strategy',
+  'Sports',
+  'MOBA',
+  'Battle Royale',
+  'MMO',
+  'Simulation',
+  'Other',
+] as const
 
 export const DRAFT_SYSTEM = `You write news articles for Akavish, an English-language video game news site. Tone: direct, factual, no fluff, no hype words ("insane", "epic"), no clickbait, no emoji. Readers are gamers who want the facts fast.
 
@@ -59,8 +79,8 @@ Hard rules:
 - Excerpt: one or two sentences, under 200 characters, not a copy of the first paragraph.
 - SEO description: under 155 characters.
 - Write in English even when sources are in French or another language.
-- Tags: pick 2 to 5 from the existing tags listed, copied exactly: cross-cutting topics such as the publisher or studio, the platform, the event, the theme (Release dates, Trailers, Earnings…). Never the game itself, never the category, never a tag that doesn't fit the story, never one that isn't in the list. Fewer is fine when few fit; none if the list is empty.
-- Game: when the story is about one game in the existing games list, put its exact name in "game" (match "GTA 6" to "Grand Theft Auto VI"). Leave it empty for a story about several games, a platform, a service or a game that isn't listed.
+- Game: the ONE game the story is about, meaning the news concerns that game itself (its release, update, DLC, sales, trailer, review, cancellation). A game only cited as context is not the subject: a PS5 sales story that mentions GTA VI has no game. Hardware, a service, a company, a studio, an event or several games: leave it empty. When the game is in the existing games list, copy its exact name ("GTA 6" is "Grand Theft Auto VI"). When it isn't, give its full official title as the publisher writes it ("The Legend of Zelda: Ocarina of Time", not "Ocarina of Time remake"), set game_is_new, and fill new_game only with what the sources state (developer, publisher, platforms, genres); leave out the rest.
+- Tags: 2 to 5, in this order: (1) the company behind the news (publisher, studio or platform holder: Nintendo, Sony, Bandai Namco, Obsidian Entertainment…); (2) the platforms concerned (PS5, Xbox, PC, Switch 2), only when the story is about them; (3) the theme or event (Sales, Release dates, DLC, Studio closures, Earnings, Trailers, Worlds 2026…). Copy existing tags exactly when one fits. When a needed company or theme tag doesn't exist, put it in new_tags (at most 2, short, English, Title Case, the style of the existing ones). Never the game's name, never the category, never a person, never a vague word ("Gaming", "News").
 - Videos: when videos found in the sources are listed, put in "videos" the numbers of those that are official (the publisher's, studio's, platform holder's or tournament organiser's own channel) AND directly about this story, such as the trailer the article is about. None otherwise. Do not mention a video in the text unless you selected it.
 Do not add a sources list or video links: they are appended automatically.`
 
@@ -132,12 +152,30 @@ export const DRAFT_TOOL = {
       },
       game: {
         type: 'string',
-        description: 'Exact name from the existing games list, or empty.',
+        description:
+          'The one game the story is about: exact name from the list, or its full official title if not listed; empty if none.',
+      },
+      game_is_new: { type: 'boolean', description: 'True when game is not in the list.' },
+      new_game: {
+        type: 'object',
+        description: 'Only with game_is_new, only facts stated in the sources.',
+        properties: {
+          developer: { type: 'string' },
+          publisher: { type: 'string' },
+          platforms: { type: 'array', items: { type: 'string', enum: [...GAME_PLATFORMS] } },
+          genres: { type: 'array', items: { type: 'string', enum: [...GAME_GENRES] } },
+        },
+      },
+      new_tags: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'At most 2 tags the site lacks (company or theme); empty if the existing ones suffice.',
       },
       tags: {
         type: 'array',
         items: { type: 'string' },
-        description: '2 to 5 names copied from the existing tags list; empty if none fit.',
+        description: 'Existing tags that fit, exact names (with new_tags: 2 to 5 in all).',
       },
     },
     required: ['title', 'excerpt', 'category', 'blocks', 'seo_description'],
@@ -191,7 +229,13 @@ export function cleanDraft(
         ),
       ),
     ],
-    game: typeof answer?.game === 'string' ? answer.game.trim() : '',
+    game: typeof answer?.game === 'string' ? answer.game.trim().slice(0, 120) : '',
+    game_is_new: answer?.game_is_new === true,
+    new_game: cleanNewGame(answer?.new_game),
+    new_tags: (Array.isArray(answer?.new_tags) ? answer.new_tags : [])
+      .filter((t): t is string => typeof t === 'string')
+      .map((t) => t.trim())
+      .filter(Boolean),
     tags: (Array.isArray(answer?.tags) ? answer.tags : [])
       .filter((t): t is string => typeof t === 'string')
       .map((t) => t.trim())
@@ -316,19 +360,71 @@ export function matchTags(
 }
 
 /**
- * The id of the game the model named (exact name, case-insensitive), else of
- * the game the triage noted on the story, else null. Pure.
+ * The id of the game the model named, matched on letters and digits only
+ * ("The Outer Worlds 2" = "the outer worlds 2"), else null. `fallback` (the
+ * triage's game) is only used when the model gave no answer at all (dry
+ * run): an empty answer means "no game", and is respected. Pure.
  */
 export function matchGame(
   picked: string | undefined,
-  storyGame: string | null | undefined,
+  fallback: string | null | undefined,
   existing: Array<{ id: number; name: string }>,
 ): number | null {
-  const norm = (s: string) => s.trim().toLowerCase()
-  for (const name of [picked, storyGame]) {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '')
+  for (const name of picked === undefined ? [fallback] : [picked]) {
     if (!name?.trim()) continue
     const hit = existing.find((g) => norm(g.name) === norm(name))
     if (hit) return hit.id
   }
   return null
+}
+
+/** The new game's facts, kept only when they fit the Games collection. Pure. */
+export function cleanNewGame(raw: unknown): DraftAnswer['new_game'] {
+  const g = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const str = (v: unknown) =>
+    typeof v === 'string' && v.trim() ? v.trim().slice(0, 80) : undefined
+  const pick = <T extends string>(v: unknown, allowed: readonly T[]) => [
+    ...new Set((Array.isArray(v) ? v : []).filter((x): x is T => allowed.includes(x as T))),
+  ]
+  return {
+    developer: str(g.developer),
+    publisher: str(g.publisher),
+    platforms: pick(g.platforms, GAME_PLATFORMS),
+    genres: pick(g.genres, GAME_GENRES),
+  }
+}
+
+/**
+ * The tags to create for a draft: at most `room` (2 at most), each 2 to 30
+ * characters, not already a tag (any case), not the game, the category or a
+ * vague word. Pure.
+ */
+export function cleanNewTags(
+  names: string[] | undefined,
+  existing: Array<{ name: string }>,
+  exclude: Array<string | null | undefined> = [],
+  room = 2,
+): string[] {
+  const norm = (s: string) => s.trim().toLowerCase()
+  const banned = new Set(
+    [
+      ...existing.map((t) => t.name),
+      ...exclude.filter((e): e is string => !!e),
+      ...CATEGORIES,
+      'gaming',
+      'news',
+      'video games',
+      'games',
+    ].map(norm),
+  )
+  const out: string[] = []
+  for (const raw of names ?? []) {
+    const name = raw.replace(/\s+/g, ' ').trim()
+    if (name.length < 2 || name.length > 30 || banned.has(norm(name))) continue
+    if (out.some((o) => norm(o) === norm(name))) continue
+    out.push(name)
+    if (out.length >= Math.min(2, room)) break
+  }
+  return out
 }

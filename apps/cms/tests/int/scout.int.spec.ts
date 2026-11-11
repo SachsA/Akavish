@@ -254,9 +254,33 @@ describe('scout step 2 (drafts)', () => {
   let png: Buffer // a real image (noise, so it isn't tiny once compressed)
   const draftFetch: ScoutContext['fetch'] = async (url, init) => {
     if (url === 'https://api.anthropic.com/v1/messages') {
-      const body = JSON.parse(String(init.body)) as { messages: Array<{ content: string }> }
-      const revision = body.messages[0].content.includes("The editor's feedback")
-      const withVideo = body.messages[0].content.includes('Grand Theft Auto VI Trailer 3')
+      const body = JSON.parse(String(init.body)) as {
+        messages: Array<{ content: string }>
+        tools?: Array<{ name: string }>
+      }
+      const text = body.messages[0].content
+      if (body.tools?.[0]?.name === 'check_duplicate') {
+        // The repeat story is the GTA article again; anything else is new.
+        const gtaArticle = text.match(/\[(\d+)\] GTA VI trailer 3 is out/)?.[1]
+        const repeat = text.includes('GTA VI trailer three, again') && gtaArticle
+        return Response.json({
+          content: [
+            {
+              type: 'tool_use',
+              name: 'check_duplicate',
+              input: {
+                duplicate_of: repeat ? Number(gtaArticle) : 0,
+                rejected_like: 0,
+                reason: repeat ? 'Même trailer.' : '',
+              },
+            },
+          ],
+          usage: { input_tokens: 2000, output_tokens: 40 },
+        })
+      }
+      const revision = text.includes("The editor's feedback")
+      const withVideo = text.includes('Grand Theft Auto VI Trailer 3')
+      const indie = text.includes('Story: Small indie patch')
       return Response.json({
         content: [
           {
@@ -271,9 +295,21 @@ describe('scout step 2 (drafts)', () => {
               ],
               seo_description: 'The third GTA VI trailer.',
               ...(withVideo ? { videos: [1] } : {}),
-              // One real tag in another case, one the site doesn't have.
-              tags: ['scouttest rockstar', 'Scouttest Invented', 'Scouttest Grand Theft'],
-              game: 'scouttest grand theft',
+              ...(indie
+                ? {
+                    // A game and a tag the site doesn't have yet.
+                    game: 'Scouttest Indie Quest',
+                    game_is_new: true,
+                    new_game: { developer: 'Tiny Studio', platforms: ['PC', 'Switch 2'] },
+                    tags: [],
+                    new_tags: ['Scouttest Patches'],
+                  }
+                : {
+                    // One real tag in another case, one the site doesn't have.
+                    tags: ['scouttest rockstar', 'Scouttest Invented', 'Scouttest Grand Theft'],
+                    new_tags: ['Scouttest Sales', 'scouttest rockstar'],
+                    game: 'scouttest grand theft',
+                  }),
             },
           },
         ],
@@ -484,16 +520,23 @@ describe('scout step 2 (drafts)', () => {
       depth: 1,
       overrideAccess: true,
     })) as unknown as { tags: Array<{ name: string }>; game: { name: string } | null }
-    // The game's own name is never a tag; the game goes in its own field.
-    expect(tagged.tags.map((t) => t.name)).toEqual(['Scouttest Rockstar'])
+    // The game's own name is never a tag; the game goes in its own field. A
+    // new tag the model asked for is created, an existing one isn't doubled.
+    expect(tagged.tags.map((t) => t.name)).toEqual(['Scouttest Rockstar', 'Scouttest Sales'])
     expect(tagged.game?.name).toBe('Scouttest Grand Theft')
     expect(JSON.stringify(embed.fields)).toContain('Scouttest Rockstar')
     const invented = await payload.count({
       collection: 'tags',
-      where: { name: { equals: 'Scouttest Invented' } },
+      where: { name: { equals: 'Scouttest Invented' } }, // in `tags`, not `new_tags`: not created
       overrideAccess: true,
     })
     expect(invented.totalDocs).toBe(0)
+    const rockstars = await payload.count({
+      collection: 'tags',
+      where: { name: { like: 'scouttest rockstar' } },
+      overrideAccess: true,
+    })
+    expect(rockstars.totalDocs).toBe(1)
 
     expect(discordPosts[0].url).toBe('https://discord.com/api/v10/channels/42/messages')
     expect(JSON.stringify(discordPosts[0].body)).toContain('scout:publish:' + gtaId)
@@ -569,8 +612,69 @@ describe('scout step 2 (drafts)', () => {
     expect(article.publishedAt).toBeTruthy()
   })
 
+  it('skips an automatic draft of news the site already covers', async () => {
+    const before = discordPosts.length
+    const { docs } = await payload.find({
+      collection: 'scout-sources',
+      limit: 1,
+      overrideAccess: true,
+    })
+    const again = await payload.create({
+      collection: 'scout-stories',
+      data: {
+        title: 'GTA VI trailer three, again',
+        score: 88,
+        significance: 90,
+        status: 'new',
+        firstSeenAt: NOW.toISOString(),
+        lastItemAt: NOW.toISOString(),
+      },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'scout-items',
+      data: {
+        title: 'GTA VI trailer three, again',
+        url: 'https://scout-test.invalid/page/gta-again',
+        source: docs[0].id,
+        status: 'triaged',
+        story: again.id,
+        publishedAt: NOW.toISOString(),
+      },
+      overrideAccess: true,
+    })
+    expect(await autoDraft(ctx2(), await settings())).toBe(0)
+    const s = await story(Number(again.id))
+    expect(s.status).toBe('rejected')
+    expect(String(s.rejectionReason)).toMatch(
+      /^auto : doublon de l'article « GTA VI trailer 3 is out/,
+    )
+    expect(s.article ?? null).toBeNull()
+    expect(discordPosts.length).toBe(before) // nothing sent to Discord
+  })
+
   it('never publishes without an image, and takes one from Modifier', async () => {
     await draftStory(ctx2(), await settings(), smallId) // a manual draft (the digest menu)
+    // A game and a tag the site lacked were created for it.
+    const indie = (await payload.findByID({
+      collection: 'articles',
+      id: (await story(smallId)).article as number,
+      draft: true,
+      depth: 1,
+      overrideAccess: true,
+    })) as unknown as {
+      game: { name: string; developer?: string; platform?: string[] }
+      tags: Array<{ name: string }>
+    }
+    expect(indie.game).toMatchObject({
+      name: 'Scouttest Indie Quest',
+      developer: 'Tiny Studio',
+      platform: ['PC'],
+    })
+    expect(indie.tags.map((t) => t.name)).toEqual(['Scouttest Patches'])
+    expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(
+      'Scouttest Indie Quest (fiche créée)',
+    )
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain('Aucune image officielle')
     const owner = { member: { user: { id: 'owner' } } }
 
@@ -648,6 +752,18 @@ describe('scout step 2 (drafts)', () => {
     await expect(
       payload.findByID({ collection: 'articles', id: draftId, draft: true, overrideAccess: true }),
     ).rejects.toThrow()
+    // What the scout created for that draft goes with it.
+    for (const [collection, name] of [
+      ['games', 'Scouttest Indie Quest'],
+      ['tags', 'Scouttest Patches'],
+    ] as const) {
+      const { totalDocs } = await payload.count({
+        collection,
+        where: { name: { equals: name } },
+        overrideAccess: true,
+      })
+      expect(totalDocs).toBe(0)
+    }
   })
 })
 

@@ -14,12 +14,14 @@ import {
   DRAFT_SYSTEM,
   DRAFT_TOOL,
   draftPrompt,
+  cleanNewTags,
   matchGame,
   matchTags,
   toLexical,
   type DraftAnswer,
   type DraftSource,
 } from './draft-prompt'
+import { duplicateReason } from './dedupe'
 import { fetchPage, type PageRead } from './extract'
 import { pickCover, uploadImage, videoCandidates, type Cover, type Video } from './media'
 import { periodStarts } from './schedule'
@@ -122,7 +124,27 @@ async function existingGames(ctx: ScoutContext): Promise<Array<{ id: number; nam
   }))
 }
 
-/** The site's tags, for the model to pick from (it never creates one). */
+/** Create a game the model named that isn't in Games yet. */
+async function createGame(
+  ctx: ScoutContext,
+  name: string,
+  facts: DraftAnswer['new_game'],
+): Promise<number> {
+  const created = await ctx.payload.create({
+    collection: 'games',
+    data: {
+      name,
+      ...(facts?.developer ? { developer: facts.developer } : {}),
+      ...(facts?.publisher ? { publisher: facts.publisher } : {}),
+      ...(facts?.platforms?.length ? { platform: facts.platforms } : {}),
+      ...(facts?.genres?.length ? { genre: facts.genres } : {}),
+    } as never,
+    overrideAccess: true,
+  })
+  return Number(created.id)
+}
+
+/** The site's tags, for the model to pick from or add to. */
 async function existingTags(ctx: ScoutContext): Promise<Array<{ id: number; name: string }>> {
   const { docs } = await ctx.payload.find({
     collection: 'tags',
@@ -266,9 +288,34 @@ export async function draftStory(
   const clean = cleanDraft(draft, story.category)
   const watch = (clean.videos ?? []).map((n) => videos[n - 1]).filter(Boolean)
   const content = toLexical(clean.blocks, sources, watch)
-  const gameId = matchGame(clean.game, story.game, gameList)
-  const gameName = gameList.find((g) => g.id === gameId)?.name
+  // Game: the model's pick from Games, or a new one it named (created here,
+  // with only what the sources say). Tags: its picks from the existing ones,
+  // plus at most 2 it asked to create. Nothing is invented in a dry run.
+  let gameId = matchGame(ctx.config.dryRun ? undefined : clean.game, story.game, gameList)
+  let gameName = gameList.find((g) => g.id === gameId)?.name
+  let newGameId: number | null = null
+  if (!gameId && clean.game && clean.game_is_new && !ctx.config.dryRun) {
+    newGameId = gameId = await createGame(ctx, clean.game, clean.new_game)
+    gameName = clean.game
+  }
   const tagIds = matchTags(clean.tags, tagList, [story.game, gameName, clean.category])
+  const tagNames = tagList.filter((t) => tagIds.includes(t.id)).map((t) => t.name)
+  if (!ctx.config.dryRun) {
+    for (const name of cleanNewTags(
+      clean.new_tags,
+      tagList,
+      [gameName, story.game],
+      5 - tagIds.length,
+    )) {
+      const created = await ctx.payload.create({
+        collection: 'tags',
+        data: { name } as never,
+        overrideAccess: true,
+      })
+      tagIds.push(Number(created.id))
+      tagNames.push(name)
+    }
+  }
 
   // Cover: the editor's URL, else the one already set (a revision keeps it),
   // else an official source's image or the game's cover.
@@ -286,6 +333,15 @@ export async function draftStory(
   if (!cover && !ctx.config.dryRun) {
     cover = await pickCover(ctx, { title: clean.title, game: gameName ?? story.game }, sources)
   }
+  // A game created just now takes the official image as its own cover.
+  if (newGameId && cover && cover.origin.startsWith('visuel officiel')) {
+    await ctx.payload.update({
+      collection: 'games',
+      id: newGameId,
+      data: { cover: cover.id } as never,
+      overrideAccess: true,
+    })
+  }
 
   const data = {
     title: clean.title,
@@ -295,9 +351,9 @@ export async function draftStory(
     seo: { title: clean.title, description: clean.seo_description },
     aiAssisted: true,
     ...(cover ? { coverImage: cover.id } : {}),
-    // The model's pick from the existing tags; a revision picks again.
-    ...(tagIds.length ? { tags: tagIds } : {}),
-    ...(gameId ? { game: gameId } : {}),
+    // Set every time, so a revision can also correct them.
+    tags: tagIds,
+    game: gameId ?? null,
   }
 
   let articleId: number
@@ -333,8 +389,8 @@ export async function draftStory(
     category: clean.category,
     sources: sources.map((s) => ({ name: s.name, url: s.url })),
     videos: watch,
-    tags: tagList.filter((t) => tagIds.includes(t.id)).map((t) => t.name),
-    game: gameName,
+    tags: tagNames,
+    game: gameName ? `${gameName}${newGameId ? ' (fiche créée)' : ''}` : undefined,
     cover,
     imageError,
     feedback,
@@ -512,6 +568,19 @@ export async function autoDraft(ctx: ScoutContext, settings: SettingsDoc): Promi
   let drafted = 0
   for (const story of docs as unknown as StoryDoc[]) {
     try {
+      // Already covered (an article, or a story the editor rejected)? Set it
+      // aside with the reason instead of drafting it again (dedupe.ts).
+      const dup = await duplicateReason(ctx, settings, { id: Number(story.id), title: story.title })
+      if (dup) {
+        await ctx.payload.update({
+          collection: 'scout-stories',
+          id: story.id,
+          data: { status: 'rejected', rejectionReason: dup.slice(0, 500) },
+          overrideAccess: true,
+        })
+        ctx.payload.logger.info({ msg: '[scout] duplicate skipped', story: story.id, reason: dup })
+        continue
+      }
       await draftStory(ctx, settings, Number(story.id))
       drafted++
     } catch (err) {
@@ -590,8 +659,43 @@ export async function rejectStory(
       overrideAccess: true,
     })
     // Only ever delete what is still a draft: a published article stays.
-    if ((art as unknown as { status?: string }).status !== 'published') {
-      await ctx.payload.delete({ collection: 'articles', id: articleRef, overrideAccess: true })
+    const a = art as unknown as {
+      status?: string
+      tags?: Array<number | { id: number }> | null
+      game?: number | { id: number } | null
     }
+    if (a.status !== 'published') {
+      await ctx.payload.delete({ collection: 'articles', id: articleRef, overrideAccess: true })
+      const id = (v: number | { id: number }) => (typeof v === 'object' ? v.id : v)
+      await dropOrphans(ctx, 'tags', (a.tags ?? []).map(id), 'tags', story.draftedAt)
+      if (a.game) await dropOrphans(ctx, 'games', [id(a.game)], 'game', story.draftedAt)
+    }
+  }
+}
+
+/**
+ * After a rejected draft is deleted: remove the tags or game the scout
+ * created for it (created since the story's first draft) that no other
+ * article uses, so a rejection leaves nothing behind.
+ */
+async function dropOrphans(
+  ctx: ScoutContext,
+  collection: 'tags' | 'games',
+  ids: number[],
+  field: 'tags' | 'game',
+  since?: string | null,
+): Promise<void> {
+  if (!since) return
+  for (const docId of ids) {
+    const doc = (await ctx.payload
+      .findByID({ collection, id: docId, depth: 0, overrideAccess: true })
+      .catch(() => null)) as { createdAt?: string } | null
+    if (!doc?.createdAt || doc.createdAt < since) continue
+    const { totalDocs } = await ctx.payload.count({
+      collection: 'articles',
+      where: { [field]: field === 'tags' ? { in: [docId] } : { equals: docId } },
+      overrideAccess: true,
+    })
+    if (totalDocs === 0) await ctx.payload.delete({ collection, id: docId, overrideAccess: true })
   }
 }

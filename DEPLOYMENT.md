@@ -1200,13 +1200,23 @@ organiser), else the cover of the story's game in *Games*. Never a press
 outlet's image: their photos aren't ours to reuse. YouTube videos embedded or
 linked in the sources are looked up (title and channel, YouTube oEmbed, no
 key); Sonnet keeps the official ones about the story and the article links them
-in a **Watch** section above *Sources*. **Tags:** Sonnet picks 2 to 5 from the
-existing tags (never creates one, never the game or the category); the card
-lists them, and a revision picks again. A tag the site lacks: create it in
-`/admin` and the next drafts can use it. **Game:** Sonnet also names the
-story's game from *Games* ("GTA 6" → Grand Theft Auto VI); it's set on the
-article, shown on the card, and its cover is the fallback image. A game not in
-*Games* stays empty: add it there (with a cover) and the next drafts use it. The Discord card shows the cover, where
+in a **Watch** section above *Sources*. **Tags:** 2 to 5, in this order: the
+company behind the news (publisher, studio, platform holder), the platforms
+concerned, then the theme or event (Sales, DLC, Studio closures…). Sonnet uses
+the existing tags and may create at most 2 missing ones per draft (never the
+game, the category, a person or a vague word). **Game:** the one game the
+story is *about* (a PS5 sales story citing GTA VI has none), taken from
+*Games* ("GTA 6" → Grand Theft Auto VI); when it isn't there, Sonnet gives the
+full official title and the scout creates the game with what the sources say
+(developer, publisher, platforms, genres) and the official image as its cover.
+Rejecting a draft deletes the tags and game created for it if nothing else
+uses them. The card lists the tags and the game ("fiche créée" when new); a
+revision picks them again. **Already covered?** Before an automatic draft, a
+Haiku check (`dedupe.ts`, about 0.002 $) compares the story with the articles
+of the last 3 weeks (published, scheduled or draft) and the stories rejected in
+the last 10 days. A repeat is set aside as rejected ("auto : doublon de
+l'article …") and never reaches Discord; a real new development still gets
+drafted. Picks from the digest menu skip the check. The Discord card shows the cover, where
 it came from, and the videos; with no image it says so in orange.
 
 **What a scout draft fills, field by field:**
@@ -1217,8 +1227,8 @@ it came from, and the videos; with no image it says so in orange.
 | Slug | the slug hook, from the title | never |
 | Category | Sonnet (news, leak, review, preview, conference, esport), else the triage's | never |
 | Cover image + alt text | official source's `og:image` (alt: the publisher's `og:image:alt`, else "Official image from <source>: <title>"), else the game's cover, else the URL given in *Modifier* | no official image and no game cover: orange warning, Publish refused |
-| Game | Sonnet, from *Games* only | story about several games, a platform or a service, or a game not in *Games* |
-| Tags (2 to 5) | Sonnet, from the existing tags only | none fits |
+| Game | Sonnet: from *Games*, or created when missing | story not about one game (hardware, service, company, several games) |
+| Tags (2 to 5) | Sonnet: existing tags, plus at most 2 created | never in practice |
 | Author | *Scout settings → defaultAuthor* | never |
 | `aiAssisted` | always ticked | never |
 | Status, `publishedAt` | draft; set on *Publier* | until published |

@@ -5,6 +5,8 @@ import {
   blocksToText,
   cleanDraft,
   draftPrompt,
+  cleanNewGame,
+  cleanNewTags,
   matchGame,
   matchTags,
   toLexical,
@@ -293,13 +295,60 @@ describe('matchTags', () => {
 describe('matchGame', () => {
   const games = [
     { id: 4, name: 'Grand Theft Auto VI' },
-    { id: 6, name: 'Valorant' },
+    { id: 9, name: 'The Outer Worlds 2' },
   ]
 
-  it("takes the model's pick, else the triage's game, by exact name in any case", () => {
+  it("matches the model's pick on letters and digits only", () => {
     expect(matchGame('grand theft auto vi', 'GTA 6', games)).toBe(4)
-    expect(matchGame('', 'Valorant', games)).toBe(6)
+    expect(matchGame('The Outer Worlds 2', null, games)).toBe(9)
+    expect(matchGame('the outer-worlds 2', null, games)).toBe(9)
+  })
+
+  it('respects an empty answer (no game) and only falls back on the triage without an answer', () => {
+    expect(matchGame('', 'Grand Theft Auto VI', games)).toBeNull() // e.g. a PS5 sales story
+    expect(matchGame(undefined, 'Grand Theft Auto VI', games)).toBe(4) // dry run
     expect(matchGame('Made Up', 'GTA 6', games)).toBeNull()
-    expect(matchGame(undefined, null, games)).toBeNull()
+  })
+})
+
+describe('cleanNewGame', () => {
+  it('keeps only platforms and genres the Games collection has', () => {
+    expect(
+      cleanNewGame({
+        developer: ' Nintendo ',
+        platforms: ['Nintendo Switch', 'Switch 2', 'PC', 'PC'],
+        genres: ['Adventure', 'Action'],
+      }),
+    ).toEqual({
+      developer: 'Nintendo',
+      publisher: undefined,
+      platforms: ['Nintendo Switch', 'PC'],
+      genres: ['Action'],
+    })
+    expect(cleanNewGame(undefined)).toEqual({
+      developer: undefined,
+      publisher: undefined,
+      platforms: [],
+      genres: [],
+    })
+  })
+})
+
+describe('cleanNewTags', () => {
+  const existing = [{ name: 'PS5' }, { name: 'Sales' }]
+
+  it('creates at most 2, never an existing tag, the game, the category or a vague word', () => {
+    expect(
+      cleanNewTags(
+        ['Nintendo', 'sales', 'The Outer Worlds 2', 'news', 'Gaming', 'Studio closures', 'DLC'],
+        existing,
+        ['The Outer Worlds 2'],
+      ),
+    ).toEqual(['Nintendo', 'Studio closures'])
+  })
+
+  it('respects the room left under 5 tags and the length limits', () => {
+    expect(cleanNewTags(['Nintendo', 'Remakes'], existing, [], 1)).toEqual(['Nintendo'])
+    expect(cleanNewTags(['X', 'A tag name that is far too long to be one'], existing)).toEqual([])
   })
 })
