@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { callTool, isForcedToolRefusal, resetToolModes } from './anthropic'
 import { scoutConfig } from './config'
 import { digestMessages } from './discord'
 import { costUsd } from './pricing'
@@ -206,5 +207,72 @@ describe('config and pricing', () => {
     expect(costUsd('claude-haiku-5-5', 1_000_000, 100_000)).toBeCloseTo(0.15)
     expect(costUsd('claude-sonnet-5-5', 10_000, 1_500)).toBeCloseTo(0.035)
     expect(costUsd('typo-model', 1_000_000, 0)).toBe(5)
+  })
+})
+
+describe('callTool on models that refuse a forced tool', () => {
+  it('retries with tool_choice auto and no up-front thinking, then remembers', async () => {
+    resetToolModes()
+    const bodies: Array<Record<string, unknown>> = []
+    const fakeFetch = async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body)) as Record<string, unknown>
+      bodies.push(body)
+      if ((body.tool_choice as { type: string }).type === 'tool') {
+        return new Response(
+          '{"type":"error","error":{"type":"invalid_request_error","message":"tool_choice: type \\"tool\\" and \\"any\\" are not supported for this model."}}',
+          { status: 400 },
+        )
+      }
+      return Response.json({
+        content: [
+          { type: 'text', text: '' },
+          { type: 'tool_use', name: 'record', input: { ok: true } },
+        ],
+        usage: { input_tokens: 10, output_tokens: 5 },
+      })
+    }
+    const call = () =>
+      callTool<{ ok: boolean }>({
+        apiKey: 'k',
+        model: 'model-without-forced-tools',
+        system: 'Be brief.',
+        prompt: 'Go',
+        tool: { name: 'record', description: 'd', input_schema: { type: 'object' } },
+        fetchImpl: fakeFetch,
+      })
+    expect((await call()).input).toEqual({ ok: true })
+    expect(bodies).toHaveLength(2)
+    expect(bodies[1]).toMatchObject({
+      tool_choice: { type: 'auto' },
+      thinking: { type: 'between_tools' },
+    })
+    expect(String(bodies[1].system)).toContain('Answer only by calling the record tool')
+    await call()
+    expect(bodies).toHaveLength(3) // straight to auto the second time
+    expect(bodies[2]).toMatchObject({ tool_choice: { type: 'auto' } })
+  })
+
+  it('reports the text when the model answers without the tool', async () => {
+    resetToolModes()
+    const fakeFetch = async () =>
+      Response.json({ content: [{ type: 'text', text: 'I cannot do that.' }], usage: {} })
+    await expect(
+      callTool({
+        apiKey: 'k',
+        model: 'm',
+        system: 's',
+        prompt: 'p',
+        tool: { name: 'record', description: 'd', input_schema: { type: 'object' } },
+        fetchImpl: fakeFetch,
+      }),
+    ).rejects.toThrow('I cannot do that.')
+  })
+
+  it('recognises the refusal', () => {
+    expect(
+      isForcedToolRefusal(400, 'tool_choice: type "tool" ... not supported for this model'),
+    ).toBe(true)
+    expect(isForcedToolRefusal(400, 'max_tokens too large')).toBe(false)
+    expect(isForcedToolRefusal(500, 'tool_choice not supported')).toBe(false)
   })
 })

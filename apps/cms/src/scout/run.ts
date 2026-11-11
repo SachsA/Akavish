@@ -11,6 +11,7 @@ import type { ScoutContext, SettingsDoc } from './context'
 import { maybeSendDigest } from './digest'
 import { autoDraft } from './draft'
 import { postToDiscord, type DiscordMessage } from './discord'
+import { sendBotMessage } from './discord-bot'
 import { purgeOld } from './retention'
 import { triage } from './triage'
 
@@ -43,16 +44,20 @@ export interface RunReport {
 /** The run context: real network and clock unless the caller (a test) passes its own. */
 export function makeContext(payload: Payload, opts: RunOptions = {}): ScoutContext {
   const config = opts.config ?? scoutConfig()
+  const fetchImpl = opts.fetch ?? fetch
+  // Alerts and errors go through the bot when it's set up (same name and
+  // avatar as the drafts), else through the webhook.
   const notify =
     opts.notify ??
     (async (message: DiscordMessage) => {
-      if (config.dryRun || !config.discordWebhook) {
+      if (config.dryRun || (!config.bot && !config.discordWebhook)) {
         payload.logger.info({ msg: '[scout] discord (not sent)', message })
         return
       }
-      await postToDiscord(config.discordWebhook, message)
+      if (config.bot) await sendBotMessage(config.bot, message as never, fetchImpl)
+      else await postToDiscord(config.discordWebhook!, message)
     })
-  return { payload, config, now: opts.now ?? new Date(), fetch: opts.fetch ?? fetch, notify }
+  return { payload, config, now: opts.now ?? new Date(), fetch: fetchImpl, notify }
 }
 
 export async function runScout(payload: Payload, opts: RunOptions = {}): Promise<RunReport> {

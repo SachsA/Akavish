@@ -247,8 +247,11 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    *Scout settings → draftsEnabled* is ticked (off by default): up to 3 stories
    per run (and `maxDraftsPerDay`) at or above the threshold, under 24 h old.
    Up to 6 sources, official first, page text read for the first 4; Claude
-   Sonnet answers with a forced `write_article` tool call, turned into Lexical
-   with a *Sources* list. Saved as a **draft** article, `aiAssisted` ticked,
+   Sonnet answers with a `write_article` tool call, turned into Lexical
+   with a *Sources* list. Claude Sonnet 5.5 refuses a *forced* tool call
+   (400), so `anthropic.ts` falls back to `tool_choice: auto` with an explicit
+   instruction and up-front thinking off (`between_tools`) for any model that
+   refuses, and remembers it. Saved as a **draft** article, `aiAssisted` ticked,
    author from *Scout settings → defaultAuthor*.
 6. **Digest** (`digest.ts`, `discord.ts`): at 8 am and 8 pm Paris time, the
    new stories by score, green above the threshold. Through the bot when it's
