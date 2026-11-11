@@ -405,7 +405,6 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 | P2  | Clerk → DB sync           | Webhook to mirror Clerk users into Postgres for app data      |
 | P2  | Clerk on mobile           | Reader auth parity in the Expo app                            |
 | P3  | Saved/bookmarked articles | Per-user, needs the DB link above                             |
-| P3  | Social login providers    | Configure Google/Discord/etc. in Clerk                        |
 
 ## 6. Internationalization (EN + FR)
 
