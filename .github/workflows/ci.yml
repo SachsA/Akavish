@@ -120,8 +120,18 @@ jobs:
       - name: CMS integration tests
         run: pnpm --filter akavish-cms test:int
 
+      # The browser comes from Playwright's CDN; its system libraries come from
+      # Ubuntu's apt mirrors, which the runners sometimes can't reach (DNS
+      # failures, 2026-11-11: the step hung 25 min, then failed on fonts).
+      # The runner image already has almost all of them, so the apt part is
+      # best-effort and capped; a real missing library still fails the e2e
+      # tests below, loudly.
       - name: Install Playwright Chromium
-        run: pnpm --filter akavish-cms exec playwright install --with-deps chromium
+        timeout-minutes: 10
+        run: |
+          pnpm --filter akavish-cms exec playwright install chromium
+          timeout 240 pnpm --filter akavish-cms exec playwright install-deps chromium \
+            || echo "::warning::Playwright system deps not installed (apt mirrors unreachable?); using the runner's own libraries"
 
       # `pnpm start` on :3001 (Railway sets PORT itself, so the script doesn't
       # hard-code it). Playwright's webServer finds it already up and reuses it.
