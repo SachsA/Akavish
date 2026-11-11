@@ -102,8 +102,10 @@ to fix one article, re-run with `--only <slug>`.
 
 Tick **featured** in an article's sidebar to make it the big lead story on the
 homepage. If several are ticked, the most recently published one wins; with
-none, the lead is simply the newest article. The pick is never repeated lower
-on the page. Untick it once the story is no longer the headline: nothing
+none, the lead is simply the newest article. It isn't repeated in *Top
+stories*, but it does show again in its own category section lower down (as
+do the top stories, since 2026-11-11), so each section is the true latest of
+that category. Untick it once the story is no longer the headline: nothing
 expires it automatically.
 
 ## Access control

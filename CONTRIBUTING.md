@@ -96,7 +96,7 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
 
 | Where | What | Command |
 | --- | --- | --- |
-| `apps/web/src/lib/*.test.ts` | Pure logic: homepage lead, JSON-LD, pagination, rate limiting, revalidation secret | `pnpm test` |
+| `apps/web/src/lib/*.test.ts` | Pure logic: homepage lead and category sections, JSON-LD, pagination, rate limiting, revalidation secret | `pnpm test` |
 | `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper, categories (vs the CMS), reading time | `pnpm test` |
 | `apps/mobile/src/lib/*.test.ts` | App helpers: dates, feed paging, Lexical parsing, links | `pnpm test` |
 | `apps/cms/src/**/*.test.ts`, `apps/cms/scripts/**/*.test.mjs` | CMS pure logic: the AI scout's feeds parsing, score, clock, triage answers, digests, drafts (Watch videos, share image, YouTube ids), Discord signatures and buttons, weekly report, which saves refresh the site; the Markdown → Lexical article importer | `pnpm test` |

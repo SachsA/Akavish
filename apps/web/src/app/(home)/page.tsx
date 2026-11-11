@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Article } from '@akavish/types'
 import { fetchArticles } from '@/lib/payload'
 import { CATEGORIES } from '@/lib/categories'
-import { pickLead } from '@/lib/home'
+import { pickLead, sectionArticles } from '@/lib/home'
 import { ArticleCard } from '@/components/ArticleCard'
 import { ArticleListItem, FeaturedArticle } from '@/components/FeaturedArticle'
 import { Wordmark } from '@/components/Wordmark'
@@ -22,12 +22,12 @@ const PER_SECTION = 3
  *   1. Masthead — wordmark, tagline, links to every section.
  *   2. Lead story (the editor's "featured" pick, else the newest article) +
  *      a "Top stories" column (the next 3).
- *   3. One section per category, built from the remaining articles.
+ *   3. One section per category: its latest articles, the lead and top stories
+ *      included (a big story at the top still shows in its own category).
  *
- * Every article appears once: the category sections only use what the lead and
- * top-stories slots didn't take. Each block disappears when it has nothing to
- * show, so the page degrades cleanly from "busy" all the way down to a single
- * article — or to an empty-state message.
+ * Each block disappears when it has nothing to show, so the page degrades
+ * cleanly from "busy" all the way down to a single article, or to an
+ * empty-state message.
  *
  * Two CMS requests (the latest articles + the newest featured one), grouped in
  * memory.
@@ -52,11 +52,11 @@ export default async function HomePage() {
 
   const { lead, others } = pickLead(articles, featured)
   const topStories = others.slice(0, TOP_STORIES)
-  const remaining = others.slice(TOP_STORIES)
+  const onPage = lead ? [lead, ...others] : others
 
   const sections = CATEGORIES.map((category) => ({
     category,
-    articles: remaining.filter((a) => a.category === category.value).slice(0, PER_SECTION),
+    articles: sectionArticles(onPage, category.value, PER_SECTION),
   })).filter((s) => s.articles.length > 0)
 
   return (
