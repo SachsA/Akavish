@@ -38,6 +38,8 @@ export interface DraftAnswer {
   seo_description: string
   /** Numbers (1-based) of the listed videos to show in "Watch". */
   videos?: number[]
+  /** Names picked from the site's existing tags. */
+  tags?: string[]
 }
 
 export const DRAFT_SYSTEM = `You write news articles for Akavish, an English-language video game news site. Tone: direct, factual, no fluff, no hype words ("insane", "epic"), no clickbait, no emoji. Readers are gamers who want the facts fast.
@@ -53,6 +55,7 @@ Hard rules:
 - Excerpt: one or two sentences, under 200 characters, not a copy of the first paragraph.
 - SEO description: under 155 characters.
 - Write in English even when sources are in French or another language.
+- Tags: pick 2 to 5 from the existing tags listed, copied exactly: cross-cutting topics such as the publisher or studio, the platform, the event, the theme (Release dates, Trailers, Earnings…). Never the game itself, never the category, never a tag that doesn't fit the story, never one that isn't in the list. Fewer is fine when few fit; none if the list is empty.
 - Videos: when videos found in the sources are listed, put in "videos" the numbers of those that are official (the publisher's, studio's, platform holder's or tournament organiser's own channel) AND directly about this story, such as the trailer the article is about. None otherwise. Do not mention a video in the text unless you selected it.
 Do not add a sources list or video links: they are appended automatically.`
 
@@ -65,6 +68,8 @@ export function draftPrompt(args: {
   previous?: { title: string; body: string }
   feedback?: string
   videos?: VideoRef[]
+  /** Names of the site's existing tags, to pick from. */
+  tags?: string[]
 }): string {
   const sources = args.sources
     .map(
@@ -77,6 +82,9 @@ export function draftPrompt(args: {
     prompt += `\n\n--- Videos found in the sources\n${args.videos
       .map((v, i) => `[${i + 1}] "${v.title}" (YouTube channel: ${v.channel || 'unknown'})`)
       .join('\n')}`
+  }
+  if (args.tags?.length) {
+    prompt += `\n\n--- Existing tags (pick 2 to 5, exact names)\n${args.tags.join(', ')}`
   }
   if (args.previous && args.feedback) {
     prompt += `\n\n--- Your previous version\nHeadline: ${args.previous.title}\n${args.previous.body}\n\n--- The editor's feedback (apply it, keep the hard rules)\n${args.feedback}`
@@ -111,6 +119,11 @@ export const DRAFT_TOOL = {
         type: 'array',
         items: { type: 'integer' },
         description: 'Numbers of the listed official videos about this story; empty if none.',
+      },
+      tags: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '2 to 5 names copied from the existing tags list; empty if none fit.',
       },
     },
     required: ['title', 'excerpt', 'category', 'blocks', 'seo_description'],
@@ -164,6 +177,10 @@ export function cleanDraft(
         ),
       ),
     ],
+    tags: (Array.isArray(answer?.tags) ? answer.tags : [])
+      .filter((t): t is string => typeof t === 'string')
+      .map((t) => t.trim())
+      .filter(Boolean),
   }
 }
 
@@ -258,4 +275,27 @@ export function toLexical(
     )
   }
   return { root: { type: 'root', format: '', indent: 0, version: 1, direction: 'ltr', children } }
+}
+
+/**
+ * The ids of the tags the model picked, matched by name (case-insensitive)
+ * against the existing ones. Unknown names are dropped (the model never
+ * creates a tag), so are the game's own name and the category, and the list
+ * stops at 5. Pure.
+ */
+export function matchTags(
+  picked: string[] | undefined,
+  existing: Array<{ id: number; name: string }>,
+  exclude: Array<string | null | undefined> = [],
+): number[] {
+  const norm = (s: string) => s.trim().toLowerCase()
+  const banned = new Set(exclude.filter((e): e is string => !!e).map(norm))
+  const byName = new Map(existing.map((t) => [norm(t.name), t.id]))
+  const ids: number[] = []
+  for (const name of picked ?? []) {
+    const id = byName.get(norm(name))
+    if (id !== undefined && !banned.has(norm(name)) && !ids.includes(id)) ids.push(id)
+    if (ids.length === 5) break
+  }
+  return ids
 }

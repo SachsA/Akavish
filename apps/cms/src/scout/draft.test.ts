@@ -1,7 +1,14 @@
 import { generateKeyPairSync, sign } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { closedMessage, draftMessage, pickMenu, verifyDiscordSignature } from './discord-bot'
-import { blocksToText, cleanDraft, draftPrompt, toLexical, type DraftAnswer } from './draft-prompt'
+import {
+  blocksToText,
+  cleanDraft,
+  draftPrompt,
+  matchTags,
+  toLexical,
+  type DraftAnswer,
+} from './draft-prompt'
 import { extractArticleText } from './extract'
 
 const answer = (over: Partial<DraftAnswer> = {}): DraftAnswer => ({
@@ -38,6 +45,12 @@ describe('cleanDraft', () => {
       cleanDraft(answer({ blocks: [{ type: 'heading', text: 'Only a heading' }] }), 'news'),
     ).toThrow()
     expect(() => cleanDraft({} as never, 'news')).toThrow()
+  })
+
+  it('keeps the picked tag names, trimmed, strings only', () => {
+    expect(
+      cleanDraft(answer({ tags: [' Rockstar Games ', '', 3 as never, 'Trailers'] }), 'news').tags,
+    ).toEqual(['Rockstar Games', 'Trailers'])
   })
 
   it('keeps the picked video numbers, valid and once each', () => {
@@ -128,6 +141,13 @@ describe('draftPrompt', () => {
     })
     expect(p).toContain('[1] "Trailer 3" (YouTube channel: Rockstar Games)')
     expect(draftPrompt({ storyTitle: 'x', sources })).not.toContain('Videos found')
+  })
+
+  it('lists the existing tags to pick from, and nothing when there are none', () => {
+    expect(draftPrompt({ storyTitle: 'x', sources, tags: ['PS5', 'Trailers'] })).toContain(
+      '--- Existing tags (pick 2 to 5, exact names)\nPS5, Trailers',
+    )
+    expect(draftPrompt({ storyTitle: 'x', sources })).not.toContain('Existing tags')
   })
 
   it('includes the previous version and the feedback for a revision', () => {
@@ -222,5 +242,33 @@ describe('Discord bot', () => {
       .components[0]
     expect(select.options).toHaveLength(25)
     expect(pickMenu([])).toEqual([])
+  })
+})
+
+describe('matchTags', () => {
+  const existing = [
+    { id: 1, name: 'Rockstar Games' },
+    { id: 2, name: 'Trailers' },
+    { id: 3, name: 'PS5' },
+    { id: 4, name: 'Xbox' },
+    { id: 5, name: 'Release dates' },
+    { id: 6, name: 'PC' },
+    { id: 7, name: 'Grand Theft Auto VI' },
+  ]
+
+  it('maps names to ids, ignoring case, unknown names and repeats', () => {
+    expect(matchTags(['rockstar games', 'Made Up', 'TRAILERS', 'Trailers'], existing)).toEqual([
+      1, 2,
+    ])
+  })
+
+  it('never tags the game itself or the category, and stops at 5', () => {
+    expect(
+      matchTags(['Grand Theft Auto VI', 'PS5'], existing, ['Grand Theft Auto VI', 'news']),
+    ).toEqual([3])
+    expect(
+      matchTags(['Rockstar Games', 'Trailers', 'PS5', 'Xbox', 'Release dates', 'PC'], existing),
+    ).toEqual([1, 2, 3, 4, 5])
+    expect(matchTags(undefined, existing)).toEqual([])
   })
 })

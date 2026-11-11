@@ -224,7 +224,10 @@ i18n (EN + FR) is its own project — §6.
 > (4 on GTA VI, plus Worlds, Valorant, the CS2 Major, PS Plus, the releases
 > left in 2026, the 2026 review and 2027), posted with
 > `apps/cms/scripts/publish-articles.mjs` on Nov 10: 6 live, 5 scheduled until Nov 16
-> so the site isn't empty for GTA VI. Drafts and sources:
+> so the site isn't empty for GTA VI. A 12th, "GTA VI is out" (unlock times by
+> region, official sources), is scheduled for Nov 18 at 11:00 UTC, the moment
+> New Zealand hits midnight, and already ticked `featured`: it takes the lead
+> on its own when it goes live. Drafts and sources:
 > [Akavish : articles de lancement](https://claude.ai/artifact/7xqDrjALBdwL33reFUC6jf).
 > After that, the AI scout keeps the rhythm.
 
@@ -271,8 +274,8 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 | --- | --- | --- |
 | 0. Prerequisites | ✅ 2026-11-10 | Anthropic key with spend limit, private Discord channel + webhook, Discord bot (Interactions Endpoint saved) |
 | 1. Observation | ✅ live 2026-11-10 | 38 RSS feeds (all `ok` / `not modified` in production on day 1, none refused), grouping + score (Haiku), digests at 8 am / 8 pm, budget caps, weekly report on Saturdays + `/api/scout/report` (2026-11-10) |
-| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings. **Media** (2026-11-11): a cover on every draft (official source's `og:image`, else the game's cover, never a press outlet's image), official YouTube videos in a *Watch* section, an image URL field in *Modifier*, Publish refused without a cover |
-| 3. Leakers + style | Later | X accounts (pay-per-use API; when it's paid, also switch X sign-in back on in Clerk, `DEPLOYMENT.md` §6.5), learning from published / rejected drafts, tags picked by the model from the existing ones (drafts have none for now: add them in /admin before publishing) |
+| 2. Drafts + validation | ✅ live 2026-11-10, automatic drafts **off** until the review | Sonnet drafts in the CMS (draft, `aiAssisted`), Discord bot with Publish / Edit (→ V2 as a reply) / Reject, "Rédiger…" menu under each digest. Switch: `draftsEnabled` in Scout settings. **Media** (2026-11-11): a cover on every draft (official source's `og:image`, else the game's cover, never a press outlet's image), official YouTube videos in a *Watch* section, an image URL field in *Modifier*, Publish refused without a cover. **Tags** (2026-11-11): Sonnet picks 2 to 5 from the existing ones (never creates one, never the game nor the category) |
+| 3. Leakers + style | Later | X accounts (pay-per-use API; when it's paid, also switch X sign-in back on in Clerk, `DEPLOYMENT.md` §6.5), learning from published / rejected drafts |
 | 4. Esport | Later | Daily recaps and big tournaments, once the results source is chosen (Liquipedia or PandaScore) |
 | 5. Event mode | Later | `/scout live <name>`: one recap updated every 30 min during showcases |
 
@@ -297,11 +300,14 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   score spread, cost. Already noted: the grouping split one story in two
   (Fairgames at 80 and 76), and many single-source stories score 33. Tune the
   threshold, then tick `draftsEnabled`.
-- Nov 16-18: running-in with automatic drafts. Prepare the launch-day article,
-  scheduled at the official unlock time.
-- Nov 19: launch day. `maxDraftsPerDay` to 40 for the day (then 20 or 30 from
-  the review); untick `featured` on "GTA VI: everything we know" (id 5) and
-  feature the launch article instead.
+- Nov 16-18: running-in with automatic drafts.
+- ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for
+  Nov 18, 11:00 UTC (midnight in New Zealand, the first unlock; Rockstar:
+  "midnight local time … in all regions"), `featured` already ticked so it
+  becomes the lead by itself.
+- Nov 18-19: `maxDraftsPerDay` to 40 for launch day (then 20 or 30 from the
+  review). Untick `featured` on "GTA VI: everything we know" (id 5) whenever
+  convenient: the newest featured article already wins.
 
 **AI transparency:** articles drafted by the scout carry `aiAssisted`, which
 shows a one-line note under the article (web and app): "Researched and drafted

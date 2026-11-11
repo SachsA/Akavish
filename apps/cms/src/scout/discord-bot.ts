@@ -89,6 +89,8 @@ export interface DraftCard {
   imageChange?: boolean
   /** Official videos linked in the article's "Watch" section. */
   videos?: Array<{ title: string; channel: string; url: string }>
+  /** Tags the model picked (undefined: not shown, e.g. an image-only change). */
+  tags?: string[]
 }
 
 const NO_IMAGE =
@@ -121,6 +123,16 @@ export function draftMessage(card: DraftCard): BotMessage {
           { name: 'Catégorie', value: card.category, inline: true },
           { name: 'Version', value: `V${card.version}`, inline: true },
           { name: 'Image', value: clip(image, 1024) },
+          ...(card.tags
+            ? [
+                {
+                  name: 'Tags',
+                  value: card.tags.length
+                    ? clip(card.tags.join(' · '), 1024)
+                    : 'aucun (à ajouter dans /admin si besoin)',
+                },
+              ]
+            : []),
           ...(videos ? [{ name: 'Vidéos', value: clip(videos, 1024) }] : []),
           ...(sources ? [{ name: 'Sources', value: clip(sources, 1024) }] : []),
         ],

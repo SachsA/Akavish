@@ -134,7 +134,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   job), automatic drafts off unless *Scout settings → draftsEnabled*. Never
   publish without the owner's click, nor without a cover: official source's
   `og:image` or the game's cover, never a press outlet's image (`media.ts`);
-  official YouTube videos go in a *Watch* section. Weekly report (`report.ts`): Discord on
+  official YouTube videos go in a *Watch* section. Tags: picked by the model
+  from the existing ones only (`matchTags`), never created by the scout. Weekly report (`report.ts`): Discord on
   Saturdays, `GET /api/scout/report` for editors. Design and steps in
   `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.

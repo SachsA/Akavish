@@ -1200,7 +1200,10 @@ organiser), else the cover of the story's game in *Games*. Never a press
 outlet's image: their photos aren't ours to reuse. YouTube videos embedded or
 linked in the sources are looked up (title and channel, YouTube oEmbed, no
 key); Sonnet keeps the official ones about the story and the article links them
-in a **Watch** section above *Sources*. The Discord card shows the cover, where
+in a **Watch** section above *Sources*. **Tags:** Sonnet picks 2 to 5 from the
+existing tags (never creates one, never the game or the category); the card
+lists them, and a revision picks again. A tag the site lacks: create it in
+`/admin` and the next drafts can use it. The Discord card shows the cover, where
 it came from, and the videos; with no image it says so in orange. On Discord:
 
 - **Publier**: the article goes live, the message shows its URL. Refused,

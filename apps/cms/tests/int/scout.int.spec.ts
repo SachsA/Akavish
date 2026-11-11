@@ -271,6 +271,8 @@ describe('scout step 2 (drafts)', () => {
               ],
               seo_description: 'The third GTA VI trailer.',
               ...(withVideo ? { videos: [1] } : {}),
+              // One real tag in another case, one the site doesn't have.
+              tags: ['scouttest rockstar', 'Scouttest Invented'],
             },
           },
         ],
@@ -398,6 +400,9 @@ describe('scout step 2 (drafts)', () => {
       })
       return Number(s.id)
     }
+    for (const name of ['Scouttest Rockstar', 'Scouttest Esport']) {
+      await payload.create({ collection: 'tags', data: { name } as never, overrideAccess: true })
+    }
     gtaId = await mk('GTA VI third trailer', 85, 'gta')
     smallId = await mk('Small indie patch', 30, 'indie')
   })
@@ -415,6 +420,11 @@ describe('scout step 2 (drafts)', () => {
     await payload.delete({
       collection: 'media',
       where: { filename: { like: 'scouttest' } },
+      overrideAccess: true,
+    })
+    await payload.delete({
+      collection: 'tags',
+      where: { name: { like: 'Scouttest' } },
       overrideAccess: true,
     })
     await wipe()
@@ -453,6 +463,22 @@ describe('scout step 2 (drafts)', () => {
     const embed = (discordPosts[0].body.embeds as Array<Record<string, unknown>>)[0]
     expect((embed.image as { url: string }).url).toMatch(/scouttest-gta.*\.png$/)
     expect(JSON.stringify(embed.fields)).toContain('visuel officiel, Rockstar')
+    // Tags: picked from the existing ones only, never created.
+    const tagged = (await payload.findByID({
+      collection: 'articles',
+      id: s.article as number,
+      draft: true,
+      depth: 1,
+      overrideAccess: true,
+    })) as unknown as { tags: Array<{ name: string }> }
+    expect(tagged.tags.map((t) => t.name)).toEqual(['Scouttest Rockstar'])
+    expect(JSON.stringify(embed.fields)).toContain('Scouttest Rockstar')
+    const invented = await payload.count({
+      collection: 'tags',
+      where: { name: { equals: 'Scouttest Invented' } },
+      overrideAccess: true,
+    })
+    expect(invented.totalDocs).toBe(0)
 
     expect(discordPosts[0].url).toBe('https://discord.com/api/v10/channels/42/messages')
     expect(JSON.stringify(discordPosts[0].body)).toContain('scout:publish:' + gtaId)

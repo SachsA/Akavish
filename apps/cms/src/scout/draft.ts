@@ -14,6 +14,7 @@ import {
   DRAFT_SYSTEM,
   DRAFT_TOOL,
   draftPrompt,
+  matchTags,
   toLexical,
   type DraftAnswer,
   type DraftSource,
@@ -104,6 +105,21 @@ export interface DraftResult {
   messageId?: string
 }
 
+/** The site's tags, for the model to pick from (it never creates one). */
+async function existingTags(ctx: ScoutContext): Promise<Array<{ id: number; name: string }>> {
+  const { docs } = await ctx.payload.find({
+    collection: 'tags',
+    limit: 200,
+    sort: 'name',
+    depth: 0,
+    overrideAccess: true,
+  })
+  return (docs as unknown as Array<{ id: number; name: string }>).map((t) => ({
+    id: Number(t.id),
+    name: t.name,
+  }))
+}
+
 /** The article's current cover, as stored (id and URL). */
 async function currentCover(ctx: ScoutContext, articleId: number): Promise<Cover | null> {
   const art = (await ctx.payload.findByID({
@@ -163,6 +179,7 @@ export async function draftStory(
   const sources = await sourcesFor(ctx, storyId)
   if (sources.length === 0) throw new Error(`story ${storyId} has no items`)
   const videos: Video[] = ctx.config.dryRun ? [] : await videoCandidates(sources, ctx.fetch)
+  const tagList = await existingTags(ctx)
 
   // The previous version, for a revision: as stored by the last draft (any
   // edit made in /admin since then isn't seen, the feedback is about V(n)).
@@ -212,6 +229,7 @@ export async function draftStory(
         previous,
         feedback,
         videos,
+        tags: tagList.map((t) => t.name),
       }),
       tool: DRAFT_TOOL as unknown as Parameters<typeof callTool>[0]['tool'],
       maxTokens: 4000,
@@ -229,6 +247,7 @@ export async function draftStory(
   const clean = cleanDraft(draft, story.category)
   const watch = (clean.videos ?? []).map((n) => videos[n - 1]).filter(Boolean)
   const content = toLexical(clean.blocks, sources, watch)
+  const tagIds = matchTags(clean.tags, tagList, [story.game, clean.category])
 
   // Cover: the editor's URL, else the one already set (a revision keeps it),
   // else an official source's image or the game's cover.
@@ -255,6 +274,8 @@ export async function draftStory(
     seo: { title: clean.title, description: clean.seo_description },
     aiAssisted: true,
     ...(cover ? { coverImage: cover.id } : {}),
+    // The model's pick from the existing tags; a revision picks again.
+    ...(tagIds.length ? { tags: tagIds } : {}),
   }
 
   let articleId: number
@@ -290,6 +311,7 @@ export async function draftStory(
     category: clean.category,
     sources: sources.map((s) => ({ name: s.name, url: s.url })),
     videos: watch,
+    tags: tagList.filter((t) => tagIds.includes(t.id)).map((t) => t.name),
     cover,
     imageError,
     feedback,
@@ -365,6 +387,7 @@ async function postCard(
     category: string
     sources: Array<{ name: string; url: string }>
     videos: Video[]
+    tags?: string[]
     cover: Cover | null
     imageError?: string
     imageChange?: boolean
@@ -401,6 +424,7 @@ async function postCard(
     imageError: c.imageError,
     imageChange: c.imageChange,
     videos: c.videos.map((v) => ({ title: v.title, channel: v.channel, url: v.url })),
+    tags: c.tags,
   }
   if (ctx.config.bot && !ctx.config.dryRun) {
     messageId = await sendBotMessage(

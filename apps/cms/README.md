@@ -254,7 +254,11 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    the cover is the `og:image` of an official source, else the game's cover
    in *Games* (never a press outlet's image); YouTube videos found in the
    sources go to the prompt with their oEmbed title and channel, Sonnet picks
-   the official ones about the story (`videos` in the tool). Claude Sonnet 5.5 refuses a *forced* tool call
+   the official ones about the story (`videos` in the tool). **Tags:** the
+   existing tag names go to the prompt, Sonnet answers `tags` with 2 to 5 of
+   them, `matchTags` keeps only real ones (case-insensitive), never the game
+   nor the category, at most 5; the model never creates a tag. A revision
+   picks again (tags set by hand in `/admin` are replaced by a *Modifier*). Claude Sonnet 5.5 refuses a *forced* tool call
    (400), so `anthropic.ts` falls back to `tool_choice: auto` with an explicit
    instruction and up-front thinking off (`between_tools`) for any model that
    refuses, and remembers it. Saved as a **draft** article, `aiAssisted` ticked,
