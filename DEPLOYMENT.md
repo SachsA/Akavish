@@ -1239,7 +1239,10 @@ On Discord:
 Only `SCOUT_DISCORD_OWNER_ID` can click; anyone else gets a private refusal.
 Automatic drafts (`draftsEnabled`): at most 3 per run and `maxDraftsPerDay`
 (20) a day, only stories at or above the threshold, under 24 h old, not drafted
-yet. A draft costs about 0.05-0.10 $ with Sonnet.
+yet. Measured in production (Nov 11): about 0.02 $ per draft or revision
+with Sonnet, and the Haiku triage about 0.03-0.06 $ a day. At 20 drafts a day
+that's at most ~0.40 $/day (~12 $/month); a normal day at threshold 60 gave 3
+to 16 stories. The digests and their "Rédiger…" menu keep coming either way.
 
 **Day to day:** pause or resume with *Scout settings → paused* in `/admin`
 (the scout ticks it itself when the monthly budget is spent); move the draft
