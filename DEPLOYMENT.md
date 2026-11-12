@@ -1196,7 +1196,10 @@ note under it, see `/terms`).
 
 **Media.** Every article needs a cover, so the scout picks one: the share image
 (`og:image`) of an **official** source (publisher, studio, platform, tournament
-organiser), else the cover of the story's game in *Games*. Never a press
+organiser), else a still (YouTube thumbnail) of an official video the draft
+links, else an image of the story's game in *Games*: its cover or one of its
+*Other images*, whichever the last 14 days' articles used least, so a game in
+the news every day gets varied pictures. Never a press
 outlet's image: their photos aren't ours to reuse. YouTube videos embedded or
 linked in the sources are looked up (title and channel, YouTube oEmbed, no
 key); Sonnet keeps the official ones about the story and the article links them
@@ -1232,7 +1235,7 @@ it came from, and the videos; with no image it says so in orange.
 | Title, excerpt, content, SEO title + description | Sonnet | never |
 | Slug | the slug hook, from the title | never |
 | Category | Sonnet (news, leak, review, preview, conference, esport), else the triage's | never |
-| Cover image + alt text | official source's `og:image` (alt: the publisher's `og:image:alt`, else "Official image from <source>: <title>"), else the game's cover, else the URL given in *Modifier* | no official image and no game cover: orange warning, Publish refused |
+| Cover image + alt text | official source's `og:image` (alt: the publisher's `og:image:alt`, else "Official image from <source>: <title>"), else a still of an official video it links ("Still from the official video: <title>"), else the game's cover or *Other images* (least used in 14 days), else the URL given in *Modifier* | no official image, no video and no game image: orange warning, Publish refused |
 | Game | Sonnet: from *Games*, or created when missing | story not about one game (hardware, service, company, several games) |
 | Tags (2 to 5) | Sonnet: existing tags, plus at most 2 created | never in practice |
 | Author | *Scout settings → defaultAuthor* | never |

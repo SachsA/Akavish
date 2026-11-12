@@ -13,6 +13,19 @@ export const Games: CollectionConfig = {
     slugField('name'),
     { name: 'cover', type: 'upload', relationTo: 'media' },
     {
+      // More official visuals of the game (key art, trailer stills). The AI
+      // scout rotates through cover + these so a game in the news every day
+      // doesn't get the same picture on every article (scout/media.ts).
+      name: 'gallery',
+      label: 'Other images',
+      type: 'upload',
+      relationTo: 'media',
+      hasMany: true,
+      admin: {
+        description: 'Official visuals the AI scout can use as article covers, after the main cover.',
+      },
+    },
+    {
       name: 'platform', type: 'select', hasMany: true,
       options: ['PC', 'PlayStation', 'Xbox', 'Nintendo Switch', 'Mobile'],
     },

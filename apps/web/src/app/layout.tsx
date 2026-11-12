@@ -94,10 +94,11 @@ function Header() {
           <Wordmark className="text-xl" />
         </Link>
         <nav aria-label="Main" className="flex items-center gap-2 sm:gap-6 text-sm text-zinc-400">
-          <Link href="/news" className="hidden sm:inline py-1 hover:text-white transition-colors">News</Link>
-          <Link href="/leaks" className="hidden sm:inline py-1 hover:text-white transition-colors">Leaks</Link>
-          <Link href="/reviews" className="hidden sm:inline py-1 hover:text-white transition-colors">Reviews</Link>
-          <Link href="/esport" className="hidden sm:inline py-1 hover:text-white transition-colors">Esport</Link>
+          <Link href="/news" className="hidden lg:inline py-1 hover:text-white transition-colors">News</Link>
+          <Link href="/leaks" className="hidden lg:inline py-1 hover:text-white transition-colors">Leaks</Link>
+          <Link href="/reviews" className="hidden lg:inline py-1 hover:text-white transition-colors">Reviews</Link>
+          <Link href="/esport" className="hidden lg:inline py-1 hover:text-white transition-colors">Esport</Link>
+          <Link href="/conferences" className="hidden lg:inline py-1 hover:text-white transition-colors">Conferences</Link>
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
@@ -123,10 +124,10 @@ function Header() {
           </div>
         </nav>
       </div>
-      {/* Phones: the section links above are hidden (no room next to search
-          and auth), so every section gets a swipeable strip instead. Without
+      {/* Phones and tablets: the section links above only fit from lg (1024 px),
+          so below that every section gets a swipeable strip instead. Without
           it the only way to another section from an article was the footer. */}
-      <nav aria-label="All sections" className="sm:hidden border-t border-zinc-900">
+      <nav aria-label="All sections" className="lg:hidden border-t border-zinc-900">
         <ul className="flex gap-1 overflow-x-auto px-2 py-1.5 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {CATEGORIES.map((c) => (
             <li key={c.slug} className="shrink-0">
@@ -153,6 +154,7 @@ function Footer() {
         { label: 'Leaks', href: '/leaks' },
         { label: 'Reviews', href: '/reviews' },
         { label: 'Esport', href: '/esport' },
+        { label: 'Conferences', href: '/conferences' },
       ],
     },
     {

@@ -79,7 +79,11 @@ export async function fetchArticles(
   })
   if (category) qs.set('where[category][equals]', category)
   if (authorId) qs.set('where[author][equals]', authorId)
-  if (gameId) qs.set('where[game][equals]', gameId)
+  if (gameId) {
+    // Main game, or one of the others it covers (a conference recap).
+    qs.set('where[or][0][game][equals]', gameId)
+    qs.set('where[or][1][relatedGames][in]', gameId)
+  }
   if (tagId) qs.set('where[tags][in]', tagId)
   if (featured) qs.set('where[featured][equals]', 'true')
 
@@ -358,7 +362,7 @@ export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> 
     id: String(doc.id),
     slug: doc.slug,
     name: doc.name,
-    // Game covers render at ~192 CSS px → 'card' (960w) is plenty at 2x.
+    // Game covers render at ~320 CSS px → 'card' (960w) is plenty at 2x.
     cover: mediaUrl(doc.cover, 'card'),
     platform: doc.platform ?? [],
     genre: doc.genre ?? [],

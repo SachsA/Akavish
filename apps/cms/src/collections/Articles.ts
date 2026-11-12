@@ -177,6 +177,20 @@ export const Articles: CollectionConfig = {
     },
     { name: 'game', type: 'relationship', relationTo: 'games', admin: { position: 'sidebar' } },
     {
+      // A conference recap or a round-up covers many games: `game` stays the
+      // main one, these are the others. The article is listed on every one of
+      // their game pages too.
+      name: 'relatedGames',
+      label: 'Also covers',
+      type: 'relationship',
+      relationTo: 'games',
+      hasMany: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Other games this article covers. It also shows up on their game pages.',
+      },
+    },
+    {
       name: 'tags',
       type: 'relationship',
       relationTo: 'tags',

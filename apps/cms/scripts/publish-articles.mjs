@@ -18,6 +18,7 @@
  *   slug: grand-theft-auto-vi
  *   name: Grand Theft Auto VI
  *   developer: Rockstar Games
+ *   publisher: Rockstar Games
  *   platform: PlayStation, Xbox
  *   genre: Action
  *   releaseDate: 2026-11-19
@@ -30,6 +31,7 @@
  *   title: GTA VI: everything we know
  *   category: news                  # news | leak | review | preview | conference | esport
  *   game: grand-theft-auto-vi       # optional, a game slug
+ *   relatedGames: gta-v, red-dead-redemption-2  # optional, the other games it covers
  *   excerpt: …
  *   seo: …                          # SEO description
  *   cover: gta-vice-city.jpg
@@ -40,7 +42,7 @@
  *   publishedAt: 2024-06-09T17:00:00Z  # optional: backdate (archives, past events)
  *   ---
  *   Body: paragraphs, ## / ### headings (both become h2), "- " lists,
- *   **bold** and [links](https://…).
+ *   **bold** and [links](https://…) or site links ([**GTA VI**](/game/grand-theft-auto-vi)).
  *
  * Re-running is safe: games and media are reused by slug / alt text, and
  * articles are updated in place (a published one stays published). A new
@@ -95,10 +97,13 @@ const element = (type, children, extra = {}) => ({
   ...extra,
 })
 
-/** Inline Markdown: **bold** and [label](url). */
+/**
+ * Inline Markdown: **bold** and [label](url). A site path ([label](/game/x))
+ * stays in the same tab; an outside URL opens a new one.
+ */
 export function inline(s) {
   const out = []
-  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g
+  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g
   let last = 0
   for (const m of s.matchAll(re)) {
     if (m.index > last) out.push(text(s.slice(last, m.index)))
@@ -107,7 +112,7 @@ export function inline(s) {
       out.push(
         element('link', inline(m[2]), {
           version: 3,
-          fields: { linkType: 'custom', url: m[3], newTab: true },
+          fields: { linkType: 'custom', url: m[3], newTab: !m[3].startsWith('/') },
         }),
       )
     last = m.index + m[0].length
@@ -243,6 +248,12 @@ async function main() {
     return (tagIds[name] = res.doc.id)
   }
 
+  async function gameId(slug) {
+    const id = games[slug] ?? (await findOne('games', 'slug', slug))?.id
+    if (!id && !dry) console.warn(`  ! game ${slug} not found, skipped`)
+    return id
+  }
+
   for (const { meta, body } of blocks) {
     if (meta.type === 'game') {
       const found = await findOne('games', 'slug', meta.slug)
@@ -255,6 +266,7 @@ async function main() {
         name: meta.name,
         slug: meta.slug,
         developer: meta.developer,
+        publisher: meta.publisher,
         platform: meta.platform?.split(',').map((p) => p.trim()),
         genre: meta.genre?.split(',').map((g) => g.trim()),
         releaseDate: meta.releaseDate,
@@ -278,8 +290,17 @@ async function main() {
       content: toLexical(body),
       category: meta.category,
       author: author.id,
-      game: meta.game
-        ? (games[meta.game] ?? (await findOne('games', 'slug', meta.game))?.id)
+      game: meta.game ? await gameId(meta.game) : undefined,
+      relatedGames: meta.relatedGames
+        ? (
+            await Promise.all(
+              meta.relatedGames
+                .split(',')
+                .map((g) => g.trim())
+                .filter(Boolean)
+                .map(gameId),
+            )
+          ).filter(Boolean)
         : undefined,
       coverImage: await media(meta.cover, meta.coverAlt),
       aiAssisted: meta.aiAssisted === 'true',

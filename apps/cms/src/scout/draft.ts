@@ -333,7 +333,12 @@ export async function draftStory(
   }
   if (!cover && articleRef) cover = await currentCover(ctx, Number(articleRef))
   if (!cover && !ctx.config.dryRun) {
-    cover = await pickCover(ctx, { title: clean.title, game: gameName ?? story.game }, sources)
+    cover = await pickCover(
+      ctx,
+      { title: clean.title, game: gameName ?? story.game },
+      sources,
+      watch,
+    )
   }
   // A game created just now takes the official image as its own cover.
   if (newGameId && cover && cover.origin.startsWith('visuel officiel')) {

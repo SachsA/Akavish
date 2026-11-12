@@ -133,7 +133,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (Publish / Edit → V2 / Reject, endpoint `/api/scout/discord`, `scoutDraft`
   job), automatic drafts off unless *Scout settings → draftsEnabled*. Never
   publish without the owner's click, nor without a cover: official source's
-  `og:image` or the game's cover, never a press outlet's image (`media.ts`);
+  `og:image`, else a still of an official video it links, else the game's
+  cover or one of its *Other images* (the least used in 14 days, so a game in
+  the news daily doesn't repeat one picture), never a press outlet's image (`media.ts`);
   official YouTube videos go in a *Watch* section. Tags and game: the
   model picks existing ones and may create what's missing (at most 2 tags, a
   game only with its official title; cleaned up if the draft is rejected).
@@ -150,7 +152,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   go through `cmsFetch` to be refreshed.
 - **Articles from Markdown:** `apps/cms/scripts/publish-articles.mjs` posts
   articles (covers, games, publish now / schedule / draft, optional
-  backdated `publishedAt` for archives) over REST with a
+  backdated `publishedAt` for archives, `relatedGames`, site links
+  `[**Name**](/game/slug)`) over REST with a
   dedicated editor login in the gitignored `.cms-import`; scheduling goes
   through `POST /api/articles-schedule` (same job as the admin button).
   AI-drafted pieces always carry `aiAssisted`.

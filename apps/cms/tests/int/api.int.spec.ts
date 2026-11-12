@@ -15,7 +15,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 let payload: Payload
 const RUN = `t${Date.now().toString(36)}`
-const created: { collection: 'articles' | 'tags' | 'authors'; id: number | string }[] = []
+const created: {
+  collection: 'articles' | 'tags' | 'authors' | 'games'
+  id: number | string
+}[] = []
 let authorId: number | string
 
 const richText = {
@@ -195,6 +198,34 @@ describe('articles', () => {
     const titles = asPublic.docs.map((d) => d.title)
     expect(titles).toContain(`${RUN} public`)
     expect(titles).not.toContain(`${RUN} hidden`)
+  })
+})
+
+describe('game pages', () => {
+  it('list the articles about the game and the ones that also cover it', async () => {
+    const game = async (name: string) => {
+      const doc = await payload.create({ collection: 'games', data: { name } as never })
+      created.push({ collection: 'games', id: doc.id })
+      return doc.id
+    }
+    const g1 = await game(`${RUN} Game One`)
+    const g2 = await game(`${RUN} Game Two`)
+    const main = await createArticle({ status: 'published', game: g1 })
+    const recap = await createArticle({ status: 'published', game: g2, relatedGames: [g1] })
+    const other = await createArticle({ status: 'published', game: g2 })
+
+    // The same query as the web's fetchArticles({ gameId }).
+    const { docs } = await payload.find({
+      collection: 'articles',
+      depth: 0,
+      where: {
+        status: { equals: 'published' },
+        or: [{ game: { equals: g1 } }, { relatedGames: { in: [g1] } }],
+      },
+    })
+    const ids = docs.map((d) => d.id)
+    expect(ids).toEqual(expect.arrayContaining([main.id, recap.id]))
+    expect(ids).not.toContain(other.id)
   })
 })
 

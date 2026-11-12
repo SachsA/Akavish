@@ -23,9 +23,9 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 
 | Collection | Notes                                                                                                                                              |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, tags, SEO. Versioned with drafts. `publishedAt` is auto-stamped — see below. |
+| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, *Also covers* (`relatedGames`: the other games a recap covers, listed on their pages too), tags, SEO. Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
-| `games`    | Game metadata articles can be tagged to.                                                                                                           |
+| `games`    | Game metadata articles can be tagged to: cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), platforms, genres, dates, studio. |
 | `tags`     | Cross-cutting topics, 2 to 5 per article: publisher or studio (Rockstar Games, Riot Games), platform (PS5, Switch 2), event (Worlds 2026, CS2 Major) or theme (Release dates, Trailers, Earnings). Not the game (that's `game`) nor the type (that's `category`). Each tag has its public page `/tag/<slug>`, linked from the article (#chips) and listed in the sitemap once it has a published article. |
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). Password resets go out via Resend — see below.                             |
@@ -95,7 +95,9 @@ format (front matter per game or article, `tags:` as a comma list matched by
 name and created if new, Markdown body with `##` headings,
 `- ` lists, `**bold**` and links) is documented at the top of the script.
 Re-running is safe: games and media are reused, articles updated in place;
-to fix one article, re-run with `--only <slug>`. An optional `publishedAt:`
+to fix one article, re-run with `--only <slug>`. `relatedGames:` (game slugs)
+fills *Also covers*, and `[**Name**](/game/<slug>)` in the body is a site link
+(same tab). An optional `publishedAt:`
 backdates an archive piece (the old conference recaps, say) so it sits at its
 real date and doesn't take the top of the homepage.
 `import-images/` (the images and the Markdown) and `import-docs/` (Alex's own
@@ -265,8 +267,10 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    Up to 6 sources, official first, page text read for the first 4; Claude
    Sonnet answers with a `write_article` tool call, turned into Lexical
    with a *Watch* list (videos) and a *Sources* list. **Media** (`media.ts`):
-   the cover is the `og:image` of an official source, else the game's cover
-   in *Games* (never a press outlet's image); YouTube videos found in the
+   the cover is the `og:image` of an official source, else a still of an
+   official video the draft links, else the game's cover or one of its
+   *Other images* in *Games*, the one the last 14 days' articles used least
+   (`leastUsed`, tested), never a press outlet's image; YouTube videos found in the
    sources go to the prompt with their oEmbed title and channel, Sonnet picks
    the official ones about the story (`videos` in the tool). **Tags:** the
    existing tag names go to the prompt; Sonnet answers `tags` (existing,

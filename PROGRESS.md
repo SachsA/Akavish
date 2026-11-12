@@ -52,9 +52,9 @@ Last updated: **2026-11-06**.
 | ✅     | `ArticleCard` component               | Cover, category, date, excerpt, author                                              |
 | ✅     | Article detail page `/article/[slug]` | Renders Lexical content, SEO metadata, OG tags                                      |
 | ✅     | Lexical → React renderer              | `LexicalContent.tsx` (headings, lists, quotes, links, inline formats)               |
-| ✅     | Category pages `/[category]`          | news, leaks, reviews, esport, previews, conferences                                 |
+| ✅     | Category pages `/[category]`          | news, leaks, reviews, esport, previews, conferences. Grouped under a heading per day (Today, Yesterday, then the date; per year for conferences), `lib/date-groups.ts`, tested |
 | ✅     | Author pages `/author/[slug]`         | Profile (avatar, bio, twitter) + their published articles                           |
-| ✅     | Game pages `/game/[slug]`             | Game metadata (cover, platform, genre, dev/publisher) + coverage                    |
+| ✅     | Game pages `/game/[slug]`             | Game metadata (landscape cover, platform, genre, dev/publisher, "Out" for a date to come) + coverage: articles whose `game` is it **or** that also cover it (`relatedGames`, e.g. conference recaps) |
 | ✅     | Tag pages `/tag/[slug]`               | Articles filtered by tag                                                            |
 | ✅     | Cross-links                           | Article byline → author/game; tag chips → tag pages                                 |
 | ✅     | Custom 404 / error pages              | `not-found.tsx`, `error.tsx`, `global-error.tsx`                                    |
@@ -239,8 +239,13 @@ i18n (EN + FR) is its own project — §6.
 > *Conference* articles, every announcement in show order with its official
 > trailer link, backdated to the event (`publishedAt`) so they fill the
 > archive without pushing the news down. Covers are trailer stills, no real
-> people. Links that pointed to the wrong video in the PDFs were dropped.
-> After that, the AI scout keeps the rhythm.
+> people. Dead links and links that pointed to the wrong video in the PDFs
+> were replaced with the right official trailers (one segment left without).
+> The same day 190 game pages were created from them (developer, publisher,
+> platforms, genre, release date when known, a trailer still as cover, none
+> for the 6 whose only stills show a real person), each game name in the
+> recaps links to its page, and every recap lists under all the games it
+> covers (`relatedGames`). After that, the AI scout keeps the rhythm.
 
 | Status | Item            | Notes                                                                                                                                            |
 | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -362,6 +367,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
 | P3  | Search polish                | Highlighting, filters by category, instant/typeahead results                                |
 | ✅  | Dark/light toggle            | Done (2026-11-07) — follows the OS, sun/moon switch in the header remembers the choice (no flash on reload). Components keep the dark classes; `tailwind.config.ts` maps zinc/white/emerald text to CSS variables that flip in `globals.css`. axe-clean in both themes, header fits from 320 px |
+| ✅  | Conferences in the header     | Done (2026-11-12) — the section links (News, Leaks, Reviews, Esport, Conferences) show from 1024 px; below that the swipeable strip of every section (was phones only, the header overflowed between 640 and 1024 px) |
 | P3  | Comments                     | Reader comments (needs reader auth + a comments store/service)                              |
 
 ### UX & quality
@@ -398,7 +404,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | ✅  | Pagination                    | Done (2026-11-07) — category, tag, author and game pages: 24 per page, `?page=N` with Newer/Older links, canonical per page, junk or out-of-range pages are 404s (`lib/pagination.ts`, tested) |
 | ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
 | P3  | i18n fields                   | Localized title/content if going bilingual (area 6)                            |
-| P3  | Related games/series taxonomy | Beyond single `game` relation                                                  |
+| ✅  | Related games                 | Done (2026-11-12) — `relatedGames` on Articles ("Also covers", migration `related_games_gallery`): a recap lists on every game page it covers. Games also get `gallery` ("Other images") for the scout's cover rotation |
 
 ### Media & storage
 

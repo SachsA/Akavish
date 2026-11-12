@@ -6,7 +6,11 @@
 //   1. An image URL the editor pasted in Discord (Modifier → Image).
 //   2. The share image (og:image) of an OFFICIAL source: a publisher's or
 //      platform's own press visual, made to be shared.
-//   3. The cover of the story's game in the CMS (Games collection).
+//   3. A still from an official video the draft links (its YouTube
+//      thumbnail): the story's own trailer.
+//   4. An image of the story's game in the CMS: its cover or one of its
+//      "Other images", the one used least by the last two weeks' articles,
+//      so a game in the news every day doesn't get the same picture each time.
 //   Never an image from a press outlet's page: their photos and thumbnails are
 //   theirs, not ours to reuse. Without any of the above the draft says so on
 //   Discord, and Publish refuses until an image is added.
@@ -87,8 +91,32 @@ export async function uploadImage(
   return { id: Number(doc.id), url: doc.url }
 }
 
-/** The cover of the story's game in the CMS, matched by name. */
-async function gameCover(ctx: ScoutContext, game?: string | null): Promise<Cover | null> {
+type MediaRef = { id: number; url?: string | null } | number | null | undefined
+
+const mediaRef = (m: MediaRef): { id: number; url?: string | null } | null =>
+  m == null ? null : typeof m === 'object' ? { id: Number(m.id), url: m.url } : { id: Number(m) }
+
+/** How far back "recently used" looks when choosing among a game's images. */
+export const COVER_REUSE_DAYS = 14
+
+/**
+ * Among a game's images (cover first, then its other images), the one used
+ * least as an article cover recently. Ties keep the earlier one, so the main
+ * cover wins until it has been used.
+ */
+export function leastUsed<T extends { id: number }>(
+  images: T[],
+  uses: Map<number, number>,
+): T | null {
+  let best: T | null = null
+  for (const img of images) {
+    if (!best || (uses.get(img.id) ?? 0) < (uses.get(best.id) ?? 0)) best = img
+  }
+  return best
+}
+
+/** An image of the story's game in the CMS (matched by name), rotated. */
+async function gameImage(ctx: ScoutContext, game?: string | null): Promise<Cover | null> {
   if (!game?.trim()) return null
   const { docs } = await ctx.payload.find({
     collection: 'games',
@@ -97,22 +125,46 @@ async function gameCover(ctx: ScoutContext, game?: string | null): Promise<Cover
     depth: 1,
     overrideAccess: true,
   })
-  const cover = (docs[0] as unknown as { cover?: { id: number; url?: string } | number | null })
-    ?.cover
-  if (!cover) return null
-  return typeof cover === 'object'
-    ? { id: Number(cover.id), url: cover.url, origin: `fiche du jeu ${game}` }
-    : { id: Number(cover), origin: `fiche du jeu ${game}` }
+  const doc = docs[0] as unknown as { cover?: MediaRef; gallery?: MediaRef[] | null } | undefined
+  if (!doc) return null
+  const images = [doc.cover, ...(doc.gallery ?? [])]
+    .map(mediaRef)
+    .filter((m): m is { id: number; url?: string | null } => m !== null)
+    .filter((m, i, all) => all.findIndex((x) => x.id === m.id) === i)
+  if (!images.length) return null
+  const uses = new Map<number, number>()
+  if (images.length > 1) {
+    const since = new Date(Date.now() - COVER_REUSE_DAYS * 86_400_000).toISOString()
+    const { docs: recent } = await ctx.payload.find({
+      collection: 'articles',
+      where: {
+        createdAt: { greater_than: since },
+        coverImage: { in: images.map((m) => m.id) },
+      },
+      limit: 200,
+      depth: 0,
+      overrideAccess: true,
+      draft: true,
+    })
+    for (const a of recent as unknown as { coverImage?: number | null }[]) {
+      if (a.coverImage != null)
+        uses.set(Number(a.coverImage), (uses.get(Number(a.coverImage)) ?? 0) + 1)
+    }
+  }
+  const pick = leastUsed(images, uses)!
+  return { ...pick, origin: `fiche du jeu ${game}` }
 }
 
 /**
- * The cover for a new draft: an official source's share image, else the
- * game's cover, else null. Failures are skipped, never fatal.
+ * The cover for a new draft: an official source's share image, else a still
+ * from an official video the draft links, else one of the game's images,
+ * else null. Failures are skipped, never fatal.
  */
 export async function pickCover(
   ctx: ScoutContext,
   story: { title: string; game?: string | null },
   sources: DraftSource[],
+  videos: Video[] = [],
 ): Promise<Cover | null> {
   for (const s of sources) {
     if (s.reliability !== 'official' || !s.image) continue
@@ -129,7 +181,23 @@ export async function pickCover(
       })
     }
   }
-  return gameCover(ctx, story.game)
+  for (const v of videos.slice(0, 2)) {
+    try {
+      const up = await uploadImage(
+        ctx,
+        `https://i.ytimg.com/vi/${v.id}/maxresdefault.jpg`,
+        `Still from the official video: ${v.title}`,
+      )
+      return { ...up, origin: `image de la vidéo officielle, ${v.channel || 'YouTube'}` }
+    } catch (err) {
+      ctx.payload.logger.info({
+        msg: '[scout] video still skipped',
+        video: v.id,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+  return gameImage(ctx, story.game)
 }
 
 /** Title and channel of the YouTube videos found in the sources (oEmbed). */

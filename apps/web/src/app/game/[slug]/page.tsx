@@ -20,6 +20,11 @@ function formatDate(iso?: string): string {
   })
 }
 
+/** An announced date still to come isn't "Released" yet. */
+function releaseLabel(iso: string): string {
+  return Date.parse(iso) > Date.now() ? 'Out' : 'Released'
+}
+
 export async function generateMetadata({
   params,
   searchParams,
@@ -80,7 +85,7 @@ export default async function GamePage({
   const meta = [
     game.developer && `Dev: ${game.developer}`,
     game.publisher && `Publisher: ${game.publisher}`,
-    game.releaseDate && `Released: ${formatDate(game.releaseDate)}`,
+    game.releaseDate && `${releaseLabel(game.releaseDate)}: ${formatDate(game.releaseDate)}`,
   ].filter(Boolean) as string[]
 
   return (
@@ -88,12 +93,13 @@ export default async function GamePage({
       <JsonLd data={breadcrumbList([{ name: game.name, path: `/game/${slug}` }])} />
       <header className="flex flex-col sm:flex-row gap-6 mb-10">
         {game.cover && (
-          <div className="relative w-full sm:w-48 aspect-[3/4] bg-zinc-800 rounded-lg overflow-hidden shrink-0">
+          // Landscape: covers are key art or stills from official trailers.
+          <div className="relative w-full sm:w-80 aspect-video bg-zinc-800 rounded-lg overflow-hidden shrink-0">
             <Image
               src={game.cover}
               alt={game.name}
               fill
-              sizes="(max-width: 640px) 100vw, 192px"
+              sizes="(max-width: 640px) 100vw, 320px"
               className="object-cover"
             />
           </div>
@@ -110,15 +116,11 @@ export default async function GamePage({
               </span>
             ))}
           </div>
-          {meta.length > 0 && (
-            <p className="text-sm text-zinc-400">{meta.join('  ·  ')}</p>
-          )}
+          {meta.length > 0 && <p className="text-sm text-zinc-400">{meta.join('  ·  ')}</p>}
         </div>
       </header>
 
-      <h2 className="text-xs uppercase tracking-widest text-zinc-400 mb-6 font-bold">
-        Coverage
-      </h2>
+      <h2 className="text-xs uppercase tracking-widest text-zinc-400 mb-6 font-bold">Coverage</h2>
       {articles.length === 0 ? (
         <p className="text-zinc-400">No published articles about this game yet.</p>
       ) : (

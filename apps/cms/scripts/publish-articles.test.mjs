@@ -44,6 +44,12 @@ describe('publish-articles', () => {
     expect(nodes[3]).toMatchObject({ fields: { url: 'https://x.example/y', newTab: true } })
   })
 
+  it('keeps site links in the same tab, with bold labels', () => {
+    const [link] = inline('[**Fable**](/game/fable)')
+    expect(link).toMatchObject({ type: 'link', fields: { url: '/game/fable', newTab: false } })
+    expect(link.children[0]).toMatchObject({ text: 'Fable', format: 1 })
+  })
+
   it('builds paragraphs, h2 headings and bullet lists', () => {
     const { root } = toLexical(parseFile(SOURCE)[1].body)
     expect(root.children.map((c) => c.type)).toEqual(['paragraph', 'heading', 'list', 'paragraph'])

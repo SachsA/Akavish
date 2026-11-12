@@ -9,6 +9,7 @@ import { ArticleCard } from '@/components/ArticleCard'
 import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
 import { Pagination } from '@/components/Pagination'
 import { ContentUnavailable, NothingYet } from '@/components/StatusMessage'
+import { groupByDate } from '@/lib/date-groups'
 
 export const revalidate = 30
 
@@ -77,12 +78,23 @@ export default async function CategoryPage({
         <NothingYet what={conf.label.toLowerCase()} />
       ) : (
         <>
-          {/* Cards use <h3>; this keeps the outline h1 → h2 → h3 for screen
-              readers without adding a visible heading. */}
-          <h2 className="sr-only">Articles</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
+          {/* Newest first, under a heading per day (per year for conferences,
+              a few a year). Cards use <h3>, so the outline stays h1 → h2 → h3. */}
+          <div className="space-y-10">
+            {groupByDate(articles, conf.value === 'conference' ? 'year' : 'day').map((group) => (
+              <section key={group.key} aria-labelledby={`day-${group.key}`}>
+                <h2
+                  id={`day-${group.key}`}
+                  className="mb-4 pb-2 border-b border-zinc-800 text-sm font-semibold uppercase tracking-wider text-zinc-400"
+                >
+                  {group.label}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {group.items.map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
           <Pagination basePath={`/${conf.slug}`} page={page} totalPages={totalPages} />
