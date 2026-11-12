@@ -250,8 +250,12 @@ i18n (EN + FR) is its own project — §6.
 > game (44 game pages created), backdated to the day he posted it, with an
 > official Steam screenshot as cover and his score (`score`, out of 10: the one
 > written in the review, else his HowLongToBeat rating). His HowLongToBeat
-> texts weren't imported: the site forbids automated retrieval, so only what he
-> exports or pastes himself can be added. After that, the AI scout keeps the
+> texts can't be fetched (the site forbids automated retrieval), so he saved
+> them himself: 21 more reviews went live the same evening (PS5, Xbox, Switch
+> and Switch 2 games, the short ones rewritten in full prose, the Returnal DLC
+> folded into the Returnal review), with 15 new game pages and official
+> screenshots or trailer stills as covers. They carry no posting date, so they
+> are dated Nov 12, 2026. Total: 78 reviews. After that, the AI scout keeps the
 > rhythm.
 
 | Status | Item            | Notes                                                                                                                                            |
