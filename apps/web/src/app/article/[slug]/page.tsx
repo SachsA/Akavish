@@ -125,6 +125,27 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       : undefined,
   }
 
+  // A scored review also goes out as a schema.org Review of the game, which is
+  // what search engines read for the rating.
+  const reviewJsonLd =
+    article.category === 'review' && article.score !== undefined && article.game?.name
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'Review',
+          name: article.title,
+          datePublished: article.publishedAt,
+          author: { '@type': 'Person', name: article.author.name },
+          publisher: { '@type': 'Organization', name: SITE_NAME },
+          itemReviewed: { '@type': 'VideoGame', name: article.game.name },
+          reviewRating: {
+            '@type': 'Rating',
+            ratingValue: article.score,
+            bestRating: 10,
+            worstRating: 0,
+          },
+        }
+      : null
+
   const category = categoryByValue(article.category)
   const breadcrumbs = breadcrumbList([
     ...(category ? [{ name: category.label, path: `/${category.slug}` }] : []),
@@ -135,7 +156,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     // The <article> below wraps only the piece itself — share links, prev/next
     // and suggestions are page furniture, not part of the article.
     <div className="max-w-3xl mx-auto px-4 py-12">
-      <JsonLd data={[jsonLd, breadcrumbs]} />
+      <JsonLd data={reviewJsonLd ? [jsonLd, reviewJsonLd, breadcrumbs] : [jsonLd, breadcrumbs]} />
       <Link
         href="/"
         className="text-sm text-zinc-400 hover:text-white transition-colors inline-block py-1 mb-5"
@@ -145,9 +166,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
       <article>
         <div className="space-y-3 mb-8">
-          <span className="text-emerald-500 text-xs font-bold uppercase tracking-wide">
-            {CATEGORY_LABELS[article.category] ?? article.category}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-emerald-500 text-xs font-bold uppercase tracking-wide">
+              {CATEGORY_LABELS[article.category] ?? article.category}
+            </span>
+            {article.score !== undefined && (
+              <span className="px-2 py-0.5 rounded-md border border-emerald-700 text-emerald-400 text-sm font-bold">
+                {article.score}/10
+              </span>
+            )}
+          </div>
           <h1 className="text-4xl font-black tracking-tight text-white leading-tight">
             {article.title}
           </h1>

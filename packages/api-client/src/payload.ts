@@ -59,6 +59,7 @@ export interface PayloadArticle {
   seo?: { title?: string | null; description?: string | null } | null
   featured?: boolean | null
   aiAssisted?: boolean | null
+  score?: number | null
 }
 
 /** Payload may return a relative path (`/api/media/file/x.jpg`); make it absolute. */
@@ -115,6 +116,7 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     coverImageAlt: mediaAlt(doc.coverImage),
     featured: doc.featured === true,
     aiAssisted: doc.aiAssisted === true,
+    score: typeof doc.score === 'number' ? doc.score : undefined,
     tags: Array.isArray(doc.tags)
       ? doc.tags.map((t) => (typeof t === 'string' ? t : (t.slug ?? ''))).filter(Boolean)
       : [],

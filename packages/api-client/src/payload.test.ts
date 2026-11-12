@@ -80,6 +80,8 @@ describe('mapArticle', () => {
     expect(a.coverImageAlt).toBe('Trevor on a jet ski')
     expect(a.featured).toBe(false)
     expect(a.aiAssisted).toBe(false)
+    expect(a.score).toBeUndefined()
+    expect(mapArticle(rawArticle({ category: 'review', score: 8.5 }), CMS).score).toBe(8.5)
     expect(a.author).toMatchObject({ id: '1', slug: 'akavish', name: 'Akavish' })
     expect(a.author.avatar).toBe('https://cdn.test/me.png')
     expect(a.game).toMatchObject({ id: '2', slug: 'gta-vi', name: 'GTA VI' })

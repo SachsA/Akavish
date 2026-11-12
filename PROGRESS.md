@@ -245,7 +245,14 @@ i18n (EN + FR) is its own project — §6.
 > platforms, genre, release date when known, a trailer still as cover, none
 > for the 6 whose only stills show a real person), each game name in the
 > recaps links to its page, and every recap lists under all the games it
-> covers (`relatedGames`). After that, the AI scout keeps the rhythm.
+> covers (`relatedGames`). Also on Nov 12, Alex's own Steam reviews became
+> 57 *Review* articles (the long ones, from 2023 to 2026), each linked to its
+> game (44 game pages created), backdated to the day he posted it, with an
+> official Steam screenshot as cover and his score (`score`, out of 10: the one
+> written in the review, else his HowLongToBeat rating). His HowLongToBeat
+> texts weren't imported: the site forbids automated retrieval, so only what he
+> exports or pastes himself can be added. After that, the AI scout keeps the
+> rhythm.
 
 | Status | Item            | Notes                                                                                                                                            |
 | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -404,6 +411,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | ✅  | Pagination                    | Done (2026-11-07) — category, tag, author and game pages: 24 per page, `?page=N` with Newer/Older links, canonical per page, junk or out-of-range pages are 404s (`lib/pagination.ts`, tested) |
 | ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
 | P3  | i18n fields                   | Localized title/content if going bilingual (area 6)                            |
+| ✅  | Review score                  | Done (2026-11-12) — `score` on Articles (reviews only, out of 10, halves allowed, migration `review_score`): shown next to the category on the article and on cards, and sent as a schema.org `Review` with its `Rating` for search engines. The mobile app doesn't show it yet |
 | ✅  | Related games                 | Done (2026-11-12) — `relatedGames` on Articles ("Also covers", migration `related_games_gallery`): a recap lists on every game page it covers. Games also get `gallery` ("Other images") for the scout's cover rotation |
 
 ### Media & storage

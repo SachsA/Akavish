@@ -118,6 +118,21 @@ export const Articles: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     {
+      // Reviews only: the verdict out of 10 (halves allowed). Shown next to the
+      // category and sent to search engines as a Review rating. Empty = no score.
+      name: 'score',
+      label: 'Score (/10)',
+      type: 'number',
+      min: 0,
+      max: 10,
+      admin: {
+        position: 'sidebar',
+        step: 0.5,
+        condition: (data) => data?.category === 'review',
+        description: 'Reviews only. Leave empty for a review without a score.',
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       required: true,

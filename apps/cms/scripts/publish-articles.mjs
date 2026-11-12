@@ -37,6 +37,7 @@
  *   cover: gta-vice-city.jpg
  *   coverAlt: …
  *   aiAssisted: true
+ *   score: 8.5                      # reviews only, out of 10
  *   tags: Rockstar Games, PS5       # created if new, matched by name
  *   publishAt: now                  # now | an ISO date (scheduled) | draft
  *   publishedAt: 2024-06-09T17:00:00Z  # optional: backdate (archives, past events)
@@ -304,6 +305,7 @@ async function main() {
         : undefined,
       coverImage: await media(meta.cover, meta.coverAlt),
       aiAssisted: meta.aiAssisted === 'true',
+      ...(meta.score ? { score: Number(meta.score) } : {}),
       seo: { title: meta.title, description: meta.seo },
       tags: meta.tags
         ? await Promise.all(

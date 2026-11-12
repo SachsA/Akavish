@@ -54,6 +54,9 @@ export function ArticleCard({ article }: { article: Article }) {
           {article.publishedAt && (
             <span className="text-zinc-400">· {formatDate(article.publishedAt)}</span>
           )}
+          {article.score !== undefined && (
+            <span className="text-zinc-200 font-semibold">· {article.score}/10</span>
+          )}
         </div>
         <h3 className="font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors">
           {article.title}

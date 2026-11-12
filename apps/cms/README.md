@@ -23,7 +23,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 
 | Collection | Notes                                                                                                                                              |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, *Also covers* (`relatedGames`: the other games a recap covers, listed on their pages too), tags, SEO. Versioned with drafts. `publishedAt` is auto-stamped — see below. |
+| `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, *Also covers* (`relatedGames`: the other games a recap covers, listed on their pages too), tags, SEO, and for reviews a `score` out of 10 (shown on the article and the cards, and sent as a schema.org Review). Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
 | `games`    | Game metadata articles can be tagged to: cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), platforms, genres, dates, studio. |
 | `tags`     | Cross-cutting topics, 2 to 5 per article: publisher or studio (Rockstar Games, Riot Games), platform (PS5, Switch 2), event (Worlds 2026, CS2 Major) or theme (Release dates, Trailers, Earnings). Not the game (that's `game`) nor the type (that's `category`). Each tag has its public page `/tag/<slug>`, linked from the article (#chips) and listed in the sitemap once it has a published article. |
@@ -95,7 +95,8 @@ format (front matter per game or article, `tags:` as a comma list matched by
 name and created if new, Markdown body with `##` headings,
 `- ` lists, `**bold**` and links) is documented at the top of the script.
 Re-running is safe: games and media are reused, articles updated in place;
-to fix one article, re-run with `--only <slug>`. `relatedGames:` (game slugs)
+to fix one article, re-run with `--only <slug>`. `score:` sets a review's
+score out of 10. `relatedGames:` (game slugs)
 fills *Also covers*, and `[**Name**](/game/<slug>)` in the body is a site link
 (same tab). An optional `publishedAt:`
 backdates an archive piece (the old conference recaps, say) so it sits at its

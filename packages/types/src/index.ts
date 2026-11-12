@@ -32,6 +32,8 @@ export interface Article {
   featured?: boolean
   /** Drafted with the AI scout and approved by an editor: the article shows a note. */
   aiAssisted?: boolean
+  /** Reviews: the verdict out of 10. */
+  score?: number
 }
 
 // ─── Game ──────────────────────────────────────────────────────────────────
