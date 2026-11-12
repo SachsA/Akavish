@@ -254,8 +254,8 @@ i18n (EN + FR) is its own project — §6.
 > them himself: 21 more reviews went live the same evening (PS5, Xbox, Switch
 > and Switch 2 games, the short ones rewritten in full prose, the Returnal DLC
 > folded into the Returnal review), with 15 new game pages and official
-> screenshots or trailer stills as covers. They carry no posting date, so they
-> are dated Nov 12, 2026. Total: 78 reviews. After that, the AI scout keeps the
+> screenshots or trailer stills as covers, each backdated to the day Alex
+> finished the game (2020 to 2026). Total: 78 reviews. After that, the AI scout keeps the
 > rhythm.
 
 | Status | Item            | Notes                                                                                                                                            |
