@@ -11,7 +11,7 @@ import type { DiscordBotConfig } from './config'
 const API = 'https://discord.com/api/v10'
 
 // Discord constants (developer docs: interactions, message components).
-export const InteractionType = { PING: 1, COMPONENT: 3, MODAL_SUBMIT: 5 } as const
+export const InteractionType = { PING: 1, COMMAND: 2, COMPONENT: 3, MODAL_SUBMIT: 5 } as const
 export const ResponseType = { PONG: 1, MESSAGE: 4, UPDATE_MESSAGE: 7, MODAL: 9 } as const
 const EPHEMERAL = 64
 const Button = { PRIMARY: 1, SUCCESS: 3, DANGER: 4, LINK: 5 } as const

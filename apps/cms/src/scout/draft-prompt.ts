@@ -258,7 +258,7 @@ export function blocksToText(blocks: Block[]): string {
 
 // ─── Lexical (Payload's rich-text JSON) ──────────────────────────────────────
 
-const text = (t: string) => ({
+export const text = (t: string) => ({
   type: 'text',
   text: t,
   format: 0,
@@ -267,7 +267,11 @@ const text = (t: string) => ({
   detail: 0,
   version: 1,
 })
-const element = (type: string, children: unknown[], extra: Record<string, unknown> = {}) => ({
+export const element = (
+  type: string,
+  children: unknown[],
+  extra: Record<string, unknown> = {},
+) => ({
   type,
   children,
   direction: 'ltr',
@@ -276,7 +280,7 @@ const element = (type: string, children: unknown[], extra: Record<string, unknow
   version: 1,
   ...extra,
 })
-const paragraph = (children: unknown[]) => element('paragraph', children, { textFormat: 0 })
+export const paragraph = (children: unknown[]) => element('paragraph', children, { textFormat: 0 })
 
 /** The article body: the draft's blocks, then "Sources" with a link to each source. */
 const linkItem = (label: string, linkText: string, url: string, i: number) =>

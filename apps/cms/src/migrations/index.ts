@@ -10,6 +10,7 @@ import * as migration_20261109_094550_storage_object_key from './20261109_094550
 import * as migration_20261109_102521_newsletter_subscribers from './20261109_102521_newsletter_subscribers';
 import * as migration_20261110_095447_scout_step1 from './20261110_095447_scout_step1';
 import * as migration_20261110_103703_scout_step2 from './20261110_103703_scout_step2';
+import * as migration_20261112_144344_scout_events from './20261112_144344_scout_events';
 
 export const migrations = [
   {
@@ -70,6 +71,11 @@ export const migrations = [
   {
     up: migration_20261110_103703_scout_step2.up,
     down: migration_20261110_103703_scout_step2.down,
-    name: '20261110_103703_scout_step2'
+    name: '20261110_103703_scout_step2',
+  },
+  {
+    up: migration_20261112_144344_scout_events.up,
+    down: migration_20261112_144344_scout_events.down,
+    name: '20261112_144344_scout_events'
   },
 ];

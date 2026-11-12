@@ -18,8 +18,11 @@ import { ScoutItems } from './collections/scout/ScoutItems'
 import { ScoutSettings } from './collections/scout/ScoutSettings'
 import { ScoutSources } from './collections/scout/ScoutSources'
 import { ScoutStories } from './collections/scout/ScoutStories'
+import { ScoutEvents } from './collections/scout/ScoutEvents'
 import { ScoutUsage } from './collections/scout/ScoutUsage'
 import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
+import { scoutConfig } from './scout/config'
+import { registerCommands } from './scout/discord-commands'
 import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 import { schedulePublishHandler } from './lib/schedule-publish'
@@ -28,6 +31,20 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  // The scout's Discord slash commands (/live, event mode) are (re)registered
+  // at start-up when the scout and its bot are configured. Never blocks boot.
+  onInit: async (payload) => {
+    const config = scoutConfig()
+    if (!config.enabled || !config.bot || config.dryRun) return
+    registerCommands(config.bot).then(
+      () => payload.logger.info('[scout] Discord /live command registered'),
+      (err) =>
+        payload.logger.warn({
+          msg: '[scout] Discord commands not registered',
+          error: err instanceof Error ? err.message : String(err),
+        }),
+    )
+  },
   serverURL: process.env.SERVER_URL || 'http://localhost:3001',
   admin: {
     user: Users.slug,
@@ -51,6 +68,7 @@ export default buildConfig({
     ScoutItems,
     ScoutStories,
     ScoutUsage,
+    ScoutEvents,
   ],
   globals: [ScoutSettings],
   // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).

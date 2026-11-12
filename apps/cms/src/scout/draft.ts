@@ -83,7 +83,7 @@ async function sourcesFor(ctx: ScoutContext, storyId: number, read = true): Prom
 }
 
 /** Author of scout drafts: the one chosen in Scout settings, else the first, else a new "Akavish Newsroom". */
-async function authorId(ctx: ScoutContext, settings: SettingsDoc): Promise<number> {
+export async function authorId(ctx: ScoutContext, settings: SettingsDoc): Promise<number> {
   const chosen = (settings as { defaultAuthor?: number | { id: number } | null }).defaultAuthor
   if (chosen) return typeof chosen === 'object' ? Number(chosen.id) : Number(chosen)
   const { docs } = await ctx.payload.find({
@@ -110,7 +110,9 @@ export interface DraftResult {
 }
 
 /** The site's games, for the model to pick the story's one. */
-async function existingGames(ctx: ScoutContext): Promise<Array<{ id: number; name: string }>> {
+export async function existingGames(
+  ctx: ScoutContext,
+): Promise<Array<{ id: number; name: string }>> {
   const { docs } = await ctx.payload.find({
     collection: 'games',
     limit: 300,
@@ -125,7 +127,7 @@ async function existingGames(ctx: ScoutContext): Promise<Array<{ id: number; nam
 }
 
 /** Create a game the model named that isn't in Games yet. */
-async function createGame(
+export async function createGame(
   ctx: ScoutContext,
   name: string,
   facts: DraftAnswer['new_game'],

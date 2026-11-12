@@ -1270,6 +1270,40 @@ Saturday; the full version any time at
 `/admin` (stories per day, how many would pass at each threshold, drafts,
 cost, silent or failing feeds).
 
+**Event mode (`/live`).** For a showcase (Game Awards, State of Play,
+Nintendo Direct…) or a big tournament: one live article, updated every 5
+minutes while it runs.
+
+1. `/live start nom:"The Game Awards 2026"` (option `image:` = an official
+   visual's URL; or later `/live image url:…`). One live at a time.
+2. During the show, `/live add texte:"Half-Life 3 revealed https://youtu.be/…"`
+   for what you see. Paste the trailer and official links as they are. To
+   fix or complete an entry, start with its number: `/live add texte:"#3 out
+   in March 2027 on PS5"` (numbers are on the Discord card).
+3. Each run, Sonnet merges your notes and what the feeds bring (official
+   blogs, outlets) into short entries: "<Game>: <what>", one or two
+   sentences, the trailer and official links, a link to the game's page.
+   Repeats are merged into one entry; an entry is completed when a later
+   note or post brings its date, platforms or price; a game not in *Games*
+   gets its page created. Links come only from your notes and the feeds.
+4. The first version stays a draft, on one Discord card kept up to date.
+   **Publier le live** puts it online (an image is required); after that,
+   every update goes live by itself and is posted with **Annuler cette MAJ**
+   (back to the previous version) and **Stop live**.
+5. `/live stop` (or the button): last update, the page says the show is over,
+   and a **recap article** is drafted from the entries (sections, one line per
+   announcement, the trailers in *Watch*) with **Publier le résumé** /
+   **Rejeter**. Publishing it adds a "Full recap" link on the live page. A live
+   left running stops by itself after 8 hours.
+
+Cost: about 0.02-0.03 $ per update with something new (nothing new, no call),
+so under 1 $ for a two-hour show, plus about 0.03 $ for the recap.
+Setup: none. The CMS registers the `/live` command with Discord at start-up
+(log line `[scout] Discord /live command registered`). If `/live` doesn't show
+in Discord, the bot was invited without the commands scope: reinvite it with
+`https://discord.com/oauth2/authorize?client_id=<DISCORD_APPLICATION_ID>&scope=bot%20applications.commands`
+(same permissions), then restart the CMS.
+
 **Feeds that refuse the scout.** It always says who it is
 (`AkavishScout/1.0 (+https://akavish.gg)`). A feed that answers 403 shows it in
 its status: untick it, and never switch to a browser User-Agent to get through.

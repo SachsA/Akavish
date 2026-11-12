@@ -137,7 +137,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   official YouTube videos go in a *Watch* section. Tags and game: the
   model picks existing ones and may create what's missing (at most 2 tags, a
   game only with its official title; cleaned up if the draft is rejected).
-  Automatic drafts skip news already covered (`dedupe.ts`). Every field a draft fills: `DEPLOYMENT.md` §11. Weekly report (`report.ts`): Discord on
+  Automatic drafts skip news already covered (`dedupe.ts`). Every field a draft fills: `DEPLOYMENT.md` §11. Event mode
+  (`live.ts`): `/live` on Discord, one live article updated every 5 min,
+  auto-published only after the editor's first click, recap drafted on stop. Weekly report (`report.ts`): Discord on
   Saturdays, `GET /api/scout/report` for editors. Design and steps in
   `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.

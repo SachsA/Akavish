@@ -16,6 +16,7 @@ import type { ScoutContext } from '@/scout/context'
 import { maybeSendDigest } from '@/scout/digest'
 import { autoDraft, draftStory, setStoryImage } from '@/scout/draft'
 import { handleInteraction, scoutReportHandler } from '@/scout/interactions'
+import { runLive } from '@/scout/live'
 import { gatherReport } from '@/scout/report'
 import type { DiscordMessage } from '@/scout/discord'
 import { checkBudget } from '@/scout/budget'
@@ -278,6 +279,45 @@ describe('scout step 2 (drafts)', () => {
           usage: { input_tokens: 2000, output_tokens: 40 },
         })
       }
+      if (body.tools?.[0]?.name === 'update_live') {
+        const fix = text.includes('#1 releases in March 2027')
+        const input = fix
+          ? {
+              intro: 'Scouttest Show so far: Scouttest Saga dated.',
+              new_entries: [],
+              update_entries: [
+                {
+                  entry: 'e1',
+                  headline: 'Scouttest Saga: revealed for March 2027',
+                  text: 'Revealed with a trailer; out in March 2027 on PS5.',
+                  links: [],
+                },
+              ],
+            }
+          : {
+              title: 'Scouttest Show: every announcement, live',
+              category: 'conference',
+              intro: 'Scouttest Show so far: Scouttest Saga revealed.',
+              new_entries: [
+                {
+                  headline: 'Scouttest Saga: revealed',
+                  text: 'A new game was revealed with a trailer.',
+                  links: [
+                    { label: 'Trailer', url: 'https://www.youtube.com/watch?v=QdBZY2fkU-0' },
+                    { label: 'Not given', url: 'https://evil.example/x' },
+                  ],
+                  game: 'Scouttest Saga',
+                  game_is_new: true,
+                  new_game: { developer: 'Saga Studio', platforms: ['PlayStation'] },
+                },
+              ],
+              update_entries: [],
+            }
+        return Response.json({
+          content: [{ type: 'tool_use', name: 'update_live', input }],
+          usage: { input_tokens: 5000, output_tokens: 300 },
+        })
+      }
       const revision = text.includes("The editor's feedback")
       const withVideo = text.includes('Grand Theft Auto VI Trailer 3')
       const indie = text.includes('Story: Small indie patch')
@@ -467,6 +507,11 @@ describe('scout step 2 (drafts)', () => {
     await payload.delete({
       collection: 'tags',
       where: { name: { like: 'Scouttest' } },
+      overrideAccess: true,
+    })
+    await payload.delete({
+      collection: 'scout-events' as never,
+      where: { id: { exists: true } },
       overrideAccess: true,
     })
     await payload.delete({
@@ -764,6 +809,96 @@ describe('scout step 2 (drafts)', () => {
       })
       expect(totalDocs).toBe(0)
     }
+  })
+
+  it('event mode: /live start, add, update, publish, complete, undo, stop and recap', async () => {
+    const owner = { member: { user: { id: 'owner' } } }
+    const live = (sub: string, options: Array<{ name: string; value: string }> = []) =>
+      interact({
+        type: 2,
+        ...owner,
+        data: { name: 'live', options: [{ name: sub, type: 1, options }] },
+      }).then((r) => r.json())
+    const event = async () =>
+      (
+        await payload.find({
+          collection: 'scout-events' as never,
+          limit: 1,
+          depth: 0,
+          overrideAccess: true,
+        })
+      ).docs[0] as unknown as Record<string, any>
+    const articleText = async (id: number, draft = true) =>
+      JSON.stringify(
+        (await payload.findByID({ collection: 'articles', id, draft, overrideAccess: true }))
+          .content,
+      )
+
+    expect(
+      (await live('start', [{ name: 'nom', value: 'Scouttest Show' }])).data.content,
+    ).toContain('lancé')
+    expect((await live('start', [{ name: 'nom', value: 'Other' }])).data.content).toContain('déjà')
+    await live('add', [
+      {
+        name: 'texte',
+        value: 'Scouttest Saga revealed https://www.youtube.com/watch?v=QdBZY2fkU-0',
+      },
+    ])
+
+    // First update: a draft live article, one card on Discord, a game page created.
+    expect(await runLive(ctx2(), await settings())).toBe(1)
+    let ev = await event()
+    const articleId = Number(ev.article)
+    expect(ev.entries).toHaveLength(1)
+    expect(ev.notes[0].done).toBe(true)
+    let body = await articleText(articleId)
+    expect(body).toContain('Scouttest Saga: revealed')
+    expect(body).toContain('https://www.youtube.com/watch?v=QdBZY2fkU-0')
+    expect(body).not.toContain('evil.example') // only links that were given
+    expect(body).toContain('/game/scouttest-saga') // the new game's page
+    const game = (
+      await payload.find({
+        collection: 'games',
+        where: { name: { equals: 'Scouttest Saga' } },
+        overrideAccess: true,
+      })
+    ).docs[0] as unknown as { developer: string }
+    expect(game.developer).toBe('Saga Studio')
+    expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(`scout:evpub:${ev.id}`)
+
+    // "Publier le live" → published; later updates go live by themselves.
+    const pub = await (
+      await interact({ type: 3, ...owner, data: { custom_id: `scout:evpub:${ev.id}` } })
+    ).json()
+    expect(pub.data.embeds?.[0]?.footer?.text ?? pub.data.content).toMatch(/Live publié/)
+
+    // The editor completes entry #1: the scout rewrites it, keeps the links.
+    await live('add', [{ name: 'texte', value: '#1 releases in March 2027 on PS5' }])
+    expect(await runLive(ctx2(), await settings())).toBe(1)
+    ev = await event()
+    expect(ev.rev).toBe(1)
+    body = await articleText(articleId, false)
+    expect(body).toContain('March 2027')
+    expect(body).toContain('QdBZY2fkU-0')
+    expect(String(discordPosts.at(-1)!.body.content)).toContain('✎ #1')
+
+    // "Annuler cette MAJ" puts the page back.
+    await interact({ type: 3, ...owner, data: { custom_id: `scout:evundo:${ev.id}:1` } })
+    expect(await articleText(articleId, false)).not.toContain('March 2027')
+
+    // Stop: the page says it's over, the recap is drafted with its own card.
+    expect((await live('stop')).data.content).toContain('arrêté')
+    await runLive(ctx2(), await settings())
+    ev = await event()
+    expect(ev.status).toBe('ended')
+    expect(await articleText(articleId, false)).toContain('The show is over')
+    expect(ev.recapArticle).toBeTruthy()
+    expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(`scout:evrecap:${ev.id}`)
+    const recap = await (
+      await interact({ type: 3, ...owner, data: { custom_id: `scout:evrecap:${ev.id}` } })
+    ).json()
+    expect(recap.data.embeds?.[0]?.footer?.text).toMatch(/Résumé publié/)
+    expect(await articleText(articleId, false)).toContain('Full recap')
   })
 })
 

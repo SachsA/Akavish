@@ -303,6 +303,24 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    `GET /api/scout/report?days=7` (plain text, `&format=json` for JSON; 401
    without an editor session).
 
+**Event mode** (`live.ts`, `live-prompt.ts`, `discord-commands.ts`, collection
+`scout-events`). `/live start|add|image|stop|status` slash commands, registered
+at start-up (`onInit` in `payload.config.ts`, global commands, PUT overwrite)
+and answered on the same interactions endpoint (type 2). The event keeps its
+entries, the editor's notes (`n<k>`, done or pending), the previous version
+(undo), a revision number and a cursor on scout items. The `live` step of each
+run sends the pending notes and the new items (official and established
+sources) to Sonnet with the entries so far (`update_live` tool: `new_entries`,
+`update_entries` to complete or correct one, `game` / `game_is_new`);
+`cleanLive` keeps only links that were given and existing entries,
+`applyLive` merges, games are matched or created like drafts. Unpublished: a
+draft article and one Discord card edited in place; after **Publier le live**
+every change is published with an **Annuler cette MAJ** button
+(`scout:evundo:<event>:<rev>`). `/live stop` → status `ending` → next run:
+final update, "the show is over", recap drafted (`RECAP_SYSTEM`, the draft
+tool, trailers in *Watch*) with **Publier le résumé** / **Rejeter**. Auto-stop
+after 8 h. Usage purposes `live` and `recap`.
+
 **Discord validation** (`discord-bot.ts`, `interactions.ts`). Each draft is a
 bot message with **Publier** / **Modifier** / **Rejeter** and a link to
 `/admin`. Discord posts the clicks to `POST /api/scout/discord` (declared in

@@ -19,6 +19,18 @@ import {
   verifyDiscordSignature,
   type Embed,
 } from './discord-bot'
+import { readCommand } from './discord-commands'
+import {
+  addNote,
+  liveStatus,
+  publishLive,
+  publishRecap,
+  rejectRecap,
+  setLiveImage,
+  startLive,
+  stopLive,
+  undoLive,
+} from './live'
 import { gatherReport, reportText } from './report'
 import { makeContext } from './run'
 
@@ -28,6 +40,9 @@ interface Interaction {
     custom_id?: string
     values?: string[]
     components?: Array<{ components?: Array<{ custom_id?: string; value?: string }> }>
+    // Slash commands
+    name?: string
+    options?: Array<{ name: string; options?: Array<{ name: string; value?: unknown }> }>
   }
   member?: { user?: { id?: string } }
   user?: { id?: string }
@@ -85,7 +100,32 @@ export async function handleInteraction(
   if (userId !== bot.ownerId)
     return json(ephemeral('Seul l’éditeur d’Akavish peut valider les brouillons.'))
 
-  const [ns, action, idRaw] = (i.data?.custom_id ?? '').split(':')
+  // ── /live slash commands (event mode, live.ts) ──
+  if (i.type === InteractionType.COMMAND) {
+    const { command, sub, args } = readCommand(i.data)
+    if (command !== 'live') return json(ephemeral('Commande inconnue.'))
+    try {
+      const answer =
+        sub === 'start'
+          ? await startLive(ctx, args.nom ?? 'Live', args.image || undefined)
+          : sub === 'add'
+            ? await addNote(ctx, args.texte ?? '')
+            : sub === 'image'
+              ? /^https:\/\/\S+$/i.test(args.url ?? '')
+                ? await setLiveImage(ctx, args.url)
+                : 'L’image doit être une URL en https://…'
+              : sub === 'stop'
+                ? await stopLive(ctx)
+                : await liveStatus(ctx)
+      return json(ephemeral(answer))
+    } catch (err) {
+      return json(
+        ephemeral(`Ça n’a pas marché : ${err instanceof Error ? err.message : String(err)}`),
+      )
+    }
+  }
+
+  const [ns, action, idRaw, extra] = (i.data?.custom_id ?? '').split(':')
   if (ns !== 'scout') return json(ephemeral('Action inconnue.'))
   const storyId = Number(idRaw)
   const original = i.message ?? {}
@@ -141,6 +181,58 @@ export async function handleInteraction(
           },
         ]),
       )
+    }
+    // ── Event mode buttons ──
+    if (i.type === InteractionType.COMPONENT && action === 'evpub') {
+      try {
+        const url = await publishLive(ctx, storyId)
+        return json({
+          type: ResponseType.UPDATE_MESSAGE,
+          data: closedMessage(
+            original,
+            `Live publié · ${url} · les mises à jour partent seules`,
+            COLORS.published,
+          ),
+        })
+      } catch (err) {
+        if (err instanceof Error && err.message === NO_COVER) {
+          return json(
+            ephemeral('Pas d’image sur le live : /live image <url officielle>, puis Publier.'),
+          )
+        }
+        throw err
+      }
+    }
+    if (i.type === InteractionType.COMPONENT && action === 'evstop') {
+      return json(ephemeral(await stopLive(ctx)))
+    }
+    if (i.type === InteractionType.COMPONENT && action === 'evundo') {
+      await undoLive(ctx, storyId, Number(extra))
+      return json({
+        type: ResponseType.UPDATE_MESSAGE,
+        data: { content: '↩️ Mise à jour annulée.', components: [] },
+      })
+    }
+    if (i.type === InteractionType.COMPONENT && action === 'evrecap') {
+      try {
+        const url = await publishRecap(ctx, storyId)
+        return json({
+          type: ResponseType.UPDATE_MESSAGE,
+          data: closedMessage(original, `Résumé publié · ${url}`, COLORS.published),
+        })
+      } catch (err) {
+        if (err instanceof Error && err.message === NO_COVER) {
+          return json(ephemeral('Pas d’image sur le résumé : ajoute-la dans /admin, puis Publier.'))
+        }
+        throw err
+      }
+    }
+    if (i.type === InteractionType.COMPONENT && action === 'evrecapno') {
+      await rejectRecap(ctx, storyId)
+      return json({
+        type: ResponseType.UPDATE_MESSAGE,
+        data: closedMessage(original, 'Résumé rejeté, brouillon supprimé.', COLORS.rejected),
+      })
     }
     // ── "Write one of these" menu under a digest ──
     if (i.type === InteractionType.COMPONENT && action === 'pick') {

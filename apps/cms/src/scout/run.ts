@@ -9,6 +9,7 @@ import { collect, ensureSources } from './collect'
 import { scoutConfig, type ScoutConfig } from './config'
 import type { ScoutContext, SettingsDoc } from './context'
 import { maybeSendDigest } from './digest'
+import { runLive } from './live'
 import { autoDraft } from './draft'
 import { postToDiscord, type DiscordMessage } from './discord'
 import { sendBotMessage } from './discord-bot'
@@ -39,6 +40,8 @@ export interface RunReport {
     skippedReason?: string
   }
   drafted?: number
+  /** 1 when the running event's page changed. */
+  live?: number
   digest?: string | null
 }
 
@@ -89,6 +92,7 @@ export async function runScout(payload: Payload, opts: RunOptions = {}): Promise
   report.collected = await step('collect', () => collect(ctx))
   report.triaged = await step('triage', () => triage(ctx, settings))
   report.drafted = await step('drafts', () => autoDraft(ctx, settings))
+  report.live = await step('live', () => runLive(ctx, settings))
   report.digest = (await step('digest', () => maybeSendDigest(ctx, settings, opts.digest))) ?? null
   await step('retention', () => purgeOld(ctx))
 
