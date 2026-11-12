@@ -149,7 +149,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `cms` tag (`cmsFetch` in `apps/web/src/lib/payload.ts`); a new CMS read must
   go through `cmsFetch` to be refreshed.
 - **Articles from Markdown:** `apps/cms/scripts/publish-articles.mjs` posts
-  articles (covers, games, publish now / schedule / draft) over REST with a
+  articles (covers, games, publish now / schedule / draft, optional
+  backdated `publishedAt` for archives) over REST with a
   dedicated editor login in the gitignored `.cms-import`; scheduling goes
   through `POST /api/articles-schedule` (same job as the admin button).
   AI-drafted pieces always carry `aiAssisted`.

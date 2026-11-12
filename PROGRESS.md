@@ -233,6 +233,13 @@ i18n (EN + FR) is its own project — §6.
 > cover alt text, publishers, and covers for the CS2, League of Legends and
 > Marathon game pages (Valorant's from the official key art Alex supplied). Drafts and sources:
 > [Akavish : articles de lancement](https://claude.ai/artifact/7xqDrjALBdwL33reFUC6jf).
+> On Nov 12, Alex's 33 old conference write-ups (PDFs in the gitignored
+> `import-docs/`, 2022 to 2026: Xbox, PlayStation, Nintendo, Ubisoft, Summer
+> Game Fest, Gamescom ONL, The Game Awards, PC Gaming Show) became 33
+> *Conference* articles, every announcement in show order with its official
+> trailer link, backdated to the event (`publishedAt`) so they fill the
+> archive without pushing the news down. Covers are trailer stills, no real
+> people. Links that pointed to the wrong video in the PDFs were dropped.
 > After that, the AI scout keeps the rhythm.
 
 | Status | Item            | Notes                                                                                                                                            |

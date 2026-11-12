@@ -95,8 +95,11 @@ format (front matter per game or article, `tags:` as a comma list matched by
 name and created if new, Markdown body with `##` headings,
 `- ` lists, `**bold**` and links) is documented at the top of the script.
 Re-running is safe: games and media are reused, articles updated in place;
-to fix one article, re-run with `--only <slug>`.
-`import-images/` (the images and the Markdown) is gitignored.
+to fix one article, re-run with `--only <slug>`. An optional `publishedAt:`
+backdates an archive piece (the old conference recaps, say) so it sits at its
+real date and doesn't take the top of the homepage.
+`import-images/` (the images and the Markdown) and `import-docs/` (Alex's own
+source documents) are gitignored.
 
 ### Picking the homepage lead story (`featured`)
 

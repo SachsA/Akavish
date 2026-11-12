@@ -87,3 +87,5 @@ yarn-error.log*
 .cms-import
 # Images and Markdown for scripts/publish-articles.mjs (publisher assets, not ours to commit)
 import-images/
+# Alex's own source documents (old conference PDFs), local only
+import-docs/

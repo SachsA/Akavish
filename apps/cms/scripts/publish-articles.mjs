@@ -37,6 +37,7 @@
  *   aiAssisted: true
  *   tags: Rockstar Games, PS5       # created if new, matched by name
  *   publishAt: now                  # now | an ISO date (scheduled) | draft
+ *   publishedAt: 2024-06-09T17:00:00Z  # optional: backdate (archives, past events)
  *   ---
  *   Body: paragraphs, ## / ### headings (both become h2), "- " lists,
  *   **bold** and [links](https://…).
@@ -44,7 +45,10 @@
  * Re-running is safe: games and media are reused by slug / alt text, and
  * articles are updated in place (a published one stays published). A new
  * publishAt replaces the article's pending schedule (`now` or `draft` clears
- * it). To touch only some pieces, pass --only <slug,slug>.
+ * it). `publishedAt` sets the displayed date instead of "now", so an archive
+ * piece (an old conference, say) lands at its real place in the timeline
+ * and never jumps to the top of the homepage. To touch only some pieces,
+ * pass --only <slug,slug>.
  */
 import { existsSync, openAsBlob, readFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -289,6 +293,8 @@ async function main() {
               .map(tag),
           )
         : undefined,
+      // Backdated archive piece: the Articles hook keeps a provided date.
+      ...(meta.publishedAt ? { publishedAt: meta.publishedAt } : {}),
     }
     const existing = await findOne('articles', 'slug', meta.slug)
     const live = existing?.status === 'published'
