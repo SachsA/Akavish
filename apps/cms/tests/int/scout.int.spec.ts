@@ -167,15 +167,15 @@ describe('scout', () => {
   it('groups the same news from two sources into one scored story', async () => {
     const settings = await payload.findGlobal({ slug: 'scout-settings', overrideAccess: true })
     const report = await triage(ctx(), settings as never)
-    expect(report).toMatchObject({ items: 3, newStories: 1, joined: 1, skipped: 1 })
+    expect(report).toMatchObject({ items: 3, newStories: 1, joined: 1, skipped: 1, covered: 0 })
     expect(claudeCalls).toHaveLength(1)
 
     const { docs } = await payload.find({ collection: 'scout-stories', overrideAccess: true })
     expect(docs).toHaveLength(1)
-    // significance 92 → 46, 2 sources → +7.5, official → +20 = 73.5 → 74
+    // significance 92 → 55.2, 2 sources → +5, official → +25 = 85.2 → 85
     expect(docs[0]).toMatchObject({
       title: 'The Last of Us Part III announced',
-      score: 74,
+      score: 85,
       sourceCount: 2,
       bestReliability: 'official',
     })
@@ -194,7 +194,7 @@ describe('scout', () => {
     sent.length = 0
     expect(await maybeSendDigest(ctx(evening), settings)).toBe('evening')
     expect(sent[0].content).toContain('1 sujet, dont 1 au-dessus du seuil (60)')
-    expect(sent[0].embeds?.[0].title).toBe('74 · The Last of Us Part III announced')
+    expect(sent[0].embeds?.[0].title).toBe('85 · The Last of Us Part III announced')
     expect(sent[0].embeds?.[0].description).toContain('Official, Press')
 
     const again = (await payload.findGlobal({

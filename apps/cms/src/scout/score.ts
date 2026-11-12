@@ -1,18 +1,22 @@
 // ─── Story score ─────────────────────────────────────────────────────────────
 // Pure: decides which stories matter (design doc: "Score"). Out of 100:
 //
-//   significance  0–50  how big the news is on its own (the model's estimate
-//                       0–100, halved): a GTA trailer vs a small patch
-//   sources       0–30  independent outlets reporting it (+7.5 each after the
+//   significance  0–60  how big the news is on its own (the model's estimate
+//                       0–100 × 0.6): a GTA trailer vs a small patch
+//   sources       0–20  independent outlets reporting it (+5 each after the
 //                       first, capped): one rumour vs everyone covering it
-//   reliability   0–20  best source: official 20, established outlet 10,
+//   reliability   0–25  best source: official 25, established outlet 15,
 //                       leaker/unknown 0
 //   freshness     0 to −30  older than a day −10, three days −30
 //
-// So an official announcement of a big game (sig 90 → 45, official 20, a few
-// outlets 15–30) lands at 80–95, a single leaker's claim about a big game
-// (45 + 0 + 0) stays around 45 until others pick it up. The draft threshold
-// (60 by default) sits between the two. Tuned with real traffic in step 1.
+// Retuned on 2026-11-12 from the editor's first review: the old weights
+// (significance halved, +7.5 per outlet, official 20 / outlet 10) kept good
+// single-source news under 50 (an official CS2 update, a star player's
+// transfer on VLR.gg, a Sensor Tower figure on GTA VI), because our 38 feeds
+// rarely carry the same news more than once or twice. Now an official post
+// about a focus game (sig 65 → 39 + 25) or a big story from one established
+// outlet (sig 75 → 45 + 15) reaches the 60 threshold on its own, while a lone
+// leaker (sig 80 → 48 + 0) still waits for confirmation from others.
 
 import type { Reliability } from './default-sources'
 
@@ -26,7 +30,7 @@ export interface ScoreInput {
   ageHours: number
 }
 
-const RELIABILITY_POINTS: Record<Reliability, number> = { official: 20, high: 10, variable: 0 }
+const RELIABILITY_POINTS: Record<Reliability, number> = { official: 25, high: 15, variable: 0 }
 const RANK: Record<Reliability, number> = { official: 0, high: 1, variable: 2 }
 
 export function scoreStory({
@@ -35,8 +39,8 @@ export function scoreStory({
   bestReliability,
   ageHours,
 }: ScoreInput): number {
-  const sig = Math.max(0, Math.min(100, significance)) / 2
-  const sources = Math.min(30, Math.max(0, sourceCount - 1) * 7.5)
+  const sig = Math.max(0, Math.min(100, significance)) * 0.6
+  const sources = Math.min(20, Math.max(0, sourceCount - 1) * 5)
   const reliability = RELIABILITY_POINTS[bestReliability] ?? 0
   const freshness = ageHours > 72 ? -30 : ageHours > 24 ? -10 : 0
   return Math.round(Math.max(0, Math.min(100, sig + sources + reliability + freshness)))

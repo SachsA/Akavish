@@ -20,6 +20,7 @@ import {
   TRIAGE_SYSTEM,
   TRIAGE_TOOL,
   triagePrompt,
+  type CoveredArticle,
   type OpenStory,
   type TriageAnswer,
   type TriageItem,
@@ -27,13 +28,24 @@ import {
 
 const BATCH = 40
 const OPEN_WINDOW_MS = 72 * 3_600_000
-const MAX_OPEN = 80
+// Open stories shown to the model: every story that matters over 3 days (a
+// score of 35+, or drafted / published / rejected by the editor), plus the
+// latest ones whatever their score. 80 by recency alone covered only the
+// last few hours (300 stories a day), so the same news reported the next
+// morning became a second story (Nov 11-12: PS5 100M, Marvel 1943, GTA VI
+// pre-orders).
+const MAX_IMPORTANT = 250
+const MAX_RECENT = 80
+const COVERED_DAYS = 21
+const MAX_COVERED = 120
 
 export interface TriageReport {
   items: number
   newStories: number
   joined: number
   skipped: number
+  /** Items repeating an article already on Akavish. */
+  covered: number
   skippedReason?: string
 }
 
@@ -98,6 +110,69 @@ export async function rescore(
   })
 }
 
+/** The stories the model can join items to (see MAX_IMPORTANT). */
+async function openStories(ctx: ScoutContext): Promise<OpenStory[]> {
+  const since = new Date(ctx.now.getTime() - OPEN_WINDOW_MS).toISOString()
+  const pick = { title: true, game: true } as const
+  const [important, recent] = await Promise.all([
+    ctx.payload.find({
+      collection: 'scout-stories',
+      where: {
+        and: [
+          { updatedAt: { greater_than: since } },
+          {
+            or: [
+              { score: { greater_than_equal: 35 } },
+              { status: { in: ['drafted', 'published', 'rejected'] } },
+            ],
+          },
+        ],
+      },
+      sort: '-score',
+      limit: MAX_IMPORTANT,
+      depth: 0,
+      select: pick,
+      overrideAccess: true,
+    }),
+    ctx.payload.find({
+      collection: 'scout-stories',
+      where: { updatedAt: { greater_than: since } },
+      sort: '-updatedAt',
+      limit: MAX_RECENT,
+      depth: 0,
+      select: pick,
+      overrideAccess: true,
+    }),
+  ])
+  const byId = new Map<number, OpenStory>()
+  for (const s of [...important.docs, ...recent.docs] as unknown as StoryDoc[]) {
+    byId.set(Number(s.id), { id: Number(s.id), title: s.title, game: s.game ?? null })
+  }
+  return [...byId.values()]
+}
+
+/** Akavish's recent articles (any status), so items repeating one are set aside. */
+async function coveredArticles(ctx: ScoutContext): Promise<CoveredArticle[]> {
+  const { docs } = await ctx.payload.find({
+    collection: 'articles',
+    where: {
+      createdAt: {
+        greater_than: new Date(ctx.now.getTime() - COVERED_DAYS * 86_400_000).toISOString(),
+      },
+    },
+    draft: true,
+    sort: '-createdAt',
+    limit: MAX_COVERED,
+    depth: 0,
+    select: { title: true },
+    overrideAccess: true,
+  })
+  return (docs as unknown as Array<{ id: number; title: string }>).map((a) => ({
+    id: Number(a.id),
+    title: a.title,
+  }))
+}
+
 export async function triage(ctx: ScoutContext, settings: SettingsDoc): Promise<TriageReport> {
   const { docs } = await ctx.payload.find({
     collection: 'scout-items',
@@ -108,24 +183,17 @@ export async function triage(ctx: ScoutContext, settings: SettingsDoc): Promise<
     overrideAccess: true,
   })
   const items = docs as unknown as ItemDoc[]
-  const report: TriageReport = { items: items.length, newStories: 0, joined: 0, skipped: 0 }
+  const report: TriageReport = {
+    items: items.length,
+    newStories: 0,
+    joined: 0,
+    skipped: 0,
+    covered: 0,
+  }
   if (items.length === 0) return report
 
-  const { docs: openDocs } = await ctx.payload.find({
-    collection: 'scout-stories',
-    where: {
-      updatedAt: { greater_than: new Date(ctx.now.getTime() - OPEN_WINDOW_MS).toISOString() },
-    },
-    sort: '-updatedAt',
-    limit: MAX_OPEN,
-    depth: 0,
-    select: { title: true },
-    overrideAccess: true,
-  })
-  const open: OpenStory[] = (openDocs as unknown as StoryDoc[]).map((s) => ({
-    id: Number(s.id),
-    title: s.title,
-  }))
+  const open = await openStories(ctx)
+  const covered = await coveredArticles(ctx)
   const batch: TriageItem[] = items.map((i, index) => ({
     index,
     title: i.title,
@@ -143,7 +211,7 @@ export async function triage(ctx: ScoutContext, settings: SettingsDoc): Promise<
       apiKey: ctx.config.anthropicKey!,
       model: ctx.config.triageModel,
       system: TRIAGE_SYSTEM,
-      prompt: triagePrompt(batch, open),
+      prompt: triagePrompt(batch, open, covered),
       tool: TRIAGE_TOOL as unknown as Parameters<typeof callTool>[0]['tool'],
       maxTokens: 6000,
       fetchImpl: ctx.fetch,
@@ -157,7 +225,7 @@ export async function triage(ctx: ScoutContext, settings: SettingsDoc): Promise<
     answer = result.input
   }
 
-  const decisions = decide(answer, batch, open)
+  const decisions = decide(answer, batch, open, covered)
   const created = new Map<string, number>() // new-story key → id
   const touched = new Set<number>()
 
@@ -190,6 +258,8 @@ export async function triage(ctx: ScoutContext, settings: SettingsDoc): Promise<
       } else {
         report.joined++
       }
+    } else if (d.kind === 'covered') {
+      report.covered++
     } else {
       report.skipped++
     }

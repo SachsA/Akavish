@@ -11,7 +11,21 @@ describe('scoreStory', () => {
   it('puts an official announcement of a big game well above the threshold', () => {
     expect(
       scoreStory({ significance: 90, sourceCount: 4, bestReliability: 'official', ageHours: 1 }),
-    ).toBe(88)
+    ).toBe(94)
+  })
+
+  it('lets good single-source news reach 60 (official post, big story from an outlet)', () => {
+    // An official CS2 update (Steam), a star transfer on VLR.gg, a Sensor Tower figure.
+    expect(
+      scoreStory({ significance: 65, sourceCount: 1, bestReliability: 'official', ageHours: 1 }),
+    ).toBeGreaterThanOrEqual(60)
+    expect(
+      scoreStory({ significance: 75, sourceCount: 1, bestReliability: 'high', ageHours: 1 }),
+    ).toBeGreaterThanOrEqual(60)
+    // A small patch of another game from one outlet stays well below.
+    expect(
+      scoreStory({ significance: 30, sourceCount: 1, bestReliability: 'high', ageHours: 1 }),
+    ).toBeLessThan(40)
   })
 
   it('keeps a lone leaker below it until others pick the story up', () => {
@@ -37,7 +51,7 @@ describe('scoreStory', () => {
     ).toBe(100)
     expect(
       scoreStory({ significance: 60, sourceCount: 1, bestReliability: 'high', ageHours: 30 }),
-    ).toBe(30)
+    ).toBe(41)
     expect(
       scoreStory({ significance: 10, sourceCount: 1, bestReliability: 'variable', ageHours: 100 }),
     ).toBe(0)
@@ -154,10 +168,35 @@ describe('triage answer handling', () => {
     expect([...d.values()].every((x) => x.kind === 'new')).toBe(true)
   })
 
-  it('the prompt lists open stories by id and items by index', () => {
-    const p = triagePrompt(items.slice(0, 1), [{ id: 7, title: 'GTA 6 trailer' }])
-    expect(p).toContain('S7: GTA 6 trailer')
+  it('the prompt lists articles, open stories with their game, and items', () => {
+    const p = triagePrompt(
+      items.slice(0, 1),
+      [{ id: 7, title: 'GTA 6 trailer', game: 'GTA 6' }],
+      [{ id: 29, title: 'PS5 passes 100 million units shipped' }],
+    )
+    expect(p).toContain('A29: PS5 passes 100 million units shipped')
+    expect(p).toContain('S7: GTA 6 trailer [GTA 6]')
     expect(p).toContain('[0] (IGN) GTA 6 trailer 3')
+    expect(triagePrompt(items.slice(0, 1), [])).toContain(
+      'Already on Akavish (last 3 weeks):\n(none)',
+    )
+  })
+
+  it('an item repeating a listed article is "covered", an unknown article is skipped', () => {
+    const d = decide(
+      {
+        new_stories: [],
+        assignments: [
+          { item: 0, story: 'a29' },
+          { item: 1, story: 'A404' },
+        ],
+      },
+      items,
+      [],
+      [{ id: 29, title: 'PS5 passes 100 million units shipped' }],
+    )
+    expect(d.get(0)).toEqual({ kind: 'covered', articleId: 29 })
+    expect(d.get(1)).toEqual({ kind: 'skip' })
   })
 })
 

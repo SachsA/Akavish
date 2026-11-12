@@ -35,6 +35,7 @@ export interface RunReport {
     newStories: number
     joined: number
     skipped: number
+    covered?: number
     skippedReason?: string
   }
   drafted?: number

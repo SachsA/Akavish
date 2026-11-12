@@ -239,12 +239,23 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    URLs normalised, items older than 48 h or already seen skipped, general
    outlets filtered to games stories. Stored as `scout-items` (kept 30 days).
 3. **Triage** (`triage.ts`, `triage-prompt.ts`): up to 40 new items per run go
-   to Claude Haiku with the open stories of the last 3 days; the answer is a
-   forced tool call (JSON). Each item joins a story, starts one, or is skipped.
-   Anything odd in the answer becomes a skip, never a crash.
-4. **Score** (`score.ts`): significance (the model's estimate) + independent
-   sources + best reliability − age, out of 100. Threshold 60 by default
-   (*Scout settings*).
+   to Claude Haiku with (a) Akavish's articles of the last 3 weeks (`A<id>`),
+   (b) the open stories of the last 3 days with their game: every story that
+   matters (score 35+, or drafted, published or rejected; up to 250) plus the
+   80 latest. The answer is a forced tool call (JSON). Each item joins a
+   story, starts one, repeats an article (`A<id>`: set aside as `ignored`,
+   counted as `covered`), or is skipped. Anything odd in the answer becomes a
+   skip, never a crash. Until 2026-11-12 only the 80 latest stories were
+   shown, a few hours' worth, so the same news reported the next day became
+   a second story.
+4. **Score** (`score.ts`): significance × 0.6 (0-60) + 5 per extra outlet
+   (0-20) + best reliability (official 25, established outlet 15, leaker 0)
+   − age, out of 100. Threshold 60 by default (*Scout settings*). Retuned on
+   2026-11-12 so good single-source news (an official post about a focus
+   game, a big story from one outlet) can reach 60 on its own, while a lone
+   leaker can't; the significance guide in `triage-prompt.ts` ranks the
+   focus games' official updates, hugely anticipated games, a game's fate,
+   market data (Sensor Tower, Circana) and star transfers higher.
 5. **Drafts** (`draft.ts`, `draft-prompt.ts`, `extract.ts`), only when
    *Scout settings → draftsEnabled* is ticked (off by default): up to 3 stories
    per run (and `maxDraftsPerDay`) at or above the threshold, under 24 h old.
