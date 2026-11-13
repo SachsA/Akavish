@@ -94,6 +94,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   server to server with `READER_API_SECRET` after checking the Clerk session
   (`apps/web/src/lib/readers.ts`, `/api/bookmarks`, `/account`); Clerk's
   webhook (`/api/clerk/webhook`) syncs profiles and deletes on account deletion.
+- **Comments:** `apps/cms/src/lib/comments.ts` (rules, moderation, reports to
+  the Discord moderation channel `MODERATION_DISCORD_WEBHOOK_URL`) behind
+  `/api/comments*` on the web (`components/Comments.tsx`). Kill switch:
+  `/admin` → Community settings. Every write needs a verified email.
 - **Search:** `/api/search` queries the CMS (Postgres `ILIKE`) by default and
   switches to Meilisearch when `MEILISEARCH_HOST` is set (indexing hooks in the
   CMS). Meilisearch failures fall back to the CMS. Currently running on the

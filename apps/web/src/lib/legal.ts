@@ -108,8 +108,8 @@ export const PROCESSORS: Processor[] = [
     url: 'https://neon.tech/privacy-policy',
     region: 'EU/US',
     data: {
-      en: 'Article content, editor accounts, reader accounts (name, email address, avatar, role and saved articles) and the email address of newsletter subscribers.',
-      fr: "Contenu des articles, comptes des rédacteurs, comptes des lecteurs (nom, adresse e-mail, avatar, rôle et articles enregistrés) et adresse e-mail des abonnés à la newsletter.",
+      en: 'Article content, editor accounts, reader accounts (name, email address, avatar, role, saved articles, comments, likes and dislikes, reports) and the email address of newsletter subscribers.',
+      fr: "Contenu des articles, comptes des rédacteurs, comptes des lecteurs (nom, adresse e-mail, avatar, rôle, articles enregistrés, commentaires, likes et dislikes, signalements) et adresse e-mail des abonnés à la newsletter.",
     },
     purpose: {
       en: 'Hosts the database behind the site.',
@@ -127,6 +127,19 @@ export const PROCESSORS: Processor[] = [
     purpose: {
       en: 'Sends the back-office emails and the newsletter.',
       fr: "Envoie les e-mails du back-office et la newsletter.",
+    },
+  },
+  {
+    name: 'Discord',
+    url: 'https://discord.com/privacy',
+    region: 'US',
+    data: {
+      en: 'When a comment is reported: its text, the reason and note given, and links to it. Never the name of who wrote or reported it.',
+      fr: "Quand un commentaire est signalé : son texte, le motif et la note indiqués, et des liens vers lui. Jamais le nom de son auteur ni de la personne qui l'a signalé.",
+    },
+    purpose: {
+      en: 'Alerts our moderators in a private channel.',
+      fr: 'Alerte nos modérateurs dans un salon privé.',
     },
   },
 ]

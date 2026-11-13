@@ -87,6 +87,11 @@ jobs:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       # Meilisearch intentionally unset — indexing/search degrade gracefully.
+      # --- Both ---
+      # Web ↔ CMS reader API (saved articles, comments). Same value on both
+      # apps, as in production; without it the comments section says it's
+      # unavailable and the e2e test of it fails.
+      READER_API_SECRET: ci_reader_secret_not_used_in_prod
 
     steps:
       - uses: actions/checkout@v7

@@ -1,5 +1,6 @@
 import { ValidationError, type CollectionConfig } from 'payload'
 import { admins, adminsField } from '../access/roles'
+import { removeReaderCommunityData } from '../lib/comments'
 
 export const READER_ROLES = ['owner', 'admin', 'moderator', 'author', 'reader'] as const
 export type ReaderRole = (typeof READER_ROLES)[number]
@@ -24,8 +25,8 @@ export const Readers: CollectionConfig = {
   labels: { singular: 'Reader', plural: 'Readers' },
   admin: {
     group: 'Readers',
-    useAsTitle: 'displayName',
-    defaultColumns: ['displayName', 'email', 'role', 'createdAt'],
+    useAsTitle: 'username',
+    defaultColumns: ['username', 'displayName', 'email', 'role', 'banned', 'createdAt'],
     description:
       'People with an account on the site (Clerk). Set the role here: it is the badge next to their name. Only one Owner.',
   },
@@ -64,6 +65,9 @@ export const Readers: CollectionConfig = {
           overrideAccess: true,
           req,
         })
+        // Comments, votes and reports (src/lib/comments.ts): a comment with
+        // replies stays as "Comment deleted" so the thread still reads.
+        await removeReaderCommunityData(req.payload, id, req)
       },
     ],
   },
@@ -77,7 +81,21 @@ export const Readers: CollectionConfig = {
       index: true,
       admin: { readOnly: true },
     },
-    { name: 'displayName', type: 'text', admin: { readOnly: true } },
+    {
+      name: 'username',
+      label: 'Public name',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        description: 'Shown on their comments: the Clerk username, else the first name.',
+      },
+    },
+    {
+      name: 'displayName',
+      label: 'Full name',
+      type: 'text',
+      admin: { readOnly: true, description: 'Private (never shown on the site).' },
+    },
     { name: 'email', type: 'text', index: true, admin: { readOnly: true } },
     { name: 'imageUrl', label: 'Avatar URL', type: 'text', admin: { readOnly: true } },
     {
@@ -116,6 +134,29 @@ export const Readers: CollectionConfig = {
         position: 'sidebar',
         description: 'Their byline, for the Author badge. Filled from the CMS account when linked.',
       },
+    },
+    {
+      name: 'banned',
+      type: 'checkbox',
+      defaultValue: false,
+      access: { update: adminsField },
+      admin: {
+        position: 'sidebar',
+        description: 'Can no longer comment, vote, report or save. Their comments stay unless you delete them.',
+      },
+    },
+    {
+      name: 'emailVerified',
+      label: 'Email verified',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { position: 'sidebar', readOnly: true, description: 'Only verified accounts can write.' },
+    },
+    {
+      name: 'clerkCreatedAt',
+      label: 'Account created',
+      type: 'date',
+      admin: { position: 'sidebar', readOnly: true },
     },
     { name: 'lastSeenAt', type: 'date', admin: { position: 'sidebar', readOnly: true } },
   ],

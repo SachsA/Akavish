@@ -35,6 +35,27 @@ export default function TermsPage() {
         yourself. Accounts used to abuse the site may be suspended without notice.
       </p>
 
+      <h2>Comments</h2>
+      <p>
+        Any account with a verified email address can comment, reply, like, dislike and report. You
+        are responsible for what you post, and you keep the rights to it; by posting, you let us show it
+        on Akavish. Comments are plain text, up to 2,000 characters, and cannot be edited, only
+        deleted.
+      </p>
+      <p>
+        Disagree as much as you like, about games. Not allowed: harassment, insults, hate speech or
+        threats; anything illegal (including copyright infringement and other people&rsquo;s personal
+        data); spam, advertising and repeated posts; pretending to be someone else, including an
+        Akavish author. Comments are moderated after they are posted: moderators may hide or delete a
+        comment, and we may suspend an account, without notice.
+      </p>
+      <p>
+        <strong>Reporting.</strong> Use &ldquo;Report&rdquo; under any comment, or write to{' '}
+        <a href={`mailto:${PUBLISHER.contactEmail}`}>{PUBLISHER.contactEmail}</a>. Reports go to our moderators; a
+        comment reported by several readers is hidden until they review it, and illegal content is
+        removed promptly once we know of it.
+      </p>
+
       <h2>Editorial standards, leaks and rumours</h2>
       <p>
         Akavish covers leaks, rumours and unconfirmed reports, and labels them as such. Anything in

@@ -8,7 +8,7 @@ import { Pagination } from '@/components/Pagination'
 import { RoleBadge } from '@/components/RoleBadge'
 import { SavedArticleList, type SavedItem } from '@/components/SavedArticleList'
 import { parsePage } from '@/lib/pagination'
-import { fetchSavedArticles, syncReader, type Reader } from '@/lib/readers'
+import { fetchSavedArticles, profileFromUser, syncReader, type Reader } from '@/lib/readers'
 import { log } from '@/lib/log'
 
 // The signed-in reader's page: who they are (with their badge) and the
@@ -34,15 +34,8 @@ export default async function AccountPage({
   const user = await currentUser()
   if (!user) redirect('/sign-in?redirect_url=/account')
 
-  const primary = user.primaryEmailAddress
-  const profile = {
-    clerkId: user.id,
-    email: primary?.emailAddress ?? null,
-    emailVerified: primary?.verification?.status === 'verified',
-    displayName: user.fullName || user.username || null,
-    imageUrl: user.imageUrl || null,
-  }
-  const name = profile.displayName ?? profile.email ?? 'Reader'
+  const profile = profileFromUser(user)
+  const name = profile.displayName ?? profile.username ?? profile.email ?? 'Reader'
 
   // The CMS side (role, saved articles) can be down or not configured: the
   // page still shows who you are, and says the rest is unavailable.
@@ -86,6 +79,16 @@ export default async function AccountPage({
             <RoleBadge role={reader?.role} />
           </h1>
           {profile.email && <p className="text-sm text-zinc-400 truncate">{profile.email}</p>}
+          {reader && (
+            <p className="text-sm text-zinc-400">
+              Comments as <span className="text-zinc-200 font-medium">@{reader.username}</span>
+            </p>
+          )}
+          {!profile.emailVerified && (
+            <p className="text-sm text-danger">
+              Verify your email address (Manage account) to save articles and comment.
+            </p>
+          )}
           {reader?.authorSlug && (
             <Link
               href={`/author/${reader.authorSlug}`}

@@ -13,7 +13,7 @@
 //       POST   /api/reader-api/sync        { profile }               → { reader }
 //       GET    /api/reader-api/bookmarks   ?clerkId&page&limit       → saved articles, newest first
 //       GET    /api/reader-api/saved       ?clerkId&articles=1,2,3   → { saved: [ids] }
-//       POST   /api/reader-api/bookmarks   { clerkId, articleId }    → save
+//       POST   /api/reader-api/bookmarks   { profile, articleId }    → save (verified accounts)
 //       DELETE /api/reader-api/bookmarks   { clerkId, articleId }    → unsave
 //
 //  2. **Clerk's webhook** (POST /api/clerk/webhook, signed, CLERK_WEBHOOK_SECRET):
@@ -31,8 +31,14 @@ export interface ReaderProfile {
   clerkId: string
   email?: string | null
   emailVerified?: boolean
+  /** Full name: private, admins only. */
   displayName?: string | null
+  /** Clerk username: the public name (comments), first name as a fallback. */
+  username?: string | null
+  firstName?: string | null
   imageUrl?: string | null
+  /** When the Clerk account was created (ISO): new accounts wait before commenting. */
+  createdAt?: string | null
 }
 
 export interface ReaderView {
@@ -44,11 +50,19 @@ export interface ReaderView {
   role: ReaderRole
   /** Slug of the linked author profile (the badge links to it). */
   authorSlug: string | null
+  /** Public name, shown on comments. */
+  username: string
+  emailVerified: boolean
+  banned: boolean
 }
 
-type ReaderDoc = {
+export type ReaderDoc = {
   id: number | string
   clerkId: string
+  username?: string | null
+  emailVerified?: boolean | null
+  banned?: boolean | null
+  clerkCreatedAt?: string | null
   displayName?: string | null
   email?: string | null
   imageUrl?: string | null
@@ -63,18 +77,18 @@ export function isClerkId(value: unknown): value is string {
   return typeof value === 'string' && CLERK_ID.test(value)
 }
 
-function clip(value: string | null | undefined, max: number): string | null {
+export function clip(value: string | null | undefined, max: number): string | null {
   const v = (value ?? '').trim()
   return v ? v.slice(0, max) : null
 }
 
-function idOf(value: unknown): number | string | null {
+export function idOf(value: unknown): number | string | null {
   if (value && typeof value === 'object' && 'id' in value) return (value as { id: number | string }).id
   if (typeof value === 'number' || typeof value === 'string') return value
   return null
 }
 
-async function findReader(payload: Payload, clerkId: string): Promise<ReaderDoc | null> {
+export async function findReader(payload: Payload, clerkId: string): Promise<ReaderDoc | null> {
   const { docs } = await payload.find({
     collection: 'readers',
     where: { clerkId: { equals: clerkId } },
@@ -115,6 +129,14 @@ export async function upsertReader(
   if (profile.displayName !== undefined) data.displayName = clip(profile.displayName, 80)
   if (profile.email !== undefined) data.email = clip(profile.email?.toLowerCase(), 254)
   if (profile.imageUrl !== undefined) data.imageUrl = clip(profile.imageUrl, 500)
+  if (profile.username !== undefined || profile.firstName !== undefined) {
+    data.username = publicNameOf(profile)
+  }
+  if (profile.emailVerified !== undefined) data.emailVerified = profile.emailVerified
+  if (profile.createdAt) {
+    const created = new Date(profile.createdAt)
+    if (!Number.isNaN(created.getTime())) data.clerkCreatedAt = created.toISOString()
+  }
 
   if (!existing?.cmsUser) {
     const link = await linkFor(payload, profile)
@@ -153,6 +175,14 @@ export async function upsertReader(
   return toView(doc as ReaderDoc)
 }
 
+/**
+ * The name shown publicly (comments): the Clerk username (required at sign-up
+ * since 2026-11-13), else the first name, never the full name or the email.
+ */
+export function publicNameOf(profile: Pick<ReaderProfile, 'username' | 'firstName'>): string {
+  return clip(profile.username, 40) ?? clip(profile.firstName, 40) ?? 'reader'
+}
+
 /** The reader for a Clerk id, created bare if it doesn't exist yet. */
 export async function ensureReader(payload: Payload, clerkId: string): Promise<ReaderDoc> {
   const found = await findReader(payload, clerkId)
@@ -173,6 +203,9 @@ export function toView(doc: ReaderDoc): ReaderView {
     imageUrl: doc.imageUrl ?? null,
     role: doc.role ?? 'reader',
     authorSlug: author && typeof author === 'object' && author.slug ? author.slug : null,
+    username: doc.username ?? 'reader',
+    emailVerified: doc.emailVerified === true,
+    banned: doc.banned === true,
   }
 }
 
@@ -274,7 +307,7 @@ export async function removeBookmark(
 
 // ─── HTTP: the website's calls ──────────────────────────────────────────────
 
-const json = (body: unknown, status = 200) =>
+export const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
@@ -287,7 +320,7 @@ function sameSecret(given: string, expected: string): boolean {
 }
 
 /** null when the call carries the right READER_API_SECRET, else the error response. */
-function checkSecret(headers: Headers): Response | null {
+export function checkSecret(headers: Headers): Response | null {
   const secret = process.env.READER_API_SECRET
   if (!secret) return json({ error: 'reader api not configured' }, 503)
   const auth = headers.get('authorization') ?? ''
@@ -295,7 +328,7 @@ function checkSecret(headers: Headers): Response | null {
   return given && sameSecret(given, secret) ? null : json({ error: 'unauthorized' }, 401)
 }
 
-async function readBody(req: { json?: () => Promise<unknown> }): Promise<Record<string, unknown>> {
+export async function readBody(req: { json?: () => Promise<unknown> }): Promise<Record<string, unknown>> {
   try {
     const body = await req.json?.()
     return body && typeof body === 'object' ? (body as Record<string, unknown>) : {}
@@ -304,9 +337,43 @@ async function readBody(req: { json?: () => Promise<unknown> }): Promise<Record<
   }
 }
 
-function articleIdOf(value: unknown): number | null {
+export function articleIdOf(value: unknown): number | null {
   const n = Number(value)
   return Number.isInteger(n) && n > 0 ? n : null
+}
+
+/** The `profile` the website sends (from Clerk's currentUser()), checked field by field. */
+export function profileFromBody(p: Record<string, unknown>): ReaderProfile {
+  const text = (v: unknown) => (typeof v === 'string' ? v : null)
+  return {
+    clerkId: String(p.clerkId),
+    email: text(p.email),
+    emailVerified: p.emailVerified === true,
+    displayName: text(p.displayName),
+    username: text(p.username),
+    firstName: text(p.firstName),
+    imageUrl: text(p.imageUrl),
+    createdAt: text(p.createdAt),
+  }
+}
+
+/**
+ * Who may write (save, comment, vote, report): a known Clerk account with a
+ * verified email, not banned. Refreshes the reader from the profile on the way.
+ * Returns the reader, or the error response.
+ */
+export async function writerFrom(
+  payload: Payload,
+  raw: unknown,
+): Promise<{ reader: ReaderDoc; profile: ReaderProfile } | { error: Response }> {
+  const p = (raw ?? {}) as Record<string, unknown>
+  if (!isClerkId(p.clerkId)) return { error: json({ error: 'invalid clerkId' }, 400) }
+  const profile = profileFromBody(p)
+  await upsertReader(payload, profile)
+  const reader = (await findReader(payload, profile.clerkId))!
+  if (!profile.emailVerified) return { error: json({ error: 'unverified' }, 403) }
+  if (reader.banned) return { error: json({ error: 'banned' }, 403) }
+  return { reader, profile }
 }
 
 export const readerSyncHandler: PayloadHandler = async (req) => {
@@ -315,13 +382,7 @@ export const readerSyncHandler: PayloadHandler = async (req) => {
   const body = await readBody(req)
   const p = (body.profile ?? {}) as Record<string, unknown>
   if (!isClerkId(p.clerkId)) return json({ error: 'invalid clerkId' }, 400)
-  const reader = await upsertReader(req.payload, {
-    clerkId: p.clerkId,
-    email: typeof p.email === 'string' ? p.email : null,
-    emailVerified: p.emailVerified === true,
-    displayName: typeof p.displayName === 'string' ? p.displayName : null,
-    imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : null,
-  })
+  const reader = await upsertReader(req.payload, profileFromBody(p))
   return json({ reader })
 }
 
@@ -339,16 +400,21 @@ export const readerBookmarksHandler: PayloadHandler = async (req) => {
   }
 
   const body = await readBody(req)
-  if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
   const articleId = articleIdOf(body.articleId)
-  if (articleId === null) return json({ error: 'invalid articleId' }, 400)
-  const reader = await ensureReader(req.payload, body.clerkId)
 
   if (req.method === 'DELETE') {
+    // Unsaving is always allowed, even for a banned or unverified account.
+    if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    if (articleId === null) return json({ error: 'invalid articleId' }, 400)
+    const reader = await ensureReader(req.payload, body.clerkId)
     await removeBookmark(req.payload, reader.id, articleId)
     return json({ saved: false })
   }
-  const outcome = await addBookmark(req.payload, reader.id, articleId)
+  // Saving: a verified account (the full profile, not just an id).
+  const writer = await writerFrom(req.payload, body.profile)
+  if ('error' in writer) return writer.error
+  if (articleId === null) return json({ error: 'invalid articleId' }, 400)
+  const outcome = await addBookmark(req.payload, writer.reader.id, articleId)
   return outcome === 'saved' ? json({ saved: true }) : json({ error: 'article not found' }, 404)
 }
 
@@ -396,6 +462,7 @@ export function verifyClerkWebhook(
 
 type ClerkUser = {
   id?: string
+  created_at?: number | null
   first_name?: string | null
   last_name?: string | null
   username?: string | null
@@ -420,7 +487,10 @@ export function profileFromClerk(user: ClerkUser): ReaderProfile | null {
     email: primary?.email_address ?? null,
     emailVerified: primary?.verification?.status === 'verified',
     displayName: name || user.username || null,
+    username: user.username ?? null,
+    firstName: user.first_name ?? null,
     imageUrl: user.image_url ?? null,
+    createdAt: typeof user.created_at === 'number' ? new Date(user.created_at).toISOString() : null,
   }
 }
 

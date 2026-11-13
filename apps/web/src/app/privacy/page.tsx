@@ -53,7 +53,18 @@ export default function PrivacyPage() {
         (Neon) keeps a copy of your account’s name, email address and avatar
         as Clerk has them, your role on the site (the badge shown next to your
         name, such as “Author”) and the articles you save, so we can show them on
-        your account page. Deleting your account deletes all of it.
+        your account page.
+      </p>
+      <p>
+        <strong>If you comment.</strong> Your public name (your username, or
+        your first name if you have none), your comment, its date and your badge
+        are public under the article. We also keep your likes and dislikes, and
+        the reports you make (which comment, the reason, your note). When a
+        comment is reported, its text and the reason are sent to our private
+        moderation channel on Discord, without anyone&rsquo;s name. You can delete
+        your own comments at any time. Deleting your account deletes all of it:
+        a comment others replied to stays as &ldquo;Comment deleted&rdquo;,
+        without your name or your text.
       </p>
       <p>
         <strong>If you subscribe to the newsletter.</strong> We store your email
@@ -101,7 +112,10 @@ export default function PrivacyPage() {
       <p>
         Serving the site and keeping it secure and working rests on our legitimate
         interest in running a functioning publication. Your account exists because
-        you asked for it — that is performance of a contract. The newsletter
+        you asked for it — that is performance of a contract; so are your
+        comments and votes. Moderating comments rests on our legitimate interest
+        in a civil discussion and on our legal duty to remove illegal content
+        once it is reported to us. The newsletter
         rests on your consent, given by ticking the box on the sign-up form; you
         can withdraw it at any time with the unsubscribe link or by writing to
         us.
@@ -111,7 +125,9 @@ export default function PrivacyPage() {
       <p>
         Server logs and error reports are kept for a short operational period —
         Sentry retains events for 30 days on our plan. Account data lives for as
-        long as your account does; delete it and it goes. A newsletter
+        long as your account does; delete it and it goes. A comment stays until
+        you delete it, a moderator removes it or your account goes; reports go
+        with the comment. A newsletter
         subscription is kept until you unsubscribe, which deletes it at once; a
         sign-up you never confirm is deleted after 30 days. Emails you send us
         are kept while the conversation is useful.

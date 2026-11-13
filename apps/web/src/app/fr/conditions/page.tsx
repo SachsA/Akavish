@@ -39,6 +39,28 @@ export default function ConditionsPage() {
         identifiants. Un compte utilisé pour nuire au site peut être suspendu sans préavis.
       </p>
 
+      <h2>Commentaires</h2>
+      <p>
+        Tout compte dont l’adresse e-mail est vérifiée peut commenter, répondre, liker, disliker et
+        signaler. Vous êtes responsable de ce que vous publiez et vous en gardez les droits ; en le
+        publiant, vous nous autorisez à l’afficher sur Akavish. Les commentaires sont en texte simple,
+        2 000 caractères au plus, et ne se modifient pas : ils se suppriment.
+      </p>
+      <p>
+        Débattez autant que vous voulez, des jeux. Interdits : le harcèlement, les insultes, les propos
+        haineux ou les menaces ; tout contenu illicite (y compris la contrefaçon et les données
+        personnelles d’autrui) ; le spam, la publicité et les messages répétés ; se faire passer pour
+        quelqu’un d’autre, y compris pour un auteur d’Akavish. La modération a lieu après publication :
+        les modérateurs peuvent masquer ou supprimer un commentaire, et nous pouvons suspendre un
+        compte, sans préavis.
+      </p>
+      <p>
+        <strong>Signalement.</strong> Utilisez « Report » sous n’importe quel commentaire, ou écrivez à{' '}
+        <a href={`mailto:${PUBLISHER.contactEmail}`}>{PUBLISHER.contactEmail}</a>. Les signalements vont aux
+        modérateurs ; un commentaire signalé par plusieurs lecteurs est masqué en attendant leur
+        examen, et un contenu illicite est retiré promptement dès que nous en avons connaissance.
+      </p>
+
       <h2>Ligne éditoriale, fuites et rumeurs</h2>
       <p>
         Akavish traite de fuites, de rumeurs et d’informations non confirmées, et les signale comme

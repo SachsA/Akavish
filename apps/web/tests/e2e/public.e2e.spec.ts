@@ -104,6 +104,19 @@ test('Save on an article is for signed-in readers', async ({ page, request }) =>
   expect((await request.post('/api/bookmarks', { data: { articleId: '1' } })).status()).toBe(401)
 })
 
+test('comments: listed under the article, posting is for signed-in readers', async ({ page, request }) => {
+  await page.goto('/article/neon-drift-review')
+  const section = page.getByRole('region', { name: /Comments/ })
+  await expect(section.getByRole('heading', { name: /^Comments/ })).toBeVisible()
+  await expect(section.getByRole('button', { name: 'Sign in to comment' })).toBeVisible()
+  const list = await request.get('/api/comments?article=1')
+  expect(list.status()).toBe(200)
+  expect((await list.json()).enabled).toBe(true)
+  const post = await request.post('/api/comments', { data: { articleId: '1', body: 'Hi' } })
+  expect(post.status()).toBe(401)
+  expect((await post.json()).code).toBe('signed-out')
+})
+
 test('renaming a published article redirects the old URL (308)', async ({ request }) => {
   // A throwaway article with a never-visited slug, so no cached page can answer
   // for the old URL. Deleted at the end.

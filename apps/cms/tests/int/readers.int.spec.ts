@@ -175,7 +175,10 @@ describe('reader accounts', () => {
       email: 'alex@example.com',
       emailVerified: false,
       displayName: 'Alex',
+      username: 'akavish',
+      firstName: 'Alex',
       imageUrl: 'https://img.clerk.com/x',
+      createdAt: null,
     })
     expect(profileFromClerk({ id: 'bad' })).toBeNull()
   })
@@ -262,9 +265,15 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     expect(sync.status).toBe(200)
     expect((await sync.json()).reader).toMatchObject({ clerkId: id, role: 'reader' })
 
-    expect((await readerBookmarksHandler(req({ body: { clerkId: id, articleId: 'x' } }))).status).toBe(400)
-    expect((await readerBookmarksHandler(req({ body: { clerkId: id, articleId: draft } }))).status).toBe(404)
-    const save = await readerBookmarksHandler(req({ body: { clerkId: id, articleId: published } }))
+    const profile = { clerkId: id, emailVerified: true }
+    expect((await readerBookmarksHandler(req({ body: { profile, articleId: 'x' } }))).status).toBe(400)
+    expect((await readerBookmarksHandler(req({ body: { profile, articleId: draft } }))).status).toBe(404)
+    // Saving needs a verified email.
+    const unverified = await readerBookmarksHandler(
+      req({ body: { profile: { clerkId: id, emailVerified: false }, articleId: published } }),
+    )
+    expect(unverified.status).toBe(403)
+    const save = await readerBookmarksHandler(req({ body: { profile, articleId: published } }))
     expect(await save.json()).toEqual({ saved: true })
 
     const saved = await readerSavedHandler(req({ method: 'GET', query: `clerkId=${id}&articles=${published},${draft}` }))

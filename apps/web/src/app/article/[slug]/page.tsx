@@ -13,6 +13,7 @@ import { ArticleCard } from '@/components/ArticleCard'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { ShareButtons } from '@/components/ShareButtons'
 import { SaveButton } from '@/components/SaveButton'
+import { Comments } from '@/components/Comments'
 import { countWords, readingTimeLabel, readingTimeMinutes } from '@/lib/reading-time'
 import { absoluteUrl, SITE_NAME } from '@/lib/site'
 import { categoryByValue } from '@/lib/categories'
@@ -258,6 +259,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <div className={`mt-8 ${article.tags.length > 0 ? '' : 'pt-6 border-t border-zinc-800'}`}>
         <ShareButtons url={shareUrl} title={article.title} />
       </div>
+
+      <Comments articleId={article.id} />
 
       <div className="mt-10">
         <NewsletterSignup source="article" title="Liked this? Get the newsletter" />

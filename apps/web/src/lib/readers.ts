@@ -23,6 +23,9 @@ export interface Reader {
   imageUrl: string | null
   role: ReaderRole
   authorSlug: string | null
+  username: string
+  emailVerified: boolean
+  banned: boolean
 }
 
 export interface ReaderProfile {
@@ -30,14 +33,59 @@ export interface ReaderProfile {
   email: string | null
   emailVerified: boolean
   displayName: string | null
+  /** The public name (comments); the first name stands in when it's missing. */
+  username: string | null
+  firstName: string | null
   imageUrl: string | null
+  /** When the Clerk account was created (ISO). */
+  createdAt: string | null
+}
+
+/** What Clerk's `currentUser()` gives, reduced to what the CMS keeps. */
+export function profileFromUser(user: {
+  id: string
+  fullName?: string | null
+  username?: string | null
+  firstName?: string | null
+  imageUrl?: string | null
+  createdAt?: number | null
+  primaryEmailAddress?: { emailAddress: string; verification?: { status?: string | null } | null } | null
+}): ReaderProfile {
+  const primary = user.primaryEmailAddress
+  return {
+    clerkId: user.id,
+    email: primary?.emailAddress ?? null,
+    emailVerified: primary?.verification?.status === 'verified',
+    displayName: user.fullName || user.username || null,
+    username: user.username ?? null,
+    firstName: user.firstName ?? null,
+    imageUrl: user.imageUrl || null,
+    createdAt: typeof user.createdAt === 'number' ? new Date(user.createdAt).toISOString() : null,
+  }
 }
 
 /** No secret configured, or the CMS didn't answer properly. */
 export class ReadersUnavailable extends Error {}
 
-/** The article to save doesn't exist (or isn't published). */
-export class NotFound extends Error {}
+/**
+ * The CMS refused the request for a reason the reader should hear about
+ * (`code`: unverified, banned, slow-down, duplicate, closed…).
+ */
+export class ReaderApiError extends Error {
+  constructor(
+    public code: string,
+    public status: number
+  ) {
+    super(code)
+  }
+}
+
+/** The article or comment doesn't exist (or isn't published). */
+export class NotFound extends ReaderApiError {
+  constructor() {
+    super('not-found', 404)
+  }
+}
 
 export function readersConfigured(): boolean {
   return Boolean(process.env.READER_API_SECRET)
@@ -64,6 +112,10 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; qu
     throw new ReadersUnavailable('CMS unreachable')
   }
   if (res.status === 404) throw new NotFound()
+  if ([400, 403, 409, 429].includes(res.status)) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    throw new ReaderApiError(body.error ?? 'refused', res.status)
+  }
   if (!res.ok) {
     log.warn('reader api answered an error', { path, status: res.status })
     throw new ReadersUnavailable(`CMS responded ${res.status}`)
@@ -109,10 +161,81 @@ export async function savedArticleIds(clerkId: string, articleIds: string[]): Pr
   return saved.map(String)
 }
 
-export async function saveArticle(clerkId: string, articleId: string): Promise<void> {
-  await call('bookmarks', { method: 'POST', body: { clerkId, articleId: Number(articleId) } })
+/** Saving needs the full profile: the CMS checks the email is verified. */
+export async function saveArticle(profile: ReaderProfile, articleId: string): Promise<void> {
+  await call('bookmarks', { method: 'POST', body: { profile, articleId: Number(articleId) } })
 }
 
 export async function unsaveArticle(clerkId: string, articleId: string): Promise<void> {
   await call('bookmarks', { method: 'DELETE', body: { clerkId, articleId: Number(articleId) } })
+}
+
+// ─── Comments (apps/cms/src/lib/comments.ts) ────────────────────────────────
+
+export type CommentStatus = 'visible' | 'hidden' | 'deleted'
+
+export interface CommentView {
+  id: number
+  parentId: number | null
+  replyToId: number | null
+  replyToName: string | null
+  status: CommentStatus
+  body: string | null
+  author: { name: string; role: ReaderRole } | null
+  createdAt: string
+  likes: number
+  dislikes: number
+  myVote: -1 | 0 | 1
+  mine: boolean
+  reported: boolean
+  replies?: CommentView[]
+}
+
+export interface CommentList {
+  enabled: boolean
+  closed: boolean
+  total: number
+  page: number
+  totalPages: number
+  comments: CommentView[]
+  viewer: { role: ReaderRole; canModerate: boolean; banned: boolean; verified: boolean } | null
+}
+
+export async function listComments(articleId: string, page: number, viewerClerkId: string | null) {
+  const query = new URLSearchParams({ article: articleId, page: String(page) })
+  if (viewerClerkId) query.set('clerkId', viewerClerkId)
+  return call<CommentList>('comments', { query })
+}
+
+export async function postComment(
+  profile: ReaderProfile,
+  input: { articleId: string; body: string; replyTo: number | null }
+) {
+  const { comment } = await call<{ comment: CommentView }>('comments', {
+    method: 'POST',
+    body: { profile, articleId: Number(input.articleId), body: input.body, replyTo: input.replyTo },
+  })
+  return comment
+}
+
+export async function deleteComment(profile: ReaderProfile, commentId: number) {
+  await call('comments', { method: 'DELETE', body: { profile, commentId } })
+}
+
+export async function voteComment(profile: ReaderProfile, commentId: number, value: -1 | 0 | 1) {
+  return call<{ likes: number; dislikes: number; myVote: -1 | 0 | 1 }>('comments/vote', {
+    method: 'POST',
+    body: { profile, commentId, value },
+  })
+}
+
+export async function reportComment(profile: ReaderProfile, commentId: number, reason: string, note: string) {
+  return call<{ reported: boolean; hidden: boolean }>('comments/report', {
+    method: 'POST',
+    body: { profile, commentId, reason, note },
+  })
+}
+
+export async function moderateComment(profile: ReaderProfile, commentId: number, action: 'hide' | 'restore') {
+  await call('comments/moderate', { method: 'POST', body: { profile, commentId, action } })
 }

@@ -63,7 +63,18 @@ export default function ConfidentialitePage() {
         l’adresse e-mail et de l’avatar de votre compte tels que Clerk les
         connaît, votre rôle sur le site (le badge affiché à côté de votre nom,
         par exemple « Author ») et les articles que vous enregistrez, pour les
-        afficher sur votre page de compte. Supprimer votre compte supprime tout.
+        afficher sur votre page de compte.
+      </p>
+      <p>
+        <strong>Si vous commentez.</strong> Votre nom public (votre nom
+        d’utilisateur, ou votre prénom à défaut), votre commentaire, sa date et
+        votre badge sont publics sous l’article. Nous conservons aussi vos likes
+        et dislikes, et vos signalements (quel commentaire, le motif, votre
+        note). Quand un commentaire est signalé, son texte et le motif sont
+        envoyés dans notre salon de modération privé sur Discord, sans aucun
+        nom. Vous pouvez supprimer vos commentaires à tout moment. Supprimer
+        votre compte supprime tout : un commentaire auquel d’autres ont répondu
+        reste affiché « Commentaire supprimé », sans votre nom ni votre texte.
       </p>
       <p>
         <strong>Si vous vous abonnez à la newsletter.</strong> Nous enregistrons
@@ -116,7 +127,10 @@ export default function ConfidentialitePage() {
         Servir le site, le sécuriser et le maintenir en état de marche relève de
         notre intérêt légitime à faire fonctionner une publication. Votre compte
         existe parce que vous l’avez demandé : il s’agit de l’exécution d’un
-        contrat. La newsletter repose sur votre consentement, donné en cochant la
+        contrat, tout comme vos commentaires et vos votes. La modération des
+        commentaires repose sur notre intérêt légitime à une discussion
+        respectueuse et sur notre obligation légale de retirer un contenu
+        illicite qui nous est signalé. La newsletter repose sur votre consentement, donné en cochant la
         case du formulaire d’inscription ; vous pouvez le retirer à tout moment
         avec le lien de désinscription ou en nous écrivant.
       </p>
@@ -126,7 +140,10 @@ export default function ConfidentialitePage() {
         Les journaux serveur et les rapports d’erreur sont conservés sur une durée
         opérationnelle courte — Sentry conserve les événements 30 jours sur notre
         formule. Les données de compte vivent aussi longtemps que le compte :
-        supprimez-le et elles disparaissent. Un abonnement à la newsletter est
+        supprimez-le et elles disparaissent. Un commentaire reste jusqu’à ce que
+        vous le supprimiez, qu’un modérateur le retire ou que votre compte
+        disparaisse ; les signalements partent avec le commentaire. Un
+        abonnement à la newsletter est
         conservé jusqu’à votre désinscription, qui le supprime aussitôt ; une
         inscription jamais confirmée est supprimée au bout de 30 jours. Les
         e-mails que vous nous adressez sont conservés le temps utile à

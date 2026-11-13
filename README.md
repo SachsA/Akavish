@@ -60,9 +60,10 @@ cover and the official videos), and asks
 for a Publish / Edit / Reject click in a private Discord channel (`apps/cms/README.md` → AI scout). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately, as admin, editor or writer. A reader account saves articles
-(listed on `/account`) and carries a role badge (Owner, Admin, Mod, Author);
-the CMS keeps those in `readers` and `bookmarks` (`apps/cms/README.md` →
-Reader accounts, `DEPLOYMENT.md` §6.5b).
+(listed on `/account`), comments under articles (replies, likes, reports) and
+carries a role badge (Owner, Admin, Mod, Author); the CMS keeps those in
+`readers`, `bookmarks` and `comments` (`apps/cms/README.md` → Reader accounts,
+Comments; `DEPLOYMENT.md` §6.5b, §6.5c).
 
 In production, with the services around them:
 

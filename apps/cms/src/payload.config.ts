@@ -15,6 +15,7 @@ import { Games } from './collections/Games'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
 import { Bookmarks, Readers } from './collections/Readers'
+import { CommentReports, Comments, CommentVotes, CommunitySettings } from './collections/Comments'
 import { ScoutItems } from './collections/scout/ScoutItems'
 import { ScoutSettings } from './collections/scout/ScoutSettings'
 import { ScoutSources } from './collections/scout/ScoutSources'
@@ -33,6 +34,12 @@ import {
   readerSavedHandler,
   readerSyncHandler,
 } from './lib/readers'
+import {
+  commentModerateHandler,
+  commentReportHandler,
+  commentsHandler,
+  commentVoteHandler,
+} from './lib/comments'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -73,6 +80,10 @@ export default buildConfig({
     // Reader accounts (Clerk) and their saved articles (src/lib/readers.ts).
     Readers,
     Bookmarks,
+    // Comments under articles (src/lib/comments.ts).
+    Comments,
+    CommentVotes,
+    CommentReports,
     // The AI scout (src/scout/, design doc linked in PROGRESS.md).
     ScoutSources,
     ScoutItems,
@@ -80,7 +91,7 @@ export default buildConfig({
     ScoutUsage,
     ScoutEvents,
   ],
-  globals: [ScoutSettings],
+  globals: [ScoutSettings, CommunitySettings],
   // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).
   // Public on purpose: no login, no access to the collection itself.
   endpoints: [
@@ -100,6 +111,12 @@ export default buildConfig({
     { path: '/reader-api/bookmarks', method: 'post', handler: readerBookmarksHandler },
     { path: '/reader-api/bookmarks', method: 'delete', handler: readerBookmarksHandler },
     { path: '/reader-api/saved', method: 'get', handler: readerSavedHandler },
+    { path: '/reader-api/comments', method: 'get', handler: commentsHandler },
+    { path: '/reader-api/comments', method: 'post', handler: commentsHandler },
+    { path: '/reader-api/comments', method: 'delete', handler: commentsHandler },
+    { path: '/reader-api/comments/vote', method: 'post', handler: commentVoteHandler },
+    { path: '/reader-api/comments/report', method: 'post', handler: commentReportHandler },
+    { path: '/reader-api/comments/moderate', method: 'post', handler: commentModerateHandler },
     { path: '/clerk/webhook', method: 'post', handler: clerkWebhookHandler },
   ],
   // Jobs queue, used by scheduled publishing (Articles → "Schedule publish").

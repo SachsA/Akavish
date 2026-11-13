@@ -18,7 +18,7 @@ export function SaveButton({ articleId }: { articleId: string }) {
   const { isLoaded, isSignedIn } = useAuth()
   const [saved, setSaved] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isSignedIn) return
@@ -51,7 +51,7 @@ export function SaveButton({ articleId }: { articleId: string }) {
     if (saved === null || busy) return
     const next = !saved
     setBusy(true)
-    setError(false)
+    setError(null)
     setSaved(next) // optimistic
     try {
       const res = await fetch(
@@ -64,10 +64,13 @@ export function SaveButton({ articleId }: { articleId: string }) {
             }
           : { method: 'DELETE' }
       )
-      if (!res.ok) throw new Error(String(res.status))
-    } catch {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.message ?? 'Didn’t work, try again.')
+      }
+    } catch (err) {
       setSaved(!next)
-      setError(true)
+      setError((err as Error).message)
     } finally {
       setBusy(false)
     }
@@ -86,8 +89,8 @@ export function SaveButton({ articleId }: { articleId: string }) {
         {saved ? 'Saved' : 'Save'}
       </button>
       {error && (
-        <span role="status" className="text-xs text-danger">
-          Didn’t work, try again.
+        <span role="status" className="text-xs text-danger max-w-56">
+          {error}
         </span>
       )}
     </span>

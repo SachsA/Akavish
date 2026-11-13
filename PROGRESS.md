@@ -102,7 +102,8 @@ Last updated: **2026-11-06**.
 | ✅     | Reader area `/account`           | 2026-11-13 — name, avatar, email, role badge, "Manage account" (Clerk's profile) and sign out, saved articles (12 a page, Remove). Linked from the avatar menu ("Saved articles"). Personal: no cache, noindex |
 | ✅     | Saved articles                   | 2026-11-13 — **Save** on every article page (signed out it opens sign-in), `/api/bookmarks` (reader from Clerk's `auth()`, 60/min, `private, no-store`, same-origin only) → CMS `bookmarks`. Published articles only; an unpublished or deleted one drops off |
 | ✅     | Sync Clerk users → CMS           | 2026-11-13 — `readers` collection, one row per Clerk account, created on the first visit to `/account` or first Save (`READER_API_SECRET`, server to server) and kept in sync by Clerk's webhook (`/api/clerk/webhook`, Svix signature): deleting the account deletes the reader and their saved articles. `DEPLOYMENT.md` §6.5b |
-| ✅     | Reader roles and badges          | 2026-11-13 — Owner (one account only), Admin, Mod, Author, Reader, set by an admin in `/admin` → Readers. A reader whose verified email is a CMS user's is linked to it and its author profile and shown as Author. Badge on `/account` now, next to the name in comments once they exist |
+| ✅     | Reader roles and badges          | 2026-11-13 — Owner (one account only), Admin, Mod, Author, Reader, set by an admin in `/admin` → Readers. A reader whose verified email is a CMS user's is linked to it and its author profile and shown as Author. Badge on `/account` and next to the name on comments |
+| ✅     | Comments                         | 2026-11-13 — under every article (`components/Comments.tsx`, CMS `src/lib/comments.ts`). Verified, unbanned readers only; plain text, 2,000 characters, no images, links stay text; threads one level deep with "Replying to @name"; like / dislike (not your own), top comments by likes then oldest, replies oldest first; no editing, delete your own (a comment with replies stays as "Comment deleted"); Owner / Admin / Mod readers hide, restore and delete anyone's. Anti-spam: one every 30 s, 30 a day, no duplicates, accounts under 10 minutes old wait. **Report** (spam, harassment, illegal, other + note): once per reader, goes to `/admin` → Community → Reports and to a private Discord moderation channel (`MODERATION_DISCORD_WEBHOOK_URL`); 3 reports from different readers hide the comment until a moderator restores it. Switches: `/admin` → Community settings → *Comments on* (everything, at once) and *Comments closed* per article. Public name = Clerk username (required at sign-up since 2026-11-13). Terms (community rules, reporting) and privacy, EN + FR, and Discord added to the processors. `DEPLOYMENT.md` §6.5c |
 | ✅     | Editorial roles                  | 2026-11-13 — CMS users are admin / editor / writer (`apps/cms/src/access/roles.ts`): writers draft under their own author profile (Users → *Author profile*), can't publish, can't edit published or others' articles; editors publish anything; admins also manage users, subscribers and readers. Existing accounts became admins |
 
 ## Mobile (Expo)
@@ -218,7 +219,7 @@ Everything else waits on something:
 | --- | --- |
 | **The app being shipped** | Push notifications · store release (EAS) · app store assets · universal links |
 | **Traffic** | Hosted Meilisearch |
-| **Content and readers** | Everything in **🅿️ Parked**: sending the newsletter, analytics review, comments |
+| **Content and readers** | Everything in **🅿️ Parked**: sending the newsletter, analytics review |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
 i18n (EN + FR) is its own project — §6.
@@ -360,7 +361,6 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 | --- | --- |
 | Newsletter: the digest | Sign-ups are live since 2026-11-09 (see §1); what waits is **sending** issues: a digest template with the per-subscriber unsubscribe link (`unsubscribeUrl(id)` in `apps/cms/src/lib/newsletter.ts`) and a `List-Unsubscribe` header, sent to `status: confirmed` only. Resend's free tier is 100 emails/day, so a list past ~100 needs its paid plan or batched sends. The AI scout can feed it |
 | Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
-| Comments | Needs traffic, moderation and anti-spam (§5). Clerk production is live since 2026-11-10 |
 
 ---
 
@@ -381,7 +381,6 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
 | ✅  | Dark/light toggle            | Done (2026-11-07) — follows the OS, sun/moon switch in the header remembers the choice (no flash on reload). Components keep the dark classes; `tailwind.config.ts` maps zinc/white/emerald text to CSS variables that flip in `globals.css`. axe-clean in both themes, header fits from 320 px |
 | ✅  | Conferences in the header     | Done (2026-11-12) — the section links (News, Leaks, Reviews, Esport, Conferences) show from 1024 px; below that the swipeable strip of every section (was phones only, the header overflowed between 640 and 1024 px) |
-| P3  | Comments                     | Reader comments: reader accounts and role badges are ready (2026-11-13); needs the comments store, moderation (report, hide) and anti-spam |
 
 ### UX & quality
 
@@ -481,7 +480,7 @@ this list every time the website gets a reader-facing feature.
 | --- | --- |
 | Reader accounts (11-10, Clerk) | Clerk Expo SDK: sign in / sign up with Google, Discord, Twitch (OAuth redirects, needs a dev build, not Expo Go) |
 | Saved articles + `/account` (11-13) | Save button on the article screen, a "Saved" screen; a reader-authenticated API (today `/api/bookmarks` takes Clerk's web session: the app would send a Clerk session token) |
-| Reader badges (11-13) | `RoleBadge` next to the reader's name (account screen, comments later) |
+| Reader badges (11-13) | `RoleBadge` next to the reader's name (account screen, comments) |
 | Search with suggestions and filters (11-13) | A search screen on `/api/search` (`games=1`, `facets=1`, `category`, `game`, highlighting from `lib/search-query.ts`) |
 | Game pages, *Also covers* (11-12) | A game screen (cover, studio, platforms, its articles incl. `relatedGames`), linked from the article byline |
 | Tag and author pages | Tag and author screens, from the article's #tags and byline |
@@ -490,7 +489,7 @@ this list every time the website gets a reader-facing feature.
 | Read next, previous / next (11-07) | Under the article |
 | Newsletter sign-up (11-09) | A form (same CMS endpoint, consent box) |
 | Light theme (11-07) | Follow the phone's light / dark setting |
-| Comments (when the site has them) | Read and post, with badges and reporting |
+| Comments (11-13) | Read, post, reply ("Replying to @name"), like / dislike, delete your own, report; moderators hide / restore / delete; same `/api/comments*` rules, with a Clerk session token |
 
 ## 8. Infrastructure, CI/CD & deployment
 

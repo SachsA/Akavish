@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchSavedArticles,
   NotFound,
+  profileFromUser,
   ReadersUnavailable,
   saveArticle,
   savedArticleIds,
@@ -11,6 +12,16 @@ import {
 import { roleBadge } from './roles'
 
 const calls: { url: string; init: RequestInit }[] = []
+const profile = {
+  clerkId: 'user_x',
+  email: 'a@b.c',
+  emailVerified: true,
+  displayName: 'A B',
+  username: 'ab',
+  firstName: 'A',
+  imageUrl: null,
+  createdAt: '2026-01-01T00:00:00.000Z',
+}
 function answer(status: number, body: unknown) {
   vi.stubGlobal(
     'fetch',
@@ -38,7 +49,10 @@ describe('reader api client', () => {
       email: 'a@b.c',
       emailVerified: true,
       displayName: 'A',
+      username: 'a',
+      firstName: 'A',
       imageUrl: null,
+      createdAt: null,
     })
     expect(reader.role).toBe('owner')
     expect(calls[0].url).toMatch(/\/api\/reader-api\/sync$/)
@@ -80,19 +94,21 @@ describe('reader api client', () => {
     answer(200, { saved: [7] })
     expect(await savedArticleIds('user_x', ['7', '8'])).toEqual(['7'])
     expect(calls[0].url).toContain('articles=7%2C8')
-    await saveArticle('user_x', '7')
-    expect(JSON.parse(String(calls[1].init.body))).toEqual({ clerkId: 'user_x', articleId: 7 })
+    await saveArticle(profile, '7')
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({ profile, articleId: 7 })
     await unsaveArticle('user_x', '7')
     expect(calls[2].init.method).toBe('DELETE')
   })
 
   it('tells "no such article" from "unavailable"', async () => {
     answer(404, { error: 'article not found' })
-    await expect(saveArticle('user_x', '9')).rejects.toBeInstanceOf(NotFound)
+    await expect(saveArticle(profile, '9')).rejects.toBeInstanceOf(NotFound)
+    answer(403, { error: 'unverified' })
+    await expect(saveArticle(profile, '9')).rejects.toMatchObject({ code: 'unverified', status: 403 })
     answer(500, {})
-    await expect(saveArticle('user_x', '9')).rejects.toBeInstanceOf(ReadersUnavailable)
+    await expect(saveArticle(profile, '9')).rejects.toBeInstanceOf(ReadersUnavailable)
     delete process.env.READER_API_SECRET
-    await expect(saveArticle('user_x', '9')).rejects.toBeInstanceOf(ReadersUnavailable)
+    await expect(saveArticle(profile, '9')).rejects.toBeInstanceOf(ReadersUnavailable)
   })
 })
 
@@ -104,5 +120,31 @@ describe('role badges', () => {
     expect(roleBadge('reader')).toBeNull()
     expect(roleBadge(undefined)).toBeNull()
     expect(roleBadge('toString')).toBeNull()
+  })
+})
+
+describe('profileFromUser', () => {
+  it('keeps what the CMS needs from a Clerk user', () => {
+    expect(
+      profileFromUser({
+        id: 'user_x',
+        fullName: 'Alex S',
+        username: 'akavish',
+        firstName: 'Alex',
+        imageUrl: 'https://img.clerk.com/a',
+        createdAt: Date.UTC(2026, 0, 1),
+        primaryEmailAddress: { emailAddress: 'a@b.c', verification: { status: 'verified' } },
+      })
+    ).toEqual({
+      clerkId: 'user_x',
+      email: 'a@b.c',
+      emailVerified: true,
+      displayName: 'Alex S',
+      username: 'akavish',
+      firstName: 'Alex',
+      imageUrl: 'https://img.clerk.com/a',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    })
+    expect(profileFromUser({ id: 'user_y', primaryEmailAddress: null }).emailVerified).toBe(false)
   })
 })

@@ -1,5 +1,6 @@
 import { APIError, type CollectionConfig, type Where } from 'payload'
 import { authorIdOf, editorRole, editors, isEditorUser, staff } from '../access/roles'
+import { purgeArticleComments } from '../lib/comments'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { slugField } from '../fields/slug'
 import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-search-sync'
@@ -121,6 +122,7 @@ export const Articles: CollectionConfig = {
           overrideAccess: true,
           req,
         })
+        await purgeArticleComments(req.payload, id, req)
       },
     ],
     afterDelete: [
@@ -228,6 +230,15 @@ export const Articles: CollectionConfig = {
         position: 'sidebar',
         description: 'Drafted with the AI scout. Shows a short note under the article.',
       },
+    },
+    {
+      // Close the comments of this article only (the site-wide switch is in
+      // Community settings). Existing comments stay visible, nobody can add one.
+      name: 'commentsClosed',
+      label: 'Comments closed',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { position: 'sidebar', description: 'Readers can still read the comments, not add any.' },
     },
     { name: 'game', type: 'relationship', relationTo: 'games', admin: { position: 'sidebar' } },
     {

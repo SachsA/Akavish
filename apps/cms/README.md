@@ -31,6 +31,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk), each with a `role` (admin / editor / writer) and an *Author profile*. See "Roles" below. Password resets go out via Resend — see below. |
 | `subscribers` | Newsletter sign-ups (double opt-in). Admins can read them; nobody can add one by hand. See "Newsletter" below. |
 | `readers`, `bookmarks` | Reader accounts (one per Clerk account) with their role badge, and their saved articles. Admins only; written by the site and Clerk's webhook. See "Reader accounts" below. |
+| `comments`, `comment-votes`, `comment-reports` + global `community-settings` | Comments under articles, likes / dislikes, reports, and the switches (comments on, reports before auto-hide). Admin group **Community**. See "Comments" below. |
 | `scout-sources`, `scout-items`, `scout-stories`, `scout-usage` + global `scout-settings` | The AI scout (admin group **Scout**). See "AI scout" below. |
 
 ### Slugs
@@ -238,6 +239,33 @@ webhook is set up. Rules, tested in `tests/int/readers.int.spec.ts`:
   the copies readers saved; an unpublished article just drops off the lists.
 
 Setup in production: `DEPLOYMENT.md` §6.5b.
+
+## Comments
+
+`src/lib/comments.ts`, behind the same `READER_API_SECRET` (the site checks
+the Clerk session, then sends the reader's Clerk profile):
+
+| Endpoint | Does |
+| --- | --- |
+| `GET /api/reader-api/comments?article&page&clerkId` | Top-level comments (20 a page, by likes then oldest) with their replies (oldest first), the visible total, and the viewer's votes, reports and rights |
+| `POST /api/reader-api/comments` `{ profile, articleId, body, replyTo? }` | Post or reply |
+| `DELETE /api/reader-api/comments` `{ profile, commentId }` | Your own, or anyone's as Owner / Admin / Mod |
+| `POST /api/reader-api/comments/vote` `{ profile, commentId, value }` | 1 like, -1 dislike, 0 take back (not on your own) |
+| `POST /api/reader-api/comments/report` `{ profile, commentId, reason, note? }` | Once per reader; posted to `MODERATION_DISCORD_WEBHOOK_URL` |
+| `POST /api/reader-api/comments/moderate` `{ profile, commentId, action }` | `hide` / `restore`, Owner / Admin / Mod |
+
+Rules (tested in `tests/int/comments.int.spec.ts`): verified email, not
+banned, Clerk account at least 10 minutes old; plain text up to 2,000
+characters; one comment every 30 s and 30 a day, no duplicate within a day;
+threads one level deep (`parent`), a reply remembers whom it answers
+(`replyTo`, `replyToName`); no editing; a top-level comment deleted while it
+has replies stays as "Comment deleted" (no text, no author), and goes when its
+last reply does; reports from N different readers (Community settings, 3)
+hide a comment until a moderator restores it (which resolves its reports).
+Deleting an account removes its comments (same placeholder rule), votes and
+reports; deleting an article removes its comments. In `/admin`, editors and
+admins can change a comment's status or delete it (with its replies), and mark
+reports Resolved. Setup in production: `DEPLOYMENT.md` §6.5c.
 
 ## Newsletter (double opt-in)
 

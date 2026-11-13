@@ -787,6 +787,30 @@ articles (`apps/cms/src/lib/readers.ts`); the site reaches it server to server.
    script) to **Editor**, and give each account its **Author profile** (a
    writer can't save an article without one). Roles: `apps/cms/src/access/roles.ts`.
 
+### 6.5c Comments: moderation channel, switches
+
+Comments (since 2026-11-13) need nothing beyond §6.5b to work. For the
+reports:
+
+1. **Discord**: a private channel for moderation (not `#scout-news`), then
+   channel settings → **Integrations → Webhooks → New Webhook** → copy its URL
+   into `MODERATION_DISCORD_WEBHOOK_URL` on **Railway**, redeploy. Every report
+   is posted there: the comment's text, the reason, links to it on the site and
+   in `/admin`, never a reader's name. Give the channel to whoever moderates
+   with you (Discord roles). Without the webhook, reports only show in
+   `/admin` → Community → Reports.
+2. **Clerk**: User & authentication → **Username**: *Sign-up with username*
+   and *Require username* on. The username is the public name on comments
+   (the first name stands in for older accounts without one).
+3. **Moderators**: `/admin` → Readers → the person → Role **Moderator** (hide,
+   restore, delete any comment on the site). **Banned** stops someone from
+   commenting, voting, reporting and saving.
+4. **Kill switch**: `/admin` → Community settings → untick **Comments on**:
+   comments disappear from the site at once and nobody can post; nothing is
+   deleted, tick it again to bring them back. *Comments closed* on an article
+   closes only that one. The number of reports that hides a comment is there
+   too (3).
+
 ### 6.6 Email on the domain (free, via Cloudflare)
 
 Cloudflare **Email Routing** forwards `@akavish.gg` mail to a personal inbox, for
@@ -877,6 +901,7 @@ Neon, R2 or Resend, never through the CMS. Check *those* services' logs.
 | `REVALIDATE_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Instant refresh only, the 30 s cache still works | 🟡 flush the site's cache |
 | `READER_API_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Saved articles and `/account` say "unavailable" | 🟠 read and edit any reader's saved articles |
 | `CLERK_WEBHOOK_SECRET` | Railway | Clerk → Webhooks → the endpoint → Signing secret → rotate | Profile sync and account deletion, until Railway redeploys | 🟠 fake profile updates or deletions |
+| `MODERATION_DISCORD_WEBHOOK_URL` | Railway | Discord → the moderation channel → Integrations → Webhooks → delete, create a new one | Report alerts (still in `/admin`) | 🟡 post into the channel |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Railway / Vercel | Sentry → Client Keys | Nothing | ⚪ public by design |
 | `BACKUP_DATABASE_URL` | GitHub secrets | Neon (same reset as above, or the `backup_ro` role) | Nightly backups fail | 🔴 if the owner role, 🟠 if read-only |
 | `BACKUP_R2_*` | GitHub secrets | Cloudflare → R2 → the backups-bucket token | Nightly backups fail | 🔴 every past dump |
@@ -1399,6 +1424,7 @@ production. Re-check when you add a feed.
 | `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
 | `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
 | `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |
+| `MODERATION_DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/…` | **Secret**, comment reports (§6.5c) |
 
 ---
 
