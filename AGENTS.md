@@ -33,6 +33,10 @@ URLs, script names, env vars, versions:
   Sentry's `dataCollection`, enabling Session Replay, or adding cookies that
   aren't strictly necessary all invalidate what `/privacy` currently promises.
 
+- **Mobile catch-up list:** the app is parked. Every reader-facing feature
+  added to the website gets a row in `PROGRESS.md` §7 "Catch up with the
+  website", so the app can catch up in one go when it's picked up again.
+
 Cross-check that any command/port/URL/script/version stated in one place matches
 reality everywhere (a grep sweep beats eyeballing). Keep `PROGRESS.md` (done +
 backlog) and the READMEs in sync with the real code state. **Doc upkeep is part of

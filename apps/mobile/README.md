@@ -3,6 +3,11 @@
 Expo (SDK 58) + Expo Router. A reading app on the same CMS API as the web:
 everything published on the site shows up here, nothing is written back.
 
+> **Parked since 2026-11-13.** The website has moved on (accounts, saved
+> articles, search, game pages, review scores…). When work on the app resumes,
+> it starts by catching up: the list is in `PROGRESS.md` §7 "Catch up with the
+> website".
+
 ## What's in it
 
 | Screen               | Route (`app/`)        | What it does                                                                          |

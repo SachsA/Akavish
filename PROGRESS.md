@@ -111,7 +111,7 @@ Last updated: **2026-11-06**.
 | ------ | --------------------------- | ----------------------------- |
 | ✅     | Expo app consuming same API | Shares `api-client` + `types` |
 | ✅     | Reading app                 | 2026-11-09: tabs Home / News / Leaks / Reviews / Sections, article screen, every section, pull-to-refresh, infinite scroll, share. Validated on an iPhone in Expo Go. Details in §7 |
-| ⬜     | Clerk on mobile             | Reader auth parity with web   |
+| ⬜     | Clerk on mobile             | Parked with the app: see §7 "Catch up with the website" |
 | ⬜     | Push notifications          | Expo                          |
 
 ## Docs & config
@@ -448,7 +448,7 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 
 | Pri | Item                      | Notes                                                         |
 | --- | ------------------------- | ------------------------------------------------------------- |
-| P2  | Clerk on mobile           | Reader auth parity in the Expo app                            |
+| P2  | Clerk on mobile           | Parked with the app: part of §7 "Catch up with the website" |
 
 ## 6. Internationalization (EN + FR)
 
@@ -469,6 +469,28 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 | P2  | Push notifications                | Expo notifications on new articles                                                                                                                                                                                                                                    |
 | P3  | App store assets                  | Icons, splash, screenshots, listing copy                                                                                                                                                                                                                              |
 | P3  | EAS build & submit                | iOS + Android pipelines                                                                                                                                                                                                                                               |
+
+### Catch up with the website (parked, decided 2026-11-13)
+
+The app stopped at the reading app of 2026-11-09; the website kept going.
+**Decision (Alex): the app is parked, and when it's picked up again it first
+catches up with everything below**, in one go, before anything new. Add to
+this list every time the website gets a reader-facing feature.
+
+| Website feature (since) | What the app needs |
+| --- | --- |
+| Reader accounts (11-10, Clerk) | Clerk Expo SDK: sign in / sign up with Google, Discord, Twitch (OAuth redirects, needs a dev build, not Expo Go) |
+| Saved articles + `/account` (11-13) | Save button on the article screen, a "Saved" screen; a reader-authenticated API (today `/api/bookmarks` takes Clerk's web session: the app would send a Clerk session token) |
+| Reader badges (11-13) | `RoleBadge` next to the reader's name (account screen, comments later) |
+| Search with suggestions and filters (11-13) | A search screen on `/api/search` (`games=1`, `facets=1`, `category`, `game`, highlighting from `lib/search-query.ts`) |
+| Game pages, *Also covers* (11-12) | A game screen (cover, studio, platforms, its articles incl. `relatedGames`), linked from the article byline |
+| Tag and author pages | Tag and author screens, from the article's #tags and byline |
+| Review score /10 (11-12) | Score badge on the article screen and the cards |
+| Lists grouped by day (11-12) | Today / Yesterday / date headers in the section lists (`groupByDate`, conferences by year) |
+| Read next, previous / next (11-07) | Under the article |
+| Newsletter sign-up (11-09) | A form (same CMS endpoint, consent box) |
+| Light theme (11-07) | Follow the phone's light / dark setting |
+| Comments (when the site has them) | Read and post, with badges and reporting |
 
 ## 8. Infrastructure, CI/CD & deployment
 
