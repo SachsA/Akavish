@@ -80,8 +80,13 @@ export function Comments({ articleId }: { articleId: string }) {
 
   const { list, comments } = state
   const viewer = list.viewer
-  const verified =
-    viewer?.verified ?? user?.primaryEmailAddress?.verification?.status === 'verified'
+  // Clerk's own answer first: the CMS copy is only refreshed when the reader
+  // writes, so an account synced before it was verified (or before comments
+  // existed) would be stuck behind its own stale flag. Every write is checked
+  // again on the server against Clerk anyway.
+  const verified = user
+    ? user.primaryEmailAddress?.verification?.status === 'verified'
+    : viewer?.verified === true
   const refresh = () => load().catch(() => setFailed(true))
 
   return (

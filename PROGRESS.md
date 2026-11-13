@@ -550,6 +550,11 @@ checklist it walks through.
 ## Known notes / gotchas
 
 - Run the CMS and web as **two separate processes** (ports 3001 and 3000).
+- **A reader's `emailVerified` in the CMS can be stale.** It's refreshed from
+  Clerk on each write (and on `/account`), not when the reader verifies. So the
+  comments form trusts Clerk's own client-side status, never the CMS copy
+  (2026-11-13: accounts synced before comments existed saw "Verify your email"
+  while verified). The server checks Clerk again on every write.
 - **ISR serves stale once.** With `revalidate = 30`, the first visit after 30 s
   gets the old page while Next rebuilds it in the background, and the CMS
   fetch cache has its own 30 s on top: that's why a category page needed 2-3
