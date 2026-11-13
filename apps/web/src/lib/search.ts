@@ -12,7 +12,32 @@ export interface SearchHit {
   category: string
   author?: string
   game?: string
+  gameSlug?: string
   coverImage?: string
+  publishedAt?: string
+}
+
+/** A game suggested in the header ("Gears" → the Gears of War pages). */
+export interface GameHit {
+  slug: string
+  name: string
+  cover?: string
+}
+
+/** What /api/search returns. `facets` and `games` only when asked for. */
+export interface SearchResponse {
+  query: string
+  hits: SearchHit[]
+  total: number
+  page: number
+  totalPages: number
+  engine: SearchEngine
+  /** Results per category value, ignoring the category filter (`?facets=1`). */
+  facets?: Record<string, number>
+  /** Matching games (`?games=1`). */
+  games?: GameHit[]
+  /** Name of the game in the `game` filter, for its chip. */
+  gameName?: string
 }
 
 /** Which backend answered a query — surfaced by /api/search for debugging. */
@@ -31,7 +56,9 @@ export function articleToSearchHit(article: Article): SearchHit {
     category: article.category,
     author: article.author?.name,
     game: article.game?.name,
+    gameSlug: article.game?.slug,
     coverImage: article.coverImage,
+    publishedAt: article.publishedAt,
   }
 }
 

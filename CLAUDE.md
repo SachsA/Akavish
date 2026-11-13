@@ -85,7 +85,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Search:** `/api/search` queries the CMS (Postgres `ILIKE`) by default and
   switches to Meilisearch when `MEILISEARCH_HOST` is set (indexing hooks in the
   CMS). Meilisearch failures fall back to the CMS. Currently running on the
-  fallback — Meilisearch Cloud has no free tier.
+  fallback — Meilisearch Cloud has no free tier. The CMS path matches title,
+  excerpt, game name and tag names; the header suggests games + articles as you
+  type, `/search` filters by section and game and highlights matches
+  (`lib/search-query.ts`).
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web,
   mobile, CMS and api-client), then build web + CMS (mobile isn't built — that needs EAS) and,

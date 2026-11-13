@@ -203,11 +203,19 @@ skipped unless you pass `pnpm seed --with-images`.
 The header search box and `/search` both hit `/api/search`, which has two
 backends and uses whichever is available:
 
-- **No setup (default)** — queries the CMS, i.e. Postgres `ILIKE` on title and
-  excerpt (every word of the query must appear), newest first. Works out of the
-  box, nothing to run.
+- **No setup (default)** — queries the CMS, i.e. Postgres `ILIKE` on the title,
+  the excerpt, the game's name and the tags' names (every word of the query must
+  appear in one of them), newest first. Works out of the box, nothing to run.
 - **Meilisearch** — used as soon as `MEILISEARCH_HOST` is set. Adds typo
   tolerance and relevance ranking.
+
+The header box suggests as you type (from 2 characters, debounced): matching
+games first, then 5 articles, then "See all results". Arrow keys and Enter work
+(ARIA combobox). `/search` highlights the matched words, filters by section
+(chips with a count each, `?category=review`) and by game (`?game=<slug>`, set
+by clicking a result's game), and pages by 20 (`?page=`). The route takes
+`facets=1` (counts per section) and `games=1` (matching games); pure helpers
+in `apps/web/src/lib/search-query.ts`.
 
 So search is never broken: if Meilisearch is configured but down (or its index
 was never built), the route falls back to the CMS instead of erroring.

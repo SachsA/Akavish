@@ -165,19 +165,62 @@ export async function fetchCurrentSlugFor(oldSlug: string): Promise<string | nul
  * No typo tolerance and no relevance ranking, hence newest-first ordering. Good
  * enough at this article count; set MEILISEARCH_HOST to get the real thing.
  */
-export async function searchArticles(q: string, limit = 20): Promise<Article[]> {
-  // Payload nests an OR group inside the top-level AND so the published filter
-  // still applies to every branch:
-  //   and[0]: status == published
-  //   and[1]: or[0] title ~ q  OR  or[1] excerpt ~ q
+export interface ArticleSearch {
+  q: string
+  limit?: number
+  page?: number
+  /** CMS category value (`review`, not `reviews`). */
+  category?: string
+  /** Game slug. */
+  game?: string
+}
+
+export interface ArticleSearchResult {
+  articles: Article[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+/**
+ * The `where` of a site search. Payload nests an OR group inside the top-level
+ * AND so the published filter (and the optional category / game) apply to every
+ * branch:
+ *   and[0]: status == published
+ *   and[1]: title ~ q  OR  excerpt ~ q  OR  game name ~ q  OR  a tag name ~ q
+ *   and[2]: category == …   (optional)
+ *   and[3]: game slug == …  (optional)
+ * Payload's `like` is case-insensitive and needs every word of `q` in the same
+ * field, in any order.
+ */
+export function searchWhere(
+  q: string,
+  filters: { category?: string; game?: string } = {}
+): URLSearchParams {
   const qs = new URLSearchParams({
     'where[and][0][status][equals]': 'published',
     'where[and][1][or][0][title][like]': q,
     'where[and][1][or][1][excerpt][like]': q,
-    sort: '-publishedAt',
-    depth: '1',
-    limit: String(limit),
+    'where[and][1][or][2][game.name][like]': q,
+    'where[and][1][or][3][tags.name][like]': q,
   })
+  if (filters.category) qs.set('where[and][2][category][equals]', filters.category)
+  if (filters.game) qs.set('where[and][3][game.slug][equals]', filters.game)
+  return qs
+}
+
+export async function searchArticles({
+  q,
+  limit = 20,
+  page = 1,
+  category,
+  game,
+}: ArticleSearch): Promise<ArticleSearchResult> {
+  const qs = searchWhere(q, { category, game })
+  qs.set('sort', '-publishedAt')
+  qs.set('depth', '1')
+  qs.set('limit', String(limit))
+  qs.set('page', String(page))
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     next: { revalidate: 30 },
@@ -185,7 +228,89 @@ export async function searchArticles(q: string, limit = 20): Promise<Article[]> 
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
 
   const json = (await res.json()) as PayloadListResponse<PayloadArticle>
-  return json.docs.map(mapArticle)
+  return {
+    articles: json.docs.map(mapArticle),
+    total: json.totalDocs,
+    page: json.page ?? page,
+    totalPages: json.totalPages,
+  }
+}
+
+/**
+ * How many results the query has in each category (ignoring the category
+ * filter itself), for the filter chips on /search. One tiny count query per
+ * category, in parallel; a category that fails just shows no count.
+ */
+export async function searchCategoryCounts(
+  q: string,
+  categories: string[],
+  game?: string
+): Promise<Record<string, number>> {
+  const counts = await Promise.all(
+    categories.map(async (category) => {
+      const qs = searchWhere(q, { category, game })
+      qs.set('limit', '1')
+      qs.set('depth', '0')
+      qs.set('select[id]', 'true')
+      try {
+        const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+          next: { revalidate: 30 },
+        })
+        if (!res.ok) return [category, 0] as const
+        const json = (await res.json()) as PayloadListResponse<unknown>
+        return [category, json.totalDocs] as const
+      } catch {
+        return [category, 0] as const
+      }
+    })
+  )
+  return Object.fromEntries(counts)
+}
+
+export interface GameSearchHit {
+  slug: string
+  name: string
+  cover?: string
+}
+
+/** Games whose name matches, for the header suggestions ("Gears" → the Gears pages). */
+export async function searchGames(q: string, limit = 3): Promise<GameSearchHit[]> {
+  const qs = new URLSearchParams({
+    'where[name][like]': q,
+    sort: 'name',
+    depth: '1',
+    limit: String(limit),
+  })
+  const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{
+    slug: string
+    name: string
+    cover?: PayloadMedia
+  }>
+  return json.docs.map((doc) => ({
+    slug: doc.slug,
+    name: doc.name,
+    cover: mediaUrl(doc.cover, 'thumbnail'),
+  }))
+}
+
+/** Name of a game from its slug, for the "Game: …" filter chip on /search. */
+export async function fetchGameName(slug: string): Promise<string | null> {
+  const qs = new URLSearchParams({
+    'where[slug][equals]': slug,
+    depth: '0',
+    limit: '1',
+    'select[name]': 'true',
+  })
+  const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
+    next: { revalidate: 300 },
+  })
+  if (!res.ok) return null
+  const json = (await res.json()) as PayloadListResponse<{ name: string }>
+  return json.docs[0]?.name ?? null
 }
 
 // ─── Article page: related + previous/next ───────────────────────────────────

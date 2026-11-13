@@ -247,7 +247,7 @@ whichever is available:
 
 | `MEILISEARCH_HOST` | Backend                | Behaviour                                                  |
 | ------------------ | ---------------------- | ---------------------------------------------------------- |
-| unset              | CMS → Postgres `ILIKE` | Every word of the query must appear in the title, or in the excerpt. Newest first. Free. |
+| unset              | CMS → Postgres `ILIKE` | Every word of the query must appear in the title, the excerpt, the game's name or a tag's name. Newest first. Free. |
 | set                | Meilisearch            | Typo-tolerant, ranked by relevance.                         |
 
 The CMS path is also the safety net: if Meilisearch is configured but down, or
@@ -509,13 +509,14 @@ the dashboard first, or you'll get "Down" emails.
 All three are in the code and need no setup; the optional upgrades below are
 dashboard settings for when traffic justifies them.
 
-**Rate limiting** (`apps/web/src/lib/rate-limit.ts`): per visitor IP, 30
-requests/minute on `/api/search` and 120 on `/api/articles*`, then a **429**
+**Rate limiting** (`apps/web/src/lib/rate-limit.ts`): per visitor IP, 60
+requests/minute on `/api/search` (raised from 30 on 2026-11-13: the header
+suggests as you type, a few requests per query) and 120 on `/api/articles*`, then a **429**
 with `Retry-After`. The counter lives in each server instance's memory, so on
 Vercel it's approximate; it stops one client hammering search, which is the
 realistic case today. On top of it, a **Vercel Firewall rule** counts across
 instances (in place since 2026-11-09): Vercel → project → **Firewall → Rules**
-→ rate limit on path `/api/search`, fixed window, 60 s, 30 requests, key IP,
+→ rate limit on path `/api/search`, fixed window, 60 s, 60 requests, key IP,
 action **429** (not 403: a 429 tells clients to slow down and retry). Further
 upgrade if ever needed: a shared store (Upstash Redis) behind the same helper.
 

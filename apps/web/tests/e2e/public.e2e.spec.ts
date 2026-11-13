@@ -50,7 +50,7 @@ test('an unknown article is a real 404', async ({ page }) => {
 
 test('search from the header finds an article', async ({ page, request }) => {
   await page.goto('/')
-  const box = page.getByRole('searchbox', { name: 'Search articles' })
+  const box = page.getByRole('combobox', { name: 'Search articles' })
   await box.fill('neon')
   await box.press('Enter')
   await expect(page).toHaveURL(/\/search\?q=neon/)
@@ -59,6 +59,41 @@ test('search from the header finds an article', async ({ page, request }) => {
   const api = await (await request.get('/api/search?q=neon')).json()
   expect(api.engine).toBe('cms') // no Meilisearch in CI: the Postgres fallback answered
   expect(api.hits.length).toBeGreaterThan(0)
+})
+
+test('the header suggests games and articles as you type', async ({ page }) => {
+  await page.goto('/')
+  const box = page.getByRole('combobox', { name: 'Search articles' })
+  await box.click()
+  await box.pressSequentially('hollow', { delay: 30 })
+  const list = page.getByRole('listbox', { name: 'Suggestions' })
+  await expect(list.getByRole('option', { name: /Game\s*Hollow Crown/ })).toBeVisible()
+  await expect(list.getByRole('option', { name: /ratings board/ })).toBeVisible()
+  await expect(list.getByRole('option', { name: 'See all results for “hollow”' })).toBeVisible()
+  // Arrow down to the first suggestion (the game) and open it.
+  await box.press('ArrowDown')
+  await box.press('Enter')
+  await expect(page).toHaveURL(/\/game\/hollow-crown$/)
+})
+
+test('search page: section chips with counts, game filter, highlighting', async ({ page, request }) => {
+  await page.goto('/search?q=neon')
+  const chips = page.getByRole('navigation', { name: 'Filter by section' })
+  await expect(chips.getByRole('link', { name: /^All\s*2$/ })).toBeVisible()
+  await expect(chips.getByRole('link', { name: /^Reviews\s*1$/ })).toBeVisible()
+  // Sections without a match are hidden once the counts are in.
+  await expect(chips.getByRole('link', { name: /^Esport/ })).toHaveCount(0)
+  await expect(page.locator('main mark').first()).toHaveText(/neon/i)
+
+  await chips.getByRole('link', { name: /^Reviews/ }).click()
+  await expect(page).toHaveURL(/\/search\?q=neon&category=review/)
+  await expect(page.locator('main li h2')).toHaveCount(1)
+
+  // A game name matches too, and the game filter keeps only its articles.
+  const byGame = await (await request.get('/api/search?q=drift&game=neon-drift&facets=1')).json()
+  expect(byGame.gameName).toBe('Neon Drift')
+  expect(byGame.hits.every((h: { gameSlug?: string }) => h.gameSlug === 'neon-drift')).toBe(true)
+  expect(byGame.facets.review).toBe(1)
 })
 
 test('renaming a published article redirects the old URL (308)', async ({ request }) => {

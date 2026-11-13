@@ -87,8 +87,9 @@ Last updated: **2026-11-06**.
 | ✅     | CMS indexing    | `meilisearch` client + `afterChange`/`afterDelete` hooks on Articles (published → upsert, else remove); best-effort |
 | ✅     | Backfill script | `pnpm reindex:search` (CMS) re-creates index settings + indexes all published articles                              |
 | ✅     | Search API      | `app/api/search/route.ts` proxies queries server-side; key never exposed                                            |
-| ✅     | CMS fallback    | No Meilisearch (or Meilisearch down/unindexed) → `/api/search` queries the CMS instead (Postgres `ILIKE` on title + excerpt). Search never hard-fails; the response's `engine` field says which backend answered |
+| ✅     | CMS fallback    | No Meilisearch (or Meilisearch down/unindexed) → `/api/search` queries the CMS instead (Postgres `ILIKE` on title, excerpt, game name and tag names). Search never hard-fails; the response's `engine` field says which backend answered |
 | ✅     | Search UI       | Header `SearchBar` + `/search` results page (robots: noindex)                                                       |
+| ✅     | Search polish   | 2026-11-13 — the header suggests as you type (games, then 5 articles, then "See all results"; ARIA combobox, arrow keys), `/search` highlights matches, filters by section (chips with counts) and game, pages by 20, shows covers and dates. `/api/search` limit raised to 60/min for the suggestions (Vercel Firewall rule too) |
 | ✅     | Local infra     | `docker-compose.yml` runs Meilisearch on :7700; env wired in both `.env.example`                                    |
 
 ## Auth
@@ -376,7 +377,6 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/WhatsApp + native share sheet + copy link), "Read next" suggestions and prev/next navigation |
 | P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
-| P3  | Search polish                | Highlighting, filters by category, instant/typeahead results                                |
 | ✅  | Dark/light toggle            | Done (2026-11-07) — follows the OS, sun/moon switch in the header remembers the choice (no flash on reload). Components keep the dark classes; `tailwind.config.ts` maps zinc/white/emerald text to CSS variables that flip in `globals.css`. axe-clean in both themes, header fits from 320 px |
 | ✅  | Conferences in the header     | Done (2026-11-12) — the section links (News, Leaks, Reviews, Esport, Conferences) show from 1024 px; below that the swipeable strip of every section (was phones only, the header overflowed between 640 and 1024 px) |
 | P3  | Comments                     | Reader comments (needs reader auth + a comments store/service)                              |
@@ -443,7 +443,6 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 | --- | --------------------------- | --------------------------------------------------------------- |
 | P3  | Hosted Meilisearch for prod | No longer urgent — `/api/search` falls back to the CMS (Postgres `ILIKE`), so search works in prod for free. Upgrade when article volume makes typo tolerance and ranking worth $20+/mo (Cloud has no free tier) or self-host on Railway |
 | P3  | Search-only API key         | Generate a scoped key in prod instead of reusing the master key |
-| P3  | Typeahead / filters         | Instant results in the header, filter by category/game          |
 
 ## 5. Auth & reader features
 
@@ -513,7 +512,7 @@ checklist it walks through.
 | --- | ------------------ | ---------------------------------------------------------------------- |
 | ✅  | Error monitoring   | Sentry on web (client + server + edge, tunnelled through `/monitoring`) and CMS (server only). Errors + performance tracing, sampled to fit the free tier. Session Replay off on privacy grounds. Source maps upload confirmed 2026-11-06 (readable stack traces) |
 | ✅  | Secrets management | Prod secrets live only in Railway / Vercel / GitHub secrets, never in committed files; rotation runbook in `DEPLOYMENT.md` §8 |
-| ✅  | Rate limiting      | Done (2026-11-07) — per-IP limits on `/api/search` (30/min) and `/api/articles*` (120/min), 429 + Retry-After; in-memory, so approximate on Vercel; a Vercel Firewall rule (30/min on `/api/search`, 429) counts across instances since 2026-11-09 (`DEPLOYMENT.md` §4e) |
+| ✅  | Rate limiting      | Done (2026-11-07) — per-IP limits on `/api/search` (30/min, 60 since 2026-11-13) and `/api/articles*` (120/min), 429 + Retry-After; in-memory, so approximate on Vercel; a Vercel Firewall rule (30/min on `/api/search`, 429) counts across instances since 2026-11-09 (`DEPLOYMENT.md` §4e) |
 | ✅  | Uptime monitoring  | UptimeRobot probes on web + CMS/DB, email alerts (`DEPLOYMENT.md` §4d) |
 | ✅  | Legal pages        | Done — `/privacy`, `/terms`, `/legal` in EN + FR (roadmap #8)          |
 | ✅  | Cookie consent     | Not needed: cookieless analytics, only strictly necessary Clerk cookies — explained in `/privacy` |
