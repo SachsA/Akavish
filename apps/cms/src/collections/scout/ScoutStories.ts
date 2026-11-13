@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { editors } from '../../access/roles'
 
 /**
  * A story (sujet): every item about the same news, grouped, with a score out of
@@ -15,7 +16,7 @@ export const ScoutStories: CollectionConfig = {
     defaultColumns: ['title', 'score', 'sourceCount', 'category', 'status', 'updatedAt'],
     description: 'Stories the scout found, scored out of 100.',
   },
-  access: { create: () => false },
+  access: { create: () => false, read: editors, update: editors, delete: editors },
   defaultSort: '-score',
   fields: [
     { name: 'title', type: 'text', required: true },

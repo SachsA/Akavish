@@ -12,6 +12,7 @@ import { LexicalContent } from '@/components/LexicalContent'
 import { ArticleCard } from '@/components/ArticleCard'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { ShareButtons } from '@/components/ShareButtons'
+import { SaveButton } from '@/components/SaveButton'
 import { countWords, readingTimeLabel, readingTimeMinutes } from '@/lib/reading-time'
 import { absoluteUrl, SITE_NAME } from '@/lib/site'
 import { categoryByValue } from '@/lib/categories'
@@ -175,6 +176,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 {article.score}/10
               </span>
             )}
+            <span className="ml-auto">
+              <SaveButton articleId={article.id} />
+            </span>
           </div>
           <h1 className="text-4xl font-black tracking-tight text-white leading-tight">
             {article.title}

@@ -7,13 +7,13 @@ import {
   SignUpButton,
   SignedIn,
   SignedOut,
-  UserButton,
 } from '@clerk/nextjs'
 import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
 import { DeferredAnalytics } from '@/components/DeferredAnalytics'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { Wordmark } from '@/components/Wordmark'
 import { SearchBar } from '@/components/SearchBar'
+import { AccountMenu } from '@/components/AccountMenu'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { CATEGORIES } from '@/lib/categories'
 import './globals.css'
@@ -119,7 +119,7 @@ function Header() {
               </SignUpButton>
             </SignedOut>
             <SignedIn>
-              <UserButton afterSignOutUrl="/" />
+              <AccountMenu />
             </SignedIn>
           </div>
         </nav>

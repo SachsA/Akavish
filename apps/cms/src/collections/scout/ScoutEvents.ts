@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { editors } from '../../access/roles'
 
 /**
  * Event mode (step 5): one live article during a showcase, fed by the scout's
@@ -15,7 +16,7 @@ export const ScoutEvents: CollectionConfig = {
     defaultColumns: ['name', 'status', 'startedAt', 'rev'],
     description: 'Live events (Game Awards, State of Play…) started with /live on Discord.',
   },
-  access: { create: () => false },
+  access: { create: () => false, read: editors, update: editors, delete: editors },
   fields: [
     { name: 'name', type: 'text', required: true },
     {

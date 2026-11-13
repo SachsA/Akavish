@@ -232,10 +232,12 @@ describe('game pages', () => {
 describe('schedule publish endpoint', () => {
   const call = (user: unknown, body: unknown) =>
     schedulePublishHandler({ payload, user, json: async () => body } as never)
-  const editor = { id: 1, collection: 'users' }
+  const editor = { id: 1, collection: 'users', role: 'editor' }
 
   it('only lets editors schedule', async () => {
     expect((await call(null, {})).status).toBe(401)
+    // Writers can't publish, so they can't schedule a publication either.
+    expect((await call({ id: 1, collection: 'users', role: 'writer' }, {})).status).toBe(403)
   })
 
   it('refuses a past date, a bad id and a missing article', async () => {

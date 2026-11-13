@@ -1,9 +1,11 @@
 import type { CollectionConfig } from 'payload'
+import { editors } from '../access/roles'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   access: {
     read: () => true,
+    delete: editors,
   },
   fields: [
     {

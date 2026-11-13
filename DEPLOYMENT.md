@@ -757,8 +757,35 @@ name X, so nothing else changes.
    (`lib/legal.ts`) name the four providers; change them if the list changes.
 
 Users created on the development instance are not carried over (they were
-tests). Nothing else in the code changes: the CMS doesn't use Clerk, and the
-mobile app has no reader accounts yet.
+tests). The mobile app has no reader accounts yet.
+
+### 6.5b Reader accounts: saved articles, roles, Clerk webhook
+
+Since 2026-11-13 a reader account does something: **Save** on an article page,
+the list on `/account`, and a role shown as a badge (Owner, Admin, Mod,
+Author). The CMS keeps one `readers` row per Clerk account and their saved
+articles (`apps/cms/src/lib/readers.ts`); the site reaches it server to server.
+
+1. **Shared secret.** `openssl rand -hex 32`, then the **same value** as
+   `READER_API_SECRET` on **Railway** and on **Vercel** (Production), redeploy
+   both. Without it, Save and `/account` say saving is unavailable.
+2. **Clerk webhook** (production instance): Clerk → **Webhooks → Add
+   endpoint** → URL `https://cms.akavish.gg/api/clerk/webhook`, events
+   `user.created`, `user.updated`, `user.deleted`. Copy the endpoint's
+   **Signing secret** (`whsec_…`) into `CLERK_WEBHOOK_SECRET` on **Railway**,
+   redeploy. It keeps names and avatars in sync, and deleting an account in
+   Clerk deletes the reader and their saved articles (what `/privacy`
+   promises). Without it, readers are still created on their first visit to
+   `/account` or first Save, but a deleted account would leave its row behind.
+   Check: Clerk → the endpoint → **Send example** of `user.updated` → 200.
+3. **Your Owner badge.** Sign in on akavish.gg, open `/account` once (that
+   creates your reader), then `/admin` → **Readers** → you → Role **Owner**.
+   Only one account can be Owner. If your Clerk email is your CMS login's
+   email, you were already linked and shown as Author.
+4. **Editorial roles.** `/admin` → **Users**: every account that existed
+   before 2026-11-13 became **Admin**. Set `scout@akavish.gg` (the publishing
+   script) to **Editor**, and give each account its **Author profile** (a
+   writer can't save an article without one). Roles: `apps/cms/src/access/roles.ts`.
 
 ### 6.6 Email on the domain (free, via Cloudflare)
 
@@ -848,6 +875,8 @@ Neon, R2 or Resend, never through the CMS. Check *those* services' logs.
 | `CLERK_SECRET_KEY` | Vercel | Clerk → API Keys → roll | Reader sign-in, until Vercel redeploys | 🟠 reader accounts |
 | `MEILISEARCH_API_KEY` | (unset today) | Meilisearch → keys | Search falls back to the CMS | 🟡 |
 | `REVALIDATE_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Instant refresh only, the 30 s cache still works | 🟡 flush the site's cache |
+| `READER_API_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Saved articles and `/account` say "unavailable" | 🟠 read and edit any reader's saved articles |
+| `CLERK_WEBHOOK_SECRET` | Railway | Clerk → Webhooks → the endpoint → Signing secret → rotate | Profile sync and account deletion, until Railway redeploys | 🟠 fake profile updates or deletions |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Railway / Vercel | Sentry → Client Keys | Nothing | ⚪ public by design |
 | `BACKUP_DATABASE_URL` | GitHub secrets | Neon (same reset as above, or the `backup_ro` role) | Nightly backups fail | 🔴 if the owner role, 🟠 if read-only |
 | `BACKUP_R2_*` | GitHub secrets | Cloudflare → R2 → the backups-bucket token | Nightly backups fail | 🔴 every past dump |
@@ -1335,6 +1364,7 @@ production. Re-check when you add a feed.
 | `SENTRY_ORG` / `SENTRY_PROJECT`     | `…`                       | Build-time, source maps   |
 | `SENTRY_AUTH_TOKEN`                 | `sntrys_…`                | **Secret**, build-time only |
 | `REVALIDATE_SECRET`                 | `openssl rand -hex 32`    | **Secret**, same as the CMS's; unset → `/api/revalidate` off (§4e) |
+| `READER_API_SECRET`                 | `openssl rand -hex 32`    | **Secret**, same as the CMS's; unset → saving unavailable (§6.5b) |
 
 **CMS (Railway/Render)**
 
@@ -1367,6 +1397,8 @@ production. Re-check when you add a feed.
 | `DISCORD_APPLICATION_ID` / `DISCORD_PUBLIC_KEY` | `…` | Scout bot, developer portal (§11) |
 | `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |
 | `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
+| `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
+| `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |
 
 ---
 

@@ -108,8 +108,8 @@ export const PROCESSORS: Processor[] = [
     url: 'https://neon.tech/privacy-policy',
     region: 'EU/US',
     data: {
-      en: 'Article content, editor accounts, and the email address of newsletter subscribers.',
-      fr: "Contenu des articles, comptes des rédacteurs et adresse e-mail des abonnés à la newsletter.",
+      en: 'Article content, editor accounts, reader accounts (name, email address, avatar, role and saved articles) and the email address of newsletter subscribers.',
+      fr: "Contenu des articles, comptes des rédacteurs, comptes des lecteurs (nom, adresse e-mail, avatar, rôle et articles enregistrés) et adresse e-mail des abonnés à la newsletter.",
     },
     purpose: {
       en: 'Hosts the database behind the site.',

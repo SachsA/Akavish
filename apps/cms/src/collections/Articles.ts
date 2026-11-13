@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig, type Where } from 'payload'
+import { authorIdOf, editorRole, editors, isEditorUser, staff } from '../access/roles'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { slugField } from '../fields/slug'
 import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-search-sync'
@@ -12,6 +13,20 @@ export const Articles: CollectionConfig = {
       if (user) return true
       return { status: { equals: 'published' } }
     },
+    // Roles: src/access/roles.ts. A writer edits only their own articles, and
+    // only until they're published; the hook below stops them publishing.
+    create: staff,
+    update: ({ req: { user } }) => {
+      if (isEditorUser(user)) return true
+      if (editorRole(user) !== 'writer') return false
+      const author = authorIdOf(user)
+      if (author === null) return false
+      const own: Where = {
+        and: [{ author: { equals: author } }, { status: { not_equals: 'published' } }],
+      }
+      return own
+    },
+    delete: editors,
   },
   admin: {
     useAsTitle: 'title',
@@ -27,6 +42,19 @@ export const Articles: CollectionConfig = {
     // JSON-LD (the field Google leans on hardest for news), the prev/next
     // navigation, and any meaningful `-publishedAt` ordering.
     beforeChange: [
+      // Writers: always under their own byline, never published by them.
+      ({ data, req }) => {
+        if (editorRole(req.user) !== 'writer') return data
+        const author = authorIdOf(req.user)
+        if (author === null) {
+          throw new APIError('Your account has no author profile yet: ask an admin to set one.', 403)
+        }
+        if (data._status === 'published' || data.status === 'published') {
+          throw new APIError('Writers save drafts; an editor publishes them.', 403)
+        }
+        data.author = author
+        return data
+      },
       // Publishing (the button, or a scheduled publish job) makes the article
       // public. The site filters on our own `status` field, not Payload's
       // `_status`, so without this a draft scheduled for the morning would go
@@ -83,6 +111,17 @@ export const Articles: CollectionConfig = {
       },
       // Refresh the website's cache now rather than within 30 s (lib/revalidate-web.ts).
       revalidateAfterChange,
+    ],
+    // Readers' saved copies of it go first (the link can't point to nothing).
+    beforeDelete: [
+      async ({ id, req }) => {
+        await req.payload.delete({
+          collection: 'bookmarks',
+          where: { article: { equals: id } },
+          overrideAccess: true,
+          req,
+        })
+      },
     ],
     afterDelete: [
       ({ doc, req }) => {

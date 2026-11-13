@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { admins } from '../access/roles'
 
 /**
  * Newsletter sign-ups (double opt-in). Written only by the newsletter endpoints
@@ -22,6 +23,10 @@ export const Subscribers: CollectionConfig = {
     // Default for read/update/delete: any logged-in editor. Nobody creates
     // through the API: the endpoints use the local API.
     create: () => false,
+    // Personal data: admins only (src/access/roles.ts).
+    read: admins,
+    update: admins,
+    delete: admins,
   },
   fields: [
     { name: 'email', type: 'email', required: true, unique: true, index: true },

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { editors } from '../../access/roles'
 
 /**
  * Where the AI scout reads the news (design doc: "Sources"). Editable in the
@@ -15,6 +16,7 @@ export const ScoutSources: CollectionConfig = {
     description:
       'Feeds the scout reads. Official sources are read every 5 minutes, the rest every 15. Untick "active" to mute one.',
   },
+  access: { read: editors, create: editors, update: editors, delete: editors },
   fields: [
     { name: 'name', type: 'text', required: true },
     {

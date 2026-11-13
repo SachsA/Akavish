@@ -1,12 +1,13 @@
 import type { CollectionConfig } from 'payload'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-web'
 import { slugField } from '../fields/slug'
+import { editors } from '../access/roles'
 
 export const Authors: CollectionConfig = {
   slug: 'authors',
   // The website shows these: refresh its cache on change (lib/revalidate-web.ts).
   hooks: { afterChange: [revalidateAfterChange], afterDelete: [revalidateAfterDelete] },
-  access: { read: () => true },
+  access: { read: () => true, create: editors, update: editors, delete: editors },
   admin: { useAsTitle: 'name' },
   fields: [
     { name: 'name', type: 'text', required: true },

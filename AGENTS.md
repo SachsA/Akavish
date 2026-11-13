@@ -82,6 +82,14 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Schema:** versioned **migrations** (`push: false`), not push mode. See
   `DEPLOYMENT.md` §5.
 - **Auth:** Clerk (readers, web) · Payload auth (CMS editors).
+- **Roles:** CMS users are admin / editor / writer (`apps/cms/src/access/roles.ts`:
+  writers draft under their own author profile and can't publish). Readers
+  (Clerk) get a `readers` row in the CMS with a role that is their badge
+  (Owner: one account only, Admin, Moderator, Author, Reader) and their saved
+  articles (`bookmarks`), via `apps/cms/src/lib/readers.ts`. The web reaches it
+  server to server with `READER_API_SECRET` after checking the Clerk session
+  (`apps/web/src/lib/readers.ts`, `/api/bookmarks`, `/account`); Clerk's
+  webhook (`/api/clerk/webhook`) syncs profiles and deletes on account deletion.
 - **Search:** `/api/search` queries the CMS (Postgres `ILIKE`) by default and
   switches to Meilisearch when `MEILISEARCH_HOST` is set (indexing hooks in the
   CMS). Meilisearch failures fall back to the CMS. Currently running on the

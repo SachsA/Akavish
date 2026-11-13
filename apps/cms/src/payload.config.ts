@@ -14,6 +14,7 @@ import { Authors } from './collections/Authors'
 import { Games } from './collections/Games'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
+import { Bookmarks, Readers } from './collections/Readers'
 import { ScoutItems } from './collections/scout/ScoutItems'
 import { ScoutSettings } from './collections/scout/ScoutSettings'
 import { ScoutSources } from './collections/scout/ScoutSources'
@@ -26,6 +27,12 @@ import { registerCommands } from './scout/discord-commands'
 import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 import { schedulePublishHandler } from './lib/schedule-publish'
+import {
+  clerkWebhookHandler,
+  readerBookmarksHandler,
+  readerSavedHandler,
+  readerSyncHandler,
+} from './lib/readers'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -63,6 +70,9 @@ export default buildConfig({
     Games,
     Articles,
     Subscribers,
+    // Reader accounts (Clerk) and their saved articles (src/lib/readers.ts).
+    Readers,
+    Bookmarks,
     // The AI scout (src/scout/, design doc linked in PROGRESS.md).
     ScoutSources,
     ScoutItems,
@@ -83,6 +93,14 @@ export default buildConfig({
     // Signature-checked; only the owner's clicks are accepted.
     { path: '/scout/discord', method: 'post', handler: discordInteractionsHandler },
     { path: '/scout/report', method: 'get', handler: scoutReportHandler },
+    // Reader accounts and saved articles, for the website (READER_API_SECRET)
+    // and Clerk's webhook (signed). Details in src/lib/readers.ts.
+    { path: '/reader-api/sync', method: 'post', handler: readerSyncHandler },
+    { path: '/reader-api/bookmarks', method: 'get', handler: readerBookmarksHandler },
+    { path: '/reader-api/bookmarks', method: 'post', handler: readerBookmarksHandler },
+    { path: '/reader-api/bookmarks', method: 'delete', handler: readerBookmarksHandler },
+    { path: '/reader-api/saved', method: 'get', handler: readerSavedHandler },
+    { path: '/clerk/webhook', method: 'post', handler: clerkWebhookHandler },
   ],
   // Jobs queue, used by scheduled publishing (Articles → "Schedule publish").
   // autoRun checks the queue every minute inside the CMS server process, which

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { editors } from '../../access/roles'
 
 /**
  * One row per paid call (AI model, later the X API), with its estimated cost.
@@ -12,7 +13,7 @@ export const ScoutUsage: CollectionConfig = {
     defaultColumns: ['createdAt', 'purpose', 'model', 'costUsd'],
     description: 'Every paid call the scout made, with its estimated cost in USD.',
   },
-  access: { create: () => false, update: () => false },
+  access: { create: () => false, update: () => false, read: editors, delete: editors },
   fields: [
     {
       name: 'kind',

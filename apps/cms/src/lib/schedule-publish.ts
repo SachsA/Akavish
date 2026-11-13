@@ -11,10 +11,12 @@
 //
 // It sets the schedule rather than adding one: the article's pending publish
 // jobs are cancelled first, so moving a date never leaves the old one behind.
-// Editors only (a logged-in `users` session or JWT). The date must be in the
+// Editors and admins only (a logged-in `users` session or JWT; writers can't
+// publish, src/access/roles.ts). The date must be in the
 // future and within a year; the article must exist.
 
 import type { PayloadHandler } from 'payload'
+import { isEditorUser } from '../access/roles'
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -23,6 +25,7 @@ const YEAR = 365 * 86_400_000
 
 export const schedulePublishHandler: PayloadHandler = async (req) => {
   if (!req.user || req.user.collection !== 'users') return json({ error: 'unauthorized' }, 401)
+  if (!isEditorUser(req.user)) return json({ error: 'editors only' }, 403)
 
   let body: { id?: unknown; publishAt?: unknown }
   try {

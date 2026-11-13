@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { editors } from '../../access/roles'
 
 /**
  * Everything the scout collected: one row per article or post, linked to the
@@ -14,7 +15,7 @@ export const ScoutItems: CollectionConfig = {
     description: 'Raw items the scout collected. Kept 30 days.',
   },
   // Written by the scout only.
-  access: { create: () => false },
+  access: { create: () => false, read: editors, update: editors, delete: editors },
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'url', type: 'text', required: true, unique: true, index: true },

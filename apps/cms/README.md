@@ -28,8 +28,9 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | `games`    | Game metadata articles can be tagged to: cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), platforms, genres, dates, studio. |
 | `tags`     | Cross-cutting topics, 2 to 5 per article: publisher or studio (Rockstar Games, Riot Games), platform (PS5, Switch 2), event (Worlds 2026, CS2 Major) or theme (Release dates, Trailers, Earnings). Not the game (that's `game`) nor the type (that's `category`). Each tag has its public page `/tag/<slug>`, linked from the article (#chips) and listed in the sitemap once it has a published article. |
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
-| `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk). Password resets go out via Resend — see below.                             |
-| `subscribers` | Newsletter sign-ups (double opt-in). Editors can read them; nobody can add one by hand. See "Newsletter" below. |
+| `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk), each with a `role` (admin / editor / writer) and an *Author profile*. See "Roles" below. Password resets go out via Resend — see below. |
+| `subscribers` | Newsletter sign-ups (double opt-in). Admins can read them; nobody can add one by hand. See "Newsletter" below. |
+| `readers`, `bookmarks` | Reader accounts (one per Clerk account) with their role badge, and their saved articles. Admins only; written by the site and Clerk's webhook. See "Reader accounts" below. |
 | `scout-sources`, `scout-items`, `scout-stories`, `scout-usage` + global `scout-settings` | The AI scout (admin group **Scout**). See "AI scout" below. |
 
 ### Slugs
@@ -123,8 +124,23 @@ Public (unauthenticated) read access is intentionally scoped:
 - **authors / games / tags / media** — publicly readable (non-sensitive content
   populated into article cards and pages).
 
-- **subscribers** — no public access at all, and `create` is closed even to
-  editors: rows only come from the newsletter endpoints (below).
+- **subscribers** — no public access at all, admins only, and `create` is
+  closed even to them: rows only come from the newsletter endpoints (below).
+- **readers / bookmarks** — no public access, admins only, `create` closed:
+  rows come from `src/lib/readers.ts` (below).
+
+### Roles (`src/access/roles.ts`)
+
+| Role | Can |
+| --- | --- |
+| **admin** | Everything: users and their roles, subscribers, readers, the scout. |
+| **editor** | Write, edit, publish and delete any article; games, tags, authors, media; the scout. |
+| **writer** | Write articles under their own author profile and save drafts. Can't publish (the hook refuses), can't edit a published article or someone else's, can't delete. |
+
+The first account ever created is an admin; later ones start as writers. Only
+an admin changes a role or an author profile. Accounts that existed before
+roles (migration `roles_readers`) became admins. `POST /api/articles-schedule`
+is for editors and admins.
 
 This is why the public site can render articles without a CMS login. If you add a
 new collection that the frontend needs to read, remember to set its
@@ -194,6 +210,34 @@ template module so the config and the "expires in one hour" copy can't drift.
 
 Only CMS editors ever receive this; reader accounts are handled by Clerk on the
 web app and never touch Payload auth.
+
+## Reader accounts and saved articles
+
+Readers sign up on the site with Clerk. `src/lib/readers.ts` keeps a `readers`
+row per Clerk account (name, email, avatar as Clerk has them, plus a **role**:
+Owner, Admin, Moderator, Author, Reader, which is the badge next to their name)
+and their saved articles (`bookmarks`, unique per reader and article).
+
+| Endpoint | Does |
+| --- | --- |
+| `POST /api/reader-api/sync` `{ profile }` | Creates or refreshes the reader, returns it with its role |
+| `GET /api/reader-api/bookmarks?clerkId&page&limit` | Saved articles still published, newest first (depth 2, like the site's lists) |
+| `GET /api/reader-api/saved?clerkId&articles=1,2` | Which of these articles are saved |
+| `POST` / `DELETE /api/reader-api/bookmarks` `{ clerkId, articleId }` | Save (published articles only) / unsave |
+| `POST /api/clerk/webhook` | Clerk's webhook, Svix-signed (`CLERK_WEBHOOK_SECRET`): `user.created` / `user.updated` refresh the profile, `user.deleted` deletes the reader and their saved articles |
+
+The `reader-api` endpoints answer only to `Authorization: Bearer
+READER_API_SECRET` (the website, after checking the Clerk session); a reader
+who doesn't exist yet is created on the spot, so the site works before the
+webhook is set up. Rules, tested in `tests/int/readers.int.spec.ts`:
+
+- only one **Owner**, ever (the save is refused with an error on the role);
+- a reader whose **verified** email matches a CMS user is linked to that user
+  and its author profile, and becomes **Author** if they were a plain reader;
+- deleting a reader deletes their saved articles; deleting an article deletes
+  the copies readers saved; an unpublished article just drops off the lists.
+
+Setup in production: `DEPLOYMENT.md` §6.5b.
 
 ## Newsletter (double opt-in)
 

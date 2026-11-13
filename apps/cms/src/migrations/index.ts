@@ -13,6 +13,7 @@ import * as migration_20261110_103703_scout_step2 from './20261110_103703_scout_
 import * as migration_20261112_144344_scout_events from './20261112_144344_scout_events';
 import * as migration_20261112_155209_related_games_gallery from './20261112_155209_related_games_gallery';
 import * as migration_20261112_163903_review_score from './20261112_163903_review_score';
+import * as migration_20261113_083945_roles_readers from './20261113_083945_roles_readers';
 
 export const migrations = [
   {
@@ -88,6 +89,11 @@ export const migrations = [
   {
     up: migration_20261112_163903_review_score.up,
     down: migration_20261112_163903_review_score.down,
-    name: '20261112_163903_review_score'
+    name: '20261112_163903_review_score',
+  },
+  {
+    up: migration_20261113_083945_roles_readers.up,
+    down: migration_20261113_083945_roles_readers.down,
+    name: '20261113_083945_roles_readers'
   },
 ];

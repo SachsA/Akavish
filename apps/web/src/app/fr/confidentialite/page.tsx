@@ -27,7 +27,8 @@ export default function ConfidentialitePage() {
         partageons vos données à des fins publicitaires, nous ne constituons pas
         de profils de lecteurs et nous n’utilisons aucun cookie publicitaire. Si
         vous créez un compte, nous conservons votre adresse e-mail pour vous
-        permettre de vous reconnecter. Si vous vous abonnez à la newsletter, nous
+        permettre de vous reconnecter, ainsi que les articles que vous
+        enregistrez. Si vous vous abonnez à la newsletter, nous
         conservons votre adresse e-mail pour vous l’envoyer, jusqu’à votre
         désinscription. Rien de plus.
       </p>
@@ -57,9 +58,12 @@ export default function ConfidentialitePage() {
         et l’avatar que vous choisissez de fournir. Si vous vous connectez avec
         Google, Discord, Twitch ou X, ce service transmet à Clerk votre adresse
         e-mail, votre nom et votre avatar, selon sa propre politique de
-        confidentialité ; nous ne voyons jamais votre mot de passe chez lui. À ce
-        jour, un compte lecteur ne débloque rien d’autre que le fait d’être
-        connecté.
+        confidentialité ; nous ne voyons jamais votre mot de passe chez lui.
+        Notre propre base de données (Neon) conserve une copie du nom, de
+        l’adresse e-mail et de l’avatar de votre compte tels que Clerk les
+        connaît, votre rôle sur le site (le badge affiché à côté de votre nom,
+        par exemple « Author ») et les articles que vous enregistrez, pour les
+        afficher sur votre page de compte. Supprimer votre compte supprime tout.
       </p>
       <p>
         <strong>Si vous vous abonnez à la newsletter.</strong> Nous enregistrons

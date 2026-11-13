@@ -99,8 +99,11 @@ Last updated: **2026-11-06**.
 | ✅     | Clerk for readers (web)          | `ClerkProvider`, middleware, header Log in / Sign up, `UserButton` |
 | ✅     | Sign-in / sign-up pages          | `/sign-in`, `/sign-up` (+ modal mode in header)                    |
 | ✅     | Editor auth                      | Stays on Payload (CMS admin), separate from readers                |
-| ⬜     | Protected reader area `/account` | Middleware matcher is ready; page not built yet                    |
-| ⬜     | Sync Clerk users → CMS / DB      | For comments, favorites, etc.                                      |
+| ✅     | Reader area `/account`           | 2026-11-13 — name, avatar, email, role badge, "Manage account" (Clerk's profile) and sign out, saved articles (12 a page, Remove). Linked from the avatar menu ("Saved articles"). Personal: no cache, noindex |
+| ✅     | Saved articles                   | 2026-11-13 — **Save** on every article page (signed out it opens sign-in), `/api/bookmarks` (reader from Clerk's `auth()`, 60/min, `private, no-store`, same-origin only) → CMS `bookmarks`. Published articles only; an unpublished or deleted one drops off |
+| ✅     | Sync Clerk users → CMS           | 2026-11-13 — `readers` collection, one row per Clerk account, created on the first visit to `/account` or first Save (`READER_API_SECRET`, server to server) and kept in sync by Clerk's webhook (`/api/clerk/webhook`, Svix signature): deleting the account deletes the reader and their saved articles. `DEPLOYMENT.md` §6.5b |
+| ✅     | Reader roles and badges          | 2026-11-13 — Owner (one account only), Admin, Mod, Author, Reader, set by an admin in `/admin` → Readers. A reader whose verified email is a CMS user's is linked to it and its author profile and shown as Author. Badge on `/account` now, next to the name in comments once they exist |
+| ✅     | Editorial roles                  | 2026-11-13 — CMS users are admin / editor / writer (`apps/cms/src/access/roles.ts`): writers draft under their own author profile (Users → *Author profile*), can't publish, can't edit published or others' articles; editors publish anything; admins also manage users, subscribers and readers. Existing accounts became admins |
 
 ## Mobile (Expo)
 
@@ -213,9 +216,8 @@ Everything else waits on something:
 
 | Waits on | Items (in the backlog below) |
 | --- | --- |
-| **More than one writer** | Editorial roles & review flow · author ↔ CMS user link |
 | **The app being shipped** | Push notifications · store release (EAS) · app store assets · universal links |
-| **Traffic** | Reader accounts (`/account`, Clerk → DB sync) · hosted Meilisearch |
+| **Traffic** | Hosted Meilisearch |
 | **Content and readers** | Everything in **🅿️ Parked**: sending the newsletter, analytics review, comments |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
@@ -373,13 +375,13 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 | Pri | Item                         | Notes                                                                                       |
 | --- | ---------------------------- | ------------------------------------------------------------------------------------------- |
-| ✅  | Newsletter sign-up           | Done (2026-11-09). Form in the footer of every page and at the end of articles: email + unticked consent box + honeypot, `/api/newsletter` (5/min per IP) → CMS `/api/newsletter/subscribe`. **Double opt-in**: a confirmation email (`lib/emails/newsletter-confirm.ts`), nobody is subscribed until they click it (`/newsletter/confirm`). Same answer whether the address is new, pending or already in, so the form can't reveal who's subscribed; one confirmation email per address per 10 min. Unsubscribe (`/newsletter/unsubscribe`, asks for a click) **deletes** the row; unconfirmed sign-ups are deleted after 30 days. Confirm token stored hashed; unsubscribe links are HMAC-signed with `PAYLOAD_SECRET`. `subscribers` collection, editors can read, nobody can add. `/privacy` (EN + FR) and the processor list updated. Tested end to end in production on 2026-11-09 (real sign-up, confirmation email via Resend, confirmed in `/admin`). Sending issues: 🅿️ Parked |
+| ✅  | Newsletter sign-up           | Done (2026-11-09). Form in the footer of every page and at the end of articles: email + unticked consent box + honeypot, `/api/newsletter` (5/min per IP) → CMS `/api/newsletter/subscribe`. **Double opt-in**: a confirmation email (`lib/emails/newsletter-confirm.ts`), nobody is subscribed until they click it (`/newsletter/confirm`). Same answer whether the address is new, pending or already in, so the form can't reveal who's subscribed; one confirmation email per address per 10 min. Unsubscribe (`/newsletter/unsubscribe`, asks for a click) **deletes** the row; unconfirmed sign-ups are deleted after 30 days. Confirm token stored hashed; unsubscribe links are HMAC-signed with `PAYLOAD_SECRET`. `subscribers` collection, admins can read (editors could until 2026-11-13), nobody can add. `/privacy` (EN + FR) and the processor list updated. Tested end to end in production on 2026-11-09 (real sign-up, confirmation email via Resend, confirmed in `/admin`). Sending issues: 🅿️ Parked |
 | ✅  | Single article polish        | Done — reading time in the byline, share row (X/Reddit/Bluesky/WhatsApp + native share sheet + copy link), "Read next" suggestions and prev/next navigation |
 | P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
 | ✅  | Dark/light toggle            | Done (2026-11-07) — follows the OS, sun/moon switch in the header remembers the choice (no flash on reload). Components keep the dark classes; `tailwind.config.ts` maps zinc/white/emerald text to CSS variables that flip in `globals.css`. axe-clean in both themes, header fits from 320 px |
 | ✅  | Conferences in the header     | Done (2026-11-12) — the section links (News, Leaks, Reviews, Esport, Conferences) show from 1024 px; below that the swipeable strip of every section (was phones only, the header overflowed between 640 and 1024 px) |
-| P3  | Comments                     | Reader comments (needs reader auth + a comments store/service)                              |
+| P3  | Comments                     | Reader comments: reader accounts and role badges are ready (2026-11-13); needs the comments store, moderation (report, hide) and anti-spam |
 
 ### UX & quality
 
@@ -407,8 +409,6 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | --- | ----------------------------- | ------------------------------------------------------------------------------ |
 | ✅  | Auto `publishedAt`            | `beforeChange` hook stamps the publish date; re-saving an undated published article backfills from `createdAt`. Fixes the missing byline date, JSON-LD `datePublished`, prev/next nav and `-publishedAt` sorting |
 | ✅  | Required SEO defaults         | Already covered at render time: article metadata falls back to title/excerpt when the SEO fields are empty |
-| P3  | Author ↔ user link            | Connect a CMS `user` (editor) to an `author` profile. Only matters once there's more than one writer |
-| P2  | Editorial workflow            | Roles (admin / editor / writer) + access control per role; review/publish flow |
 | ✅  | Homepage curation             | Done (2026-11-06) — `featured` checkbox on articles (migration `article_featured`): the newest featured article is the homepage lead, else the newest article (`lib/home.ts`, tested). How-to in `apps/cms/README.md` |
 | ✅  | Scheduled publishing          | Done (2026-11-07) — "Schedule Publish" in the Publish menu of a saved article (`versions.drafts.schedulePublish`), run by Payload's jobs queue every minute inside the CMS (`jobs.autoRun`). Publishing also flips `status` draft → published so the site shows it. Migration `scheduled_publish`. How-to in `apps/cms/README.md` |
 | ✅  | "Archived" status works      | Fixed 2026-11-07: `status` and Payload's `_status` shared one Postgres enum (draft/published), so saving Archived failed. `status` now has its own (`enumName`, migration `editorial_status_enum`) |
@@ -448,10 +448,7 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 
 | Pri | Item                      | Notes                                                         |
 | --- | ------------------------- | ------------------------------------------------------------- |
-| P2  | `/account` page           | Profile, saved articles (middleware matcher already in place) |
-| P2  | Clerk → DB sync           | Webhook to mirror Clerk users into Postgres for app data      |
 | P2  | Clerk on mobile           | Reader auth parity in the Expo app                            |
-| P3  | Saved/bookmarked articles | Per-user, needs the DB link above                             |
 
 ## 6. Internationalization (EN + FR)
 

@@ -322,7 +322,7 @@ const run = async () => {
   if (users.totalDocs === 0) {
     const email = process.env.SEED_ADMIN_EMAIL || 'admin@akavish.test'
     const password = process.env.SEED_ADMIN_PASSWORD || 'akavish-local'
-    await payload.create({ collection: 'users', data: { email, password } })
+    await payload.create({ collection: 'users', data: { email, password, role: 'admin' } })
     console.log(`[seed] admin created → ${email} / ${password}`)
   } else {
     console.log(`[seed] ${users.totalDocs} user(s) already exist — admin left untouched`)

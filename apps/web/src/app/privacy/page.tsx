@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         Reading Akavish requires no account and no tracking. We do not sell or
         share your data for advertising, we do not build profiles of readers, and
         we do not use advertising cookies. If you create an account, we hold your
-        email address so you can log back in. If you subscribe to the newsletter,
+        email address so you can log back in, and the articles you save. If you subscribe to the newsletter,
         we hold your email address to send it, until you unsubscribe. Nothing
         more.
       </p>
@@ -49,8 +49,11 @@ export default function PrivacyPage() {
         by Clerk. It holds your email address and whatever name or avatar you
         choose to provide. If you sign in with Google, Discord, Twitch or X, that
         service tells Clerk your email address, name and avatar, under its own
-        privacy policy; we never see your password there. Reader accounts
-        currently unlock nothing beyond being signed in.
+        privacy policy; we never see your password there. Our own database
+        (Neon) keeps a copy of your account’s name, email address and avatar
+        as Clerk has them, your role on the site (the badge shown next to your
+        name, such as “Author”) and the articles you save, so we can show them on
+        your account page. Deleting your account deletes all of it.
       </p>
       <p>
         <strong>If you subscribe to the newsletter.</strong> We store your email

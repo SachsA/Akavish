@@ -96,6 +96,14 @@ test('search page: section chips with counts, game filter, highlighting', async 
   expect(byGame.facets.review).toBe(1)
 })
 
+test('Save on an article is for signed-in readers', async ({ page, request }) => {
+  await page.goto('/article/neon-drift-review')
+  await expect(page.getByRole('button', { name: 'Save' })).toBeVisible()
+  // The API never takes the reader from the request: signed out, nothing.
+  expect((await request.get('/api/bookmarks?article=1')).status()).toBe(401)
+  expect((await request.post('/api/bookmarks', { data: { articleId: '1' } })).status()).toBe(401)
+})
+
 test('renaming a published article redirects the old URL (308)', async ({ request }) => {
   // A throwaway article with a never-visited slug, so no cached page can answer
   // for the old URL. Deleted at the end.

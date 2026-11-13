@@ -83,11 +83,16 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
   the site (`bg-zinc-950`, `text-white`, `text-zinc-400`, `text-emerald-400`…):
   they're CSS variables that flip in light mode. Never hard-code a colour, and
   put `text-on-accent` (not `text-white`) on green buttons. Check both themes:
-  the sun/moon button in the header switches.
+  the sun/moon button in the header switches. One exception: the role badges
+  (`src/lib/roles.ts`) are solid colours with fixed text, the same in both themes.
 - **Server logs:** `log.info/warn/error` from `src/lib/log.ts` (JSON lines,
   searchable in Vercel), not `console.log`. Never log IPs or search terms.
 - **A new public API route:** rate-limit it and set cache headers with
-  `src/lib/rate-limit.ts`, like `/api/search`.
+  `src/lib/rate-limit.ts`, like `/api/search`. A route for signed-in readers
+  takes the reader from Clerk's `auth()`, never from the request, and answers
+  `private, no-store`, like `/api/bookmarks`.
+- **CMS access:** use the helpers in `apps/cms/src/access/roles.ts` (`admins`,
+  `editors`, `staff`) rather than "any logged-in user".
 - **A new third-party service that sees visitors?** Add it to
   `src/lib/legal.ts` (`PROCESSORS`) in the same commit: both privacy pages
   render that list.
@@ -96,11 +101,11 @@ Pages live in `apps/web/src/app/` (Next.js App Router).
 
 | Where | What | Command |
 | --- | --- | --- |
-| `apps/web/src/lib/*.test.ts` | Pure logic: homepage lead and category sections, JSON-LD, pagination, rate limiting, revalidation secret | `pnpm test` |
+| `apps/web/src/**/*.test.ts` | Pure logic: homepage lead and category sections, JSON-LD, pagination, rate limiting, revalidation secret, search queries and highlighting, the reader API client and role badges; the `/api/bookmarks` route (Clerk and the CMS mocked) | `pnpm test` |
 | `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper, categories (vs the CMS), reading time | `pnpm test` |
 | `apps/mobile/src/lib/*.test.ts` | App helpers: dates, feed paging, Lexical parsing, links | `pnpm test` |
 | `apps/cms/src/**/*.test.ts`, `apps/cms/scripts/**/*.test.mjs` | CMS pure logic: the AI scout's feeds parsing, score, clock, triage answers, digests, drafts (Watch videos, share image and its alt, YouTube ids, tag and game matching and creation, duplicate check, score weights, triage of already-covered items, live page: links, merges, completions, rendering, slash command parsing), Discord signatures and buttons, weekly report, which saves refresh the site; the Markdown → Lexical article importer | `pnpm test` |
-| `apps/cms/tests/int/` | Payload against a real DB: slugs, publish date, redirects, access, newsletter opt-in, the AI scout run, drafts with their cover and videos, Discord clicks, the no-cover Publish refusal, a whole /live event (network faked; empties the local scout tables) | `cd apps/cms && pnpm test:int` |
+| `apps/cms/tests/int/` | Payload against a real DB: slugs, publish date, redirects, access, newsletter opt-in, the AI scout run, drafts with their cover and videos, Discord clicks, the no-cover Publish refusal, a whole /live event (network faked; empties the local scout tables), reader accounts, saved articles, Clerk's webhook and the editorial roles | `cd apps/cms && pnpm test:int` |
 | `apps/cms/tests/e2e/` | Playwright through the admin panel | `cd apps/cms && pnpm test:e2e` |
 | `apps/web/tests/e2e/` | Playwright on the public site, newsletter form included (seeded CMS + web running) | `cd apps/web && pnpm test:e2e` |
 

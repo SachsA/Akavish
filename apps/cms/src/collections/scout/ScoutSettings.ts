@@ -1,4 +1,5 @@
 import type { GlobalConfig } from 'payload'
+import { editors } from '../../access/roles'
 
 /**
  * The scout's switches and memory: pause, threshold, and when each digest and
@@ -8,6 +9,7 @@ export const ScoutSettings: GlobalConfig = {
   slug: 'scout-settings',
   label: 'Scout settings',
   admin: { group: 'Scout' },
+  access: { read: editors, update: editors },
   fields: [
     {
       name: 'paused',
