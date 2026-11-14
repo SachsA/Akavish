@@ -340,7 +340,9 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    focus games' official updates, hugely anticipated games, a game's fate,
    market data (Sensor Tower, Circana), star transfers, and (since
    2026-11-13) big esport playoffs and finals with a top team, star
-   statements and top-team roster changes higher; routine matches stay low.
+   statements and top-team roster changes, and high-profile stories about
+   the big companies of games and hardware (a CEO investigated, lawsuits,
+   regulators, console and GPU prices) higher; routine matches stay low.
 5. **Drafts** (`draft.ts`, `draft-prompt.ts`, `extract.ts`), only when
    *Scout settings → draftsEnabled* is ticked (off by default): up to 3 stories
    per run (and `maxDraftsPerDay`) at or above the threshold, under 24 h old.

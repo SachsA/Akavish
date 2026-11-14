@@ -122,6 +122,15 @@ describe('scoreStory', () => {
   })
 })
 
+describe('triage guide', () => {
+  it('ranks industry stories about the big companies as games news (Nvidia CEO, Nov 2026)', async () => {
+    const { TRIAGE_SYSTEM } = await import('./triage-prompt')
+    expect(TRIAGE_SYSTEM).toMatch(/60-75 a high-profile story about the leaders or the big companies/)
+    expect(TRIAGE_SYSTEM).toContain('Nvidia')
+    expect(TRIAGE_SYSTEM).toMatch(/games news even when they aren't about a game/)
+  })
+})
+
 describe('Paris clock and digests', () => {
   it('follows Paris time in winter and summer', () => {
     expect(parisClock(new Date('2026-11-10T19:30:00Z'))).toEqual({ date: '2026-11-10', hour: 20 })

@@ -347,7 +347,12 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   drafts Alex liked. The 6 "Doublon" rejections were all drafted on Nov 11
   before the duplicate check went live (17:32 UTC); none since, and it set 3
   aside by itself. Threshold stays 60, `maxDraftsPerDay` 20 (a busy day is
-  18-20 at or above it).
+  18-20 at or above it). Same day, from Alex: the Nvidia CEO investigation
+  (5 outlets) should have been drafted; the model had rated it 35, "not about
+  games". The triage guide now ranks high-profile stories about the leaders
+  and big companies of games and gaming hardware (CEO scandals, lawsuits,
+  regulators, bosses leaving, console and GPU prices) at 60-75, rather than
+  loosening the significance-40 rule.
 - ✅ Nov 11: `draftsEnabled` ticked (threshold 60, `maxDraftsPerDay` 20).
 - Nov 11-18: running-in with automatic drafts.
 - ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for
