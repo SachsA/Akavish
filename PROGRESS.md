@@ -331,7 +331,13 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   score spread, cost, and how many automatic drafts were published or
   rejected. Already noted: the grouping split one story in two (Fairgames at
   80 and 76), and many single-source stories score 33. Tune the threshold and
-  `maxDraftsPerDay`.
+  `maxDraftsPerDay`. Done early on Nov 13 from Alex's review of the day:
+  +8 per extra outlet (cap 24) instead of +5 (cap 20), since news carried by
+  3-5 outlets sat at 55-57 all day and was never drafted; the triage guide
+  ranks big esport playoffs and finals with a top team, star statements and
+  top-team roster changes at 60-75 (routine matches stay below 40); every run
+  rescores the last 24 h of stories so the change applied at once. Esport
+  results proper wait for step 4 (daily recaps, not one article per match).
 - ✅ Nov 11: `draftsEnabled` ticked (threshold 60, `maxDraftsPerDay` 20).
 - Nov 11-18: running-in with automatic drafts.
 - ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for

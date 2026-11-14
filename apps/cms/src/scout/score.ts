@@ -3,8 +3,9 @@
 //
 //   significance  0–60  how big the news is on its own (the model's estimate
 //                       0–100 × 0.6): a GTA trailer vs a small patch
-//   sources       0–20  independent outlets reporting it (+5 each after the
-//                       first, capped): one rumour vs everyone covering it
+//   sources       0–24  independent outlets reporting it (+8 each after the
+//                       first, capped at 4 outlets): one rumour vs everyone
+//                       covering it
 //   reliability   0–25  best source: official 25, established outlet 15,
 //                       leaker/unknown 0
 //   freshness     0 to −30  older than a day −10, three days −30
@@ -17,6 +18,12 @@
 // about a focus game (sig 65 → 39 + 25) or a big story from one established
 // outlet (sig 75 → 45 + 15) reaches the 60 threshold on its own, while a lone
 // leaker (sig 80 → 48 + 0) still waits for confirmation from others.
+//
+// Retuned again on 2026-11-13 (+5 → +8 per outlet, cap 20 → 24): regular news
+// carried by 3 to 5 outlets sat at 55-57 all day (an Xbox outage, Disney+ and
+// The Game Awards, a GTA VI series teaser, Xbox Playback) and was never
+// drafted. Several outlets agreeing is the strongest signal we have: regular
+// news (sig 50) from an established outlet now reaches 60 with 3 outlets.
 
 import type { Reliability } from './default-sources'
 
@@ -40,7 +47,7 @@ export function scoreStory({
   ageHours,
 }: ScoreInput): number {
   const sig = Math.max(0, Math.min(100, significance)) * 0.6
-  const sources = Math.min(20, Math.max(0, sourceCount - 1) * 5)
+  const sources = Math.min(24, Math.max(0, sourceCount - 1) * 8)
   const reliability = RELIABILITY_POINTS[bestReliability] ?? 0
   const freshness = ageHours > 72 ? -30 : ageHours > 24 ? -10 : 0
   return Math.round(Math.max(0, Math.min(100, sig + sources + reliability + freshness)))

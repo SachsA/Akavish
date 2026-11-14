@@ -326,14 +326,18 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    skip, never a crash. Until 2026-11-12 only the 80 latest stories were
    shown, a few hours' worth, so the same news reported the next day became
    a second story.
-4. **Score** (`score.ts`): significance × 0.6 (0-60) + 5 per extra outlet
-   (0-20) + best reliability (official 25, established outlet 15, leaker 0)
-   − age, out of 100. Threshold 60 by default (*Scout settings*). Retuned on
+4. **Score** (`score.ts`): significance × 0.6 (0-60) + 8 per extra outlet
+   (0-24) + best reliability (official 25, established outlet 15, leaker 0)
+   − age, out of 100. Each run scores the stories of the last 24 hours again
+   from what's stored (`rescoreRecent`: weights and freshness apply at once;
+   a listed story crossing the threshold goes back to "new"). Threshold 60 by default (*Scout settings*). Retuned on
    2026-11-12 so good single-source news (an official post about a focus
    game, a big story from one outlet) can reach 60 on its own, while a lone
    leaker can't; the significance guide in `triage-prompt.ts` ranks the
    focus games' official updates, hugely anticipated games, a game's fate,
-   market data (Sensor Tower, Circana) and star transfers higher.
+   market data (Sensor Tower, Circana), star transfers, and (since
+   2026-11-13) big esport playoffs and finals with a top team, star
+   statements and top-team roster changes higher; routine matches stay low.
 5. **Drafts** (`draft.ts`, `draft-prompt.ts`, `extract.ts`), only when
    *Scout settings → draftsEnabled* is ticked (off by default): up to 3 stories
    per run (and `maxDraftsPerDay`) at or above the threshold, under 24 h old.

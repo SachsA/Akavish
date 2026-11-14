@@ -110,6 +110,51 @@ export async function rescore(
   })
 }
 
+/**
+ * Score again the stories still in play (last item under a day old, not
+ * drafted or set aside) from what's stored: freshness moves with the clock,
+ * and a change of weights in score.ts applies at once instead of only to
+ * stories that get a new item. Pure arithmetic, no model call. A story that
+ * crosses the threshold this way goes back to "new" like in rescore().
+ */
+export async function rescoreRecent(ctx: ScoutContext, threshold: number): Promise<number> {
+  const since = new Date(ctx.now.getTime() - 24 * 3_600_000).toISOString()
+  const { docs } = await ctx.payload.find({
+    collection: 'scout-stories',
+    where: {
+      and: [
+        { lastItemAt: { greater_than: since } },
+        { status: { in: ['new', 'listed'] } },
+        { article: { exists: false } },
+      ],
+    },
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+  })
+  let changed = 0
+  for (const s of docs as unknown as StoryDoc[]) {
+    const score = scoreStory({
+      significance: s.significance ?? 50,
+      sourceCount: s.sourceCount ?? 1,
+      bestReliability: s.bestReliability ?? 'variable',
+      ageHours: (ctx.now.getTime() - new Date(s.firstSeenAt).getTime()) / 3_600_000,
+    })
+    if (score === s.score) continue
+    await ctx.payload.update({
+      collection: 'scout-stories',
+      id: s.id,
+      data: {
+        score,
+        ...(s.status === 'listed' && s.score < threshold && score >= threshold ? { status: 'new' } : {}),
+      },
+      overrideAccess: true,
+    })
+    changed++
+  }
+  return changed
+}
+
 /** The stories the model can join items to (see MAX_IMPORTANT). */
 async function openStories(ctx: ScoutContext): Promise<OpenStory[]> {
   const since = new Date(ctx.now.getTime() - OPEN_WINDOW_MS).toISOString()

@@ -54,6 +54,7 @@ export interface StoryDoc {
   score: number
   significance?: number | null
   sourceCount?: number | null
+  bestReliability?: 'official' | 'high' | 'variable' | null
   game?: string | null
   category?: string | null
   status: 'new' | 'listed' | 'drafted' | 'published' | 'rejected'

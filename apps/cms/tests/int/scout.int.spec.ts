@@ -21,7 +21,7 @@ import { gatherReport } from '@/scout/report'
 import type { DiscordMessage } from '@/scout/discord'
 import { checkBudget } from '@/scout/budget'
 import { runScout } from '@/scout/run'
-import { triage } from '@/scout/triage'
+import { rescoreRecent, triage } from '@/scout/triage'
 
 import sharp from 'sharp'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -173,10 +173,10 @@ describe('scout', () => {
 
     const { docs } = await payload.find({ collection: 'scout-stories', overrideAccess: true })
     expect(docs).toHaveLength(1)
-    // significance 92 → 55.2, 2 sources → +5, official → +25 = 85.2 → 85
+    // significance 92 → 55.2, 2 sources → +8, official → +25 = 88.2 → 88
     expect(docs[0]).toMatchObject({
       title: 'The Last of Us Part III announced',
-      score: 85,
+      score: 88,
       sourceCount: 2,
       bestReliability: 'official',
     })
@@ -195,7 +195,7 @@ describe('scout', () => {
     sent.length = 0
     expect(await maybeSendDigest(ctx(evening), settings)).toBe('evening')
     expect(sent[0].content).toContain('1 sujet, dont 1 au-dessus du seuil (60)')
-    expect(sent[0].embeds?.[0].title).toBe('85 · The Last of Us Part III announced')
+    expect(sent[0].embeds?.[0].title).toBe('88 · The Last of Us Part III announced')
     expect(sent[0].embeds?.[0].description).toContain('Official, Press')
 
     const again = (await payload.findGlobal({
@@ -205,6 +205,31 @@ describe('scout', () => {
     expect(await maybeSendDigest(ctx(new Date(evening.getTime() + 600_000)), again)).toBeNull()
     const { docs } = await payload.find({ collection: 'scout-stories', overrideAccess: true })
     expect(docs[0].status).toBe('listed')
+  })
+
+  it('scores stories in play again when the weights or the clock change', async () => {
+    // A story stored under the old weights (3 outlets, regular news): 55, listed.
+    const story = await payload.create({
+      collection: 'scout-stories',
+      data: {
+        title: 'Rescore check',
+        score: 55,
+        significance: 50,
+        sourceCount: 3,
+        bestReliability: 'high',
+        status: 'listed',
+        firstSeenAt: NOW.toISOString(),
+        lastItemAt: NOW.toISOString(),
+      } as never,
+      overrideAccess: true,
+    })
+    expect(await rescoreRecent(ctx(new Date(NOW.getTime() + 3_600_000)), 60)).toBeGreaterThanOrEqual(1)
+    const after = await payload.findByID({ collection: 'scout-stories', id: story.id, overrideAccess: true })
+    // 30 + 16 + 15 = 61: over the threshold, so back to "new" for the drafts.
+    expect(after).toMatchObject({ score: 61, status: 'new' })
+    // Two days on it's out of play: not touched any more.
+    expect(await rescoreRecent(ctx(new Date(NOW.getTime() + 48 * 3_600_000)), 60)).toBe(0)
+    await payload.delete({ collection: 'scout-stories', id: story.id, overrideAccess: true })
   })
 
   it('pauses itself and warns once when the monthly budget is spent', async () => {

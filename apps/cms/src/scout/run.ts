@@ -14,7 +14,7 @@ import { autoDraft } from './draft'
 import { postToDiscord, type DiscordMessage } from './discord'
 import { sendBotMessage } from './discord-bot'
 import { purgeOld } from './retention'
-import { triage } from './triage'
+import { rescoreRecent, triage } from './triage'
 
 export interface RunOptions {
   config?: ScoutConfig
@@ -39,6 +39,8 @@ export interface RunReport {
     covered?: number
     skippedReason?: string
   }
+  /** Stories whose score moved without a new item (clock, weights). */
+  rescored?: number
   drafted?: number
   /** 1 when the running event's page changed. */
   live?: number
@@ -91,6 +93,7 @@ export async function runScout(payload: Payload, opts: RunOptions = {}): Promise
   await step('sources', () => ensureSources(ctx))
   report.collected = await step('collect', () => collect(ctx))
   report.triaged = await step('triage', () => triage(ctx, settings))
+  report.rescored = await step('rescore', () => rescoreRecent(ctx, settings.threshold ?? 60))
   report.drafted = await step('drafts', () => autoDraft(ctx, settings))
   report.live = await step('live', () => runLive(ctx, settings))
   report.digest = (await step('digest', () => maybeSendDigest(ctx, settings, opts.digest))) ?? null

@@ -1269,9 +1269,12 @@ full official title and the scout creates the game with what the sources say
 (developer, publisher, platforms, genres) and the official image as its cover.
 Rejecting a draft deletes the tags and game created for it if nothing else
 uses them. The card lists the tags and the game ("fiche créée" when new); a
-revision picks them again. **Scores.** Out of 100: the news' significance (Haiku's estimate) ×0.6, +5
-per extra outlet (up to 20), +25 for an official source or +15 for an
-established outlet, minus age. An official post about a game Akavish follows
+revision picks them again. **Scores.** Out of 100: the news' significance (Haiku's estimate) ×0.6, +8
+per extra outlet (up to 24, i.e. 4 more outlets), +25 for an official source
+or +15 for an established outlet, minus age. Regular news carried by 3 outlets
+reaches 60 (retune of 2026-11-13). Every run also scores again the stories of
+the last 24 hours from what's stored, so a change of weights or the clock
+applies at once. An official post about a game Akavish follows
 (CS2, LoL, Valorant…) or a big story from one solid outlet can reach the
 threshold alone; a lone leaker can't. The triage also sees Akavish's articles
 of the last 3 weeks: an item repeating one never becomes a story, so it

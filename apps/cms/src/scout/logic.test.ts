@@ -11,7 +11,7 @@ describe('scoreStory', () => {
   it('puts an official announcement of a big game well above the threshold', () => {
     expect(
       scoreStory({ significance: 90, sourceCount: 4, bestReliability: 'official', ageHours: 1 }),
-    ).toBe(94)
+    ).toBe(100)
   })
 
   it('lets good single-source news reach 60 (official post, big story from an outlet)', () => {
@@ -26,6 +26,18 @@ describe('scoreStory', () => {
     expect(
       scoreStory({ significance: 30, sourceCount: 1, bestReliability: 'high', ageHours: 1 }),
     ).toBeLessThan(40)
+  })
+
+  it('lets regular news through once 3 outlets carry it (2026-11-13 retune)', () => {
+    // An Xbox outage, Disney+ and The Game Awards, a GTA VI series teaser:
+    // regular news from established outlets, stuck at 55-57 before.
+    const regular = { significance: 50, bestReliability: 'high' as const, ageHours: 2 }
+    expect(scoreStory({ ...regular, sourceCount: 1 })).toBeLessThan(60)
+    expect(scoreStory({ ...regular, sourceCount: 2 })).toBeLessThan(60)
+    expect(scoreStory({ ...regular, sourceCount: 3 })).toBeGreaterThanOrEqual(60)
+    // +8 per outlet after the first, no more past the fifth.
+    expect(scoreStory({ ...regular, sourceCount: 5 })).toBe(69)
+    expect(scoreStory({ ...regular, sourceCount: 9 })).toBe(69)
   })
 
   it('keeps a lone leaker below it until others pick the story up', () => {
