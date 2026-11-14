@@ -223,13 +223,37 @@ describe('scout', () => {
       } as never,
       overrideAccess: true,
     })
+    // Its items, from three outlets (two of them IGN's: one outlet).
+    const outlets: Array<[string, string]> = [
+      ['IGN', 'https://scout-test.invalid/ign.xml'],
+      ['IGN France', 'https://scout-test.invalid/ignfr.xml'],
+      ['Kotaku', 'https://scout-test.invalid/kotaku.xml'],
+      ['Polygon', 'https://scout-test.invalid/polygon.xml'],
+    ]
+    const made: Array<number | string> = []
+    for (const [name, url] of outlets) {
+      const src = await payload.create({
+        collection: 'scout-sources',
+        data: { name, url, kind: 'rss', reliability: 'high', cadence: 'normal', language: 'en', active: false } as never,
+        overrideAccess: true,
+      })
+      made.push(src.id)
+      await payload.create({
+        collection: 'scout-items',
+        data: { title: `Rescore ${name}`, url: `${url}#item`, source: src.id, story: story.id, status: 'triaged' } as never,
+        overrideAccess: true,
+      })
+    }
     expect(await rescoreRecent(ctx(new Date(NOW.getTime() + 3_600_000)), 60)).toBeGreaterThanOrEqual(1)
     const after = await payload.findByID({ collection: 'scout-stories', id: story.id, overrideAccess: true })
-    // 30 + 16 + 15 = 61: over the threshold, so back to "new" for the drafts.
+    // 3 outlets (IGN + IGN France = one): 30 + 16 + 15 = 61, over the
+    // threshold, so back to "new" for the drafts.
     expect(after).toMatchObject({ score: 61, status: 'new' })
     // Two days on it's out of play: not touched any more.
     expect(await rescoreRecent(ctx(new Date(NOW.getTime() + 48 * 3_600_000)), 60)).toBe(0)
+    await payload.delete({ collection: 'scout-items', where: { story: { equals: story.id } }, overrideAccess: true })
     await payload.delete({ collection: 'scout-stories', id: story.id, overrideAccess: true })
+    await payload.delete({ collection: 'scout-sources', where: { id: { in: made } }, overrideAccess: true })
   })
 
   it('pauses itself and warns once when the monthly budget is spent', async () => {

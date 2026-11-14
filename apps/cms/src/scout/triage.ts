@@ -12,8 +12,7 @@ import {
   type SourceDoc,
   type StoryDoc,
 } from './context'
-import type { Reliability } from './default-sources'
-import { bestOf, scoreStory } from './score'
+import { bestOf, storyScore, thresholdFor, type SourceRef } from './score'
 import {
   decide,
   dryRunAnswer,
@@ -76,9 +75,11 @@ export async function rescore(
   ])
   const items = docs as unknown as ItemDoc[]
   if (items.length === 0) return
-  const sources = new Map<number, Reliability>()
+  const sources = new Map<number, SourceRef>()
   for (const i of items) {
-    if (typeof i.source === 'object' && i.source) sources.set(i.source.id, i.source.reliability)
+    if (typeof i.source === 'object' && i.source) {
+      sources.set(Number(i.source.id), { name: i.source.name, reliability: i.source.reliability })
+    }
   }
   const dates = items
     .map((i) => new Date(i.publishedAt ?? i.createdAt).getTime())
@@ -86,13 +87,14 @@ export async function rescore(
   const first = Math.min(...dates)
   const last = Math.max(...dates)
   const s = story as unknown as StoryDoc
-  const bestReliability = bestOf([...sources.values()])
-  const score = scoreStory({
+  const bestReliability = bestOf([...sources.values()].map((x) => x.reliability))
+  const score = storyScore({
     significance: s.significance ?? 50,
-    sourceCount: sources.size,
-    bestReliability,
+    category: s.category,
+    sources: [...sources.values()],
     ageHours: (ctx.now.getTime() - first) / 3_600_000,
   })
+  const needed = thresholdFor(s.category, threshold)
   await ctx.payload.update({
     collection: 'scout-stories',
     id: storyId,
@@ -102,9 +104,7 @@ export async function rescore(
       bestReliability,
       firstSeenAt: new Date(first).toISOString(),
       lastItemAt: new Date(last).toISOString(),
-      ...(s.status === 'listed' && s.score < threshold && score >= threshold
-        ? { status: 'new' }
-        : {}),
+      ...(s.status === 'listed' && s.score < needed && score >= needed ? { status: 'new' } : {}),
     },
     overrideAccess: true,
   })
@@ -132,21 +132,50 @@ export async function rescoreRecent(ctx: ScoutContext, threshold: number): Promi
     depth: 0,
     overrideAccess: true,
   })
+  const stories = docs as unknown as StoryDoc[]
+  if (stories.length === 0) return 0
+
+  // Their sources in two queries (not one per story): the items, then the feeds.
+  const [{ docs: itemDocs }, { docs: sourceDocs }] = await Promise.all([
+    ctx.payload.find({
+      collection: 'scout-items',
+      where: { story: { in: stories.map((s) => s.id) } },
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    ctx.payload.find({ collection: 'scout-sources', pagination: false, depth: 0, overrideAccess: true }),
+  ])
+  const feeds = new Map(
+    (sourceDocs as unknown as SourceDoc[]).map((f) => [String(f.id), { name: f.name, reliability: f.reliability }]),
+  )
+  const byStory = new Map<string, SourceRef[]>()
+  for (const i of itemDocs as unknown as ItemDoc[]) {
+    const feed = feeds.get(String(typeof i.source === 'object' ? i.source.id : i.source))
+    const key = String(typeof i.story === 'object' && i.story ? (i.story as { id: unknown }).id : i.story)
+    if (!feed) continue
+    if (!byStory.has(key)) byStory.set(key, [])
+    byStory.get(key)!.push(feed)
+  }
+
   let changed = 0
-  for (const s of docs as unknown as StoryDoc[]) {
-    const score = scoreStory({
+  for (const s of stories) {
+    const sources = byStory.get(String(s.id))
+    if (!sources?.length) continue // items purged: keep the stored score
+    const score = storyScore({
       significance: s.significance ?? 50,
-      sourceCount: s.sourceCount ?? 1,
-      bestReliability: s.bestReliability ?? 'variable',
+      category: s.category,
+      sources,
       ageHours: (ctx.now.getTime() - new Date(s.firstSeenAt).getTime()) / 3_600_000,
     })
     if (score === s.score) continue
+    const needed = thresholdFor(s.category, threshold)
     await ctx.payload.update({
       collection: 'scout-stories',
       id: s.id,
       data: {
         score,
-        ...(s.status === 'listed' && s.score < threshold && score >= threshold ? { status: 'new' } : {}),
+        ...(s.status === 'listed' && s.score < needed && score >= needed ? { status: 'new' } : {}),
       },
       overrideAccess: true,
     })

@@ -1270,9 +1270,12 @@ full official title and the scout creates the game with what the sources say
 Rejecting a draft deletes the tags and game created for it if nothing else
 uses them. The card lists the tags and the game ("fiche créée" when new); a
 revision picks them again. **Scores.** Out of 100: the news' significance (Haiku's estimate) ×0.6, +8
-per extra outlet (up to 24, i.e. 4 more outlets), +25 for an official source
-or +15 for an established outlet, minus age. Regular news carried by 3 outlets
-reaches 60 (retune of 2026-11-13). Every run also scores again the stories of
+per extra outlet (up to 24, i.e. 4 more outlets; IGN France counts with IGN;
+only for news of significance 40+), +25 for an official source or +15 for an
+established outlet, minus age. Regular news carried by 3 outlets reaches 60;
+minor news relayed everywhere doesn't. Esport: HLTV and VLR.gg count as
+official for their scene, and esport drafts from 50 (threshold − 10), since
+there's one feed per scene (backtest of 2026-11-14 on the week's stories). Every run also scores again the stories of
 the last 24 hours from what's stored, so a change of weights or the clock
 applies at once. An official post about a game Akavish follows
 (CS2, LoL, Valorant…) or a big story from one solid outlet can reach the

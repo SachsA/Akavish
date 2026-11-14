@@ -5,6 +5,7 @@
 // the new version as a reply to the previous one.
 
 import { callTool } from './anthropic'
+import { thresholdFor } from './score'
 import { checkBudget, recordUsage } from './budget'
 import type { ItemDoc, ScoutContext, SettingsDoc, SourceDoc, StoryDoc } from './context'
 import { draftMessage, sendBotMessage } from './discord-bot'
@@ -557,7 +558,18 @@ export async function autoDraft(ctx: ScoutContext, settings: SettingsDoc): Promi
     collection: 'scout-stories',
     where: {
       and: [
-        { score: { greater_than_equal: s.threshold ?? 60 } },
+        // Esport from 10 points lower (score.ts, thresholdFor).
+        {
+          or: [
+            { score: { greater_than_equal: s.threshold ?? 60 } },
+            {
+              and: [
+                { category: { equals: 'esport' } },
+                { score: { greater_than_equal: thresholdFor('esport', s.threshold ?? 60) } },
+              ],
+            },
+          ],
+        },
         { status: { in: ['new', 'listed'] } },
         { article: { exists: false } },
         // Stale stories don't get a draft just because the switch was turned on.

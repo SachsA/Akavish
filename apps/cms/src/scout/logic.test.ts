@@ -4,7 +4,14 @@ import { scoutConfig } from './config'
 import { digestMessages } from './discord'
 import { costUsd } from './pricing'
 import { dueDigest, isDue, parisClock, periodStarts } from './schedule'
-import { bestOf, scoreStory } from './score'
+import {
+  bestOf,
+  effectiveReliability,
+  outletWeight,
+  scoreStory,
+  storyScore,
+  thresholdFor,
+} from './score'
 import { decide, dryRunAnswer, triagePrompt, type TriageItem } from './triage-prompt'
 
 describe('scoreStory', () => {
@@ -38,6 +45,45 @@ describe('scoreStory', () => {
     // +8 per outlet after the first, no more past the fifth.
     expect(scoreStory({ ...regular, sourceCount: 5 })).toBe(69)
     expect(scoreStory({ ...regular, sourceCount: 9 })).toBe(69)
+  })
+
+  it('gives the outlet bonus only to news that matters (V3, 2026-11-14)', () => {
+    // Minor news widely relayed (a CEO's private life, Steam Deck graphs): no bonus.
+    expect(scoreStory({ significance: 35, sourceCount: 5, bestReliability: 'high', ageHours: 1 })).toBe(36)
+    // Liked drafts of Nov 14 still pass: Game Awards nominees date, Dawnwalker update.
+    expect(scoreStory({ significance: 45, sourceCount: 4, bestReliability: 'high', ageHours: 1 })).toBe(66)
+    expect(scoreStory({ significance: 40, sourceCount: 4, bestReliability: 'high', ageHours: 1 })).toBe(63)
+  })
+
+  it('counts outlets, not feeds, and treats a scene site as official for esport', () => {
+    expect(outletWeight(['IGN', 'IGN France', 'Kotaku'])).toBe(2)
+    expect(outletWeight(['Push Square', 'Nintendo Life', 'Polygon'])).toBe(3)
+    const hltv = { name: 'HLTV', reliability: 'high' as const }
+    expect(effectiveReliability('esport', [hltv])).toBe('official')
+    expect(effectiveReliability('news', [hltv])).toBe('high')
+    // TenZ back with T1 (VLR.gg alone, significance 55): 33 + 25 = 58, an esport draft.
+    const tenz = storyScore({
+      significance: 55,
+      category: 'esport',
+      sources: [{ name: 'VLR.gg', reliability: 'high' }],
+      ageHours: 1,
+    })
+    expect(tenz).toBe(58)
+    expect(tenz).toBeGreaterThanOrEqual(thresholdFor('esport', 60))
+    expect(tenz).toBeLessThan(thresholdFor('news', 60))
+    // The same feed twice is one source.
+    expect(
+      storyScore({
+        significance: 50,
+        category: 'news',
+        sources: [
+          { name: 'IGN', reliability: 'high' },
+          { name: 'IGN', reliability: 'high' },
+          { name: 'IGN France', reliability: 'high' },
+        ],
+        ageHours: 1,
+      }),
+    ).toBe(45)
   })
 
   it('keeps a lone leaker below it until others pick the story up', () => {

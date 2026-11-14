@@ -9,6 +9,7 @@
 import type { ScoutContext } from './context'
 import type { DiscordMessage } from './discord'
 import { parisClock } from './schedule'
+import { thresholdFor } from './score'
 
 export interface ReportStory {
   id: number
@@ -140,7 +141,7 @@ export function buildReport(input: ReportInput): Report {
     const r = row(s.createdAt)
     if (!r) continue
     r.stories++
-    if (s.score >= threshold) r.aboveThreshold++
+    if (s.score >= thresholdFor(s.category, threshold)) r.aboveThreshold++
   }
   for (const s of input.stories) {
     if (!s.draftedAt || !inWindow(s.draftedAt)) continue
@@ -175,7 +176,8 @@ export function buildReport(input: ReportInput): Report {
       items: items.length,
       ignored: items.filter((i) => i.status === 'ignored').length,
       stories: stories.length,
-      aboveThreshold: stories.filter((s) => s.score >= threshold).length,
+      // Esport passes from 10 points lower (score.ts).
+      aboveThreshold: stories.filter((s) => s.score >= thresholdFor(s.category, threshold)).length,
     },
     buckets: BUCKETS.map(([label, lo, hi]) => ({
       label,

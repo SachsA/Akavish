@@ -4,6 +4,7 @@
 // Message building is pure and unit-tested; `postToDiscord` does the I/O.
 
 import type { FetchLike } from './anthropic'
+import { thresholdFor } from './score'
 
 export interface DigestStory {
   title: string
@@ -52,7 +53,9 @@ export function digestMessages(
 
   const sorted = [...stories].sort((a, b) => b.score - a.score)
   const shown = sorted.slice(0, MAX_STORIES)
-  const above = sorted.filter((s) => s.score >= threshold).length
+  // Esport drafts from 10 points lower (score.ts): green from there too.
+  const passes = (s: DigestStory) => s.score >= thresholdFor(s.category, threshold)
+  const above = sorted.filter(passes).length
   const header =
     `**Scout, résumé ${when}** : ${stories.length} sujet${stories.length > 1 ? 's' : ''}, ` +
     `dont ${above} au-dessus du seuil (${threshold}).` +
@@ -69,7 +72,7 @@ export function digestMessages(
       title: clip(`${s.score} · ${s.title}`, 256),
       ...(s.url ? { url: s.url } : {}),
       description: [tags, sources].filter(Boolean).join('\n') || '—',
-      color: s.score >= threshold ? GREEN : GREY,
+      color: passes(s) ? GREEN : GREY,
     }
   })
 

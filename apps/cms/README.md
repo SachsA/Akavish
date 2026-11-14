@@ -327,8 +327,11 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    shown, a few hours' worth, so the same news reported the next day became
    a second story.
 4. **Score** (`score.ts`): significance × 0.6 (0-60) + 8 per extra outlet
-   (0-24) + best reliability (official 25, established outlet 15, leaker 0)
-   − age, out of 100. Each run scores the stories of the last 24 hours again
+   (0-24; outlets, not feeds: IGN France counts with IGN; only when the
+   significance is 40+) + best reliability (official 25, established outlet
+   15, leaker 0; HLTV and VLR.gg are official for an esport story) − age, out
+   of 100. Esport stories draft from the threshold − 10 (`thresholdFor`), in
+   the digest colours and the weekly report too. Each run scores the stories of the last 24 hours again
    from what's stored (`rescoreRecent`: weights and freshness apply at once;
    a listed story crossing the threshold goes back to "new"). Threshold 60 by default (*Scout settings*). Retuned on
    2026-11-12 so good single-source news (an official post about a focus
