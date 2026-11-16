@@ -53,13 +53,20 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
 /** Queue a draft or a revision and start it now rather than at the next minute's tick. */
-async function queueDraft(payload: Payload, storyId: number, feedback?: string, imageUrl?: string) {
+async function queueDraft(
+  payload: Payload,
+  storyId: number,
+  feedback?: string,
+  imageUrl?: string,
+  imageCredit?: string,
+) {
   const job = (await payload.jobs.queue({
     task: 'scoutDraft' as never,
     input: {
       storyId,
       ...(feedback ? { feedback } : {}),
       ...(imageUrl ? { imageUrl } : {}),
+      ...(imageUrl && imageCredit ? { imageCredit } : {}),
     } as never,
     queue: 'scout',
   })) as { id: number | string }
@@ -167,6 +174,13 @@ export async function handleInteraction(
             placeholder: 'https://… visuel officiel (éditeur, studio, organisateur)',
             short: true,
           },
+          {
+            id: 'credit',
+            label: 'Crédit de l’image (facultatif)',
+            required: false,
+            placeholder: 'BLAST / Luc Bouchon, Riot Games… (affiché sous l’image)',
+            short: true,
+          },
         ]),
       )
     }
@@ -262,7 +276,13 @@ export async function handleInteraction(
       if (image && !/^https:\/\/\S+$/i.test(image)) {
         return json(ephemeral('L’image doit être une URL en https://…'))
       }
-      await queueDraft(payload, storyId, text || undefined, image || undefined)
+      await queueDraft(
+        payload,
+        storyId,
+        text || undefined,
+        image || undefined,
+        values.credit || undefined,
+      )
       const asked = [text ? `révision « ${text} »` : '', image ? 'nouvelle image' : '']
         .filter(Boolean)
         .join(' + ')
@@ -332,7 +352,12 @@ export const scoutReportHandler: PayloadHandler = async (req) => {
 /** The `scoutDraft` job: one draft or revision, reported on Discord if it fails. */
 export async function runDraftJob(
   payload: Payload,
-  input: { storyId: number; feedback?: string | null; imageUrl?: string | null },
+  input: {
+    storyId: number
+    feedback?: string | null
+    imageUrl?: string | null
+    imageCredit?: string | null
+  },
 ) {
   const ctx = makeContext(payload)
   const settings = (await payload.findGlobal({
@@ -342,10 +367,17 @@ export async function runDraftJob(
   try {
     if (input.imageUrl && !input.feedback) {
       // Image only: no model call, the text stays as it is.
-      await setStoryImage(ctx, settings, Number(input.storyId), input.imageUrl)
+      await setStoryImage(
+        ctx,
+        settings,
+        Number(input.storyId),
+        input.imageUrl,
+        input.imageCredit ?? undefined,
+      )
     } else {
       await draftStory(ctx, settings, Number(input.storyId), input.feedback ?? undefined, {
         imageUrl: input.imageUrl ?? undefined,
+        imageCredit: input.imageCredit ?? undefined,
       })
     }
   } catch (err) {

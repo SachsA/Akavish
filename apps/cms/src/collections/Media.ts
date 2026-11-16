@@ -20,6 +20,18 @@ export const Media: CollectionConfig = {
       type: 'text',
       label: 'Alt (French)',
     },
+    {
+      // Shown under the cover on the site ("Photo: BLAST / Luc Bouchon").
+      // Required in practice for any photo that isn't ours or official key
+      // art handed out for press use.
+      name: 'credit',
+      type: 'text',
+      label: 'Credit',
+      admin: {
+        description:
+          'Crédit affiché sous l’image : « BLAST / Luc Bouchon », « Riot Games »… Le mot « Photo » est ajouté par le site. Vide = pas de crédit.',
+      },
+    },
   ],
   upload: {
     mimeTypes: ['image/*'],

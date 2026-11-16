@@ -42,6 +42,34 @@ test('article page: content, editor alt text, breadcrumbs, read next', async ({ 
   await expect(page.getByRole('heading', { name: 'Read next' })).toBeVisible()
 })
 
+test("the cover's credit shows under it, in each language", async ({ page, request }, testInfo) => {
+  // It edits a shared media doc: once is enough, and two projects at once would race.
+  test.skip(testInfo.project.name === 'mobile', 'desktop only')
+  test.setTimeout(150_000) // up to 30 s of cache per page
+  const login = await request.post(`${CMS_URL}/api/users/login`, { data: SEED_ADMIN })
+  const auth = { Authorization: `JWT ${(await login.json()).token}` }
+  const article = (
+    await (await request.get(`${CMS_URL}/api/articles?where[slug][equals]=neon-drift-review&depth=1`)).json()
+  ).docs[0]
+  const media = article.coverImage.id
+  const credit = `E2E Studio ${Date.now().toString(36)}`
+  expect((await request.patch(`${CMS_URL}/api/media/${media}`, { headers: auth, data: { credit } })).ok()).toBeTruthy()
+  try {
+    // Each page is cached on its own (CMS fetch cache + ISR): wait for each.
+    for (const [path, text] of [
+      ['/article/neon-drift-review', `Photo: ${credit}`],
+      ['/fr/article/neon-drift-review', `Photo : ${credit}`],
+    ]) {
+      await expect(async () => {
+        await page.goto(path)
+        await expect(page.locator('article figcaption')).toHaveText(text, { timeout: 1000 })
+      }).toPass({ timeout: 60_000 })
+    }
+  } finally {
+    await request.patch(`${CMS_URL}/api/media/${media}`, { headers: auth, data: { credit: null } })
+  }
+})
+
 test('an unknown article is a real 404', async ({ page }) => {
   const res = await page.goto('/article/this-does-not-exist')
   expect(res?.status()).toBe(404) // no loading.tsx on article pages, so the status is right
@@ -70,10 +98,12 @@ test('the header suggests games and articles as you type', async ({ page }) => {
   await expect(list.getByRole('option', { name: /Game\s*Hollow Crown/ })).toBeVisible()
   await expect(list.getByRole('option', { name: /ratings board/ })).toBeVisible()
   await expect(list.getByRole('option', { name: 'See all results for “hollow”' })).toBeVisible()
-  // The games come first (newest release first: Silksong, then Hollow Crown):
-  // arrow down twice and open the second one.
-  await box.press('ArrowDown')
-  await box.press('ArrowDown')
+  // The games come first, newest release first. How many games match "hollow"
+  // depends on the database (the seed has one; a copy of production has
+  // Silksong too), so arrow down until Hollow Crown is the active option.
+  const game = list.getByRole('option', { name: /Game\s*Hollow Crown/ })
+  for (let i = 0; i < 5 && (await game.getAttribute('aria-selected')) !== 'true'; i++) await box.press('ArrowDown')
+  await expect(game).toHaveAttribute('aria-selected', 'true')
   await box.press('Enter')
   await expect(page).toHaveURL(/\/game\/hollow-crown$/)
 })

@@ -97,6 +97,7 @@ export const en = {
     previous: '← Previous',
     next: 'Next →',
     readNext: 'Read next',
+    photoCredit: (credit: string) => `Photo: ${credit}`,
   },
   share: {
     label: 'Share',

@@ -266,6 +266,22 @@ describe('Discord bot', () => {
     )
   })
 
+  it('an esport draft says which photo to find', () => {
+    const plain = draftMessage(card).embeds?.[0].fields ?? []
+    expect(plain.some((f) => f.name.includes('Photo'))).toBe(false)
+    const fields = draftMessage({ ...card, photoHint: 'Darker (LOUD)' }).embeds?.[0].fields ?? []
+    const field = fields.find((f) => f.name.includes('Photo'))
+    expect(field?.value).toContain('**Darker (LOUD)**')
+    expect(field?.value).toContain('pas Liquipedia')
+  })
+
+  it('photo_hint is kept for esport only', () => {
+    const esport = cleanDraft(answer({ category: 'esport', photo_hint: ' FURIA lifting the trophy ' } as never), 'esport')
+    expect(esport.photo_hint).toBe('FURIA lifting the trophy')
+    const news = cleanDraft(answer({ category: 'news', photo_hint: 'x' } as never), 'news')
+    expect(news.photo_hint).toBe('')
+  })
+
   it('closing a message removes its buttons and keeps the embed', () => {
     const closed = closedMessage(draftMessage(card), 'Publié', 0x10b981)
     expect(closed.components).toEqual([])

@@ -52,6 +52,8 @@ export async function uploadImage(
   ctx: ScoutContext,
   url: string,
   alt: string,
+  /** Shown under the cover ("BLAST / Luc Bouchon"); given with the URL on Discord. */
+  credit?: string,
 ): Promise<{ id: number; url?: string | null }> {
   let parsed: URL
   try {
@@ -84,7 +86,10 @@ export async function uploadImage(
       .slice(0, 60) || 'scout-cover'
   const doc = (await ctx.payload.create({
     collection: 'media',
-    data: { alt: alt.slice(0, 200) } as never,
+    data: {
+      alt: alt.slice(0, 200),
+      ...(credit?.trim() ? { credit: credit.trim().slice(0, 120) } : {}),
+    } as never,
     file: { data, mimetype: type, name: `${base}.${ext}`, size: data.length },
     overrideAccess: true,
   })) as unknown as { id: number; url?: string | null }

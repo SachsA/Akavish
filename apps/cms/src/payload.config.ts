@@ -232,11 +232,18 @@ export default buildConfig({
           { name: 'feedback', type: 'textarea' },
           // An image URL pasted in Discord (Modifier): becomes the cover.
           { name: 'imageUrl', type: 'text' },
+          // Its credit, from the same form ("BLAST / Luc Bouchon").
+          { name: 'imageCredit', type: 'text' },
         ],
         handler: async ({ input, req }) => {
           await runDraftJob(
             req.payload,
-            input as { storyId: number; feedback?: string; imageUrl?: string },
+            input as {
+              storyId: number
+              feedback?: string
+              imageUrl?: string
+              imageCredit?: string
+            },
           )
           return { output: {} }
         },

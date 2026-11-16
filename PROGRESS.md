@@ -467,6 +467,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | ✅  | Cloudflare R2 storage adapter | Done — `@payloadcms/storage-s3` wired to R2, live in prod |
 | ✅  | Image sizes / focal point     | Done — `imageSizes` (thumbnail/card/hero/square) + focal point on the `media` collection; web requests the right variant |
 | ✅  | Alt text required on media    | Already the case — `alt` is `required: true` in `Media.ts`              |
+| ✅  | Photo credit                  | 2026-11-16, 🟠 migration `20261116_165443_media_credit` (additive): `credit` on Media ("BLAST / Luc Bouchon"), shown under the article's cover as "Photo: …" / "Photo : …". The scout's *Modifier* form takes it with the image URL; esport drafts say which photo to find (`photo_hint`: the player for a transfer, the team lifting the trophy for a win) |
 
 ### Operational
 
@@ -549,6 +550,7 @@ this list every time the website gets a reader-facing feature.
 | Newsletter sign-up (11-09) | A form (same CMS endpoint, consent box) |
 | Light theme (11-07) | Follow the phone's light / dark setting |
 | French version (11-16) | Language from the phone, a setting EN / FR; articles from `fr` (same `localizeArticle` logic), interface strings from `apps/web/src/lib/i18n/messages` |
+| Photo credit (11-16) | "Photo: …" under the article's cover (`coverImageCredit`) |
 | Comments (11-13) | Read, post, reply ("Replying to @name"), like / dislike, delete your own, report; moderators hide / restore / delete; same `/api/comments*` rules, with a Clerk session token |
 
 ## 8. Infrastructure, CI/CD & deployment
@@ -610,6 +612,14 @@ checklist it walks through.
 ## Known notes / gotchas
 
 - Run the CMS and web as **two separate processes** (ports 3001 and 3000).
+- **Photos of people (esport) need the rights holder's OK.** Liquipedia's
+  event photos are "copyrighted, used with permission": the organiser (BLAST,
+  ESL, Riot…) allowed Liquipedia, not us, and BLAST's Flickr is "All rights
+  reserved". So never take a photo from Liquipedia or an organiser's gallery
+  without a written OK from the organiser; once given, fill the media's
+  **Credit**. Permission requests went to BLAST, ESL and Riot on 2026-11-16;
+  the four photos already used (articles 174, 178, 183, 184) stay until they
+  answer and are taken down on request.
 - **Keep the pages cacheable (ISR).** Until 2026-11-16 every page was
   rendered per request (`private, no-store`): Clerk's server `<SignedIn>` /
   `<SignedOut>` in the header read the session, and the list pages read

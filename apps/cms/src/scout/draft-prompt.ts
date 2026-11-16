@@ -49,6 +49,8 @@ export interface DraftAnswer {
   new_game?: { developer?: string; publisher?: string; platforms?: string[]; genres?: string[] }
   /** Tags the site doesn't have yet (at most 2 kept). */
   new_tags?: string[]
+  /** Esport: the photo the cover should be (a player for a transfer, a team with the trophy for a win). */
+  photo_hint?: string
 }
 
 /** The `platform` and `genre` options of the Games collection. */
@@ -178,6 +180,11 @@ export const DRAFT_TOOL = {
         items: { type: 'string' },
         description: 'Existing tags that fit, exact names (with new_tags: 2 to 5 in all).',
       },
+      photo_hint: {
+        type: 'string',
+        description:
+          'Esport only, else empty. The photo the editor should find for the cover: a player or coach joining, leaving or benched → their name and team ("Darker (LOUD)"); a tournament won → "<team> lifting the <trophy or tournament> trophy"; anything else → empty.',
+      },
     },
     required: ['title', 'excerpt', 'category', 'blocks', 'seo_description'],
   },
@@ -231,6 +238,10 @@ export function cleanDraft(
       ),
     ],
     game: typeof answer?.game === 'string' ? answer.game.trim().slice(0, 120) : '',
+    photo_hint:
+      category === 'esport' && typeof answer?.photo_hint === 'string'
+        ? answer.photo_hint.trim().slice(0, 120)
+        : '',
     game_is_new: answer?.game_is_new === true,
     new_game: cleanNewGame(answer?.new_game),
     new_tags: (Array.isArray(answer?.new_tags) ? answer.new_tags : [])

@@ -179,6 +179,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `og:image`, else a still of an official video it links, else the game's
   cover or one of its *Other images* (the least used in 14 days, so a game in
   the news daily doesn't repeat one picture), never a press outlet's image (`media.ts`);
+  photos of people (esport) only with the owner's written OK and a **Credit**
+  on the media (shown under the cover), never Liquipedia's (permission given
+  to them, not us); esport cards say which photo to find (`photo_hint`);
   official YouTube videos go in a *Watch* section. Tags and game: the
   model picks existing ones and may create what's missing (at most 2 tags, a
   game only with its official title; cleaned up if the draft is rejected).

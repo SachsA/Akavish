@@ -235,17 +235,25 @@ export default async function ArticlePage({ params }: Params) {
         </div>
 
         {article.coverImage && (
-          <div className="relative aspect-video bg-zinc-800 rounded-lg overflow-hidden mb-8">
-            <Image
-              src={article.coverImage}
-              // The editor's alt text (required on every upload in the CMS).
-              alt={article.coverImageAlt ?? ''}
-              fill
-              sizes="(max-width: 768px) 100vw, 768px"
-              preload
-              className="object-cover"
-            />
-          </div>
+          <figure className="mb-8">
+            <div className="relative aspect-video bg-zinc-800 rounded-lg overflow-hidden">
+              <Image
+                src={article.coverImage}
+                // The editor's alt text (required on every upload in the CMS).
+                alt={article.coverImageAlt ?? ''}
+                fill
+                sizes="(max-width: 768px) 100vw, 768px"
+                preload
+                className="object-cover"
+              />
+            </div>
+            {article.coverImageCredit && (
+              // Photos that aren't ours (organisers, photographers) are credited.
+              <figcaption className="mt-2 text-xs text-zinc-400">
+                {t.article.photoCredit(article.coverImageCredit)}
+              </figcaption>
+            )}
+          </figure>
         )}
 
         <div className="prose-invert">

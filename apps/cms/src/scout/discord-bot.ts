@@ -93,6 +93,8 @@ export interface DraftCard {
   tags?: string[]
   /** The game set on the article, if any. */
   game?: string
+  /** Esport: the photo to find (a player, a team with the trophy). */
+  photoHint?: string
 }
 
 const NO_IMAGE =
@@ -126,6 +128,17 @@ export function draftMessage(card: DraftCard): BotMessage {
           { name: 'Version', value: `V${card.version}`, inline: true },
           ...(card.game ? [{ name: 'Jeu', value: clip(card.game, 1024), inline: true }] : []),
           { name: 'Image', value: clip(image, 1024) },
+          ...(card.photoHint
+            ? [
+                {
+                  name: '📸 Photo à ajouter',
+                  value: clip(
+                    `**${card.photoHint}**. Une photo d’un organisateur qui t’a donné son accord (pas Liquipedia, dont les photos ne sont pas réutilisables) : **Modifier** → URL de l’image + son crédit.`,
+                    1024,
+                  ),
+                },
+              ]
+            : []),
           ...(card.tags
             ? [
                 {

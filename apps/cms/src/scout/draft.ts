@@ -187,8 +187,9 @@ export async function setStoryImage(
   settings: SettingsDoc,
   storyId: number,
   imageUrl: string,
+  imageCredit?: string,
 ): Promise<DraftResult> {
-  return draftStory(ctx, settings, storyId, undefined, { imageUrl, imageOnly: true })
+  return draftStory(ctx, settings, storyId, undefined, { imageUrl, imageCredit, imageOnly: true })
 }
 
 /**
@@ -200,7 +201,7 @@ export async function draftStory(
   settings: SettingsDoc,
   storyId: number,
   feedback?: string,
-  opts: { imageUrl?: string; imageOnly?: boolean } = {},
+  opts: { imageUrl?: string; imageCredit?: string; imageOnly?: boolean } = {},
 ): Promise<DraftResult> {
   const story = (await ctx.payload.findByID({
     collection: 'scout-stories',
@@ -216,7 +217,7 @@ export async function draftStory(
   if (opts.imageOnly) {
     if (!articleRef) throw new Error('no draft for this story')
     if (!opts.imageUrl) throw new Error('image: no URL')
-    return imageOnly(ctx, story, storyId, Number(articleRef), opts.imageUrl)
+    return imageOnly(ctx, story, storyId, Number(articleRef), opts.imageUrl, opts.imageCredit)
   }
   const sources = await sourcesFor(ctx, storyId)
   if (sources.length === 0) throw new Error(`story ${storyId} has no items`)
@@ -326,7 +327,7 @@ export async function draftStory(
   let imageError: string | undefined
   if (opts.imageUrl) {
     try {
-      const up = await uploadImage(ctx, opts.imageUrl, clean.title)
+      const up = await uploadImage(ctx, opts.imageUrl, clean.title, opts.imageCredit)
       cover = { ...up, origin: 'URL donnée sur Discord' }
     } catch (err) {
       imageError = err instanceof Error ? err.message : String(err)
@@ -399,6 +400,7 @@ export async function draftStory(
     videos: watch,
     tags: tagNames,
     game: gameName ? `${gameName}${newGameId ? ' (fiche créée)' : ''}` : undefined,
+    photoHint: clean.photo_hint || undefined,
     cover,
     imageError,
     feedback,
@@ -423,6 +425,7 @@ async function imageOnly(
   storyId: number,
   articleId: number,
   imageUrl: string,
+  imageCredit?: string,
 ): Promise<DraftResult> {
   const art = (await ctx.payload.findByID({
     collection: 'articles',
@@ -434,7 +437,7 @@ async function imageOnly(
   let cover: Cover | null = null
   let imageError: string | undefined
   try {
-    const up = await uploadImage(ctx, imageUrl, art.title)
+    const up = await uploadImage(ctx, imageUrl, art.title, imageCredit)
     cover = { ...up, origin: 'URL donnée sur Discord' }
     await ctx.payload.update({
       collection: 'articles',
@@ -476,6 +479,7 @@ async function postCard(
     videos: Video[]
     tags?: string[]
     game?: string
+    photoHint?: string
     cover: Cover | null
     imageError?: string
     imageChange?: boolean
@@ -514,6 +518,7 @@ async function postCard(
     videos: c.videos.map((v) => ({ title: v.title, channel: v.channel, url: v.url })),
     tags: c.tags,
     game: c.game,
+    photoHint: c.photoHint,
   }
   if (ctx.config.bot && !ctx.config.dryRun) {
     messageId = await sendBotMessage(

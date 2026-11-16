@@ -95,6 +95,7 @@ export const fr: Messages = {
     previous: '← Précédent',
     next: 'Suivant →',
     readNext: 'À lire aussi',
+    photoCredit: (credit: string) => `Photo : ${credit}`,
   },
   share: {
     label: 'Partager',

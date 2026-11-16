@@ -21,6 +21,8 @@ export interface Article {
   coverImageCard?: string
   /** The editor's alt text for the cover (required on uploads in the CMS). */
   coverImageAlt?: string
+  /** Who the cover photo is from ("BLAST / Luc Bouchon"), shown under it. */
+  coverImageCredit?: string
   tags: string[]
   game?: Game
   author: Author

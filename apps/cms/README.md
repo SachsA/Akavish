@@ -420,11 +420,15 @@ bot message with **Publier** / **Modifier** / **Rejeter** and a link to
 `payload.config.ts`): Ed25519 signature checked against `DISCORD_PUBLIC_KEY`
 (401 otherwise), PING answered, only `SCOUT_DISCORD_OWNER_ID` accepted.
 Publish sets the article live, and refuses (privately) while it has no cover;
-Edit opens a form (feedback and/or an image URL, both optional, one needed) and
-queues a `scoutDraft` job (`storyId`, `feedback`, `imageUrl`): feedback → V2
+Edit opens a form (feedback and/or an image URL, both optional, one needed, plus
+the image's credit) and queues a `scoutDraft` job (`storyId`, `feedback`,
+`imageUrl`, `imageCredit` → the media's `credit`): feedback → V2
 rewritten as a reply; image only → `setStoryImage`, the cover changes without
 an AI call. Reject deletes the draft article. The card shows the cover (embed
-image), its origin or an orange "no image" warning, and the videos. Anything
+image), its origin or an orange "no image" warning, and the videos; an esport
+draft also gets "📸 Photo à ajouter" (`photo_hint` from the draft tool: the
+player for a transfer, the team lifting the trophy for a win), since its cover
+is only the game's image until the editor adds a photo they're allowed to use. Anything
 that calls the model runs as a `scoutDraft` job (Discord wants an answer within
 3 s). The story keeps `version`, `feedback`, `lastDraftText` and the article.
 
@@ -449,7 +453,9 @@ local database it runs on.
 Articles are written in English; the site also exists in French (`/fr`). Each
 article has a **Français** group (`fr`: title, excerpt, content, SEO title and
 description, status, date), Media has `altFr`, Tags `nameFr`, Authors `bioFr`
-(migration `20261116_130858_french_version`, additive).
+(migration `20261116_130858_french_version`, additive). Media also has a
+`credit` (`20261116_165443_media_credit`), shown under the cover as
+"Photo: …" / "Photo : …", the same in both languages.
 
 - **When:** publishing an article, or changing the English of a published one
   (hash of title, excerpt, content and SEO in `fr.sourceHash`, keys sorted so

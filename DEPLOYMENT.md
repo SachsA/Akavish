@@ -1311,10 +1311,13 @@ On Discord:
 
 - **Publier**: the article goes live, the message shows its URL. Refused,
   privately, while the article has no cover.
-- **Modifier**: a form with two optional boxes, what's wrong and an **image
-  URL** (official visual, https). Text → V2 rewritten as a reply, with the same
-  buttons; image only → the cover changes, text untouched, no AI call. Revise as
-  many times as needed.
+- **Modifier**: a form with optional boxes: what's wrong, an **image URL**
+  (official visual, https) and the image's **credit** ("BLAST / Luc Bouchon",
+  shown under the cover as "Photo: …"). Text → V2 rewritten as a reply, with the
+  same buttons; image only → the cover changes, text untouched, no AI call.
+  Revise as many times as needed. Esport cards say which photo to add
+  (📸): only one whose owner said yes, never Liquipedia's (see PROGRESS,
+  gotchas).
 - **Rejeter**: optional reason; the draft article is deleted.
 - **Ouvrir dans /admin**: edit it by hand, then publish from `/admin` or the
   button.

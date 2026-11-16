@@ -16,6 +16,7 @@ import * as migration_20261112_163903_review_score from './20261112_163903_revie
 import * as migration_20261113_083945_roles_readers from './20261113_083945_roles_readers';
 import * as migration_20261113_094425_comments from './20261113_094425_comments';
 import * as migration_20261116_130858_french_version from './20261116_130858_french_version';
+import * as migration_20261116_165443_media_credit from './20261116_165443_media_credit';
 
 export const migrations = [
   {
@@ -106,6 +107,11 @@ export const migrations = [
   {
     up: migration_20261116_130858_french_version.up,
     down: migration_20261116_130858_french_version.down,
-    name: '20261116_130858_french_version'
+    name: '20261116_130858_french_version',
+  },
+  {
+    up: migration_20261116_165443_media_credit.up,
+    down: migration_20261116_165443_media_credit.down,
+    name: '20261116_165443_media_credit'
   },
 ];

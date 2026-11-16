@@ -32,6 +32,8 @@ export type PayloadMedia =
       alt?: string | null
       /** The French alt text (CMS Media `altFr`). */
       altFr?: string | null
+      /** Credit shown under the image (CMS Media `credit`). */
+      credit?: string | null
       sizes?: Record<string, { url?: string } | undefined>
     }
   | null
@@ -124,6 +126,10 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     coverImage: mediaUrl(doc.coverImage, cmsUrl, 'hero'),
     coverImageCard: mediaUrl(doc.coverImage, cmsUrl, 'card'),
     coverImageAlt: mediaAlt(doc.coverImage),
+    coverImageCredit:
+      doc.coverImage && typeof doc.coverImage === 'object'
+        ? doc.coverImage.credit?.trim() || undefined
+        : undefined,
     featured: doc.featured === true,
     aiAssisted: doc.aiAssisted === true,
     score: typeof doc.score === 'number' ? doc.score : undefined,

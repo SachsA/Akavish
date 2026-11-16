@@ -107,6 +107,16 @@ describe('mapArticle', () => {
   })
 })
 
+describe('mapArticle: cover credit', () => {
+  it('maps the credit, blank → none', () => {
+    expect(
+      mapArticle(rawArticle({ coverImage: { url: '/x.jpg', alt: 'A', credit: ' BLAST / Luc Bouchon ' } }), CMS)
+        .coverImageCredit,
+    ).toBe('BLAST / Luc Bouchon')
+    expect(mapArticle(rawArticle({ coverImage: { url: '/x.jpg', alt: 'A', credit: ' ' } }), CMS).coverImageCredit).toBeUndefined()
+  })
+})
+
 describe('mapArticle: the French version', () => {
   it('maps fr when it has a title, with the French cover alt', () => {
     const a = mapArticle(
