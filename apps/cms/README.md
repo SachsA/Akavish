@@ -348,7 +348,9 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    per run (and `maxDraftsPerDay`) at or above the threshold, under 24 h old.
    Up to 6 sources, official first, page text read for the first 4; Claude
    Sonnet answers with a `write_article` tool call, turned into Lexical
-   with a *Watch* list (videos) and a *Sources* list. **Media** (`media.ts`):
+   with a *Watch* list (videos) and a *Sources* list. A list item starting
+   with `**Name**` gets that name in bold (`listItemChildren`): release lists
+   read "**Metro 2039** · Feb 4 (…)", game first, short date after. **Media** (`media.ts`):
    the cover is the `og:image` of an official source, else a still of an
    official video the draft links, else the game's cover or one of its
    *Other images* in *Games*, the one the last 14 days' articles used least
