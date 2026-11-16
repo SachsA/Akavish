@@ -70,6 +70,8 @@ interface ListParams {
   tagId?: string
   /** Only articles the editor marked as homepage lead. */
   featured?: boolean
+  /** Language of the articles; default: the page's (route handlers pass it). */
+  locale?: Locale
 }
 
 // Fetch a paginated list of *published* articles, newest first.
@@ -106,7 +108,7 @@ export async function fetchArticles(
   const json = (await res.json()) as PayloadListResponse<PayloadArticle>
 
   return {
-    data: json.docs.map(mapArticle),
+    data: json.docs.map(params.locale ? mapFor(params.locale) : mapArticle),
     total: json.totalDocs,
     page: json.page,
     perPage: json.limit,

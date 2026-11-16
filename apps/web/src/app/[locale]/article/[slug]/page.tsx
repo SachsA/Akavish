@@ -28,6 +28,13 @@ import { JsonLd } from '@/components/JsonLd'
 
 export const revalidate = 30
 
+// None built ahead: each page is rendered on its first visit, then cached
+// (ISR) like the others. Without this export a dynamic segment is rendered on
+// every request.
+export function generateStaticParams() {
+  return []
+}
+
 type Params = { params: Promise<{ locale: string; slug: string }> }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {

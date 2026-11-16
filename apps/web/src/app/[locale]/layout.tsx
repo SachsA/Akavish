@@ -1,12 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-} from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs'
 import { frFR } from '@clerk/localizations'
 import Link from '@/components/LocaleLink'
 import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
@@ -14,23 +8,25 @@ import { DeferredAnalytics } from '@/components/DeferredAnalytics'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { Wordmark } from '@/components/Wordmark'
 import { SearchBar } from '@/components/SearchBar'
-import { AccountMenu } from '@/components/AccountMenu'
+import { HeaderAuth } from '@/components/HeaderAuth'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LanguageMenu } from '@/components/LanguageMenu'
 import { I18nProvider } from '@/components/I18nProvider'
 import { CATEGORIES } from '@/lib/categories'
 import { LOCALES, ogLocale } from '@/lib/i18n/config'
 import { alternates } from '@/lib/i18n/metadata'
-import { getMessages, setRequestLocale } from '@/lib/i18n/server'
+import { getLocale, getMessages, setRequestLocale } from '@/lib/i18n/server'
+import { feedPath } from '@/lib/feed'
 import '../globals.css'
 
 type Params = { params: Promise<{ locale: string }> }
 
-// Both languages are built ahead; anything else is a 404 (see the proxy).
+// Both languages are built ahead. No `dynamicParams = false`: it would also
+// apply to the article and list pages below, whose slugs aren't all built
+// ahead. Other values never get here (the proxy only lets /fr through).
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }))
 }
-export const dynamicParams = false
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const locale = setRequestLocale((await params).locale)
@@ -43,7 +39,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     },
     description: t.meta.siteDescription,
     keywords: [...t.meta.keywords],
-    alternates: alternates(locale, '/'),
+    alternates: { ...alternates(locale, '/'), types: { 'application/rss+xml': feedPath(locale) } },
     openGraph: {
       title: t.meta.siteTitle,
       description: t.meta.ogDescription,
@@ -137,24 +133,7 @@ function Header() {
           <ThemeToggle />
           <LanguageMenu />
           <div className="flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-3 border-l border-zinc-800">
-            <SignedOut>
-              <SignInButton mode="modal">
-                {/* Hidden on phones so the header fits (with the language menu, and
-                    in French, it didn't at 360 px); the sign-up modal links to
-                    sign-in anyway. */}
-                <button className="hidden sm:inline py-1 whitespace-nowrap hover:text-white transition-colors">
-                  {t.header.logIn}
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="px-2 min-[360px]:px-3 py-1.5 rounded-md bg-emerald-700 text-on-accent text-xs font-semibold whitespace-nowrap hover:bg-emerald-600 transition-colors">
-                  {t.header.signUp}
-                </button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn>
-              <AccountMenu />
-            </SignedIn>
+            <HeaderAuth />
           </div>
         </nav>
       </div>
@@ -194,8 +173,7 @@ function Footer() {
       links: [
         { label: t.footer.about, href: '/about' },
         { label: t.footer.contact, href: '/contact' },
-        // The feed is English (the original articles); no /fr version yet.
-        { label: t.footer.rss, href: '/feed.xml' },
+        { label: t.footer.rss, href: feedPath(getLocale()) },
       ],
     },
     {

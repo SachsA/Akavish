@@ -61,7 +61,7 @@ Last updated: **2026-11-06**.
 | ✅     | Functional footer                     | Sections, About/Contact/Legal, RSS, socials — all targets now exist                 |
 | ✅     | Footer pages                          | `/about`, `/contact`, plus the legal set below                                       |
 | ✅     | Legal pages (EN + FR)                 | `/privacy`, `/terms`, `/legal`, in French at `/fr/privacy`, `/fr/terms`, `/fr/legal` (the old `/fr/confidentialite`, `/fr/conditions`, `/fr/mentions-legales` 308 there since the i18n branch). Both texts are written by hand (`en.tsx` / `fr.tsx` next to each `page.tsx`). Facts (processors, publisher, date) live once in `lib/legal.ts` |
-| ✅     | RSS feed `/feed.xml`                  | Route handler, latest 50 published articles                                         |
+| ✅     | RSS feeds                             | `/feed.xml` (English) and `/fr/feed.xml` (French, translated articles only, since 2026-11-16), latest 50 published articles (`lib/feed.ts`); `<link rel="alternate">` on the home |
 | ✅     | Loading states                        | Home only (`app/(home)/loading.tsx`). The other routes dropped theirs on 2026-11-07 so `notFound()` and slug redirects answer real 404/308 statuses (see gotchas) |
 | ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
 | ✅     | `tsconfig` baseUrl fix                | `@/*` alias now resolves reliably at build                                          |
@@ -400,7 +400,7 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 
 | Idea | Why it waits / what it depends on |
 | --- | --- |
-| Newsletter: the digest | Sign-ups are live since 2026-11-09 (see §1); what waits is **sending** issues: a digest template with the per-subscriber unsubscribe link (`unsubscribeUrl(id)` in `apps/cms/src/lib/newsletter.ts`) and a `List-Unsubscribe` header, sent to `status: confirmed` only. Resend's free tier is 100 emails/day, so a list past ~100 needs its paid plan or batched sends. The AI scout can feed it |
+| Newsletter: the digest | Sign-ups are live since 2026-11-09 (see §1); what waits is **sending** issues: a digest template with the per-subscriber unsubscribe link (`unsubscribeUrl(id)` in `apps/cms/src/lib/newsletter.ts`) and a `List-Unsubscribe` header, sent to `status: confirmed` only. Resend's free tier is 100 emails/day, so a list past ~100 needs its paid plan or batched sends. The AI scout can feed it Also: the confirmation email and the issues in the subscriber's language (French sign-ups from /fr), since the site is bilingual (2026-11-16). |
 | Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
 
 ---
@@ -510,7 +510,8 @@ for after GTA VI week).
 | ✅ | 2. Content | 2026-11-16, 🟠 migration `20261116_130858_french_version` (additive). Not Payload's localization (it moves every localized column into `_locales` tables, a risky migration on live data): a **Français** group on Articles (`fr`: title, excerpt, content, SEO, status, `sourceHash`, `translatedAt`) plus `altFr` on Media, `nameFr` on Tags, `bioFr` on Authors. Publishing, or changing the English of a published article, queues `translateArticle` (queue `translate`, a minute later, one job per burst of edits); Claude Sonnet translates block by block in small markup so bold, italics and links survive (`apps/cms/src/lib/translate.ts`). Hand corrections in /admin stay until the English changes. Own budget (`TRANSLATE_MONTHLY_BUDGET_USD`, 30 $), usage purpose `translate`. Web: `localizeArticle` on /fr pages; untranslated → English with a notice, canonical to the English page, not in the sitemap as /fr; "Traduit de l'anglais avec l'aide de l'IA" under translated articles (terms EN/FR say so); tag names and bios in French; search covers both languages and answers in the page's (`lang=fr`; Meilisearch, English only, is skipped for French); share images in French |
 | ⏳ | 3. Backfill | `POST /api/translate/backfill` once deployed (DEPLOYMENT §12): tags, bios, then every published article (~185, under 10 $) at 5 a minute |
 | ✅ | Live pages | 2026-11-16, from Alex: a live showcase page (scout live mode) changes every 5 minutes, so it stays **English while live**: no translation queued while its scout event is "live" / "ending" (`isLiveArticle`), one translation queued by `runLive` when it ends. The French page says "Live en cours, en anglais : la version française sera publiée à la fin du live" (`GET /api/live-articles`, public, ids only) |
-| ⏳ | Later | French RSS feed, newsletter emails in the subscriber's language, French Meilisearch index if it's ever switched on |
+| ✅ | French RSS | 2026-11-16: `/fr/feed.xml`, linked in the French footer |
+| ⏳ | Later | French Meilisearch index if it's ever switched on. Newsletter in French: with the newsletter sending (🅿️ Parked) |
 
 ## 7. Mobile (`apps/mobile`)
 
@@ -607,12 +608,18 @@ checklist it walks through.
 ## Known notes / gotchas
 
 - Run the CMS and web as **two separate processes** (ports 3001 and 3000).
-- **The web pages are rendered per request, not ISR.** `export const revalidate
-  = 30` is there, but Clerk's `<SignedIn>` / `<SignedOut>` in the header read
-  the session, which makes every page dynamic (`private, no-store` in
-  production since well before i18n). CMS data is still cached (`cms` tag).
-  Worth knowing before relying on page-level caching; moving the auth bits
-  client-side would bring ISR back.
+- **Keep the pages cacheable (ISR).** Until 2026-11-16 every page was
+  rendered per request (`private, no-store`): Clerk's server `<SignedIn>` /
+  `<SignedOut>` in the header read the session, and the list pages read
+  `searchParams` for `?page=`. Now the header's auth is a client component
+  (`components/HeaderAuth.tsx`), list pages read the page from the path (the
+  proxy rewrites `?page=N` to `/page/N` internally: `[category]/page/[n]`,
+  `tag|author|game/[slug]/page/[n]`, shared code in each `list.tsx`), and
+  pages with a dynamic slug export `generateStaticParams() { return [] }`
+  (rendered on first visit, then cached). In a page: no `cookies()`,
+  `headers()`, `searchParams`, server Clerk helpers, or the page goes back to
+  per-request (only `/account` and the newsletter pages are, on purpose).
+  e2e checks the `Cache-Control` of a few pages.
 - **Languages: never import `next/link` in the web.** Use
   `@/components/LocaleLink`, which keeps `/fr` on French pages; a plain
   `next/link` sends French readers to the English page. Server pages call

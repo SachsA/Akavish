@@ -86,7 +86,15 @@ exists in English (bare path) and French (`/fr/…`).
   it makes Next stream the page, and `notFound()` / redirects then answer 200.
   Only the home has one (`app/[locale]/(home)/loading.tsx`, mirrors the home layout).
 - **Lists** paginate with `lib/pagination.ts` + `components/Pagination.tsx`
-  (`?page=N`, 404 past the last page).
+  (`?page=N`, 404 past the last page). The page number reaches the page as a
+  path param: the proxy rewrites `?page=N` to `/page/N` (see `[category]/list.tsx`
+  and `[category]/page/[n]`), so a new list follows the same pattern and adds
+  its path to `LIST_PATH` in `src/proxy.ts`.
+- **Caching:** pages are ISR (`revalidate = 30`). Don't read `cookies()`,
+  `headers()`, `searchParams` or server Clerk helpers in a page: it turns it
+  into a per-request page for everyone. Per-reader things (signed in, saved,
+  comments) live in client components. A page with a dynamic slug exports
+  `generateStaticParams() { return [] }`.
 - **Accessibility** (the bar the #20 audit set): small text is `text-zinc-400`
   or lighter, never `zinc-500/600`; white on green buttons needs
   `bg-emerald-700`; one `h1`, then `h2` → `h3` in order; images that sit next to

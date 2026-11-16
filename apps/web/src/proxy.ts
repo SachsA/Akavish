@@ -1,8 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse, type NextRequest } from 'next/server'
+import { CATEGORIES } from '@/lib/categories'
 import {
   COOKIE_MAX_AGE,
   DEFAULT_LOCALE,
+  LOCALES,
   fromAcceptLanguage,
   isLocale,
   isRegion,
@@ -33,14 +35,36 @@ const isProtectedRoute = createRouteMatcher(['/account(.*)', '/fr/account(.*)'])
  *   The share images Next generates under /en are the exception.
  * - The English date style (🇬🇧 / 🇺🇸) is guessed once from the same header.
  */
+const LIST_PATH = new RegExp(
+  `^(?:/(?:${LOCALES.join('|')}))?/(?:${CATEGORIES.map((c) => c.slug).join('|')}|(?:tag|author|game)/[^/]+)$`,
+)
+
+/**
+ * List pages keep `?page=N` as their public URL, but read the page from the
+ * path (`/news/page/2`) so they can be cached: a page that reads
+ * searchParams is rendered on every request. Any `page` value goes through
+ * (the page 404s on junk, as before); several `page` params count as junk.
+ */
+function pageAsPath(req: NextRequest): URL | null {
+  const values = req.nextUrl.searchParams.getAll('page')
+  if (values.length === 0 || !LIST_PATH.test(req.nextUrl.pathname)) return null
+  const url = req.nextUrl.clone()
+  url.searchParams.delete('page')
+  url.pathname = `${url.pathname}/page/${encodeURIComponent(values.length === 1 ? values[0] : 'x')}`
+  return url
+}
+
 function localeRouting(req: NextRequest): NextResponse | null {
-  const { pathname, search } = req.nextUrl
+  const paged = pageAsPath(req)
+  const pathname = paged?.pathname ?? req.nextUrl.pathname
+  const search = paged?.search ?? req.nextUrl.search
   if (isSharedPath(pathname)) return null
 
-  if (pathname === '/en' || pathname.startsWith('/en/')) {
-    if (pathname.includes('opengraph-image')) return null
+  const asked = req.nextUrl.pathname
+  if (asked === '/en' || asked.startsWith('/en/')) {
+    if (asked.includes('opengraph-image')) return null
     const url = req.nextUrl.clone()
-    url.pathname = pathname.slice(3) || '/'
+    url.pathname = asked.slice(3) || '/'
     return NextResponse.redirect(url, 308)
   }
 
@@ -53,13 +77,16 @@ function localeRouting(req: NextRequest): NextResponse | null {
     return res
   }
 
-  if (localeOfPath(pathname) !== DEFAULT_LOCALE) return remember(NextResponse.next())
+  if (localeOfPath(pathname) !== DEFAULT_LOCALE) {
+    return remember(paged ? NextResponse.rewrite(paged) : NextResponse.next())
+  }
 
   const wanted = isLocale(cookieLocale) ? cookieLocale : fromHeader?.locale
   const isPage = req.method === 'GET' && (req.headers.get('accept') ?? '').includes('text/html')
   if (wanted && wanted !== DEFAULT_LOCALE && isPage) {
     const url = req.nextUrl.clone()
-    url.pathname = `/${wanted}${pathname === '/' ? '' : pathname}`
+    // The public URL (with ?page=), not the internal /page/N.
+    url.pathname = `/${wanted}${req.nextUrl.pathname === '/' ? '' : req.nextUrl.pathname}`
     return remember(NextResponse.redirect(url, 307))
   }
 

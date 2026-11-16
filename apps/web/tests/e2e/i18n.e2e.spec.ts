@@ -141,3 +141,21 @@ test('an article: French on /fr once translated, English with a notice before', 
     await request.delete(`${CMS_URL}/api/articles/${id}`, { headers: auth })
   }
 })
+
+test('the French RSS feed lists French articles only', async ({ request }) => {
+  const res = await request.get('/fr/feed.xml')
+  expect(res.status()).toBe(200)
+  const xml = await res.text()
+  expect(xml).toContain('<language>fr</language>')
+  expect(xml).toContain('/fr/feed.xml')
+  for (const link of xml.match(/<link>[^<]+\/article\/[^<]+<\/link>/g) ?? []) expect(link).toContain('/fr/article/')
+})
+
+test('pages are cached, not rendered per visitor', async ({ request }) => {
+  // Clerk's session used to make every page `private, no-store` (2026-11-16).
+  for (const path of ['/', '/fr/reviews', '/article/neon-drift-review']) {
+    const res = await request.get(path)
+    expect(res.headers()['cache-control'] ?? '', path).not.toContain('no-store')
+    expect(res.headers()['cache-control'] ?? '', path).toContain('s-maxage')
+  }
+})
