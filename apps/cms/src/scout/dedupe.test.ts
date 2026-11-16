@@ -31,15 +31,43 @@ describe('dedupePrompt', () => {
 describe('readDuplicate', () => {
   it('keeps only ids that are in the lists', () => {
     expect(
-      readDuplicate({ duplicate_of: 29, rejected_like: 0, reason: 'Même chiffre' }, covered),
+      readDuplicate(
+        { is_duplicate: true, duplicate_of: 29, rejected_like: 0, reason: 'Même chiffre' },
+        covered,
+      ),
     ).toEqual({
       article: { id: 29, title: 'PS5 passes 100 million units shipped, Sony confirms' },
       reason: 'Même chiffre',
     })
-    expect(readDuplicate({ duplicate_of: 999, rejected_like: 553, reason: '' }, covered)).toEqual({
+    expect(
+      readDuplicate(
+        { is_duplicate: true, duplicate_of: 999, rejected_like: 553, reason: '' },
+        covered,
+      ),
+    ).toEqual({
       rejected: { id: 553, title: 'Nintendo ends Google sign-in' },
       reason: '',
     })
     expect(readDuplicate(undefined, covered)).toEqual({ reason: '' })
+  })
+
+  it('ignores the ids when the model says it is not a duplicate', () => {
+    // Nov 15: "BLG beat Gen.G 3-1 to win LoL Worlds 2026" came back with the
+    // preview article's id and a reason saying it was a new event.
+    expect(
+      readDuplicate(
+        {
+          is_duplicate: false,
+          duplicate_of: 29,
+          rejected_like: 553,
+          reason: 'Le résultat est un nouvel événement, pas un doublon.',
+        },
+        covered,
+      ),
+    ).toEqual({ reason: 'Le résultat est un nouvel événement, pas un doublon.' })
+    // No verdict at all (older answer shape): not a duplicate either.
+    expect(readDuplicate({ duplicate_of: 29, rejected_like: 0, reason: '' }, covered)).toEqual({
+      reason: '',
+    })
   })
 })

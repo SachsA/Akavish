@@ -9,6 +9,13 @@
 // Discord. A genuinely new development (a new date or figure, an official
 // confirmation of a rumour) is not a duplicate. Picks from the digest menu
 // skip the check: the editor asked for that one.
+//
+// The model reasons first, then gives an explicit yes/no (`is_duplicate`),
+// and only a yes counts. With ids alone, Haiku filled `duplicate_of` with the
+// closest article even when its own reason said "not a duplicate": from Nov
+// 14 to 16, five esport results (the BLAST Rivals final won by FURIA, BLG
+// winning Worlds, semifinals) were set aside against the article that only
+// announced the match.
 
 import { callTool } from './anthropic'
 import { checkBudget, recordUsage } from './budget'
@@ -23,17 +30,19 @@ export interface Covered {
 }
 
 export interface DuplicateAnswer {
+  reason: string
+  is_duplicate: boolean
   duplicate_of: number
   rejected_like: number
-  reason: string
 }
 
 export const DEDUPE_SYSTEM = `You check whether a video game news story is already covered by a news site, so the same news isn't written twice.
 
-- duplicate_of: the id of an article that already reports the same news (the same announcement, event, figure or release), even with other words, from another outlet or a day later. 0 if none.
-- rejected_like: the id of a rejected story that is the same news. 0 if none.
-- Not a duplicate: a genuinely new development of a covered topic (a new date, a new figure, a delay, an official confirmation of what was a rumour, the result of an event that was only previewed). Two different news about the same game are not duplicates.
-- reason: one short sentence in French for the editor.
+- reason: first, one short sentence in French for the editor saying whether an article or a rejected story already reports this exact news, and which one.
+- is_duplicate: true only if an article or a rejected story reports the same news (the same announcement, event, figure or release), even with other words, from another outlet or a day later. A related article on the same topic is not enough.
+- duplicate_of: the id of that article. 0 if none, and always 0 when is_duplicate is false.
+- rejected_like: the id of that rejected story. 0 if none, and always 0 when is_duplicate is false.
+- Not a duplicate: a genuinely new development of a covered topic (a new date, a new figure, a delay, an official confirmation of what was a rumour, the result of an event that was only previewed). Two different news about the same game are not duplicates. In esport, another match, another round or the final result of the same tournament is new news, not a duplicate of an article about an earlier match or a preview.
 Answer with the tool.`
 
 export const DEDUPE_TOOL = {
@@ -41,12 +50,14 @@ export const DEDUPE_TOOL = {
   description: 'Say whether the story is already covered.',
   input_schema: {
     type: 'object',
+    // Reason first: the model writes its judgement, then the verdict.
     properties: {
+      reason: { type: 'string' },
+      is_duplicate: { type: 'boolean' },
       duplicate_of: { type: 'integer' },
       rejected_like: { type: 'integer' },
-      reason: { type: 'string' },
     },
-    required: ['duplicate_of', 'rejected_like', 'reason'],
+    required: ['reason', 'is_duplicate', 'duplicate_of', 'rejected_like'],
   },
 } as const
 
@@ -68,7 +79,11 @@ export function dedupePrompt(
   return `Story: ${story.title}\nSource headlines:\n${story.sourceTitles.map((t) => `- ${t}`).join('\n')}\n\n--- Articles already on the site or in drafts\n${arts}\n\n--- Stories the editor rejected recently\n${rej}`
 }
 
-/** Keep only ids that are really in the lists. Pure. */
+/**
+ * Keep only ids that are really in the lists, and only when the model said
+ * yes (`is_duplicate: true`): an id next to a "no" is just the closest topic.
+ * Pure.
+ */
 export function readDuplicate(
   answer: Partial<DuplicateAnswer> | undefined,
   covered: Covered,
@@ -77,8 +92,13 @@ export function readDuplicate(
   rejected?: { id: number; title: string }
   reason: string
 } {
-  const article = covered.articles.find((a) => a.id === Number(answer?.duplicate_of))
-  const rejected = covered.rejected.find((r) => r.id === Number(answer?.rejected_like))
+  const yes = answer?.is_duplicate === true
+  const article = yes
+    ? covered.articles.find((a) => a.id === Number(answer?.duplicate_of))
+    : undefined
+  const rejected = yes
+    ? covered.rejected.find((r) => r.id === Number(answer?.rejected_like))
+    : undefined
   return {
     ...(article ? { article: { id: article.id, title: article.title } } : {}),
     ...(rejected ? { rejected: { id: rejected.id, title: rejected.title } } : {}),

@@ -369,7 +369,9 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    first draft that no article uses any more. **Duplicates** (`dedupe.ts`):
    before each automatic draft, Haiku compares the story with the articles of
    the last 21 days and the stories rejected in the last 10; a repeat becomes
-   `rejected` with "auto : doublon de l'article …" and no Discord card. Usage
+   `rejected` with "auto : doublon de l'article …" and no Discord card. The
+   answer is reason first, then `is_duplicate`: only `true` counts, an id
+   next to `false` is ignored (`readDuplicate`). Usage
    purpose `dedupe`. Menu picks skip it.
    **Alt text** of an official cover: the publisher's `og:image:alt`, else
    "Official image from <source>: <title>". Every field a draft fills (and

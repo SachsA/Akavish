@@ -354,6 +354,17 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   and big companies of games and gaming hardware (CEO scandals, lawsuits,
   regulators, bosses leaving, console and GPU prices) at 60-75, rather than
   loosening the significance-40 rule.
+- ✅ Nov 16, running-in check (since V3 on Nov 14): 8 drafts, 7 published,
+  1 rejected by Alex ("Pas pertinent"), none needing a V2, all with a cover,
+  about 0.25 $ a day. Quiet weekend: 8 of 107 new stories at 60 or more. But
+  the duplicate check set aside 10 stories, and 5 of them wrongly: its own
+  reason said "new event, not a duplicate" while it still gave the closest
+  article's id (FURIA winning the BLAST Rivals final, BLG winning Worlds,
+  two semifinals and a live, all against the article on an earlier match or
+  the preview). Fixed: the answer now has an explicit `is_duplicate`, reason
+  first, and only `true` sets a story aside; the guide says another match or
+  the result of a previewed event is new news. Near miss to watch: "Jensen
+  Huang weighing a return as Nvidia CEO" at 57.
 - ✅ Nov 11: `draftsEnabled` ticked (threshold 60, `maxDraftsPerDay` 20).
 - Nov 11-18: running-in with automatic drafts.
 - ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for

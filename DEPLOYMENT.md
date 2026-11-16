@@ -1286,7 +1286,10 @@ Haiku check (`dedupe.ts`, about 0.002 $) compares the story with the articles
 of the last 3 weeks (published, scheduled or draft) and the stories rejected in
 the last 10 days. A repeat is set aside as rejected ("auto : doublon de
 l'article …") and never reaches Discord; a real new development still gets
-drafted. Picks from the digest menu skip the check. The Discord card shows the cover, where
+drafted. Haiku writes its reason first, then a yes/no (`is_duplicate`): only
+a yes sets the story aside (before Nov 16 it gave an id alone, and the
+closest article's id came back even for "not a duplicate", which swallowed
+five esport results). Picks from the digest menu skip the check. The Discord card shows the cover, where
 it came from, and the videos; with no image it says so in orange.
 
 **What a scout draft fills, field by field:**

@@ -319,6 +319,7 @@ describe('scout step 2 (drafts)', () => {
               type: 'tool_use',
               name: 'check_duplicate',
               input: {
+                is_duplicate: Boolean(repeat),
                 duplicate_of: repeat ? Number(gtaArticle) : 0,
                 rejected_like: 0,
                 reason: repeat ? 'Même trailer.' : '',
