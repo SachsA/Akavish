@@ -1,5 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
+// Next 16 calls this file `proxy.ts` (it was `middleware.ts`); Clerk's
+// `clerkMiddleware()` is unchanged.
+
 // Routes that require a signed-in reader. The site is public by default
 // (news, articles, sign-in/up); only the personal account area is protected.
 const isProtectedRoute = createRouteMatcher(['/account(.*)'])

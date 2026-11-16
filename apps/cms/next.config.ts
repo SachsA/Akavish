@@ -1,5 +1,5 @@
 import { withPayload } from '@payloadcms/next/withPayload'
-import { withSentryConfig } from '@sentry/nextjs'
+import { withSentryConfig } from '@sentry/nextjs/config'
 import path from 'node:path'
 import type { NextConfig } from 'next'
 // `NEXT_OUTPUT=standalone` (set only by the Dockerfile) emits a self-contained
@@ -43,6 +43,6 @@ export default withSentryConfig(
     project: process.env.SENTRY_PROJECT_CMS,
     authToken: process.env.SENTRY_AUTH_TOKEN,
     silent: !process.env.CI,
-    disableLogger: true,
+    bundleSizeOptimizations: { excludeDebugStatements: true },
   }
 )

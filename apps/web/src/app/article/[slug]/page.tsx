@@ -223,7 +223,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               alt={article.coverImageAlt ?? ''}
               fill
               sizes="(max-width: 768px) 100vw, 768px"
-              priority
+              preload
               className="object-cover"
             />
           </div>

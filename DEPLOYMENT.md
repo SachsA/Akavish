@@ -428,8 +428,8 @@ enable it in the **Vercel dashboard → project → Analytics**, redeploy, done.
   banner. If you later add anything that does set cookies or profile users, that
   changes — revisit `/privacy` at the same time.
 - Only collects on Vercel deployments; a no-op locally.
-- Enabling it adds routes under `/_vercel/insights/*`. The Clerk middleware
-  matcher already excludes `_vercel`, so the beacons don't run through auth.
+- Enabling it adds routes under `/_vercel/insights/*`. The Clerk proxy
+  matcher (`apps/web/src/proxy.ts`) already excludes `_vercel`, so the beacons don't run through auth.
 
 ### Sentry (errors + performance)
 
@@ -453,7 +453,7 @@ Notes on how it's wired:
 - **Web tunnels through `/monitoring`** (`tunnelRoute` in `next.config.ts`). Ad
   blockers block `sentry.io` outright, and a gaming audience runs a lot of them —
   without the tunnel you'd silently lose exactly those readers' errors. The
-  Clerk middleware matcher and `robots.ts` both exclude that path.
+  Clerk proxy matcher and `robots.ts` both exclude that path.
 - **The CMS has no browser SDK** — one editor, a heavy admin bundle, and the
   errors worth catching there are server-side anyway.
 - **Sampling**: traces are 10% in production on the web, 50% on the CMS (far

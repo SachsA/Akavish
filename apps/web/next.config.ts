@@ -1,6 +1,6 @@
 import path from 'node:path'
 import type { NextConfig } from 'next'
-import { withSentryConfig } from '@sentry/nextjs'
+import { withSentryConfig } from '@sentry/nextjs/config'
 
 type RemotePattern = { protocol: 'http' | 'https'; hostname: string; port?: string }
 
@@ -70,6 +70,7 @@ export default withSentryConfig(nextConfig, {
   // the ad-block-heavy audience a gaming site attracts.
   tunnelRoute: '/monitoring',
 
-  // Strip the SDK's own debug logging from the production bundle.
-  disableLogger: true,
+  // Strip the SDK's own debug logging from the production bundle (Sentry 11
+  // name; works with Turbopack, which Next 16 builds with).
+  bundleSizeOptimizations: { excludeDebugStatements: true },
 })

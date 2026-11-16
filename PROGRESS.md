@@ -143,6 +143,7 @@ Last updated: **2026-11-06**.
 | ✅     | Workspace dependency hygiene | `@akavish/ui` explicitly declares its `@akavish/types` workspace dependency, so isolated CI installs resolve it correctly                              |
 | ✅     | API client type environment | `@akavish/api-client` explicitly includes DOM fetch types and Node 22 process types, so isolated CI type-checks match its web/Expo runtime contract     |
 | ✅     | Security cleanup      | 2026-11-06: 298 Dependabot alerts (30 critical) → 5 low/moderate in build-only tooling. Next (web 15.5.29, CMS 16.4.5), Payload 3.93.0 (+ migration `payload_3_93`), Sentry 10.78, sharp 0.35.5, vitest 4.1.12; unused `jsdom` / `@vitejs/plugin-react` removed from the CMS; transitive fixes pinned in `pnpm-workspace.yaml` `overrides` |
+| ✅     | Next 16 + Sentry 11   | 2026-11-16 (Dependabot #4, #2): web on Next 16.4.6 like the CMS, built with Turbopack. `middleware.ts` → `proxy.ts` (same `clerkMiddleware()`), `next/image` `priority` → `preload`, and `/api/revalidate` calls `revalidateTag(tag, { expire: 0 })` so a CMS change still drops the cache at once (the new `'max'` profile would serve stale once more). Sentry 11 on both apps: `withSentryConfig` imported from `@sentry/nextjs/config`, `disableLogger` → `bundleSizeOptimizations.excludeDebugStatements`; `dataCollection` unchanged. Checked with the full CI sequence locally, both Playwright suites included |
 | ✅     | pnpm 10 adoption      | `packageManager` pins pnpm 10.34.5 (was 9.0.0 while the lockfile was pnpm-10-generated). `onlyBuiltDependencies` lives in `pnpm-workspace.yaml`, where pnpm 10 reads it. The dormant React `overrides` were **removed** rather than activated — see the gotcha below |
 
 ## Deployment (prep)
@@ -671,12 +672,12 @@ checklist it walks through.
   `shamefully-hoist=true` / `public-hoist-pattern[]` only makes your machine
   differ from production; it isn't needed. From pnpm 11, `.npmrc` may only hold
   auth/registry settings, which is one more reason not to rely on it.
-- **Clerk middleware matcher — don't re-add the file-extension exclusion.**
+- **Clerk proxy matcher (`apps/web/src/proxy.ts`, `middleware.ts` before Next 16) — don't re-add the file-extension exclusion.**
   Clerk's boilerplate matcher skips paths ending in `.ico`, `.png`, `.css`… on
   the assumption they're static files. This app has **no `public/` directory**,
   so such a path is never a real file: it falls through to the top-level
   `[category]` route, whose layout calls `auth()`, which throws when the
-  middleware didn't run. That produced a **500 on every browser's automatic
+  proxy didn't run. That produced a **500 on every browser's automatic
   `/favicon.ico` request** — one Sentry event per visitor, and the free tier is
   5 000/month. Found by Sentry within hours of switching it on. The matcher now
   excludes only `_next`, `_vercel` and `monitoring`.

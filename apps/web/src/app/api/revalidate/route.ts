@@ -20,7 +20,9 @@ export async function POST(req: NextRequest) {
   } catch {
     // no body: fine
   }
-  revalidateTag(CMS_TAG)
+  // `expire: 0` drops the cached CMS data now, as Next 15's one-argument call
+  // did; the 'max' profile would serve stale data once more.
+  revalidateTag(CMS_TAG, { expire: 0 })
   revalidatePath('/', 'layout')
   log.info('revalidated', { route: '/api/revalidate', reason })
   return NextResponse.json(
