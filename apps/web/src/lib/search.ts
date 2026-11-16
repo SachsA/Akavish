@@ -1,4 +1,4 @@
-import { MeiliSearch } from 'meilisearch'
+import { Meilisearch } from 'meilisearch'
 import type { Article } from '@akavish/types'
 
 export const ARTICLES_INDEX = 'articles'
@@ -62,18 +62,18 @@ export function articleToSearchHit(article: Article): SearchHit {
   }
 }
 
-let client: MeiliSearch | null = null
+let client: Meilisearch | null = null
 
 // Server-side Meilisearch client. Uses a search-only key when provided,
 // falling back to the admin key. Never expose either to the browser — all
 // search goes through the /api/search route.
-export function getSearchClient(): MeiliSearch | null {
+export function getSearchClient(): Meilisearch | null {
   const host = process.env.MEILISEARCH_HOST
   const apiKey =
     process.env.MEILISEARCH_SEARCH_KEY ?? process.env.MEILISEARCH_API_KEY
   if (!host) return null
   if (!client) {
-    client = new MeiliSearch({ host, apiKey })
+    client = new Meilisearch({ host, apiKey })
   }
   return client
 }
