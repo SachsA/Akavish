@@ -115,6 +115,27 @@ describe('toLexical', () => {
     const { root } = toLexical([{ type: 'paragraph', text: 'x' }], [])
     expect(root.children).toHaveLength(1)
   })
+
+  it('puts the leading **game** of a list item in bold', () => {
+    const { root } = toLexical(
+      [
+        {
+          type: 'list',
+          items: ['**Metro 2039** · Feb 4 (PS5, Xbox Series X|S, PC).', 'No bold here', '****'],
+        },
+      ],
+      [],
+    )
+    const items = (
+      root.children[0] as { children: Array<{ children: Array<{ text: string; format: number }> }> }
+    ).children
+    expect(items[0].children.map((c) => [c.text, c.format])).toEqual([
+      ['Metro 2039', 1],
+      [' · Feb 4 (PS5, Xbox Series X|S, PC).', 0],
+    ])
+    expect(items[1].children.map((c) => [c.text, c.format])).toEqual([['No bold here', 0]])
+    expect(items[2].children.map((c) => [c.text, c.format])).toEqual([['****', 0]])
+  })
 })
 
 describe('draftPrompt', () => {

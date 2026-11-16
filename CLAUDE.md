@@ -175,7 +175,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `[**Name**](/game/slug)`) over REST with a
   dedicated editor login in the gitignored `.cms-import`; scheduling goes
   through `POST /api/articles-schedule` (same job as the admin button).
-  AI-drafted pieces always carry `aiAssisted`.
+  AI-drafted pieces always carry `aiAssisted`. Lists of games with dates
+  start with the game in bold, then ` · ` and the short English date:
+  `**Metro 2039** · Feb 4 (PS5, PC). …` (`February`, `Late 2027` without a
+  day); never the date first. The scout's drafts follow the same rule.
 - **Newsletter:** double opt-in sign-up, rules in `apps/cms/src/lib/newsletter.ts`
   (endpoints `/api/newsletter/*`, collection `subscribers`, int tests), web form
   `components/NewsletterSignup.tsx` → `app/api/newsletter` (rate-limited) and

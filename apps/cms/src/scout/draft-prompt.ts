@@ -75,6 +75,7 @@ Hard rules:
 - Attribute: "according to IGN", "Insider Gaming reports". When an official source confirms, say it is official.
 - Length: 150 to 300 words for news and leaks; up to 450 for a recap of several announcements or esport results.
 - Structure: first paragraph = the news itself (who, what, when). Then context and details. A heading only if the article is long enough to need one. No conclusion paragraph that repeats the intro, no "stay tuned".
+- Lists of games with dates (release dates, a lineup, a schedule): each item starts with the game's name in bold, then " · ", then the short date, then the rest: "**Metro 2039** · Feb 4 (PS5, Xbox Series X|S, PC). 4A Games' new Metro…". Short dates: "Feb 4", "February" for a month alone, "Late 2027", "TBA". Never start an item with the date, never "February 4: Metro 2039".
 - Headline: under 90 characters, says the news, sentence case.
 - Excerpt: one or two sentences, under 200 characters, not a copy of the first paragraph.
 - SEO description: under 155 characters.
@@ -267,6 +268,16 @@ export const text = (t: string) => ({
   detail: 0,
   version: 1,
 })
+/**
+ * A list item's text: a leading "**Name**" becomes bold (the game in a list
+ * of release dates, "**Metro 2039** · Feb 4 …"), the rest stays plain.
+ */
+export function listItemChildren(item: string) {
+  const m = item.match(/^\*\*(.+?)\*\*(.*)$/s)
+  if (!m || !m[1].trim()) return [text(item)]
+  return [{ ...text(m[1].trim()), format: 1 }, ...(m[2] ? [text(m[2])] : [])]
+}
+
 export const element = (
   type: string,
   children: unknown[],
@@ -310,7 +321,7 @@ export function toLexical(
       case 'list':
         return element(
           'list',
-          b.items.map((item, i) => element('listitem', [text(item)], { value: i + 1 })),
+          b.items.map((item, i) => element('listitem', listItemChildren(item), { value: i + 1 })),
           { listType: 'bullet', start: 1, tag: 'ul' },
         )
       default:
