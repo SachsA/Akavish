@@ -92,9 +92,17 @@ beforeAll(async () => {
   await payload.updateGlobal({ slug: 'community-settings', data: { commentsEnabled: true, autoHideReports: 3 } as never })
 })
 
+// One at a time: a bulk delete runs each document's beforeDelete cascade in
+// parallel inside one transaction, and those cascades touch the same comments
+// rows, which sometimes deadlocked this hook (CI, 2026-11-14 and -16).
+async function deleteEach(collection: 'readers' | 'articles', where: Record<string, unknown>) {
+  const { docs } = await payload.find({ collection, where: where as never, pagination: false, depth: 0, overrideAccess: true })
+  for (const doc of docs) await payload.delete({ collection, id: doc.id, overrideAccess: true })
+}
+
 afterAll(async () => {
-  await payload.delete({ collection: 'readers', where: { clerkId: { like: RUN } }, overrideAccess: true })
-  await payload.delete({ collection: 'articles', where: { title: { like: RUN } }, overrideAccess: true })
+  await deleteEach('readers', { clerkId: { like: RUN } })
+  await deleteEach('articles', { title: { like: RUN } })
   await payload.delete({ collection: 'authors', where: { name: { like: RUN } }, overrideAccess: true })
   await payload.updateGlobal({ slug: 'community-settings', data: { commentsEnabled: true, autoHideReports: 3 } as never })
 }, 180_000)
