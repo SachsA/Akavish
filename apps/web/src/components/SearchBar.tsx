@@ -29,7 +29,7 @@ type Option =
 // ARIA: the combobox pattern (input + listbox, aria-activedescendant), so arrow
 // keys move through the suggestions while focus stays in the box.
 export function SearchBar() {
-  const { t, href: localize } = useI18n()
+  const { t, href: localize, locale } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
   const current = useSearchParams().get('q') ?? ''
@@ -51,7 +51,7 @@ export function SearchBar() {
     if (!ready) return
     const controller = new AbortController()
     const timer = setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(q)}&limit=${SUGGESTED_ARTICLES}&games=1`, {
+      fetch(`/api/search?q=${encodeURIComponent(q)}&limit=${SUGGESTED_ARTICLES}&games=1&lang=${locale}`, {
         signal: controller.signal,
       })
         .then((r) => (r.ok ? r.json() : Promise.reject(r)))
@@ -68,7 +68,7 @@ export function SearchBar() {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [q, ready])
+  }, [q, ready, locale])
 
   // Close on navigation (a suggestion was followed, or the form submitted).
   useEffect(() => {

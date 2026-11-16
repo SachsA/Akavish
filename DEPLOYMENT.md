@@ -1378,6 +1378,40 @@ The dev sandbox got 403s that curl, with the same User-Agent, didn't, so only
 production tells: on 2026-11-10 all 38 were `ok` or `not modified` in
 production. Re-check when you add a feed.
 
+
+## 12. French edition (translations)
+
+The site is in English and French (`/fr`). Interface text lives in the web
+(`apps/web/src/lib/i18n`); article text is translated in the CMS
+(`apps/cms/src/lib/translate.ts`):
+
+- Publishing an article, or changing the English of a published one, queues a
+  `translateArticle` job on the `translate` queue (a minute's wait, so a burst
+  of edits is translated once). Claude (`SCOUT_DRAFT_MODEL`, Sonnet) fills the
+  article's **Français** group: title, excerpt, body, SEO, and the cover's
+  French alt. New tags get a French name (`translateTaxonomy`).
+- Needs `ANTHROPIC_API_KEY` on Railway (the scout's). Costs go to
+  `scout-usage` with purpose `translate`, under their own monthly cap
+  (`TRANSLATE_MONTHLY_BUDGET_USD`, 30 $), not the scout's daily one. About
+  2 to 5 cents an article.
+- Corrections by hand in `/admin` stay ("Corrigée à la main") until the
+  English changes; English wins.
+- **Backfill** (once, after the migration `french_version`, and as a safety net
+  any time): `POST /api/translate/backfill` as an editor. It names the tags and
+  translates author bios right away, and queues every published article whose
+  French is missing or stale (5 a minute). From a terminal:
+
+  ```bash
+  TOKEN=$(curl -s -X POST https://cms.akavish.gg/api/users/login \
+    -H 'content-type: application/json' \
+    -d '{"email":"…","password":"…"}' | jq -r .token)
+  curl -X POST https://cms.akavish.gg/api/translate/backfill -H "Authorization: JWT $TOKEN"
+  ```
+
+- A French page whose article isn't translated yet shows the English text
+  with a notice, its canonical pointing to the English page; the sitemap lists
+  `/fr/article/…` only once the translation exists.
+
 ---
 
 ## Environment variable reference
@@ -1427,6 +1461,7 @@ production. Re-check when you add a feed.
 | `ANTHROPIC_API_KEY`   | `sk-ant-…`                       | **Secret**, AI scout (§11)          |
 | `SCOUT_DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/…` | AI scout digests (§11) |
 | `SCOUT_MONTHLY_BUDGET_USD` / `SCOUT_DAILY_BUDGET_USD` | `50` / `5` | Optional caps (§11) |
+| `TRANSLATE_MONTHLY_BUDGET_USD` | `30` | Optional cap for the French translations (§12), separate from the scout's |
 | `DISCORD_BOT_TOKEN`   | `…`                              | **Secret**, scout bot (§11)         |
 | `DISCORD_APPLICATION_ID` / `DISCORD_PUBLIC_KEY` | `…` | Scout bot, developer portal (§11) |
 | `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |

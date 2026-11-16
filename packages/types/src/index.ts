@@ -34,6 +34,22 @@ export interface Article {
   aiAssisted?: boolean
   /** Reviews: the verdict out of 10. */
   score?: number
+  /**
+   * The French version, machine-translated in the CMS (apps/cms/src/lib/translate.ts).
+   * Absent until it exists. The web swaps it in on /fr pages.
+   */
+  fr?: ArticleTranslation
+}
+
+export interface ArticleTranslation {
+  title: string
+  excerpt: string
+  /** Lexical JSON, like `content`. */
+  content: string
+  seo?: { title?: string; description?: string }
+  coverImageAlt?: string
+  /** auto (Claude), edited (corrected by hand), pending (being redone after an English change). */
+  status?: 'auto' | 'edited' | 'pending' | 'failed'
 }
 
 // ─── Game ──────────────────────────────────────────────────────────────────

@@ -92,3 +92,44 @@ describe('messages', () => {
     expect(keys(fr).sort()).toEqual(keys(en).sort())
   })
 })
+
+describe('localizeArticle', () => {
+  const base = {
+    id: '1',
+    slug: 's',
+    title: 'Metro 2039 dated',
+    excerpt: 'Out Feb 4.',
+    content: '{"en":1}',
+    category: 'news' as const,
+    status: 'published' as const,
+    tags: [],
+    author: { id: '1', name: 'Akavish' },
+    createdAt: '',
+    updatedAt: '',
+    coverImageAlt: 'Key art',
+  }
+  const fr = { title: 'Metro 2039 daté', excerpt: 'Sortie le 4 févr.', content: '{"fr":1}', coverImageAlt: 'Visuel' }
+
+  it('swaps in the French on French pages only', async () => {
+    const { localizeArticle, isInLanguage } = await import('./content')
+    expect(localizeArticle({ ...base, fr }, 'en').title).toBe('Metro 2039 dated')
+    const out = localizeArticle({ ...base, fr }, 'fr')
+    expect([out.title, out.excerpt, out.content, out.coverImageAlt]).toEqual([
+      'Metro 2039 daté',
+      'Sortie le 4 févr.',
+      '{"fr":1}',
+      'Visuel',
+    ])
+    expect(isInLanguage({ ...base, fr }, 'fr')).toBe(true)
+  })
+
+  it('keeps the English when there is no French yet', async () => {
+    const { localizeArticle, isInLanguage, pick } = await import('./content')
+    expect(localizeArticle(base, 'fr').title).toBe('Metro 2039 dated')
+    expect(isInLanguage(base, 'fr')).toBe(false)
+    expect(isInLanguage(base, 'en')).toBe(true)
+    expect(pick('fr', 'Release dates', 'Dates de sortie')).toBe('Dates de sortie')
+    expect(pick('fr', 'Sony', '  ')).toBe('Sony')
+    expect(pick('en', 'Release dates', 'Dates de sortie')).toBe('Release dates')
+  })
+})

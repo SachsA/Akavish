@@ -27,7 +27,7 @@ export function SearchResults() {
   useEffect(() => {
     if (!q) return
     let cancelled = false
-    const qs = new URLSearchParams({ q, page: String(page), limit: String(SEARCH_PAGE_SIZE), facets: '1' })
+    const qs = new URLSearchParams({ q, page: String(page), limit: String(SEARCH_PAGE_SIZE), facets: '1', lang: locale })
     if (category) qs.set('category', category)
     if (game) qs.set('game', game)
     fetch(`/api/search?${qs.toString()}`)
@@ -41,7 +41,7 @@ export function SearchResults() {
     return () => {
       cancelled = true
     }
-  }, [key, q, page, category, game])
+  }, [key, q, page, category, game, locale])
 
   const res = data?.key === key ? data.res : null
   const status = !q ? 'idle' : res ? 'done' : failed === key ? 'error' : 'loading'

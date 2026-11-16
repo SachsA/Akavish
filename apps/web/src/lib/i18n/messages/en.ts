@@ -90,6 +90,9 @@ export const en = {
     aiNote:
       'Researched and drafted with AI assistance, then fact-checked, edited and approved by an Akavish editor, who is responsible for it.',
     newsletterTitle: 'Liked this? Get the newsletter',
+    // Shown on /fr pages only; English has nothing to say here.
+    untranslated: 'This article hasn’t been translated yet: here is the original English version.',
+    translatedNote: 'Translated from English with AI.',
     navigation: 'Article navigation',
     previous: '← Previous',
     next: 'Next →',

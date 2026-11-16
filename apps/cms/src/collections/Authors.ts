@@ -14,6 +14,8 @@ export const Authors: CollectionConfig = {
     slugField('name'),
     { name: 'avatar', type: 'upload', relationTo: 'media' },
     { name: 'bio', type: 'textarea' },
+    // The bio on the French site, filled by Claude (lib/translate.ts); editable.
+    { name: 'bioFr', type: 'textarea', label: 'Bio (French)' },
     { name: 'twitter', type: 'text', admin: { description: 'Handle sans le @' } },
   ],
 }

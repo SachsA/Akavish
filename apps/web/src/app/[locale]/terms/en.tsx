@@ -67,6 +67,11 @@ export function TermsPage() {
         article. Those articles say so in a note at the bottom.
       </p>
       <p>
+        Articles are written in English. The French edition (under <code>/fr</code>) is translated
+        from them automatically with the same kind of tool, and says so at the bottom of each
+        article; an editor can correct it, and the English original prevails if the two differ.
+      </p>
+      <p>
         We correct mistakes rather than quietly deleting them. Spotted an error?{' '}
         <a href={`mailto:${PUBLISHER.contactEmail}`}>{PUBLISHER.contactEmail}</a>.
       </p>

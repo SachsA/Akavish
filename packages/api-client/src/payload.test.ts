@@ -107,6 +107,31 @@ describe('mapArticle', () => {
   })
 })
 
+describe('mapArticle: the French version', () => {
+  it('maps fr when it has a title, with the French cover alt', () => {
+    const a = mapArticle(
+      rawArticle({
+        coverImage: { url: '/x.jpg', alt: 'Key art', altFr: 'Visuel' },
+        fr: { title: 'Titre', excerpt: 'Chapô', content: { root: { children: [1] } }, seoTitle: null, status: 'auto' },
+      }),
+      CMS,
+    )
+    expect(a.fr).toEqual({
+      title: 'Titre',
+      excerpt: 'Chapô',
+      content: '{"root":{"children":[1]}}',
+      seo: { title: undefined, description: undefined },
+      coverImageAlt: 'Visuel',
+      status: 'auto',
+    })
+  })
+
+  it('no French title, no French version', () => {
+    expect(mapArticle(rawArticle({ fr: { title: null } }), CMS).fr).toBeUndefined()
+    expect(mapArticle(rawArticle(), CMS).fr).toBeUndefined()
+  })
+})
+
 describe('toPaginated', () => {
   it("converts Payload's envelope into the shared shape", () => {
     const res = toPaginated(

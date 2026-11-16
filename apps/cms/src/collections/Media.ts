@@ -13,6 +13,13 @@ export const Media: CollectionConfig = {
       type: 'text',
       required: true,
     },
+    {
+      // The alt text on the French site, filled by Claude when an article
+      // using this image is translated (lib/translate.ts). Empty → English.
+      name: 'altFr',
+      type: 'text',
+      label: 'Alt (French)',
+    },
   ],
   upload: {
     mimeTypes: ['image/*'],

@@ -12,6 +12,7 @@ import { fetchGameName, searchArticles, searchCategoryCounts, searchGames } from
 import { CATEGORIES } from '@/lib/categories'
 import { parseSearchQuery, SEARCH_PAGE_SIZE, type SearchQuery } from '@/lib/search-query'
 import { log } from '@/lib/log'
+import type { Locale } from '@/lib/i18n/config'
 import { clientIp, publicCache, rateLimit, tooManyRequests } from '@/lib/rate-limit'
 
 // Site search, with two backends:
@@ -34,8 +35,8 @@ const CATEGORY_VALUES = CATEGORIES.map((c) => c.value)
 
 type Page = { hits: SearchHit[]; total: number; page: number; totalPages: number }
 
-async function viaCms(query: SearchQuery, limit: number): Promise<Page> {
-  const res = await searchArticles({ ...query, limit })
+async function viaCms(query: SearchQuery, limit: number, locale: Locale): Promise<Page> {
+  const res = await searchArticles({ ...query, limit, locale })
   return {
     hits: res.articles.map(articleToSearchHit),
     total: res.total,
@@ -47,12 +48,13 @@ async function viaCms(query: SearchQuery, limit: number): Promise<Page> {
 async function viaMeilisearch(
   query: SearchQuery,
   limit: number,
-  withFacets: boolean
+  withFacets: boolean,
+  locale: Locale
 ): Promise<(Page & { facets?: Record<string, number> }) | null> {
   const client = getSearchClient()
   // The index only stores the game's name, not its slug: a game filter goes
-  // to the CMS, which has both.
-  if (!client || query.game) return null
+  // to the CMS, which has both. Same for French: the index is English only.
+  if (!client || query.game || locale !== 'en') return null
   const res = await client.index(ARTICLES_INDEX).search(query.q, {
     limit,
     offset: (query.page - 1) * limit,
@@ -89,6 +91,8 @@ export async function GET(req: NextRequest) {
     Number.isInteger(rawLimit) && rawLimit >= 1 ? Math.min(rawLimit, 50) : SEARCH_PAGE_SIZE
   const withFacets = searchParams.get('facets') === '1'
   const withGames = searchParams.get('games') === '1'
+  // The page's language (`lang=fr` from /fr pages): results come back in it.
+  const locale: Locale = searchParams.get('lang') === 'fr' ? 'fr' : 'en'
 
   if (!query.q) {
     const empty: SearchResponse = {
@@ -115,7 +119,7 @@ export async function GET(req: NextRequest) {
   let engine: SearchEngine = 'cms'
 
   try {
-    const meili = await viaMeilisearch(query, limit, withFacets)
+    const meili = await viaMeilisearch(query, limit, withFacets, locale)
     if (meili) {
       const { facets: distribution, ...rest } = meili
       page = rest
@@ -129,7 +133,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    if (!page) page = await viaCms(query, limit)
+    if (!page) page = await viaCms(query, limit, locale)
     if (withFacets && !facets) facets = await searchCategoryCounts(query.q, CATEGORY_VALUES, query.game)
   } catch (error) {
     // Only reachable if the CMS itself is unreachable, in which case the whole

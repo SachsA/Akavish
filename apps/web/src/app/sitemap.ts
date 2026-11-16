@@ -52,13 +52,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const inUse = <T extends { id: string }>(items: T[], ids: Set<string> | undefined): T[] =>
     ids ? items.filter((it) => ids.has(it.id)) : items
 
-  const articleEntries: MetadataRoute.Sitemap = articles.flatMap((a) =>
-    bothLanguages(`/article/${a.slug}`, {
+  // An article not translated yet has no French page worth listing (it shows
+  // the English text): English only until its translation exists.
+  const articleEntries: MetadataRoute.Sitemap = articles.flatMap((a) => {
+    const entry = {
       lastModified: a.updatedAt ? new Date(a.updatedAt) : now,
-      changeFrequency: 'weekly',
+      changeFrequency: 'weekly' as const,
       priority: 0.8,
-    }),
-  )
+    }
+    return a.translated
+      ? bothLanguages(`/article/${a.slug}`, entry)
+      : [{ ...entry, url: absoluteUrl(`/article/${a.slug}`) }]
+  })
 
   const entityEntries = (
     items: { slug: string; updatedAt?: string }[],

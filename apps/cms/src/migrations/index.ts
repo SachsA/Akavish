@@ -15,6 +15,7 @@ import * as migration_20261112_155209_related_games_gallery from './20261112_155
 import * as migration_20261112_163903_review_score from './20261112_163903_review_score';
 import * as migration_20261113_083945_roles_readers from './20261113_083945_roles_readers';
 import * as migration_20261113_094425_comments from './20261113_094425_comments';
+import * as migration_20261116_130858_french_version from './20261116_130858_french_version';
 
 export const migrations = [
   {
@@ -100,6 +101,11 @@ export const migrations = [
   {
     up: migration_20261113_094425_comments.up,
     down: migration_20261113_094425_comments.down,
-    name: '20261113_094425_comments'
+    name: '20261113_094425_comments',
+  },
+  {
+    up: migration_20261116_130858_french_version.up,
+    down: migration_20261116_130858_french_version.down,
+    name: '20261116_130858_french_version'
   },
 ];

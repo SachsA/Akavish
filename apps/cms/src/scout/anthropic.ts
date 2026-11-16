@@ -38,6 +38,8 @@ export async function callTool<T>(args: {
   prompt: string
   tool: { name: string; description: string; input_schema: Record<string, unknown> }
   maxTokens?: number
+  /** Default 90 s; a long translation needs more. */
+  timeoutMs?: number
   fetchImpl?: FetchLike
 }): Promise<ToolCallResult<T>> {
   const forced = !noForcedTool.has(args.model)
@@ -68,7 +70,7 @@ export async function callTool<T>(args: {
       ...body,
       messages: [{ role: 'user', content: args.prompt }],
     }),
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(args.timeoutMs ?? 90_000),
   })
 
   if (!res.ok) {

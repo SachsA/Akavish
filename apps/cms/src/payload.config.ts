@@ -28,6 +28,7 @@ import { registerCommands } from './scout/discord-commands'
 import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 import { schedulePublishHandler } from './lib/schedule-publish'
+import { translateArticle, translateBackfillHandler, translateTaxonomy } from './lib/translate'
 import {
   clerkWebhookHandler,
   readerBookmarksHandler,
@@ -100,6 +101,8 @@ export default buildConfig({
     { path: '/newsletter/unsubscribe', method: 'post', handler: unsubscribeHandler },
     // Schedule an article's publication from a script (src/lib/schedule-publish.ts).
     { path: '/articles-schedule', method: 'post', handler: schedulePublishHandler },
+    // French version: translate every article not translated yet (lib/translate.ts).
+    { path: '/translate/backfill', method: 'post', handler: translateBackfillHandler },
     // AI scout, step 2: Discord's "Interactions Endpoint URL" (button clicks).
     // Signature-checked; only the owner's clicks are accepted.
     { path: '/scout/discord', method: 'post', handler: discordInteractionsHandler },
@@ -136,8 +139,71 @@ export default buildConfig({
       { cron: '* * * * *', queue: 'default' },
       // The AI scout's own queue, so a slow run never delays a scheduled publish.
       { cron: '* * * * *', queue: 'scout' },
+      // French translations (lib/translate.ts): long Claude calls, on their
+      // own queue so they never hold up a scheduled publish.
+      { cron: '* * * * *', queue: 'translate', limit: 5 },
     ],
     tasks: [
+      {
+        // The French version of one article (lib/translate.ts), queued when
+        // it's published or its English changes. One retry; then "failed".
+        slug: 'translateArticle',
+        retries: 1,
+        inputSchema: [{ name: 'articleId', type: 'number', required: true }],
+        handler: async ({ input, req }) => {
+          const id = (input as { articleId: number }).articleId
+          try {
+            const result = await translateArticle(req.payload, id)
+            if (result !== 'translated') {
+              // Nothing to do: don't leave the article marked "pending".
+              const doc = await req.payload.findByID({
+                collection: 'articles',
+                id,
+                depth: 0,
+                overrideAccess: true,
+              })
+              const fr = (doc as unknown as { fr?: { status?: string } }).fr
+              if (fr?.status === 'pending') {
+                await req.payload.update({
+                  collection: 'articles',
+                  id,
+                  data: {
+                    fr: { ...fr, status: result === 'up-to-date' ? 'auto' : 'failed' },
+                  } as never,
+                  overrideAccess: true,
+                  context: { translating: true },
+                })
+              }
+            }
+            return { output: { result } }
+          } catch (error) {
+            req.payload.logger.error({
+              msg: '[translate] failed',
+              article: id,
+              error: String(error),
+            })
+            await req.payload
+              .update({
+                collection: 'articles',
+                id,
+                data: { fr: { status: 'failed' } } as never,
+                overrideAccess: true,
+                context: { translating: true },
+              })
+              .catch(() => {})
+            throw error
+          }
+        },
+      },
+      {
+        // French names for new tags (queued by the Tags hook) and bios.
+        slug: 'translateTaxonomy',
+        retries: 1,
+        handler: async ({ req }) => {
+          const output = await translateTaxonomy(req.payload)
+          return { output }
+        },
+      },
       {
         // Every 5 minutes: collect, triage, digest if due (src/scout/run.ts).
         // Does nothing unless SCOUT_ENABLED=true. The schedule is declared

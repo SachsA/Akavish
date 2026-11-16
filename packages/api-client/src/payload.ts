@@ -30,6 +30,8 @@ export type PayloadMedia =
   | {
       url?: string
       alt?: string | null
+      /** The French alt text (CMS Media `altFr`). */
+      altFr?: string | null
       sizes?: Record<string, { url?: string } | undefined>
     }
   | null
@@ -60,6 +62,14 @@ export interface PayloadArticle {
   featured?: boolean | null
   aiAssisted?: boolean | null
   score?: number | null
+  fr?: {
+    title?: string | null
+    excerpt?: string | null
+    content?: unknown
+    seoTitle?: string | null
+    seoDescription?: string | null
+    status?: string | null
+  } | null
 }
 
 /** Payload may return a relative path (`/api/media/file/x.jpg`); make it absolute. */
@@ -142,6 +152,33 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     seo: doc.seo
       ? { title: doc.seo.title ?? undefined, description: doc.seo.description ?? undefined }
       : undefined,
+    fr: mapTranslation(doc),
+  }
+}
+
+/** The French version when there is one (a title at least). */
+function mapTranslation(doc: PayloadArticle): Article['fr'] {
+  const fr = doc.fr
+  if (!fr?.title) return undefined
+  const cover = doc.coverImage && typeof doc.coverImage === 'object' ? doc.coverImage : null
+  const status = fr.status
+  return {
+    title: fr.title,
+    excerpt: fr.excerpt ?? '',
+    // No French body yet (only the title was set by hand): the English one.
+    content: fr.content
+      ? typeof fr.content === 'string'
+        ? fr.content
+        : JSON.stringify(fr.content)
+      : typeof doc.content === 'string'
+        ? doc.content
+        : JSON.stringify(doc.content ?? null),
+    seo: { title: fr.seoTitle ?? undefined, description: fr.seoDescription ?? undefined },
+    coverImageAlt: cover?.altFr?.trim() || undefined,
+    status:
+      status === 'auto' || status === 'edited' || status === 'pending' || status === 'failed'
+        ? status
+        : undefined,
   }
 }
 

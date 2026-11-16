@@ -5,6 +5,9 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { slugField } from '../fields/slug'
 import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-search-sync'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-web'
+import { sourceHash, stableJson } from '../lib/translate'
+
+const FR_TEXT_FIELDS = ['title', 'excerpt', 'seoTitle', 'seoDescription'] as const
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -48,7 +51,10 @@ export const Articles: CollectionConfig = {
         if (editorRole(req.user) !== 'writer') return data
         const author = authorIdOf(req.user)
         if (author === null) {
-          throw new APIError('Your account has no author profile yet: ask an admin to set one.', 403)
+          throw new APIError(
+            'Your account has no author profile yet: ask an admin to set one.',
+            403,
+          )
         }
         if (data._status === 'published' || data.status === 'published') {
           throw new APIError('Writers save drafts; an editor publishes them.', 403)
@@ -102,6 +108,37 @@ export const Articles: CollectionConfig = {
         data.previousSlugs = kept
         return data
       },
+
+      // French version (lib/translate.ts). Not for the translation job's own
+      // save (`context.translating`).
+      // - French fields changed by hand: "edited", kept until the English changes.
+      // - A published article whose English differs from what the French was
+      //   made from: "pending", and the afterChange below queues the job.
+      //   Draft saves don't count (the public text hasn't changed yet).
+      ({ data, originalDoc, req }) => {
+        if (req.context?.translating) return data
+        const before = (originalDoc?.fr ?? {}) as Record<string, unknown>
+        const merged = { ...originalDoc, ...data }
+        const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null)
+        if (data.fr && typeof data.fr === 'object') {
+          const handEdit =
+            FR_TEXT_FIELDS.some((k) => k in data.fr && text(data.fr[k]) !== text(before[k])) ||
+            ('content' in data.fr &&
+              stableJson(data.fr.content ?? null) !== stableJson(before.content ?? null))
+          // The French now matches the English as it is: nothing to redo.
+          if (handEdit && (data.fr.title ?? before.title)) {
+            data.fr = { ...data.fr, status: 'edited', sourceHash: sourceHash(merged) }
+          }
+        }
+        if (data._status === 'draft') return data
+        if (merged.status !== 'published') return data
+        const fr = { ...before, ...(data.fr ?? {}) } as Record<string, unknown>
+        if (sourceHash(merged) !== fr.sourceHash && fr.status !== 'pending') {
+          data.fr = { ...fr, status: 'pending' }
+          req.context.queueTranslation = true
+        }
+        return data
+      },
     ],
     // Keep the Meilisearch index in sync. Best-effort: runs after the response,
     // failures are logged inside the sync helpers and never block editing.
@@ -112,6 +149,20 @@ export const Articles: CollectionConfig = {
       },
       // Refresh the website's cache now rather than within 30 s (lib/revalidate-web.ts).
       revalidateAfterChange,
+      // Queue the French translation marked "pending" above. A minute's wait,
+      // so several saves in a row make one translation of the latest text.
+      async ({ doc, req }) => {
+        if (!req.context?.queueTranslation) return doc
+        req.context.queueTranslation = false
+        await req.payload.jobs.queue({
+          task: 'translateArticle',
+          input: { articleId: Number(doc.id) },
+          queue: 'translate',
+          waitUntil: new Date(Date.now() + 60_000),
+          req,
+        })
+        return doc
+      },
     ],
     // Readers' saved copies of it go first (the link can't point to nothing).
     beforeDelete: [
@@ -238,7 +289,10 @@ export const Articles: CollectionConfig = {
       label: 'Comments closed',
       type: 'checkbox',
       defaultValue: false,
-      admin: { position: 'sidebar', description: 'Readers can still read the comments, not add any.' },
+      admin: {
+        position: 'sidebar',
+        description: 'Readers can still read the comments, not add any.',
+      },
     },
     { name: 'game', type: 'relationship', relationTo: 'games', admin: { position: 'sidebar' } },
     {
@@ -268,6 +322,38 @@ export const Articles: CollectionConfig = {
       fields: [
         { name: 'title', type: 'text' },
         { name: 'description', type: 'textarea' },
+      ],
+    },
+    {
+      // The French site's version (lib/translate.ts). Machine-translated with
+      // Claude when the article is published or its English changes; editable.
+      name: 'fr',
+      type: 'group',
+      label: 'Français',
+      admin: {
+        description:
+          'Traduction automatique (Claude) à la publication et à chaque changement du texte anglais. Vous pouvez la corriger : elle reste telle quelle tant que l’anglais ne change pas.',
+      },
+      fields: [
+        { name: 'title', type: 'text' },
+        { name: 'excerpt', type: 'textarea' },
+        { name: 'content', type: 'richText', editor: lexicalEditor() },
+        { name: 'seoTitle', type: 'text', label: 'SEO title' },
+        { name: 'seoDescription', type: 'textarea', label: 'SEO description' },
+        {
+          name: 'status',
+          type: 'select',
+          options: [
+            { label: 'En attente', value: 'pending' },
+            { label: 'Traduction automatique', value: 'auto' },
+            { label: 'Corrigée à la main', value: 'edited' },
+            { label: 'Échec', value: 'failed' },
+          ],
+          admin: { readOnly: true },
+        },
+        { name: 'translatedAt', type: 'date', admin: { readOnly: true } },
+        // The English text the French was made from (sha-256, truncated).
+        { name: 'sourceHash', type: 'text', admin: { hidden: true } },
       ],
     },
     {

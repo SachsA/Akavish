@@ -5,6 +5,7 @@ import { DateText } from '@/components/DateText'
 import { localizePath, ogLocale } from '@/lib/i18n/config'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
+import { isInLanguage } from '@/lib/i18n/content'
 import type { Metadata } from 'next'
 import {
   fetchAdjacentArticles,
@@ -37,7 +38,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // Prefer the CMS SEO fields when set, fall back to the article's own title/excerpt.
   const title = article.seo?.title || article.title
   const description = article.seo?.description || article.excerpt
-  const links = alternates(locale, `/article/${article.slug}`)
+  // Not translated yet: the French URL shows the English text, so it points
+  // search engines to the English page and doesn't claim a French version.
+  const path = `/article/${article.slug}`
+  const links = isInLanguage(article, 'fr')
+    ? alternates(locale, path)
+    : { canonical: path, languages: { en: path, 'x-default': path } }
 
   return {
     title,
@@ -107,7 +113,7 @@ export default async function ArticlePage({ params }: Params) {
     image: article.coverImage ? [article.coverImage] : undefined,
     author: { '@type': 'Person', name: article.author.name },
     publisher: { '@type': 'Organization', name: SITE_NAME },
-    inLanguage: locale,
+    inLanguage: isInLanguage(article, locale) ? locale : 'en',
     mainEntityOfPage: { '@type': 'WebPage', '@id': shareUrl },
     // Now that reading time is computed, expose it to search engines too.
     // `timeRequired` is an ISO 8601 duration.
@@ -159,7 +165,12 @@ export default async function ArticlePage({ params }: Params) {
         {t.article.back}
       </Link>
 
-      <article>
+      <article lang={isInLanguage(article, locale) ? undefined : 'en'}>
+        {!isInLanguage(article, locale) && (
+          <p lang={locale} className="mb-6 rounded-md border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300">
+            {t.article.untranslated}
+          </p>
+        )}
         <div className="space-y-3 mb-8">
           <div className="flex items-center gap-3">
             <span className="text-emerald-500 text-xs font-bold uppercase tracking-wide">
@@ -232,7 +243,13 @@ export default async function ArticlePage({ params }: Params) {
 
         {article.aiAssisted && (
           // Transparency about AI-assisted writing (EU AI Act art. 50, /terms).
-          <p className="mt-8 text-sm text-zinc-400 italic">{t.article.aiNote}</p>
+          <p lang={locale} className="mt-8 text-sm text-zinc-400 italic">{t.article.aiNote}</p>
+        )}
+        {locale !== 'en' && isInLanguage(article, locale) && (
+          // Machine translation, said plainly (EU AI Act art. 50, /terms).
+          <p className={`${article.aiAssisted ? 'mt-2' : 'mt-8'} text-sm text-zinc-400 italic`}>
+            {t.article.translatedNote}
+          </p>
         )}
 
         {article.tags.length > 0 && (

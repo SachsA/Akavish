@@ -37,7 +37,10 @@ collection, a relationship, an index) needs a migration. Production never
 "pushes" the schema: Railway runs `pnpm migrate` before each deploy.
 
 1. Edit the collection in `apps/cms/src/collections/` (new collection → also
-   register it in `payload.config.ts`).
+   register it in `payload.config.ts`). A new **text readers see** on an
+   article belongs in the French version too: add it to the `fr` group, to
+   `sourceHash` and the prompt in `src/lib/translate.ts`, and to the web's
+   `localizeArticle` (`apps/web/src/lib/i18n/content.ts`).
 2. New collection the website must read? Add `access.read`: collections are
    private by default.
 3. Generate and apply the migration, then commit it with the code:

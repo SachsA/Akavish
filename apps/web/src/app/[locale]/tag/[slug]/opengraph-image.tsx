@@ -2,6 +2,7 @@ import { fetchTagBySlug } from '@/lib/payload'
 import { renderOgImage } from '@/lib/og'
 import { isLocale } from '@/lib/i18n/config'
 import { messagesFor } from '@/lib/i18n/messages'
+import { setRequestLocale } from '@/lib/i18n/server'
 
 export const runtime = 'nodejs'
 export const revalidate = 300
@@ -12,6 +13,8 @@ export const alt = 'Akavish topic'
 
 export default async function OgImage({ params }: { params: Promise<{ locale: string; slug: string }> }) {
   const { slug, locale } = await params
+  // The article, tag or bio in the page's language (lib/payload.ts reads it).
+  setRequestLocale(locale)
   const t = messagesFor(isLocale(locale) ? locale : 'en')
   const tag = await fetchTagBySlug(slug).catch(() => null)
 

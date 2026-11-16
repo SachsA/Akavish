@@ -73,6 +73,11 @@ export function ConditionsPage() {
         article. Ces articles le signalent par une mention en bas de page.
       </p>
       <p>
+        Les articles sont écrits en anglais. L’édition française (sous <code>/fr</code>) en est
+        traduite automatiquement avec le même type d’outil, ce que chaque article signale en bas de
+        page ; un éditeur peut la corriger, et l’original anglais fait foi en cas de différence.
+      </p>
+      <p>
         Nous corrigeons nos erreurs plutôt que de les effacer discrètement. Vous en repérez une ?{' '}
         <a href={`mailto:${PUBLISHER.contactEmail}`}>{PUBLISHER.contactEmail}</a>.
       </p>

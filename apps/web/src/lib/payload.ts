@@ -14,6 +14,9 @@ import {
 } from '@akavish/api-client/payload'
 
 import { log } from './log'
+import type { Locale } from './i18n/config'
+import { localizeArticle, pick } from './i18n/content'
+import { getLocale } from './i18n/server'
 import { CMS_TAG } from './revalidate'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
@@ -50,7 +53,11 @@ async function cmsFetch(url: string, init?: RequestInit): Promise<Response> {
 // The Payload → Article mapping is shared with the mobile app and lives in
 // `@akavish/api-client/payload`. These thin wrappers bind it to this app's CMS
 // origin, so the call sites below stay one-argument.
-const mapArticle = (doc: PayloadArticle): Article => mapPayloadArticle(doc, CMS_URL)
+// Articles come back in the page's language (setRequestLocale in the page;
+// English outside a page, e.g. in an API route that doesn't pass one).
+const mapFor = (locale: Locale) => (doc: PayloadArticle): Article =>
+  localizeArticle(mapPayloadArticle(doc, CMS_URL), locale)
+const mapArticle = (doc: PayloadArticle): Article => mapFor(getLocale())(doc)
 const mediaUrl = (m: PayloadMedia, preferred?: MediaSize) =>
   sharedMediaUrl(m, CMS_URL, preferred)
 
@@ -173,6 +180,8 @@ export interface ArticleSearch {
   category?: string
   /** Game slug. */
   game?: string
+  /** Language of the results (the search API passes the page's). */
+  locale?: Locale
 }
 
 export interface ArticleSearchResult {
@@ -203,6 +212,10 @@ export function searchWhere(
     'where[and][1][or][1][excerpt][like]': q,
     'where[and][1][or][2][game.name][like]': q,
     'where[and][1][or][3][tags.name][like]': q,
+    // The French versions too: a search finds an article in either language.
+    'where[and][1][or][4][fr.title][like]': q,
+    'where[and][1][or][5][fr.excerpt][like]': q,
+    'where[and][1][or][6][tags.nameFr][like]': q,
   })
   if (filters.category) qs.set('where[and][2][category][equals]', filters.category)
   if (filters.game) qs.set('where[and][3][game.slug][equals]', filters.game)
@@ -215,6 +228,7 @@ export async function searchArticles({
   page = 1,
   category,
   game,
+  locale = 'en',
 }: ArticleSearch): Promise<ArticleSearchResult> {
   const qs = searchWhere(q, { category, game })
   qs.set('sort', '-publishedAt')
@@ -229,7 +243,7 @@ export async function searchArticles({
 
   const json = (await res.json()) as PayloadListResponse<PayloadArticle>
   return {
-    articles: json.docs.map(mapArticle),
+    articles: json.docs.map(mapFor(locale)),
     total: json.totalDocs,
     page: json.page ?? page,
     totalPages: json.totalPages,
@@ -457,6 +471,7 @@ export async function fetchAuthorBySlug(slug: string): Promise<AuthorEntity | nu
     name: string
     avatar?: { url?: string } | string | null
     bio?: string
+    bioFr?: string | null
     twitter?: string
   }>('authors', slug)
   if (!doc) return null
@@ -465,7 +480,7 @@ export async function fetchAuthorBySlug(slug: string): Promise<AuthorEntity | nu
     slug: doc.slug,
     name: doc.name,
     avatar: mediaUrl(doc.avatar, 'square'),
-    bio: doc.bio,
+    bio: doc.bio ? pick(getLocale(), doc.bio, doc.bioFr) : doc.bio,
     twitter: doc.twitter,
   }
 }
@@ -498,12 +513,12 @@ export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> 
 }
 
 export async function fetchTagBySlug(slug: string): Promise<TagEntity | null> {
-  const doc = await fetchOneBySlug<{ id: string | number; slug: string; name: string }>(
+  const doc = await fetchOneBySlug<{ id: string | number; slug: string; name: string; nameFr?: string | null }>(
     'tags',
     slug
   )
   if (!doc) return null
-  return { id: String(doc.id), slug: doc.slug, name: doc.name }
+  return { id: String(doc.id), slug: doc.slug, name: pick(getLocale(), doc.name, doc.nameFr) }
 }
 
 // ─── Sitemap helpers ─────────────────────────────────────────────────────────
@@ -511,6 +526,8 @@ export async function fetchTagBySlug(slug: string): Promise<TagEntity | null> {
 export interface SlugEntry {
   slug: string
   updatedAt?: string
+  /** Articles: the French version exists (the sitemap only lists /fr then). */
+  translated?: boolean
 }
 
 // All published article slugs (+ last-modified) for the sitemap.
@@ -528,8 +545,9 @@ export async function fetchAllArticleSlugs(): Promise<SlugEntry[]> {
   const json = (await res.json()) as PayloadListResponse<{
     slug: string
     updatedAt?: string
+    fr?: { title?: string | null } | null
   }>
-  return json.docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt }))
+  return json.docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt, translated: Boolean(d.fr?.title) }))
 }
 
 // All slugs of a simple collection (authors / games / tags) for the sitemap.

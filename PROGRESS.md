@@ -223,8 +223,8 @@ Everything else waits on something:
 | **Content and readers** | Everything in **🅿️ Parked**: sending the newsletter, analytics review |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
-**In progress: the French version (i18n)**, on the `i18n` branch (Vercel
-preview per push), merged after GTA VI week (from Nov 20). Plan and status in
+**The French version (i18n)** went live on 2026-11-16: interface, French
+article translations on publish, backfill of the old ones. Plan and status in
 §6.
 
 > **The real bottleneck is content, not code.** The production CMS had zero
@@ -501,15 +501,15 @@ English entries share the same text and only change how dates are written
 (16 Nov 2026 / Nov 16, 2026): translating everything into British English too
 would double the cost for a difference almost nobody sees.
 
-Work on the `i18n` branch, merged after Nov 20 (step 2 is a migration, none
-during GTA VI week).
+Built on the `i18n` branch, merged into main the same day (Alex: no waiting
+for after GTA VI week).
 
 | Status | Step | Notes |
 | --- | --- | --- |
-| ✅ (branch) | 1. Interface | 2026-11-16. Pages under `app/[locale]`: English at the bare path (the proxy rewrites to `/en/…`), French under `/fr/…`, same slugs. `/en/…` 308s to the bare path. First visit: `Accept-Language` decides (a French browser opening `/news` lands on `/fr/news`, crawlers send none and stay English); once the reader picks in the menu, the `NEXT_LOCALE` cookie wins (a `/fr` link still opens in French). The English date style is the `akavish-region` cookie (`US` / `GB`, guessed from the same header), applied in the browser (`<DateText>`), so pages stay the same for everyone. Signed in, the choice is also saved in Clerk (`unsafeMetadata.locale` / `.region`) and a new device picks it up. Every interface string is in `lib/i18n/messages/{en,fr}.ts` (a test checks French has every key); links go through `components/LocaleLink.tsx`; dates through `lib/i18n/dates.ts`; `hreflang` + canonical through `lib/i18n/metadata.ts`; the sitemap lists both languages with their pair. Clerk's widgets in French (`@clerk/localizations`). Legal pages: the existing hand-written French versions moved to `/fr/privacy`, `/fr/terms`, `/fr/legal` (old URLs 308). Privacy EN/FR list the two new cookies. On phones the header lost "Log in" (the sign-up modal links to sign-in) to fit the menu, in French too, down to 320 px. Unit tests `lib/i18n/i18n.test.ts`, e2e `tests/e2e/i18n.e2e.spec.ts` |
-| ⏳ | 2. Content | Payload localization (`en` default, `fr`) on the text fields of articles (title, excerpt, content, SEO), games, tags, authors' bio: 🟠 migration. A hook translates into French with Claude when an article is published or its English text changes (marked machine-translated, editable in `/admin`). The web asks the CMS for `?locale=fr` on French pages. Search in the reader's language. Newsletter emails in the subscriber's language |
-| ⏳ | 3. Backfill + SEO | Translate the ~185 existing articles once (script, less than 10 $), then the French share images, a French RSS feed, `inLanguage` everywhere. A French page only lists `hreflang` once its translation exists |
-| ⏳ | Merge | After Nov 20: merge `i18n` into main, migration on Railway, then backfill. Add "French version" to the mobile catch-up list (§7) |
+| ✅ | 1. Interface | 2026-11-16. Pages under `app/[locale]`: English at the bare path (the proxy rewrites to `/en/…`), French under `/fr/…`, same slugs. `/en/…` 308s to the bare path. First visit: `Accept-Language` decides (a French browser opening `/news` lands on `/fr/news`, crawlers send none and stay English); once the reader picks in the menu, the `NEXT_LOCALE` cookie wins (a `/fr` link still opens in French). The English date style is the `akavish-region` cookie (`US` / `GB`, guessed from the same header), applied in the browser (`<DateText>`), so pages stay the same for everyone. Signed in, the choice is also saved in Clerk (`unsafeMetadata.locale` / `.region`) and a new device picks it up. Every interface string is in `lib/i18n/messages/{en,fr}.ts` (a test checks French has every key); links go through `components/LocaleLink.tsx`; dates through `lib/i18n/dates.ts`; `hreflang` + canonical through `lib/i18n/metadata.ts`; the sitemap lists both languages with their pair. Clerk's widgets in French (`@clerk/localizations`). Legal pages: the existing hand-written French versions moved to `/fr/privacy`, `/fr/terms`, `/fr/legal` (old URLs 308). Privacy EN/FR list the two new cookies. On phones the header lost "Log in" (the sign-up modal links to sign-in) to fit the menu, in French too, down to 320 px. Unit tests `lib/i18n/i18n.test.ts`, e2e `tests/e2e/i18n.e2e.spec.ts` |
+| ✅ | 2. Content | 2026-11-16, 🟠 migration `20261116_130858_french_version` (additive). Not Payload's localization (it moves every localized column into `_locales` tables, a risky migration on live data): a **Français** group on Articles (`fr`: title, excerpt, content, SEO, status, `sourceHash`, `translatedAt`) plus `altFr` on Media, `nameFr` on Tags, `bioFr` on Authors. Publishing, or changing the English of a published article, queues `translateArticle` (queue `translate`, a minute later, one job per burst of edits); Claude Sonnet translates block by block in small markup so bold, italics and links survive (`apps/cms/src/lib/translate.ts`). Hand corrections in /admin stay until the English changes. Own budget (`TRANSLATE_MONTHLY_BUDGET_USD`, 30 $), usage purpose `translate`. Web: `localizeArticle` on /fr pages; untranslated → English with a notice, canonical to the English page, not in the sitemap as /fr; "Traduit de l'anglais avec l'aide de l'IA" under translated articles (terms EN/FR say so); tag names and bios in French; search covers both languages and answers in the page's (`lang=fr`; Meilisearch, English only, is skipped for French); share images in French |
+| ⏳ | 3. Backfill | `POST /api/translate/backfill` once deployed (DEPLOYMENT §12): tags, bios, then every published article (~185, under 10 $) at 5 a minute |
+| ⏳ | Later | French RSS feed, newsletter emails in the subscriber's language, French Meilisearch index if it's ever switched on |
 
 ## 7. Mobile (`apps/mobile`)
 
@@ -544,6 +544,7 @@ this list every time the website gets a reader-facing feature.
 | Read next, previous / next (11-07) | Under the article |
 | Newsletter sign-up (11-09) | A form (same CMS endpoint, consent box) |
 | Light theme (11-07) | Follow the phone's light / dark setting |
+| French version (11-16) | Language from the phone, a setting EN / FR; articles from `fr` (same `localizeArticle` logic), interface strings from `apps/web/src/lib/i18n/messages` |
 | Comments (11-13) | Read, post, reply ("Replying to @name"), like / dislike, delete your own, report; moderators hide / restore / delete; same `/api/comments*` rules, with a Clerk session token |
 
 ## 8. Infrastructure, CI/CD & deployment
@@ -611,7 +612,7 @@ checklist it walks through.
   production since well before i18n). CMS data is still cached (`cms` tag).
   Worth knowing before relying on page-level caching; moving the auth bits
   client-side would bring ISR back.
-- **Languages (i18n branch): never import `next/link` in the web.** Use
+- **Languages: never import `next/link` in the web.** Use
   `@/components/LocaleLink`, which keeps `/fr` on French pages; a plain
   `next/link` sends French readers to the English page. Server pages call
   `setRequestLocale((await params).locale)` first (and in `generateMetadata`),

@@ -89,6 +89,8 @@ export const fr: Messages = {
     aiNote:
       "Recherché et rédigé avec l'aide de l'IA, puis vérifié, corrigé et validé par un éditeur d'Akavish, qui en est responsable.",
     newsletterTitle: 'Ça vous a plu ? Recevez la newsletter',
+    untranslated: "Cet article n'est pas encore traduit : voici la version originale, en anglais.",
+    translatedNote: "Traduit de l'anglais avec l'aide de l'IA, à partir de l'article original.",
     navigation: 'Navigation entre articles',
     previous: '← Précédent',
     next: 'Suivant →',

@@ -444,6 +444,33 @@ signed clicks, the report endpoint and the Saturday report, with the network
 faked). ⚠ The integration test empties the scout tables of the
 local database it runs on.
 
+## French edition (`src/lib/translate.ts`)
+
+Articles are written in English; the site also exists in French (`/fr`). Each
+article has a **Français** group (`fr`: title, excerpt, content, SEO title and
+description, status, date), Media has `altFr`, Tags `nameFr`, Authors `bioFr`
+(migration `20261116_130858_french_version`, additive).
+
+- **When:** publishing an article, or changing the English of a published one
+  (hash of title, excerpt, content and SEO in `fr.sourceHash`, keys sorted so
+  `jsonb` key order doesn't count), sets `fr.status` to "pending" and queues
+  `translateArticle` on the `translate` queue, a minute later (one job per
+  burst of edits). Draft saves don't count.
+- **How:** Claude (`SCOUT_DRAFT_MODEL`) gets the English fields and the body as
+  one segment per paragraph / heading / list item, in small markup (`<b>`,
+  `<i>`, `<a n="0">`, `<br/>`) so bold, italics and links survive; the answer is
+  rebuilt into Lexical nodes (`applyTranslation`), a segment that doesn't parse
+  keeps its text without formatting. Wrong segment count: one retry, then
+  "failed". The cover's French alt comes in the same call.
+- **By hand:** editing the French in /admin marks it "edited" and records the
+  English it matches: it stays until the English changes (English wins).
+- **Tags and bios:** a new tag queues `translateTaxonomy` (names stay names,
+  "Release dates" becomes "Dates de sortie"); bios are done by the backfill.
+- **Backfill:** `POST /api/translate/backfill` (editors) — `DEPLOYMENT.md` §12.
+- **Cost:** `scout-usage`, purpose `translate`, own monthly cap
+  `TRANSLATE_MONTHLY_BUDGET_USD` (30 $). No key → nothing is translated.
+- Tests: `src/lib/translate.test.ts` (markup round trip), `tests/int/translate.int.spec.ts`.
+
 ## Site refresh (on-demand revalidation)
 
 The site caches its CMS reads for 30 s and serves the stale copy once past
