@@ -57,7 +57,6 @@ export const fr: Messages = {
   },
   home: {
     tagline: "L'actu jeu vidéo à chaud, des leaks exclusifs, des tests complets. Rapide. Sérieux. Sans blabla.",
-    sections: 'Rubriques',
     topStories: 'À la une',
     seeAll: 'Tout voir →',
   },
@@ -108,6 +107,13 @@ export const fr: Messages = {
     saved: 'Sauvegardé',
     failed: "Ça n'a pas marché, réessayez.",
   },
+  games: {
+    title: 'Jeux',
+    description: 'Tous les jeux couverts sur Akavish, de A à Z : actus, leaks et tests pour chacun.',
+    count: (n: number) => `${n} jeux, de A à Z.`,
+    letters: 'Aller à une lettre',
+    none: "Aucun jeu pour l'instant.",
+  },
   author: {
     notFound: 'Auteur introuvable',
     description: (name: string) => `Les articles de ${name} sur Akavish.`,
@@ -154,6 +160,8 @@ export const fr: Messages = {
     noResults: (q: string) => `Aucun résultat pour « ${q} »`,
     withFilters: 'avec ces filtres.',
     searchEverything: 'Chercher partout',
+    games: 'Jeux',
+    articles: 'Articles',
   },
   account: {
     title: 'Votre compte',

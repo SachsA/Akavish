@@ -13,6 +13,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { LanguageMenu } from '@/components/LanguageMenu'
 import { I18nProvider } from '@/components/I18nProvider'
 import { CATEGORIES } from '@/lib/categories'
+import { NAV_CATEGORIES, NAV_SECTIONS } from '@/lib/nav'
 import { LOCALES, ogLocale } from '@/lib/i18n/config'
 import { alternates } from '@/lib/i18n/metadata'
 import { getLocale, getMessages, setRequestLocale } from '@/lib/i18n/server'
@@ -20,9 +21,6 @@ import { feedPath } from '@/lib/feed'
 import '../globals.css'
 
 type Params = { params: Promise<{ locale: string }> }
-
-/** Order of the sections in the header, the phone strip and the footer (Alex, 2026-11-16). */
-const NAV_SECTIONS = ['news', 'leaks', 'esport', 'reviews', 'previews', 'conferences'] as const
 
 // Both languages are built ahead. No `dynamicParams = false`: it would also
 // apply to the article and list pages below, whose slugs aren't all built
@@ -130,6 +128,9 @@ function Header() {
               {label(slug)}
             </Link>
           ))}
+          <Link href="/games" className="hidden lg:inline py-1 hover:text-white transition-colors">
+            {t.games.title}
+          </Link>
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
@@ -145,7 +146,7 @@ function Header() {
           it the only way to another section from an article was the footer. */}
       <nav aria-label={t.header.allSections} className="lg:hidden border-t border-zinc-900">
         <ul className="flex gap-1 overflow-x-auto px-2 py-1.5 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {NAV_SECTIONS.map((slug) => CATEGORIES.find((x) => x.slug === slug)!).map((c) => (
+          {NAV_CATEGORIES.map((c) => (
             <li key={c.slug} className="shrink-0">
               <Link
                 href={`/${c.slug}`}
@@ -155,6 +156,14 @@ function Header() {
               </Link>
             </li>
           ))}
+          <li className="shrink-0">
+            <Link
+              href="/games"
+              className="block px-3 py-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+            >
+              {t.games.title}
+            </Link>
+          </li>
         </ul>
       </nav>
     </header>
@@ -166,10 +175,13 @@ function Footer() {
   const sections = [
     {
       title: t.footer.sections,
-      links: NAV_SECTIONS.map((slug) => {
-        const c = CATEGORIES.find((x) => x.slug === slug)!
-        return { label: t.categories[c.value].label, href: `/${slug}` }
-      }),
+      links: [
+        ...NAV_SECTIONS.map((slug) => {
+          const c = CATEGORIES.find((x) => x.slug === slug)!
+          return { label: t.categories[c.value].label, href: `/${slug}` }
+        }),
+        { label: t.games.title, href: '/games' },
+      ],
     },
     {
       title: 'Akavish',

@@ -28,6 +28,11 @@ export function SearchResults() {
     if (!q) return
     let cancelled = false
     const qs = new URLSearchParams({ q, page: String(page), limit: String(SEARCH_PAGE_SIZE), facets: '1', lang: locale })
+    // The games the query names come first ("GTA" → GTA VI…), on the first page.
+    if (page === 1 && !game) {
+      qs.set('games', '1')
+      qs.set('gamesLimit', '12')
+    }
     if (category) qs.set('category', category)
     if (game) qs.set('game', game)
     fetch(`/api/search?${qs.toString()}`)
@@ -59,6 +64,35 @@ export function SearchResults() {
         </p>
       ) : (
         <p className="text-zinc-400 mb-8">{t.search.typeQuery}</p>
+      )}
+
+      {res?.games && res.games.length > 0 && (
+        <section aria-labelledby="search-games" className="mb-10">
+          <h2 id="search-games" className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-4">
+            {t.search.games}
+          </h2>
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {res.games.map((g) => (
+              <li key={g.slug}>
+                <Link
+                  href={`/game/${g.slug}`}
+                  className="group block rounded-lg border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-colors"
+                >
+                  <span className="relative block aspect-video bg-zinc-800">
+                    {g.cover && <Image src={g.cover} alt="" fill sizes="(max-width: 640px) 50vw, 240px" className="object-cover" />}
+                  </span>
+                  <span className="block px-3 py-2 text-sm font-semibold text-zinc-100 group-hover:text-emerald-400 transition-colors line-clamp-2">
+                    <Highlight text={g.name} query={q} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {q && res?.games && res.games.length > 0 && (
+        <h2 className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-4">{t.search.articles}</h2>
       )}
 
       {q && (
@@ -150,11 +184,11 @@ export function SearchResults() {
                     </span>
                   )}
                 </div>
-                <h2 className="font-bold text-white">
+                <h3 className="font-bold text-white">
                   <Link href={`/article/${hit.slug}`} className="hover:text-emerald-400 transition-colors">
                     <Highlight text={hit.title} query={q} />
                   </Link>
-                </h2>
+                </h3>
                 <p className="text-sm text-zinc-400 line-clamp-2">
                   <Highlight text={hit.excerpt} query={q} />
                 </p>

@@ -2,7 +2,7 @@ import type { Article } from '@akavish/types'
 import Link from '@/components/LocaleLink'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
 import { fetchArticles } from '@/lib/payload'
-import { CATEGORIES } from '@/lib/categories'
+import { NAV_CATEGORIES } from '@/lib/nav'
 import { pickLead, sectionArticles } from '@/lib/home'
 import { ArticleCard } from '@/components/ArticleCard'
 import { ArticleListItem, FeaturedArticle } from '@/components/FeaturedArticle'
@@ -20,7 +20,7 @@ const PER_SECTION = 3
 /**
  * Layout, top to bottom:
  *
- *   1. Masthead — wordmark, tagline, links to every section.
+ *   1. Masthead — wordmark and tagline (the sections are in the header).
  *   2. Lead story (the editor's "featured" pick, else the newest article) +
  *      a "Top stories" column (the next 3).
  *   3. One section per category: its latest articles, the lead and top stories
@@ -57,7 +57,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const topStories = others.slice(0, TOP_STORIES)
   const onPage = lead ? [lead, ...others] : others
 
-  const sections = CATEGORIES.map((category) => ({
+  const sections = NAV_CATEGORIES.map((category) => ({
     category,
     articles: sectionArticles(onPage, category.value, PER_SECTION),
   })).filter((s) => s.articles.length > 0)
@@ -65,26 +65,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
       {/* 1. Masthead */}
-      <section className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-zinc-800 pb-8">
-        <div className="space-y-2">
-          <h1>
-            <Wordmark className="text-5xl" />
-          </h1>
-          <p className="text-zinc-400 max-w-xl">
-            {t.home.tagline}
-          </p>
-        </div>
-        <nav aria-label={t.home.sections} className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/${c.slug}`}
-              className="px-3 py-1 rounded-full border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
-            >
-              {t.categories[c.value].label}
-            </Link>
-          ))}
-        </nav>
+      {/* No section links here any more: the header (and the strip on phones)
+          already lists them all (2026-11-16). */}
+      <section className="mb-10 space-y-2 border-b border-zinc-800 pb-8">
+        <h1>
+          <Wordmark className="text-5xl" />
+        </h1>
+        <p className="text-zinc-400 max-w-xl">{t.home.tagline}</p>
       </section>
 
       {cmsError ? (

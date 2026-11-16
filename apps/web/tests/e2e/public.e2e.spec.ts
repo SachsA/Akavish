@@ -70,7 +70,9 @@ test('the header suggests games and articles as you type', async ({ page }) => {
   await expect(list.getByRole('option', { name: /Game\s*Hollow Crown/ })).toBeVisible()
   await expect(list.getByRole('option', { name: /ratings board/ })).toBeVisible()
   await expect(list.getByRole('option', { name: 'See all results for “hollow”' })).toBeVisible()
-  // Arrow down to the first suggestion (the game) and open it.
+  // The games come first (newest release first: Silksong, then Hollow Crown):
+  // arrow down twice and open the second one.
+  await box.press('ArrowDown')
   await box.press('ArrowDown')
   await box.press('Enter')
   await expect(page).toHaveURL(/\/game\/hollow-crown$/)
@@ -87,7 +89,7 @@ test('search page: section chips with counts, game filter, highlighting', async 
 
   await chips.getByRole('link', { name: /^Reviews/ }).click()
   await expect(page).toHaveURL(/\/search\?q=neon&category=review/)
-  await expect(page.locator('main li h2')).toHaveCount(1)
+  await expect(page.locator('main li h3')).toHaveCount(1)
 
   // A game name matches too, and the game filter keeps only its articles.
   const byGame = await (await request.get('/api/search?q=drift&game=neon-drift&facets=1')).json()
@@ -230,4 +232,19 @@ test('newsletter: dead confirm and unsubscribe links say so', async ({ page }) =
   await page.getByRole('button', { name: 'Unsubscribe' }).click()
   await expect(page.getByRole('heading', { name: 'Already unsubscribed' })).toBeVisible()
   expect(page.url()).not.toContain('token=') // the result page doesn't carry the token
+})
+
+test('games: the A-Z page, and the search shows games first', async ({ page }) => {
+  await page.goto('/games')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Games')
+  await page.locator('main').getByRole('link', { name: /Hollow Crown/ }).first().click()
+  await expect(page).toHaveURL(/\/game\/hollow-crown$/)
+
+  await page.goto('/search?q=hollow')
+  const games = page.getByRole('region', { name: 'Games' })
+  await expect(games.getByRole('link', { name: /Hollow Crown/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Articles' })).toBeVisible()
+
+  await page.goto('/fr/games')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jeux')
 })

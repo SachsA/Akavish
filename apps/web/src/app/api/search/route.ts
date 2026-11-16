@@ -8,7 +8,8 @@ import {
   type SearchHit,
   type SearchResponse,
 } from '@/lib/search'
-import { fetchGameName, searchArticles, searchCategoryCounts, searchGames } from '@/lib/payload'
+import { fetchAllGames, fetchGameName, searchArticles, searchCategoryCounts } from '@/lib/payload'
+import { matchGames } from '@/lib/game-match'
 import { CATEGORIES } from '@/lib/categories'
 import { parseSearchQuery, SEARCH_PAGE_SIZE, type SearchQuery } from '@/lib/search-query'
 import { log } from '@/lib/log'
@@ -29,14 +30,19 @@ import { clientIp, publicCache, rateLimit, tooManyRequests } from '@/lib/rate-li
 //
 // Query params: q, category (CMS value), game (slug), page, limit (≤ 50),
 // facets=1 (results per category, for the /search chips), games=1 (matching
-// games, for the header suggestions).
+// games: the header suggestions, and the games shown first on /search),
+// gamesLimit (≤ 24, default 3), lang (fr: results in French).
+//
+// Games are matched by name and initials ("GTA" → Grand Theft Auto VI,
+// lib/game-match.ts), and the articles about the best of them count as
+// results too, whatever their title says.
 
 const CATEGORY_VALUES = CATEGORIES.map((c) => c.value)
 
 type Page = { hits: SearchHit[]; total: number; page: number; totalPages: number }
 
-async function viaCms(query: SearchQuery, limit: number, locale: Locale): Promise<Page> {
-  const res = await searchArticles({ ...query, limit, locale })
+async function viaCms(query: SearchQuery, limit: number, locale: Locale, gameIds: string[]): Promise<Page> {
+  const res = await searchArticles({ ...query, limit, locale, gameIds })
   return {
     hits: res.articles.map(articleToSearchHit),
     total: res.total,
@@ -91,6 +97,8 @@ export async function GET(req: NextRequest) {
     Number.isInteger(rawLimit) && rawLimit >= 1 ? Math.min(rawLimit, 50) : SEARCH_PAGE_SIZE
   const withFacets = searchParams.get('facets') === '1'
   const withGames = searchParams.get('games') === '1'
+  const rawGamesLimit = Number(searchParams.get('gamesLimit') ?? 3)
+  const gamesLimit = Number.isInteger(rawGamesLimit) && rawGamesLimit >= 1 ? Math.min(rawGamesLimit, 24) : 3
   // The page's language (`lang=fr` from /fr pages): results come back in it.
   const locale: Locale = searchParams.get('lang') === 'fr' ? 'fr' : 'en'
 
@@ -107,9 +115,15 @@ export async function GET(req: NextRequest) {
   }
 
   // Side lookups never break the search itself: no games or no chip label at worst.
-  const gamesPromise: Promise<GameHit[] | undefined> = withGames
-    ? searchGames(query.q).catch(() => [])
-    : Promise.resolve(undefined)
+  const matched = await fetchAllGames()
+    .then((all) => matchGames(all, query.q, 24))
+    .catch(() => [])
+  const games: GameHit[] | undefined = withGames
+    ? matched.slice(0, gamesLimit).map((g) => ({ slug: g.slug, name: g.name, cover: g.cover }))
+    : undefined
+  // The articles about the 5 best-matching games count as results (not when
+  // the search is already narrowed to one game).
+  const gameIds = query.game ? [] : matched.slice(0, 5).map((g) => g.id)
   const gameNamePromise = query.game
     ? fetchGameName(query.game).catch(() => null)
     : Promise.resolve(null)
@@ -133,8 +147,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    if (!page) page = await viaCms(query, limit, locale)
-    if (withFacets && !facets) facets = await searchCategoryCounts(query.q, CATEGORY_VALUES, query.game)
+    if (!page) page = await viaCms(query, limit, locale, gameIds)
+    if (withFacets && !facets) {
+      facets = await searchCategoryCounts(query.q, CATEGORY_VALUES, query.game, gameIds)
+    }
   } catch (error) {
     // Only reachable if the CMS itself is unreachable, in which case the whole
     // site is already degraded.
@@ -145,7 +161,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const [games, gameName] = await Promise.all([gamesPromise, gameNamePromise])
+  const gameName = await gameNamePromise
   const body: SearchResponse = {
     query: query.q,
     ...page,

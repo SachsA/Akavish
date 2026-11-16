@@ -423,6 +423,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
 | ✅  | Dark/light toggle            | Done (2026-11-07) — follows the OS, sun/moon switch in the header remembers the choice (no flash on reload). Components keep the dark classes; `tailwind.config.ts` maps zinc/white/emerald text to CSS variables that flip in `globals.css`. axe-clean in both themes, header fits from 320 px |
 | ✅  | Sections in the header        | Done (2026-11-12) — the section links show from 1024 px; below that the swipeable strip of every section (was phones only, the header overflowed between 640 and 1024 px). Since 2026-11-16 all six, in Alex's order: News, Leaks, Esport, Reviews, Previews, Conferences (`NAV_SECTIONS` in the layout, also the phone strip and the footer); tighter gaps between 1024 and 1280 px so French fits |
+| ✅  | Games page + games first in search | Done (2026-11-16) — `/games` (`/fr/games`): every game A to Z under letters, with a row to jump, cover + year, in the header after Conferences ("Games" / "Jeux"), the phone strip, the footer and the sitemap. The search finds games by name **and initials** ("GTA" → Grand Theft Auto VI, "cod" → Call of Duty, "gta 6", "cs2", roman numerals as numbers: `lib/game-match.ts`, unit-tested, matched in memory against all games, cached 5 min) and shows them first on `/search` (12 cards, page 1), then the articles; the articles about the 5 best-matching games count as results too, whatever their title. The home's masthead lost its section pills (the header has them all); home sections follow the header order (`lib/nav.ts`) |
 
 ### UX & quality
 
@@ -538,7 +539,8 @@ this list every time the website gets a reader-facing feature.
 | Reader accounts (11-10, Clerk) | Clerk Expo SDK: sign in / sign up with Google, Discord, Twitch (OAuth redirects, needs a dev build, not Expo Go) |
 | Saved articles + `/account` (11-13) | Save button on the article screen, a "Saved" screen; a reader-authenticated API (today `/api/bookmarks` takes Clerk's web session: the app would send a Clerk session token) |
 | Reader badges (11-13) | `RoleBadge` next to the reader's name (account screen, comments) |
-| Search with suggestions and filters (11-13) | A search screen on `/api/search` (`games=1`, `facets=1`, `category`, `game`, highlighting from `lib/search-query.ts`) |
+| Games page (11-16) | A games screen A to Z (`fetchAllGames`), reachable from the tabs |
+| Search with suggestions and filters (11-13, games first and initials since 11-16) | A search screen on `/api/search` (`games=1`, `facets=1`, `category`, `game`, highlighting from `lib/search-query.ts`) |
 | Game pages, *Also covers* (11-12) | A game screen (cover, studio, platforms, its articles incl. `relatedGames`), linked from the article byline |
 | Tag and author pages | Tag and author screens, from the article's #tags and byline |
 | Review score /10 (11-12) | Score badge on the article screen and the cards |

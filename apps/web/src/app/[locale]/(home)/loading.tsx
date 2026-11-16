@@ -9,16 +9,9 @@ function Bar({ className }: { className: string }) {
 export default function Loading() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-zinc-800 pb-8">
-        <div className="space-y-3">
-          <Bar className="h-12 w-48" />
-          <Bar className="h-4 w-80 max-w-full" />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Bar key={i} className="h-6 w-16 rounded-full" />
-          ))}
-        </div>
+      <div className="mb-10 space-y-3 border-b border-zinc-800 pb-8">
+        <Bar className="h-12 w-48" />
+        <Bar className="h-4 w-80 max-w-full" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

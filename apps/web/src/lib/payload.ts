@@ -17,6 +17,7 @@ import { log } from './log'
 import type { Locale } from './i18n/config'
 import { localizeArticle, pick } from './i18n/content'
 import { getLocale } from './i18n/server'
+import { matchGames } from './game-match'
 import { CMS_TAG } from './revalidate'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
@@ -184,6 +185,8 @@ export interface ArticleSearch {
   game?: string
   /** Language of the results (the search API passes the page's). */
   locale?: Locale
+  /** Games the query names: their articles match too. */
+  gameIds?: string[]
 }
 
 export interface ArticleSearchResult {
@@ -206,7 +209,7 @@ export interface ArticleSearchResult {
  */
 export function searchWhere(
   q: string,
-  filters: { category?: string; game?: string } = {}
+  filters: { category?: string; game?: string; gameIds?: string[] } = {}
 ): URLSearchParams {
   const qs = new URLSearchParams({
     'where[and][0][status][equals]': 'published',
@@ -219,6 +222,12 @@ export function searchWhere(
     'where[and][1][or][5][fr.excerpt][like]': q,
     'where[and][1][or][6][tags.nameFr][like]': q,
   })
+  // Articles about the games the query names ("GTA" → Grand Theft Auto VI),
+  // even when their title spells the name out.
+  if (filters.gameIds?.length) {
+    qs.set('where[and][1][or][7][game][in]', filters.gameIds.join(','))
+    qs.set('where[and][1][or][8][relatedGames][in]', filters.gameIds.join(','))
+  }
   if (filters.category) qs.set('where[and][2][category][equals]', filters.category)
   if (filters.game) qs.set('where[and][3][game.slug][equals]', filters.game)
   return qs
@@ -231,8 +240,9 @@ export async function searchArticles({
   category,
   game,
   locale = 'en',
+  gameIds,
 }: ArticleSearch): Promise<ArticleSearchResult> {
-  const qs = searchWhere(q, { category, game })
+  const qs = searchWhere(q, { category, game, gameIds })
   qs.set('sort', '-publishedAt')
   qs.set('depth', '1')
   qs.set('limit', String(limit))
@@ -260,11 +270,12 @@ export async function searchArticles({
 export async function searchCategoryCounts(
   q: string,
   categories: string[],
-  game?: string
+  game?: string,
+  gameIds?: string[]
 ): Promise<Record<string, number>> {
   const counts = await Promise.all(
     categories.map(async (category) => {
-      const qs = searchWhere(q, { category, game })
+      const qs = searchWhere(q, { category, game, gameIds })
       qs.set('limit', '1')
       qs.set('depth', '0')
       qs.set('select[id]', 'true')
@@ -289,27 +300,50 @@ export interface GameSearchHit {
   cover?: string
 }
 
-/** Games whose name matches, for the header suggestions ("Gears" → the Gears pages). */
-export async function searchGames(q: string, limit = 3): Promise<GameSearchHit[]> {
-  const qs = new URLSearchParams({
-    'where[name][like]': q,
-    sort: 'name',
-    depth: '1',
-    limit: String(limit),
-  })
+export interface GameListItem {
+  id: string
+  slug: string
+  name: string
+  /** 'card' variant (960w): the /games grid and the search's game cards. */
+  cover?: string
+  releaseDate?: string
+}
+
+/**
+ * Every game on the site, A to Z (a few hundred: one request, cached 5 min).
+ * Used by /games and to find games by name in the search (lib/game-match.ts).
+ */
+export async function fetchAllGames(): Promise<GameListItem[]> {
+  const qs = new URLSearchParams({ depth: '1', limit: '1000', sort: 'name' })
   const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
     next: { revalidate: 300 },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
+    id: string | number
     slug: string
     name: string
     cover?: PayloadMedia
+    releaseDate?: string | null
   }>
   return json.docs.map((doc) => ({
+    id: String(doc.id),
     slug: doc.slug,
     name: doc.name,
-    cover: mediaUrl(doc.cover, 'thumbnail'),
+    cover: mediaUrl(doc.cover, 'card'),
+    releaseDate: doc.releaseDate ?? undefined,
+  }))
+}
+
+/**
+ * Games matching a query, best first: "GTA" finds Grand Theft Auto VI, "cod"
+ * Call of Duty (initials, numbers, starts of words: lib/game-match.ts).
+ */
+export async function searchGames(q: string, limit = 3): Promise<GameSearchHit[]> {
+  return matchGames(await fetchAllGames(), q, limit).map((g) => ({
+    slug: g.slug,
+    name: g.name,
+    cover: g.cover,
   }))
 }
 

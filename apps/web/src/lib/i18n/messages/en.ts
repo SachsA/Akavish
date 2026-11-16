@@ -58,7 +58,6 @@ export const en = {
   },
   home: {
     tagline: 'Breaking gaming news, exclusive leaks, in-depth reviews. Fast. Serious. No fluff.',
-    sections: 'Sections',
     topStories: 'Top stories',
     seeAll: 'See all →',
   },
@@ -110,6 +109,13 @@ export const en = {
     saved: 'Saved',
     failed: 'Didn’t work, try again.',
   },
+  games: {
+    title: 'Games',
+    description: 'Every game covered on Akavish, A to Z: news, leaks and reviews for each.',
+    count: (n: number) => `${n} games, A to Z.`,
+    letters: 'Jump to a letter',
+    none: 'No games yet.',
+  },
   author: {
     notFound: 'Author not found',
     description: (name: string) => `Articles by ${name} on Akavish.`,
@@ -156,6 +162,8 @@ export const en = {
     noResults: (q: string) => `No results found for “${q}”`,
     withFilters: 'with these filters.',
     searchEverything: 'Search everything',
+    games: 'Games',
+    articles: 'Articles',
   },
   account: {
     title: 'Your account',
