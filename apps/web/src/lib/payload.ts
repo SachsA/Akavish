@@ -521,6 +521,25 @@ export async function fetchTagBySlug(slug: string): Promise<TagEntity | null> {
   return { id: String(doc.id), slug: doc.slug, name: pick(getLocale(), doc.name, doc.nameFr) }
 }
 
+// ─── Live showcase pages ─────────────────────────────────────────────────────
+
+/**
+ * Ids of the articles covering a showcase live right now (the scout's live
+ * mode). They stay in English until the live ends, then get translated
+ * (apps/cms/src/lib/translate.ts); the French page says so meanwhile.
+ * Nothing on error: the page then just says "not translated yet".
+ */
+export async function fetchLiveArticleIds(): Promise<string[]> {
+  try {
+    const res = await cmsFetch(`${CMS_URL}/api/live-articles`, { next: { revalidate: 30 } })
+    if (!res.ok) return []
+    const json = (await res.json()) as { ids?: Array<number | string> }
+    return (json.ids ?? []).map(String)
+  } catch {
+    return []
+  }
+}
+
 // ─── Sitemap helpers ─────────────────────────────────────────────────────────
 
 export interface SlugEntry {

@@ -10,6 +10,7 @@ import type { Metadata } from 'next'
 import {
   fetchAdjacentArticles,
   fetchArticleBySlug,
+  fetchLiveArticleIds,
   fetchCurrentSlugFor,
   fetchRelatedArticles,
 } from '@/lib/payload'
@@ -93,10 +94,13 @@ export default async function ArticlePage({ params }: Params) {
   // Secondary content: never let it break the page. The article itself is what
   // matters — if the CMS is slow or these queries fail, we drop the extras
   // rather than 500 on a page that already has everything a reader came for.
-  const [related, adjacent] = await Promise.all([
+  const [related, adjacent, liveIds] = await Promise.all([
     fetchRelatedArticles(article).catch(() => []),
     fetchAdjacentArticles(article).catch(() => ({ next: null, previous: null })),
+    // Only French pages need to know (a live page stays English until it ends).
+    locale === 'en' ? Promise.resolve([] as string[]) : fetchLiveArticleIds(),
   ])
+  const liveInEnglish = !isInLanguage(article, locale) && liveIds.includes(article.id)
 
   const minutes = readingTimeMinutes(article.content)
   const readingTime = minutes ? t.article.readingTime(minutes) : ''
@@ -168,7 +172,7 @@ export default async function ArticlePage({ params }: Params) {
       <article lang={isInLanguage(article, locale) ? undefined : 'en'}>
         {!isInLanguage(article, locale) && (
           <p lang={locale} className="mb-6 rounded-md border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300">
-            {t.article.untranslated}
+            {liveInEnglish ? t.article.liveUntranslated : t.article.untranslated}
           </p>
         )}
         <div className="space-y-3 mb-8">

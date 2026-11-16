@@ -745,6 +745,14 @@ export async function runLive(ctx: ScoutContext, settings: SettingsDoc): Promise
       await writeArticle(ctx, fresh, articleId, fresh.intro ?? '', fresh.entries ?? [], true)
     }
     await saveEvent(ctx, ev.id, { status: 'ended', endedAt: ctx.now.toISOString() })
+    // English only while live (lib/translate.ts): one French version now.
+    if (articleId && fresh.published) {
+      await ctx.payload.jobs.queue({
+        task: 'translateArticle',
+        input: { articleId },
+        queue: 'translate',
+      })
+    }
     await writeRecap(ctx, settings, { ...fresh, status: 'ended' })
     if (fresh.discordMessageId && ctx.config.bot && !fresh.published) {
       await editBotMessage(

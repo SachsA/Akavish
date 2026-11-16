@@ -91,6 +91,7 @@ export const fr: Messages = {
     newsletterTitle: 'Ça vous a plu ? Recevez la newsletter',
     untranslated: "Cet article n'est pas encore traduit : voici la version originale, en anglais.",
     translatedNote: "Traduit de l'anglais avec l'aide de l'IA, à partir de l'article original.",
+    liveUntranslated: 'Live en cours, en anglais : la version française sera publiée à la fin du live.',
     navigation: 'Navigation entre articles',
     previous: '← Précédent',
     next: 'Suivant →',

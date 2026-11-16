@@ -5,7 +5,7 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { slugField } from '../fields/slug'
 import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-search-sync'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-web'
-import { sourceHash, stableJson } from '../lib/translate'
+import { isLiveArticle, sourceHash, stableJson } from '../lib/translate'
 
 const FR_TEXT_FIELDS = ['title', 'excerpt', 'seoTitle', 'seoDescription'] as const
 
@@ -110,12 +110,13 @@ export const Articles: CollectionConfig = {
       },
 
       // French version (lib/translate.ts). Not for the translation job's own
-      // save (`context.translating`).
+      // save (`context.translating`), nor while the article is a live
+      // showcase page (translated once, at the end: src/scout/live.ts).
       // - French fields changed by hand: "edited", kept until the English changes.
       // - A published article whose English differs from what the French was
       //   made from: "pending", and the afterChange below queues the job.
       //   Draft saves don't count (the public text hasn't changed yet).
-      ({ data, originalDoc, req }) => {
+      async ({ data, originalDoc, req }) => {
         if (req.context?.translating) return data
         const before = (originalDoc?.fr ?? {}) as Record<string, unknown>
         const merged = { ...originalDoc, ...data }
@@ -134,6 +135,8 @@ export const Articles: CollectionConfig = {
         if (merged.status !== 'published') return data
         const fr = { ...before, ...(data.fr ?? {}) } as Record<string, unknown>
         if (sourceHash(merged) !== fr.sourceHash && fr.status !== 'pending') {
+          if (originalDoc?.id && (await isLiveArticle(req.payload, originalDoc.id, req)))
+            return data
           data.fr = { ...fr, status: 'pending' }
           req.context.queueTranslation = true
         }

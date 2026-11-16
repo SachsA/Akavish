@@ -271,6 +271,44 @@ export function translatePrompt(
   )
 }
 
+// ─── Live articles ───────────────────────────────────────────────────────────
+
+/**
+ * The article of a showcase being covered live (scout event "live" or
+ * "ending", src/scout/live.ts). It changes every 5 minutes: it stays in
+ * English while live (the French page says so) and is translated once, when
+ * the live ends (runLive queues it).
+ */
+export async function isLiveArticle(
+  payload: Payload,
+  articleId: number | string,
+  req?: Parameters<Payload['find']>[0]['req'],
+): Promise<boolean> {
+  const { totalDocs } = await payload.count({
+    collection: 'scout-events',
+    where: { and: [{ article: { equals: articleId } }, { status: { in: ['live', 'ending'] } }] },
+    overrideAccess: true,
+    req,
+  })
+  return totalDocs > 0
+}
+
+/** Ids of the articles live right now (GET /api/live-articles, public). */
+export const liveArticlesHandler: PayloadHandler = async (req) => {
+  const { docs } = await req.payload.find({
+    collection: 'scout-events',
+    where: { status: { in: ['live', 'ending'] } },
+    depth: 0,
+    limit: 10,
+    select: { article: true },
+    overrideAccess: true,
+  })
+  const ids = (docs as unknown as Array<{ article?: number | null }>)
+    .map((d) => d.article)
+    .filter((id): id is number => typeof id === 'number')
+  return Response.json({ ids }, { headers: { 'Cache-Control': 'public, max-age=30' } })
+}
+
 // ─── The job ─────────────────────────────────────────────────────────────────
 
 const BUDGET_USD = () => {

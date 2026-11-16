@@ -110,7 +110,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   Article text is translated in the CMS (`apps/cms/src/lib/translate.ts`, job
   `translateArticle` on publish / English change, `fr` group on Articles);
   the web swaps it in with `localizeArticle` (`lib/i18n/content.ts`) and shows
-  English with a notice until it exists.
+  English with a notice until it exists. Live showcase pages stay English
+  until the live ends, then get translated once.
 - **Search:** `/api/search` queries the CMS (Postgres `ILIKE`) by default and
   switches to Meilisearch when `MEILISEARCH_HOST` is set (indexing hooks in the
   CMS). Meilisearch failures fall back to the CMS. Currently running on the

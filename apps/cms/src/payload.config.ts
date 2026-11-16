@@ -28,7 +28,12 @@ import { registerCommands } from './scout/discord-commands'
 import { runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 import { schedulePublishHandler } from './lib/schedule-publish'
-import { translateArticle, translateBackfillHandler, translateTaxonomy } from './lib/translate'
+import {
+  liveArticlesHandler,
+  translateArticle,
+  translateBackfillHandler,
+  translateTaxonomy,
+} from './lib/translate'
 import {
   clerkWebhookHandler,
   readerBookmarksHandler,
@@ -103,6 +108,8 @@ export default buildConfig({
     { path: '/articles-schedule', method: 'post', handler: schedulePublishHandler },
     // French version: translate every article not translated yet (lib/translate.ts).
     { path: '/translate/backfill', method: 'post', handler: translateBackfillHandler },
+    // Which articles are live showcase pages right now (public: ids only).
+    { path: '/live-articles', method: 'get', handler: liveArticlesHandler },
     // AI scout, step 2: Discord's "Interactions Endpoint URL" (button clicks).
     // Signature-checked; only the owner's clicks are accepted.
     { path: '/scout/discord', method: 'post', handler: discordInteractionsHandler },

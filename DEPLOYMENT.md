@@ -1396,6 +1396,9 @@ The site is in English and French (`/fr`). Interface text lives in the web
   2 to 5 cents an article.
 - Corrections by hand in `/admin` stay ("Corrigée à la main") until the
   English changes; English wins.
+- **Live showcase pages** (scout `/live`) stay in English while live and are
+  translated once when the live ends; the French page says so (it reads the
+  public `GET /api/live-articles`).
 - **Backfill** (once, after the migration `french_version`, and as a safety net
   any time): `POST /api/translate/backfill` as an editor. It names the tags and
   translates author bios right away, and queues every published article whose

@@ -6,7 +6,12 @@
  */
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
-import { translateArticle, translateTaxonomy, queueMissingTranslations } from '@/lib/translate'
+import {
+  liveArticlesHandler,
+  translateArticle,
+  translateTaxonomy,
+  queueMissingTranslations,
+} from '@/lib/translate'
 import type { FetchLike } from '@/scout/anthropic'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -286,6 +291,68 @@ describe('French version', () => {
     expect(after.fr?.status).toBe('edited')
     expect(after.fr?.title).toBe('Fait main')
     expect(await queuedFor(doc.id)).toHaveLength(0)
+  })
+
+  it('a live showcase page stays in English until the live ends', async () => {
+    const doc = await payload.create({
+      collection: 'articles',
+      data: {
+        title: `${RUN} Live show`,
+        excerpt: 'Live.',
+        content: body('Live now'),
+        category: 'conference',
+        status: 'draft',
+        author: authorId,
+      } as never,
+      overrideAccess: true,
+    })
+    created.push({ collection: 'articles', id: doc.id })
+    const ev = await payload.create({
+      collection: 'scout-events',
+      data: {
+        name: `${RUN} Show`,
+        status: 'live',
+        startedAt: new Date().toISOString(),
+        article: doc.id,
+      } as never,
+      overrideAccess: true,
+    })
+    try {
+      // Published, then updated as the show goes: never queued.
+      await payload.update({
+        collection: 'articles',
+        id: doc.id,
+        data: { status: 'published', _status: 'published' } as never,
+        overrideAccess: true,
+      })
+      await payload.update({
+        collection: 'articles',
+        id: doc.id,
+        data: { content: body('Live, later') } as never,
+        overrideAccess: true,
+      })
+      expect((await article(doc.id)).fr?.status ?? null).toBeNull()
+      expect(await queuedFor(doc.id)).toHaveLength(0)
+      const res = await liveArticlesHandler({ payload } as never)
+      expect(((await res.json()) as { ids: number[] }).ids).toContain(Number(doc.id))
+
+      // Once the live has ended, a change is translated as usual.
+      await payload.update({
+        collection: 'scout-events',
+        id: ev.id,
+        data: { status: 'ended' } as never,
+        overrideAccess: true,
+      })
+      await payload.update({
+        collection: 'articles',
+        id: doc.id,
+        data: { excerpt: 'Over.' } as never,
+        overrideAccess: true,
+      })
+      expect((await article(doc.id)).fr?.status).toBe('pending')
+    } finally {
+      await payload.delete({ collection: 'scout-events', id: ev.id, overrideAccess: true })
+    }
   })
 
   it('the backfill queues only what is missing or stale', async () => {

@@ -942,6 +942,16 @@ describe('scout step 2 (drafts)', () => {
     ev = await event()
     expect(ev.status).toBe('ended')
     expect(await articleText(articleId, false)).toContain('The show is over')
+    // English only while live: one French translation queued at the end.
+    const translations = await payload.find({
+      collection: 'payload-jobs',
+      where: { taskSlug: { equals: 'translateArticle' } },
+      limit: 100,
+      overrideAccess: true,
+    })
+    expect(
+      translations.docs.filter((j) => (j.input as { articleId?: number }).articleId === articleId),
+    ).toHaveLength(1)
     expect(ev.recapArticle).toBeTruthy()
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(`scout:evrecap:${ev.id}`)
     const recap = await (

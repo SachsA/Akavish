@@ -464,6 +464,10 @@ description, status, date), Media has `altFr`, Tags `nameFr`, Authors `bioFr`
   "failed". The cover's French alt comes in the same call.
 - **By hand:** editing the French in /admin marks it "edited" and records the
   English it matches: it stays until the English changes (English wins).
+- **Live pages:** the article of a scout event that is "live" or "ending"
+  is never queued (`isLiveArticle`): it changes every 5 minutes. `runLive`
+  queues one translation when the live ends. `GET /api/live-articles` (public,
+  ids only) lets the web say so on the French page.
 - **Tags and bios:** a new tag queues `translateTaxonomy` (names stay names,
   "Release dates" becomes "Dates de sortie"); bios are done by the backfill.
 - **Backfill:** `POST /api/translate/backfill` (editors) — `DEPLOYMENT.md` §12.
