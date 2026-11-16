@@ -43,7 +43,7 @@ export const SENTRY_ENVIRONMENT =
  * nothing: a stack trace and a URL path are enough to debug a public news site.
  *
  * ⚠️ Keep this in sync with the "Error monitoring" section of `/privacy` and
- * `/fr/confidentialite` — those pages promise this behaviour by name.
+ * `/fr/privacy` — those pages promise this behaviour by name.
  */
 // No `as const` here: it would make `httpBodies` a `readonly []`, which Sentry's
 // `DataCollection` type rejects — it wants a mutable array.

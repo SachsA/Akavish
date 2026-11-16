@@ -25,7 +25,7 @@
 ```
 akavish/
 ├── apps/
-│   ├── web/          # Next.js frontend (:3000) — pages + API routes that proxy the CMS
+│   ├── web/          # Next.js frontend (:3000) — pages (EN at /, FR at /fr) + API routes that proxy the CMS
 │   ├── cms/          # Standalone Payload CMS (:3001) — admin + REST/GraphQL API
 │   └── mobile/       # Expo — iOS & Android
 ├── packages/

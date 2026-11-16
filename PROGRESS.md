@@ -60,7 +60,7 @@ Last updated: **2026-11-06**.
 | ✅     | Custom 404 / error pages              | `not-found.tsx`, `error.tsx`, `global-error.tsx`                                    |
 | ✅     | Functional footer                     | Sections, About/Contact/Legal, RSS, socials — all targets now exist                 |
 | ✅     | Footer pages                          | `/about`, `/contact`, plus the legal set below                                       |
-| ✅     | Legal pages (EN + FR)                 | `/privacy`, `/terms`, `/legal` and `/fr/confidentialite`, `/fr/conditions`, `/fr/mentions-legales`. Facts (processors, publisher, date) live once in `lib/legal.ts`; hreflang pairs + language toggle via `LegalLanguageSwitch` |
+| ✅     | Legal pages (EN + FR)                 | `/privacy`, `/terms`, `/legal`, in French at `/fr/privacy`, `/fr/terms`, `/fr/legal` (the old `/fr/confidentialite`, `/fr/conditions`, `/fr/mentions-legales` 308 there since the i18n branch). Both texts are written by hand (`en.tsx` / `fr.tsx` next to each `page.tsx`). Facts (processors, publisher, date) live once in `lib/legal.ts` |
 | ✅     | RSS feed `/feed.xml`                  | Route handler, latest 50 published articles                                         |
 | ✅     | Loading states                        | Home only (`app/(home)/loading.tsx`). The other routes dropped theirs on 2026-11-07 so `notFound()` and slug redirects answer real 404/308 statuses (see gotchas) |
 | ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
@@ -223,7 +223,9 @@ Everything else waits on something:
 | **Content and readers** | Everything in **🅿️ Parked**: sending the newsletter, analytics review |
 | **Money / launch** | Legal review by a professional (before monetising) |
 
-i18n (EN + FR) is its own project — §6.
+**In progress: the French version (i18n)**, on the `i18n` branch (Vercel
+preview per push), merged after GTA VI week (from Nov 20). Plan and status in
+§6.
 
 > **The real bottleneck is content, not code.** The production CMS had zero
 > articles from October 2026 until the launch batch: 11 AI-assisted articles
@@ -491,11 +493,23 @@ Core search is done (see the [Done → Search](#search-meilisearch) section). Re
 
 ## 6. Internationalization (EN + FR)
 
-| Pri | Item              | Notes                                                    |
-| --- | ----------------- | -------------------------------------------------------- |
-| P3  | Frontend i18n     | `next-intl` or App Router locale segments (`/en`, `/fr`) |
-| P3  | Localized content | Payload localization on article fields                   |
-| P3  | Locale switcher   | Header control + `hreflang` tags                         |
+Decided with Alex on 2026-11-16: the **whole site in French**, every new
+article translated as it's published and every old one translated once; the
+language follows the browser on the first visit, then the reader's choice; a
+small menu next to the theme switch with 🇬🇧 EN, 🇺🇸 EN and 🇫🇷 FR. The two
+English entries share the same text and only change how dates are written
+(16 Nov 2026 / Nov 16, 2026): translating everything into British English too
+would double the cost for a difference almost nobody sees.
+
+Work on the `i18n` branch, merged after Nov 20 (step 2 is a migration, none
+during GTA VI week).
+
+| Status | Step | Notes |
+| --- | --- | --- |
+| ✅ (branch) | 1. Interface | 2026-11-16. Pages under `app/[locale]`: English at the bare path (the proxy rewrites to `/en/…`), French under `/fr/…`, same slugs. `/en/…` 308s to the bare path. First visit: `Accept-Language` decides (a French browser opening `/news` lands on `/fr/news`, crawlers send none and stay English); once the reader picks in the menu, the `NEXT_LOCALE` cookie wins (a `/fr` link still opens in French). The English date style is the `akavish-region` cookie (`US` / `GB`, guessed from the same header), applied in the browser (`<DateText>`), so pages stay the same for everyone. Signed in, the choice is also saved in Clerk (`unsafeMetadata.locale` / `.region`) and a new device picks it up. Every interface string is in `lib/i18n/messages/{en,fr}.ts` (a test checks French has every key); links go through `components/LocaleLink.tsx`; dates through `lib/i18n/dates.ts`; `hreflang` + canonical through `lib/i18n/metadata.ts`; the sitemap lists both languages with their pair. Clerk's widgets in French (`@clerk/localizations`). Legal pages: the existing hand-written French versions moved to `/fr/privacy`, `/fr/terms`, `/fr/legal` (old URLs 308). Privacy EN/FR list the two new cookies. On phones the header lost "Log in" (the sign-up modal links to sign-in) to fit the menu, in French too, down to 320 px. Unit tests `lib/i18n/i18n.test.ts`, e2e `tests/e2e/i18n.e2e.spec.ts` |
+| ⏳ | 2. Content | Payload localization (`en` default, `fr`) on the text fields of articles (title, excerpt, content, SEO), games, tags, authors' bio: 🟠 migration. A hook translates into French with Claude when an article is published or its English text changes (marked machine-translated, editable in `/admin`). The web asks the CMS for `?locale=fr` on French pages. Search in the reader's language. Newsletter emails in the subscriber's language |
+| ⏳ | 3. Backfill + SEO | Translate the ~185 existing articles once (script, less than 10 $), then the French share images, a French RSS feed, `inLanguage` everywhere. A French page only lists `hreflang` once its translation exists |
+| ⏳ | Merge | After Nov 20: merge `i18n` into main, migration on Railway, then backfill. Add "French version" to the mobile catch-up list (§7) |
 
 ## 7. Mobile (`apps/mobile`)
 
@@ -591,6 +605,17 @@ checklist it walks through.
 ## Known notes / gotchas
 
 - Run the CMS and web as **two separate processes** (ports 3001 and 3000).
+- **The web pages are rendered per request, not ISR.** `export const revalidate
+  = 30` is there, but Clerk's `<SignedIn>` / `<SignedOut>` in the header read
+  the session, which makes every page dynamic (`private, no-store` in
+  production since well before i18n). CMS data is still cached (`cms` tag).
+  Worth knowing before relying on page-level caching; moving the auth bits
+  client-side would bring ISR back.
+- **Languages (i18n branch): never import `next/link` in the web.** Use
+  `@/components/LocaleLink`, which keeps `/fr` on French pages; a plain
+  `next/link` sends French readers to the English page. Server pages call
+  `setRequestLocale((await params).locale)` first (and in `generateMetadata`),
+  or `getMessages()` falls back to English.
 - **A reader's `emailVerified` in the CMS can be stale.** It's refreshed from
   Clerk on each write (and on `/account`), not when the reader verifies. So the
   comments form trusts Clerk's own client-side status, never the CMS copy

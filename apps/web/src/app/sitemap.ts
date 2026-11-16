@@ -5,34 +5,33 @@ import {
   fetchAllEntitySlugs,
   fetchUsedTaxonomyIds,
 } from '@/lib/payload'
-import { LEGAL_PAGES } from '@/components/LegalLanguageSwitch'
 import { CATEGORIES } from '@/lib/categories'
+import { LOCALES, localizePath } from '@/lib/i18n/config'
 
 export const revalidate = 300
+
+type Entry = MetadataRoute.Sitemap[number]
+
+/**
+ * One entry per language for a page (English at the bare path, French under
+ * /fr), each listing both versions, which is how search engines pair them.
+ */
+function bothLanguages(path: string, entry: Omit<Entry, 'url' | 'alternates'>): MetadataRoute.Sitemap {
+  const languages = Object.fromEntries(LOCALES.map((l) => [l, absoluteUrl(localizePath(l, path))]))
+  return LOCALES.map((l) => ({ ...entry, url: absoluteUrl(localizePath(l, path)), alternates: { languages } }))
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: absoluteUrl('/'), lastModified: now, changeFrequency: 'hourly', priority: 1 },
-    ...CATEGORIES.map((c) => ({
-      url: absoluteUrl(`/${c.slug}`),
-      lastModified: now,
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
-    })),
-    // Static pages, including both language versions of the legal set — each is
-    // a distinct URL and carries its own hreflang pair (see LEGAL_PAGES).
-    ...[
-      '/about',
-      '/contact',
-      ...Object.values(LEGAL_PAGES).flatMap((pair) => [pair.en, pair.fr]),
-    ].map((p) => ({
-      url: absoluteUrl(p),
-      lastModified: now,
-      changeFrequency: 'yearly' as const,
-      priority: 0.3,
-    })),
+    ...bothLanguages('/', { lastModified: now, changeFrequency: 'hourly', priority: 1 }),
+    ...CATEGORIES.flatMap((c) =>
+      bothLanguages(`/${c.slug}`, { lastModified: now, changeFrequency: 'daily', priority: 0.7 }),
+    ),
+    ...['/about', '/contact', '/privacy', '/terms', '/legal'].flatMap((p) =>
+      bothLanguages(p, { lastModified: now, changeFrequency: 'yearly', priority: 0.3 }),
+    ),
   ]
 
   // Pull dynamic content; tolerate a CMS hiccup by falling back to empty lists.
@@ -53,24 +52,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const inUse = <T extends { id: string }>(items: T[], ids: Set<string> | undefined): T[] =>
     ids ? items.filter((it) => ids.has(it.id)) : items
 
-  const articleEntries: MetadataRoute.Sitemap = articles.map((a) => ({
-    url: absoluteUrl(`/article/${a.slug}`),
-    lastModified: a.updatedAt ? new Date(a.updatedAt) : now,
-    changeFrequency: 'weekly',
-    priority: 0.8,
-  }))
+  const articleEntries: MetadataRoute.Sitemap = articles.flatMap((a) =>
+    bothLanguages(`/article/${a.slug}`, {
+      lastModified: a.updatedAt ? new Date(a.updatedAt) : now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    }),
+  )
 
   const entityEntries = (
     items: { slug: string; updatedAt?: string }[],
     prefix: string,
     priority: number
   ): MetadataRoute.Sitemap =>
-    items.map((it) => ({
-      url: absoluteUrl(`/${prefix}/${it.slug}`),
-      lastModified: it.updatedAt ? new Date(it.updatedAt) : now,
-      changeFrequency: 'weekly',
-      priority,
-    }))
+    items.flatMap((it) =>
+      bothLanguages(`/${prefix}/${it.slug}`, {
+        lastModified: it.updatedAt ? new Date(it.updatedAt) : now,
+        changeFrequency: 'weekly',
+        priority,
+      }),
+    )
 
   return [
     ...staticEntries,

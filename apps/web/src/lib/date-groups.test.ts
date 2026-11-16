@@ -43,4 +43,14 @@ describe('groupByDate', () => {
       ['Undated', 1],
     ])
   })
+
+  it('writes the headings in French on French pages', () => {
+    const groups = groupByDate(
+      [a(1, '2026-11-12T14:00:00Z'), a(2, '2026-11-11T10:00:00Z'), a(3, '2026-11-10T09:00:00Z'), a(4)],
+      'day',
+      now,
+      'fr',
+    )
+    expect(groups.map((g) => g.label)).toEqual(["Aujourd'hui", 'Hier', 'Mardi 10 novembre', 'Sans date'])
+  })
 })

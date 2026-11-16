@@ -1,21 +1,14 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import type { Article } from '@akavish/types'
-import { categoryByValue } from '@/lib/categories'
+import Link from '@/components/LocaleLink'
 import { Wordmark } from '@/components/Wordmark'
-
-function formatDate(iso?: string): string {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
+import { DateText } from '@/components/DateText'
+import { getMessages } from '@/lib/i18n/server'
 
 /** The lead story on the home page: big image, big headline, excerpt. */
 export function FeaturedArticle({ article }: { article: Article }) {
-  const category = categoryByValue(article.category)
+  const t = getMessages()
+  const category = t.categories[article.category]
 
   return (
     <Link
@@ -49,14 +42,16 @@ export function FeaturedArticle({ article }: { article: Article }) {
             {category?.singular ?? article.category}
           </span>
           {article.publishedAt && (
-            <span className="text-zinc-400">· {formatDate(article.publishedAt)}</span>
+            <span className="text-zinc-400">
+              · <DateText iso={article.publishedAt} style="long" />
+            </span>
           )}
         </div>
         <h2 className="text-3xl font-black tracking-tight text-white leading-tight group-hover:text-emerald-400 transition-colors">
           {article.title}
         </h2>
         <p className="text-zinc-400 line-clamp-3">{article.excerpt}</p>
-        <p className="text-sm text-zinc-400">By {article.author.name}</p>
+        <p className="text-sm text-zinc-400">{t.card.by(article.author.name)}</p>
       </div>
     </Link>
   )
@@ -64,7 +59,7 @@ export function FeaturedArticle({ article }: { article: Article }) {
 
 /** A text-only entry for the "Top stories" column next to the lead story. */
 export function ArticleListItem({ article }: { article: Article }) {
-  const category = categoryByValue(article.category)
+  const category = getMessages().categories[article.category]
 
   return (
     <Link href={`/article/${article.slug}`} className="group block py-4">
@@ -75,7 +70,9 @@ export function ArticleListItem({ article }: { article: Article }) {
         {article.title}
       </h3>
       {article.publishedAt && (
-        <p className="mt-1 text-xs text-zinc-400">{formatDate(article.publishedAt)}</p>
+        <p className="mt-1 text-xs text-zinc-400">
+          <DateText iso={article.publishedAt} style="long" />
+        </p>
       )}
     </Link>
   )

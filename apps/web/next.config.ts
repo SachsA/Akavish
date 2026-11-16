@@ -35,6 +35,15 @@ const standalone =
 
 const nextConfig: NextConfig = {
   ...standalone,
+  // The French legal pages had their own slugs before the site went bilingual
+  // (2026-11); they now live at the same path as the English ones, under /fr.
+  async redirects() {
+    return [
+      { source: '/fr/confidentialite', destination: '/fr/privacy', permanent: true },
+      { source: '/fr/conditions', destination: '/fr/terms', permanent: true },
+      { source: '/fr/mentions-legales', destination: '/fr/legal', permanent: true },
+    ]
+  },
   transpilePackages: ['@akavish/ui', '@akavish/types', '@akavish/api-client'],
   images: {
     remotePatterns: [

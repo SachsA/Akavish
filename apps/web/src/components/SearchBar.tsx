@@ -1,13 +1,13 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
+import Link from '@/components/LocaleLink'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { GameHit, SearchHit, SearchResponse } from '@/lib/search'
-import { categoryByValue } from '@/lib/categories'
 import { searchHref, SUGGEST_MIN_CHARS } from '@/lib/search-query'
 import { Highlight } from './Highlight'
+import { useI18n } from './I18nProvider'
 
 const DEBOUNCE_MS = 200
 const SUGGESTED_ARTICLES = 5
@@ -29,6 +29,7 @@ type Option =
 // ARIA: the combobox pattern (input + listbox, aria-activedescendant), so arrow
 // keys move through the suggestions while focus stays in the box.
 export function SearchBar() {
+  const { t, href: localize } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
   const current = useSearchParams().get('q') ?? ''
@@ -97,7 +98,7 @@ export function SearchBar() {
 
   function go(href: string) {
     setOpen(false)
-    router.push(href)
+    router.push(localize(href))
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -128,7 +129,7 @@ export function SearchBar() {
   return (
     <form
       ref={formRef}
-      action="/search"
+      action={localize('/search')}
       method="get"
       role="search"
       onSubmit={onSubmit}
@@ -143,8 +144,8 @@ export function SearchBar() {
         type="search"
         name="q"
         defaultValue={current}
-        placeholder="Search…"
-        aria-label="Search articles"
+        placeholder={t.search.placeholder}
+        aria-label={t.search.inputLabel}
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={expanded}
@@ -162,13 +163,13 @@ export function SearchBar() {
           setOpen(true)
         }}
         onKeyDown={onKeyDown}
-        className="w-[5.5rem] sm:w-44 bg-zinc-900 border border-zinc-800 rounded-md pl-3 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 sm:focus:w-56 transition-all"
+        className="w-16 min-[360px]:w-[5.5rem] sm:w-44 bg-zinc-900 border border-zinc-800 rounded-md pl-3 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 sm:focus:w-56 transition-all"
       />
       <div
         hidden={!expanded}
         className="fixed inset-x-4 top-14 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[26rem] z-50 rounded-lg border border-zinc-800 bg-zinc-950 shadow-xl shadow-black/40 overflow-hidden"
       >
-        <ul id={listId} role="listbox" aria-label="Suggestions" className="max-h-[70vh] overflow-y-auto py-1">
+        <ul id={listId} role="listbox" aria-label={t.search.suggestions} className="max-h-[70vh] overflow-y-auto py-1">
           {options.map((option, i) => (
             // The link itself is the option (an option's children are presentational,
             // so a link inside one would be an interactive element nobody can reach).
@@ -189,13 +190,13 @@ export function SearchBar() {
               >
                 {option.kind === 'game' && <GameRow game={option.game} q={q} />}
                 {option.kind === 'article' && <ArticleRow hit={option.hit} q={q} />}
-                {option.kind === 'all' && <span>See all results for “{q}”</span>}
+                {option.kind === 'all' && <span>{t.search.seeAllFor(q)}</span>}
               </Link>
             </li>
           ))}
         </ul>
         {fresh && fresh.hits.length === 0 && fresh.games.length === 0 && (
-          <p className="px-3 pb-2 -mt-1 text-xs text-zinc-400">No quick match, try the full search.</p>
+          <p className="px-3 pb-2 -mt-1 text-xs text-zinc-400">{t.search.noQuickMatch}</p>
         )}
       </div>
     </form>
@@ -211,11 +212,12 @@ function Thumb({ src }: { src?: string }) {
 }
 
 function GameRow({ game, q }: { game: GameHit; q: string }) {
+  const { t } = useI18n()
   return (
     <>
       <Thumb src={game.cover} />
       <span className="min-w-0">
-        <span className="block text-[11px] uppercase tracking-wide font-bold text-zinc-400">Game</span>
+        <span className="block text-[11px] uppercase tracking-wide font-bold text-zinc-400">{t.search.game}</span>
         <span className="block truncate text-zinc-100">
           <Highlight text={game.name} query={q} />
         </span>
@@ -225,12 +227,13 @@ function GameRow({ game, q }: { game: GameHit; q: string }) {
 }
 
 function ArticleRow({ hit, q }: { hit: SearchHit; q: string }) {
+  const { t } = useI18n()
   return (
     <>
       <Thumb src={hit.coverImage} />
       <span className="min-w-0">
         <span className="block text-[11px] uppercase tracking-wide font-bold text-emerald-500">
-          {categoryByValue(hit.category)?.singular ?? hit.category}
+          {t.categories[hit.category as keyof typeof t.categories]?.singular ?? hit.category}
         </span>
         <span className="block truncate text-zinc-100">
           <Highlight text={hit.title} query={q} />

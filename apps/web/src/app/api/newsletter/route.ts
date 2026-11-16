@@ -10,8 +10,18 @@ import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit'
 
 const NO_STORE = { 'Cache-Control': 'no-store' }
 
-function reply(status: number, message?: string) {
-  return NextResponse.json(status === 200 ? { ok: true } : { ok: false, message }, {
+// `code` lets the form show the error in the page's language
+// (lib/i18n/messages `newsletter.errors`); `message` stays English for the app.
+const MESSAGES: Record<string, string> = {
+  'invalid-request': 'Invalid request.',
+  'invalid-email': 'Enter a valid email address.',
+  consent: 'Tick the box to agree to receive the newsletter.',
+  unavailable: "Couldn't sign you up right now. Try again in a few minutes.",
+}
+
+function reply(status: number, code?: string) {
+  const body = status === 200 ? { ok: true } : { ok: false, code, message: code ? MESSAGES[code] : undefined }
+  return NextResponse.json(body, {
     status,
     headers: NO_STORE,
   })
@@ -25,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null
-  if (!body) return reply(400, 'Invalid request.')
+  if (!body) return reply(400, 'invalid-request')
 
   // Honeypot: a field hidden from people. Bots fill it; answer as if it worked
   // so they don't learn to skip it.
@@ -35,8 +45,8 @@ export async function POST(req: NextRequest) {
   }
 
   const email = typeof body.email === 'string' ? body.email : ''
-  if (!isPlausibleEmail(email)) return reply(400, 'Enter a valid email address.')
-  if (body.consent !== true) return reply(400, 'Tick the box to agree to receive the newsletter.')
+  if (!isPlausibleEmail(email)) return reply(400, 'invalid-email')
+  if (body.consent !== true) return reply(400, 'consent')
   const source: SignupSource = body.source === 'article' ? 'article' : 'footer'
 
   const outcome = await subscribeToNewsletter({ email, consent: true, source })
@@ -44,10 +54,10 @@ export async function POST(req: NextRequest) {
     case 'ok':
       return reply(200)
     case 'invalid-email':
-      return reply(400, 'Enter a valid email address.')
+      return reply(400, 'invalid-email')
     case 'consent-required':
-      return reply(400, 'Tick the box to agree to receive the newsletter.')
+      return reply(400, 'consent')
     default:
-      return reply(503, "Couldn't sign you up right now. Try again in a few minutes.")
+      return reply(503, 'unavailable')
   }
 }

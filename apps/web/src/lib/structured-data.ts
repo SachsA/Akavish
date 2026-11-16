@@ -1,5 +1,6 @@
 // Schema.org structured data (JSON-LD) shared by the detail pages.
 import { absoluteUrl, SITE_NAME } from './site'
+import { localizePath, type Locale } from './i18n/config'
 
 export type Crumb = { name: string; path: string }
 
@@ -8,9 +9,10 @@ export type Crumb = { name: string; path: string }
  * URL in results ("Akavish › Reviews › …"), which reads better than
  * `akavish.gg/article/some-long-slug`.
  */
-export function breadcrumbList(crumbs: Crumb[]) {
+export function breadcrumbList(crumbs: Crumb[], locale: Locale = 'en') {
   // '' = the bare site URL (absoluteUrl('/') would add a trailing slash).
-  const items = [{ name: SITE_NAME, path: '' }, ...crumbs]
+  const home = locale === 'en' ? '' : localizePath(locale, '/')
+  const items = [{ name: SITE_NAME, path: home }, ...crumbs.map((c) => ({ ...c, path: localizePath(locale, c.path) }))]
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',

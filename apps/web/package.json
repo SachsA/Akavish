@@ -12,17 +12,18 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@akavish/api-client": "workspace:*",
     "@akavish/types": "workspace:*",
     "@akavish/ui": "workspace:*",
-    "@akavish/api-client": "workspace:*",
+    "@clerk/localizations": "3.37.10",
     "@clerk/nextjs": "^6.0.0",
     "@sentry/nextjs": "^11.12.0",
     "@vercel/analytics": "^2.0.1",
+    "clsx": "^2.1.1",
     "meilisearch": "^0.63.0",
     "next": "16.4.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.2"
   },
   "devDependencies": {
@@ -30,11 +31,11 @@
     "@types/node": "^20",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.6.2",
     "eslint": "^9",
     "eslint-config-next": "^16.4.6",
-    "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.6.2",
     "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.0",
     "typescript": "^5.4.0",
     "vitest": "4.1.12"
   }

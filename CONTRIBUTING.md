@@ -60,25 +60,34 @@ collection, a relationship, an index) needs a migration. Production never
 
 ## Adding a page to the website
 
-Pages live in `apps/web/src/app/` (Next.js App Router).
+Pages live in `apps/web/src/app/[locale]/` (Next.js App Router): every page
+exists in English (bare path) and French (`/fr/…`).
+
+- **Languages:** start the page (and `generateMetadata`) with
+  `setRequestLocale((await params).locale)`, then take every word from
+  `getMessages()` (client components: `useI18n()`). New strings go in both
+  `lib/i18n/messages/en.ts` and `fr.ts`; the unit test fails if French misses a
+  key. Links: `import Link from '@/components/LocaleLink'`, never `next/link`.
+  Dates: `<DateText iso=… />`, never `toLocaleDateString` by hand.
 
 - **Data:** fetch through `src/lib/payload.ts` (it already filters to
   published articles and maps them). Secondary data must fail soft: catch and
   drop it rather than 500.
 - **Empty / error states:** use `components/StatusMessage.tsx`. Never show
   readers operational details (hostnames, "is the CMS running?").
-- **SEO:** `generateMetadata` with a `canonical`; add the URL pattern to
-  `app/sitemap.ts`; structured data through `components/JsonLd.tsx`
+- **SEO:** `generateMetadata` with `alternates: alternates(locale, path)`
+  (canonical + hreflang, `lib/i18n/metadata.ts`); add the URL pattern to
+  `app/sitemap.ts` through `bothLanguages()`; structured data through `components/JsonLd.tsx`
   (`breadcrumbList()` for detail pages).
 - **No `loading.tsx`** on pages that can 404 or redirect (articles, lists):
   it makes Next stream the page, and `notFound()` / redirects then answer 200.
-  Only the home has one (`app/(home)/loading.tsx`, mirrors the home layout).
+  Only the home has one (`app/[locale]/(home)/loading.tsx`, mirrors the home layout).
 - **Lists** paginate with `lib/pagination.ts` + `components/Pagination.tsx`
   (`?page=N`, 404 past the last page).
 - **Accessibility** (the bar the #20 audit set): small text is `text-zinc-400`
   or lighter, never `zinc-500/600`; white on green buttons needs
   `bg-emerald-700`; one `h1`, then `h2` → `h3` in order; images that sit next to
-  their own title get `alt=""`; French content passes `lang="fr"`.
+  their own title get `alt=""`; `<html lang>` follows the page's language.
 - **Light and dark themes:** use the same dark-theme classes as the rest of
   the site (`bg-zinc-950`, `text-white`, `text-zinc-400`, `text-emerald-400`…):
   they're CSS variables that flip in light mode. Never hard-code a colour, and

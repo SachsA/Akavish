@@ -1,4 +1,5 @@
 import React from 'react'
+import { localizePath, type Locale } from '@/lib/i18n/config'
 
 // Minimal renderer for Payload's Lexical rich-text JSON.
 // Handles the common node types; unknown nodes fall back to rendering children.
@@ -35,12 +36,12 @@ function renderText(node: LexicalNode, key: React.Key): React.ReactNode {
   return <React.Fragment key={key}>{el}</React.Fragment>
 }
 
-function renderChildren(children?: LexicalNode[]): React.ReactNode {
+function renderChildren(children: LexicalNode[] | undefined, locale: Locale): React.ReactNode {
   if (!children) return null
-  return children.map((child, i) => renderNode(child, i))
+  return children.map((child, i) => renderNode(child, i, locale))
 }
 
-function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
+function renderNode(node: LexicalNode, key: React.Key, locale: Locale): React.ReactNode {
   switch (node.type) {
     case 'text':
       return renderText(node, key)
@@ -48,7 +49,7 @@ function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
     case 'paragraph':
       return (
         <p key={key} className="mb-4 leading-relaxed text-zinc-300">
-          {renderChildren(node.children)}
+          {renderChildren(node.children, locale)}
         </p>
       )
 
@@ -63,7 +64,7 @@ function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
       return React.createElement(
         tag,
         { key, className: `${sizes[tag] ?? 'text-xl'} font-bold text-white mt-8 mb-3` },
-        renderChildren(node.children)
+        renderChildren(node.children, locale)
       )
     }
 
@@ -76,13 +77,13 @@ function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
             node.listType === 'number' ? 'list-decimal' : 'list-disc'
           }`}
         >
-          {renderChildren(node.children)}
+          {renderChildren(node.children, locale)}
         </Tag>
       )
     }
 
     case 'listitem':
-      return <li key={key}>{renderChildren(node.children)}</li>
+      return <li key={key}>{renderChildren(node.children, locale)}</li>
 
     case 'quote':
       return (
@@ -90,12 +91,13 @@ function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
           key={key}
           className="border-l-2 border-emerald-600 pl-4 italic text-zinc-400 my-4"
         >
-          {renderChildren(node.children)}
+          {renderChildren(node.children, locale)}
         </blockquote>
       )
 
     case 'link': {
-      const url = node.fields?.url ?? node.url ?? '#'
+      // Site links ("/game/…") stay in the page's language; others are untouched.
+      const url = localizePath(locale, node.fields?.url ?? node.url ?? '#')
       // Stays a plain <a> on purpose — do NOT "upgrade" this to next/link.
       // These URLs are typed by editors in the CMS and can be anything:
       // external sites, mailto:, or an in-page anchor. <Link> assumes an
@@ -108,7 +110,7 @@ function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
           rel={node.fields?.newTab ? 'noopener noreferrer' : undefined}
           className="text-emerald-400 underline hover:text-emerald-300"
         >
-          {renderChildren(node.children)}
+          {renderChildren(node.children, locale)}
         </a>
       )
     }
@@ -119,12 +121,12 @@ function renderNode(node: LexicalNode, key: React.Key): React.ReactNode {
     default:
       // Unknown node type: render its children if any.
       return node.children ? (
-        <React.Fragment key={key}>{renderChildren(node.children)}</React.Fragment>
+        <React.Fragment key={key}>{renderChildren(node.children, locale)}</React.Fragment>
       ) : null
   }
 }
 
-export function LexicalContent({ content }: { content: string }) {
+export function LexicalContent({ content, locale = 'en' }: { content: string; locale?: Locale }) {
   let root: LexicalNode | null = null
   try {
     const parsed = JSON.parse(content)
@@ -134,8 +136,8 @@ export function LexicalContent({ content }: { content: string }) {
   }
 
   if (!root || !root.children) {
-    return <p className="text-zinc-400">No content.</p>
+    return <p className="text-zinc-400">{locale === 'fr' ? 'Pas de contenu.' : 'No content.'}</p>
   }
 
-  return <div>{renderChildren(root.children)}</div>
+  return <div>{renderChildren(root.children, locale)}</div>
 }

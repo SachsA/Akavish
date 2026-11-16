@@ -1,18 +1,21 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
+import Link from '@/components/LocaleLink'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { SearchResponse } from '@/lib/search'
-import { CATEGORIES, categoryByValue } from '@/lib/categories'
+import { CATEGORIES } from '@/lib/categories'
 import { parseSearchQuery, searchHref, SEARCH_PAGE_SIZE } from '@/lib/search-query'
 import { Highlight } from './Highlight'
+import { DateText } from './DateText'
+import { useI18n } from './I18nProvider'
 
 // /search: results for ?q=…, narrowed with ?category= (chips with counts) and
 // ?game= (set from a game suggestion or a result's game), paged with ?page=.
 // Everything lives in the URL, so a filtered search can be shared or reloaded.
 export function SearchResults() {
+  const { t, locale } = useI18n()
   const params = useSearchParams()
   const query = parseSearchQuery(params)
   const { q, category, game, page } = query
@@ -48,19 +51,19 @@ export function SearchResults() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-black tracking-tight text-white mb-2">Search</h1>
+      <h1 className="text-3xl font-black tracking-tight text-white mb-2">{t.search.title}</h1>
       {q ? (
         <p className="text-zinc-400 mb-6">
-          {res ? `${res.total} result${res.total === 1 ? '' : 's'} for ` : 'Results for '}
-          <span className="text-zinc-300">“{q}”</span>
+          {t.search.resultsFor(res ? res.total : null)}
+          <span className="text-zinc-300">{locale === 'fr' ? `« ${q} »` : `“${q}”`}</span>
         </p>
       ) : (
-        <p className="text-zinc-400 mb-8">Type a query in the search box above.</p>
+        <p className="text-zinc-400 mb-8">{t.search.typeQuery}</p>
       )}
 
       {q && (
-        <nav aria-label="Filter by section" className="mb-6 flex flex-wrap items-center gap-2 text-sm">
-          <Chip href={searchHref({ q, game })} active={!category} label="All" count={allCount} />
+        <nav aria-label={t.search.filterBySection} className="mb-6 flex flex-wrap items-center gap-2 text-sm">
+          <Chip href={searchHref({ q, game })} active={!category} label={t.search.all} count={allCount} />
           {CATEGORIES.map((c) => {
             const count = facets?.[c.value]
             // Hide empty sections once counts are in, but never the selected one.
@@ -70,7 +73,7 @@ export function SearchResults() {
                 key={c.value}
                 href={searchHref({ q, category: c.value, game })}
                 active={category === c.value}
-                label={c.label}
+                label={t.categories[c.value].label}
                 count={count}
               />
             )
@@ -79,29 +82,29 @@ export function SearchResults() {
             <Link
               href={searchHref({ q, category })}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-700 text-emerald-400 hover:text-white transition-colors"
-              aria-label={`Remove the game filter: ${res?.gameName ?? game}`}
+              aria-label={t.search.removeGame(res?.gameName ?? game)}
             >
-              Game: {res?.gameName ?? game} <span aria-hidden>×</span>
+              {t.search.gameFilter(res?.gameName ?? game)} <span aria-hidden>×</span>
             </Link>
           )}
         </nav>
       )}
 
-      {status === 'loading' && <p className="text-zinc-400">Searching…</p>}
+      {status === 'loading' && <p className="text-zinc-400">{t.search.searching}</p>}
 
       {status === 'error' && (
-        <p className="text-zinc-400">Search is unavailable right now. Please try again in a moment.</p>
+        <p className="text-zinc-400">{t.search.unavailable}</p>
       )}
 
       {res && res.hits.length === 0 && (
         <p className="text-zinc-400">
-          No results found for “{q}”
+          {t.search.noResults(q)}
           {category || game ? (
             <>
               {' '}
-              with these filters.{' '}
+              {t.search.withFilters}{' '}
               <Link href={searchHref({ q })} className="underline hover:text-white">
-                Search everything
+                {t.search.searchEverything}
               </Link>
             </>
           ) : (
@@ -127,14 +130,14 @@ export function SearchResults() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 text-xs mb-1">
                   <span className="text-emerald-500 font-bold uppercase tracking-wide">
-                    {categoryByValue(hit.category)?.singular ?? hit.category}
+                    {t.categories[hit.category as keyof typeof t.categories]?.singular ?? hit.category}
                   </span>
                   {hit.game &&
                     (hit.gameSlug && hit.gameSlug !== game ? (
                       <Link
                         href={searchHref({ q, category, game: hit.gameSlug })}
                         className="text-zinc-400 hover:text-white underline-offset-2 hover:underline"
-                        title={`Only results about ${hit.game}`}
+                        title={t.search.onlyAbout(hit.game)}
                       >
                         · {hit.game}
                       </Link>
@@ -142,7 +145,9 @@ export function SearchResults() {
                       <span className="text-zinc-400">· {hit.game}</span>
                     ))}
                   {hit.publishedAt && (
-                    <span className="text-zinc-400">· {formatDate(hit.publishedAt)}</span>
+                    <span className="text-zinc-400">
+                      · <DateText iso={hit.publishedAt} />
+                    </span>
                   )}
                 </div>
                 <h2 className="font-bold text-white">
@@ -160,20 +165,20 @@ export function SearchResults() {
       )}
 
       {res && res.totalPages > 1 && (
-        <nav aria-label="Pagination" className="mt-10 flex items-center justify-between gap-4">
+        <nav aria-label={t.pagination.label} className="mt-10 flex items-center justify-between gap-4">
           {res.page > 1 ? (
             <Link href={searchHref({ ...query, page: res.page - 1 })} rel="prev" className={pageLink}>
-              ← Previous
+              {t.pagination.previous}
             </Link>
           ) : (
             <span />
           )}
           <p className="text-sm text-zinc-400">
-            Page {res.page} of {res.totalPages}
+            {t.pagination.pageOf(res.page, res.totalPages)}
           </p>
           {res.page < res.totalPages ? (
             <Link href={searchHref({ ...query, page: res.page + 1 })} rel="next" className={pageLink}>
-              Next →
+              {t.pagination.next}
             </Link>
           ) : (
             <span />
@@ -212,13 +217,4 @@ function Chip({
       {count !== undefined && <span className={active ? '' : 'text-zinc-400'}>{count}</span>}
     </Link>
   )
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
 }

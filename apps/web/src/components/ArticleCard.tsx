@@ -1,27 +1,12 @@
 import Image from 'next/image'
 import type { Article } from '@akavish/types'
-import Link from 'next/link'
+import Link from '@/components/LocaleLink'
 import { Wordmark } from '@/components/Wordmark'
-
-const CATEGORY_LABELS: Record<Article['category'], string> = {
-  news: 'News',
-  leak: 'Leak',
-  review: 'Review',
-  preview: 'Preview',
-  conference: 'Conference',
-  esport: 'Esport',
-}
-
-function formatDate(iso?: string): string {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
+import { DateText } from '@/components/DateText'
+import { getMessages } from '@/lib/i18n/server'
 
 export function ArticleCard({ article }: { article: Article }) {
+  const t = getMessages()
   return (
     <Link
       href={`/article/${article.slug}`}
@@ -49,10 +34,12 @@ export function ArticleCard({ article }: { article: Article }) {
       <div className="p-4 space-y-2">
         <div className="flex items-center gap-2 text-xs">
           <span className="text-emerald-500 font-bold uppercase tracking-wide">
-            {CATEGORY_LABELS[article.category] ?? article.category}
+            {t.categories[article.category]?.singular ?? article.category}
           </span>
           {article.publishedAt && (
-            <span className="text-zinc-400">· {formatDate(article.publishedAt)}</span>
+            <span className="text-zinc-400">
+              · <DateText iso={article.publishedAt} />
+            </span>
           )}
           {article.score !== undefined && (
             <span className="text-zinc-200 font-semibold">· {article.score}/10</span>
@@ -62,7 +49,7 @@ export function ArticleCard({ article }: { article: Article }) {
           {article.title}
         </h3>
         <p className="text-sm text-zinc-400 line-clamp-2">{article.excerpt}</p>
-        <p className="text-xs text-zinc-400">By {article.author.name}</p>
+        <p className="text-xs text-zinc-400">{t.card.by(article.author.name)}</p>
       </div>
     </Link>
   )

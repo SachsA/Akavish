@@ -1,8 +1,12 @@
+'use client'
+
 import { roleBadge } from '@/lib/roles'
+import { useI18n } from './I18nProvider'
 
 /** The small badge next to a reader's name (Owner, Admin, Mod, Author). Nothing for plain readers. */
 export function RoleBadge({ role }: { role: string | null | undefined }) {
-  const badge = roleBadge(role)
+  const { locale } = useI18n()
+  const badge = roleBadge(role, locale)
   if (!badge) return null
   return (
     <span

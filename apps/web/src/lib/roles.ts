@@ -1,6 +1,9 @@
 // Reader roles (CMS `readers` collection, set by an admin) and the badge each
 // one shows next to the reader's name. Client-safe.
 
+import { messagesFor } from './i18n/messages'
+import type { Locale } from './i18n/config'
+
 export const READER_ROLES = ['owner', 'admin', 'moderator', 'author', 'reader'] as const
 export type ReaderRole = (typeof READER_ROLES)[number]
 
@@ -12,13 +15,16 @@ export interface RoleBadgeStyle {
   className: string
 }
 
-export const ROLE_BADGES: Record<Exclude<ReaderRole, 'reader'>, RoleBadgeStyle> = {
-  owner: { label: 'Owner', title: 'Akavish’s creator', className: 'bg-amber-400 text-[#1c1917]' },
-  admin: { label: 'Admin', title: 'Akavish administrator', className: 'bg-rose-700 text-[#ffffff]' },
-  moderator: { label: 'Mod', title: 'Moderator', className: 'bg-sky-700 text-[#ffffff]' },
-  author: { label: 'Author', title: 'Writes for Akavish', className: 'bg-emerald-700 text-[#ffffff]' },
+/** Badge colours; the words (label, title) are in lib/i18n/messages (`roles`). */
+export const ROLE_BADGES: Record<Exclude<ReaderRole, 'reader'>, { className: string }> = {
+  owner: { className: 'bg-amber-400 text-[#1c1917]' },
+  admin: { className: 'bg-rose-700 text-[#ffffff]' },
+  moderator: { className: 'bg-sky-700 text-[#ffffff]' },
+  author: { className: 'bg-emerald-700 text-[#ffffff]' },
 }
 
-export function roleBadge(role: string | null | undefined): RoleBadgeStyle | null {
-  return role && Object.hasOwn(ROLE_BADGES, role) ? ROLE_BADGES[role as keyof typeof ROLE_BADGES] : null
+export function roleBadge(role: string | null | undefined, locale: Locale = 'en'): RoleBadgeStyle | null {
+  if (!role || !Object.hasOwn(ROLE_BADGES, role)) return null
+  const key = role as keyof typeof ROLE_BADGES
+  return { ...messagesFor(locale).roles[key], ...ROLE_BADGES[key] }
 }

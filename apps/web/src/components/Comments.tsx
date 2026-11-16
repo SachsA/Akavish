@@ -5,6 +5,10 @@ import { useCallback, useEffect, useId, useState } from 'react'
 import type { CommentList, CommentView } from '@/lib/readers'
 import { readerMessage } from '@/lib/reader-messages'
 import { RoleBadge } from './RoleBadge'
+import { useI18n } from './I18nProvider'
+import { REGION_COOKIE, type Locale } from '@/lib/i18n/config'
+import { formatDate } from '@/lib/i18n/dates'
+import type { Messages } from '@/lib/i18n/messages'
 
 // Comments under an article. Rules (apps/cms/src/lib/comments.ts): verified
 // readers only, plain text, threads one level deep with "replying to @name",
@@ -13,12 +17,7 @@ import { RoleBadge } from './RoleBadge'
 // Nothing renders when comments are switched off in /admin.
 
 const MAX = 2000
-const REASONS = [
-  { value: 'spam', label: 'Spam' },
-  { value: 'harassment', label: 'Harassment or hate' },
-  { value: 'illegal', label: 'Illegal content' },
-  { value: 'other', label: 'Something else' },
-] as const
+const REASONS = ['spam', 'harassment', 'illegal', 'other'] as const
 
 type Load = { list: CommentList; comments: CommentView[] }
 
@@ -29,11 +28,14 @@ async function send(url: string, method: string, body?: unknown) {
     body: body ? JSON.stringify(body) : undefined,
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.message ?? readerMessage(data.code))
+  // The page's language is on <html lang> (set by the [locale] layout).
+  const locale: Locale = document.documentElement.lang === 'fr' ? 'fr' : 'en'
+  if (!res.ok) throw new Error(data.code ? readerMessage(data.code, locale) : (data.message ?? readerMessage(undefined, locale)))
   return data
 }
 
 export function Comments({ articleId }: { articleId: string }) {
+  const { t, locale } = useI18n()
   const { isLoaded, isSignedIn, user } = useUser()
   const [state, setState] = useState<Load | null>(null)
   const [failed, setFailed] = useState(false)
@@ -71,8 +73,8 @@ export function Comments({ articleId }: { articleId: string }) {
   if (failed) {
     return (
       <section aria-labelledby="comments-title" className="mt-12">
-        <h2 id="comments-title" className="text-xl font-bold text-white mb-2">Comments</h2>
-        <p className="text-zinc-400 text-sm">Comments are unavailable right now.</p>
+        <h2 id="comments-title" className="text-xl font-bold text-white mb-2">{t.comments.title}</h2>
+        <p className="text-zinc-400 text-sm">{t.comments.unavailable}</p>
       </section>
     )
   }
@@ -92,30 +94,31 @@ export function Comments({ articleId }: { articleId: string }) {
   return (
     <section aria-labelledby="comments-title" className="mt-12">
       <h2 id="comments-title" className="text-xl font-bold text-white mb-4">
-        Comments{list.total > 0 ? ` (${list.total})` : ''}
+        {t.comments.title}
+        {list.total > 0 ? ` (${list.total})` : ''}
       </h2>
 
       {list.closed ? (
-        <p className="text-sm text-zinc-400 mb-6">Comments are closed on this article.</p>
+        <p className="text-sm text-zinc-400 mb-6">{t.comments.closed}</p>
       ) : !isSignedIn ? (
         <div className="mb-8 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
-          <span>Join the conversation:</span>
+          <span>{t.comments.join}</span>
           <SignInButton mode="modal">
             <button type="button" className="px-3 py-1.5 rounded-md bg-emerald-700 text-on-accent font-semibold hover:bg-emerald-600 transition-colors">
-              Sign in to comment
+              {t.comments.signIn}
             </button>
           </SignInButton>
         </div>
       ) : viewer?.banned ? (
-        <p className="text-sm text-zinc-400 mb-6">{readerMessage('banned')}</p>
+        <p className="text-sm text-zinc-400 mb-6">{readerMessage('banned', locale)}</p>
       ) : !verified ? (
-        <p className="text-sm text-zinc-400 mb-6">{readerMessage('unverified')}</p>
+        <p className="text-sm text-zinc-400 mb-6">{readerMessage('unverified', locale)}</p>
       ) : (
         <CommentForm articleId={articleId} onPosted={refresh} />
       )}
 
       {comments.length === 0 ? (
-        !list.closed && <p className="text-sm text-zinc-400">No comments yet. Be the first.</p>
+        !list.closed && <p className="text-sm text-zinc-400">{t.comments.none}</p>
       ) : (
         <ol className="space-y-6">
           {comments.map((c) => (
@@ -160,7 +163,7 @@ export function Comments({ articleId }: { articleId: string }) {
           }}
           className="mt-6 px-3 py-1.5 rounded-md border border-zinc-800 text-sm text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors disabled:opacity-60"
         >
-          {more ? 'Loading…' : 'More comments'}
+          {more ? t.comments.loading : t.comments.more}
         </button>
       )}
     </section>
@@ -180,6 +183,7 @@ function CommentForm({
   onPosted: () => void
   onCancel?: () => void
 }) {
+  const { t } = useI18n()
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -205,11 +209,11 @@ function CommentForm({
   return (
     <form onSubmit={submit} className={replyTo ? 'mt-3' : 'mb-8'}>
       <label htmlFor={id} className="sr-only">
-        {replyTo ? `Reply to ${replyToName ?? 'this comment'}` : 'Add a comment'}
+        {replyTo ? t.comments.replyTo(replyToName ?? null) : t.comments.add}
       </label>
       {replyTo && (
         <p className="text-xs text-zinc-400 mb-1">
-          Replying to <span className="text-zinc-200">@{replyToName ?? 'reader'}</span>
+          {t.comments.replyingTo} <span className="text-zinc-200">@{replyToName ?? t.comments.reader}</span>
         </p>
       )}
       <textarea
@@ -218,7 +222,7 @@ function CommentForm({
         onChange={(e) => setText(e.target.value.slice(0, MAX))}
         rows={replyTo ? 2 : 3}
         maxLength={MAX}
-        placeholder={replyTo ? 'Write a reply…' : 'Add a comment…'}
+        placeholder={replyTo ? t.comments.writeReply : t.comments.writeComment}
         className="w-full bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400"
       />
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -227,11 +231,11 @@ function CommentForm({
           disabled={busy || !text.trim()}
           className="px-3 py-1.5 rounded-md bg-emerald-700 text-on-accent text-sm font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-60"
         >
-          {busy ? 'Posting…' : replyTo ? 'Reply' : 'Post'}
+          {busy ? t.comments.posting : replyTo ? t.comments.reply : t.comments.post}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className="text-sm text-zinc-400 hover:text-white">
-            Cancel
+            {t.comments.cancel}
           </button>
         )}
         <span className="text-xs text-zinc-400 ml-auto">
@@ -262,6 +266,7 @@ function Comment({
   closed: boolean
   onChange: () => void
 }) {
+  const { t, locale } = useI18n()
   const clerk = useClerk()
   const [votes, setVotes] = useState({ likes: c.likes, dislikes: c.dislikes, myVote: c.myVote })
   const [replying, setReplying] = useState(false)
@@ -293,7 +298,11 @@ function Comment({
   }
 
   const placeholder =
-    c.status === 'deleted' ? 'Comment deleted.' : c.status === 'hidden' && c.body === null ? 'Hidden by a moderator.' : null
+    c.status === 'deleted'
+      ? t.comments.deleted
+      : c.status === 'hidden' && c.body === null
+        ? t.comments.hiddenByMod
+        : null
   const live = c.status === 'visible'
 
   return (
@@ -305,18 +314,18 @@ function Comment({
             <RoleBadge role={c.author.role} />
           </>
         ) : (
-          <span className="text-zinc-400">[deleted]</span>
+          <span className="text-zinc-400">{t.comments.deletedAuthor}</span>
         )}
         <time dateTime={c.createdAt} className="text-xs text-zinc-400">
-          {timeAgo(c.createdAt)}
+          {timeAgo(c.createdAt, t, locale)}
         </time>
         {c.status === 'hidden' && canModerate && (
-          <span className="text-xs font-semibold text-danger">Hidden</span>
+          <span className="text-xs font-semibold text-danger">{t.comments.hidden}</span>
         )}
       </header>
       {c.replyToName && c.parentId !== null && (
         <p className="text-xs text-zinc-400 mt-0.5">
-          Replying to <span className="text-zinc-300">@{c.replyToName}</span>
+          {t.comments.replyingTo} <span className="text-zinc-300">@{c.replyToName}</span>
         </p>
       )}
 
@@ -331,37 +340,37 @@ function Comment({
         <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-zinc-400">
           {live && (
             <>
-              <VoteButton label="Like" count={votes.likes} active={votes.myVote === 1} disabled={c.mine} onClick={() => vote(1)} up />
-              <VoteButton label="Dislike" count={votes.dislikes} active={votes.myVote === -1} disabled={c.mine} onClick={() => vote(-1)} />
+              <VoteButton label={t.comments.like} ownVote={t.comments.ownVote} count={votes.likes} active={votes.myVote === 1} disabled={c.mine} onClick={() => vote(1)} up />
+              <VoteButton label={t.comments.dislike} ownVote={t.comments.ownVote} count={votes.dislikes} active={votes.myVote === -1} disabled={c.mine} onClick={() => vote(-1)} />
               {canAct && !closed && (
-                <SmallButton onClick={() => setReplying((v) => !v)}>Reply</SmallButton>
+                <SmallButton onClick={() => setReplying((v) => !v)}>{t.comments.reply}</SmallButton>
               )}
               {canAct && !c.mine && (
                 <SmallButton onClick={() => setReporting((v) => !v)} disabled={reported}>
-                  {reported ? 'Reported' : 'Report'}
+                  {reported ? t.comments.reported : t.comments.report}
                 </SmallButton>
               )}
             </>
           )}
           {canModerate && c.status === 'visible' && (
             <SmallButton onClick={() => act(() => send('/api/comments/moderate', 'POST', { commentId: c.id, action: 'hide' }).then(onChange))}>
-              Hide
+              {t.comments.hide}
             </SmallButton>
           )}
           {canModerate && c.status === 'hidden' && (
             <SmallButton onClick={() => act(() => send('/api/comments/moderate', 'POST', { commentId: c.id, action: 'restore' }).then(onChange))}>
-              Restore
+              {t.comments.restore}
             </SmallButton>
           )}
           {(c.mine || canModerate) && (
             <SmallButton
               danger
               onClick={() => {
-                if (!window.confirm(c.mine ? 'Delete your comment? This can’t be undone.' : 'Delete this comment?')) return
+                if (!window.confirm(c.mine ? t.comments.confirmDeleteOwn : t.comments.confirmDelete)) return
                 act(() => send(`/api/comments?id=${c.id}`, 'DELETE').then(onChange))
               }}
             >
-              Delete
+              {t.comments.delete}
             </SmallButton>
           )}
         </div>
@@ -407,6 +416,7 @@ function ReportForm({
   onDone: (hidden: boolean) => void
   onCancel: () => void
 }) {
+  const { t, locale } = useI18n()
   const [reason, setReason] = useState<string>('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -415,7 +425,7 @@ function ReportForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!reason) return setError(readerMessage('bad-reason'))
+    if (!reason) return setError(readerMessage('bad-reason', locale))
     setBusy(true)
     setError(null)
     try {
@@ -430,18 +440,18 @@ function ReportForm({
   return (
     <form onSubmit={submit} className="mt-3 p-3 rounded-md border border-zinc-800 bg-zinc-900 text-sm">
       <fieldset>
-        <legend className="font-semibold text-zinc-100 mb-2">Why are you reporting this comment?</legend>
+        <legend className="font-semibold text-zinc-100 mb-2">{t.comments.reportWhy}</legend>
         <div className="grid gap-1">
           {REASONS.map((r) => (
-            <label key={r.value} className="flex items-center gap-2 text-zinc-300">
-              <input type="radio" name={name} value={r.value} checked={reason === r.value} onChange={() => setReason(r.value)} />
-              {r.label}
+            <label key={r} className="flex items-center gap-2 text-zinc-300">
+              <input type="radio" name={name} value={r} checked={reason === r} onChange={() => setReason(r)} />
+              {t.comments.reasons[r]}
             </label>
           ))}
         </div>
       </fieldset>
       <label className="block mt-3 text-zinc-400">
-        Anything to add? (optional)
+        {t.comments.note}
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, 500))}
@@ -450,14 +460,14 @@ function ReportForm({
         />
       </label>
       <p className="mt-2 text-xs text-zinc-400">
-        Reports go to the moderators. A comment reported by several readers is hidden until they look at it.
+        {t.comments.reportInfo}
       </p>
       <div className="mt-2 flex items-center gap-3">
         <button type="submit" disabled={busy} className="px-3 py-1.5 rounded-md bg-emerald-700 text-on-accent font-semibold hover:bg-emerald-600 disabled:opacity-60">
-          {busy ? 'Sending…' : 'Report'}
+          {busy ? t.comments.sending : t.comments.report}
         </button>
         <button type="button" onClick={onCancel} className="text-zinc-400 hover:text-white">
-          Cancel
+          {t.comments.cancel}
         </button>
       </div>
       {error && (
@@ -476,8 +486,10 @@ function VoteButton({
   disabled,
   onClick,
   up = false,
+  ownVote,
 }: {
   label: string
+  ownVote: string
   count: number
   active: boolean
   disabled: boolean
@@ -491,7 +503,7 @@ function VoteButton({
       disabled={disabled}
       aria-pressed={active}
       aria-label={`${label} (${count})`}
-      title={disabled ? 'You can’t vote on your own comment' : label}
+      title={disabled ? ownVote : label}
       className={`inline-flex items-center gap-1 px-2 py-1 rounded-md transition-colors disabled:cursor-default ${
         active ? 'text-emerald-400 bg-zinc-900' : 'hover:text-white hover:bg-zinc-900'
       }`}
@@ -529,11 +541,13 @@ function SmallButton({
   )
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, t: Messages, locale: Locale): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
-  if (s < 60) return 'just now'
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`
-  if (s < 86_400) return `${Math.floor(s / 3600)} h ago`
-  if (s < 7 * 86_400) return `${Math.floor(s / 86_400)} d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  if (s < 60) return t.comments.justNow
+  if (s < 3600) return t.comments.minutesAgo(Math.floor(s / 60))
+  if (s < 86_400) return t.comments.hoursAgo(Math.floor(s / 3600))
+  if (s < 7 * 86_400) return t.comments.daysAgo(Math.floor(s / 86_400))
+  // Older: the date. Comments load in the browser, so the English style can be the reader's.
+  const region = document.cookie.includes(`${REGION_COOKIE}=GB`) ? 'GB' : 'US'
+  return formatDate(iso, { locale, region })
 }

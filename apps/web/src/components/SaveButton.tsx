@@ -3,6 +3,8 @@
 import { SignInButton, useAuth } from '@clerk/nextjs'
 import { useEffect, useState } from 'react'
 import { BookmarkIcon } from './BookmarkIcon'
+import { useI18n } from './I18nProvider'
+import { readerMessage } from '@/lib/reader-messages'
 
 const base =
   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors disabled:opacity-60'
@@ -15,6 +17,7 @@ const on = 'border-emerald-700 text-emerald-400 hover:border-emerald-500'
  * everyone, so whether this reader already saved it is asked once loaded.
  */
 export function SaveButton({ articleId }: { articleId: string }) {
+  const { t, locale } = useI18n()
   const { isLoaded, isSignedIn } = useAuth()
   const [saved, setSaved] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
@@ -40,7 +43,7 @@ export function SaveButton({ articleId }: { articleId: string }) {
     const button = (
       <button type="button" className={`${base} ${idle}`} disabled={!isLoaded}>
         <BookmarkIcon />
-        Save
+        {t.save.save}
       </button>
     )
     // Before Clerk has loaded the button is inert; signed out it asks to sign in.
@@ -66,7 +69,7 @@ export function SaveButton({ articleId }: { articleId: string }) {
       )
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.message ?? 'Didn’t work, try again.')
+        throw new Error(data.code ? readerMessage(data.code, locale) : t.save.failed)
       }
     } catch (err) {
       setSaved(!next)
@@ -86,7 +89,7 @@ export function SaveButton({ articleId }: { articleId: string }) {
         className={`${base} ${saved ? on : idle}`}
       >
         <BookmarkIcon filled={saved === true} />
-        {saved ? 'Saved' : 'Save'}
+        {saved ? t.save.saved : t.save.save}
       </button>
       {error && (
         <span role="status" className="text-xs text-danger max-w-56">

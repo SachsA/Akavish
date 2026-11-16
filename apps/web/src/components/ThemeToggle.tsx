@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useSyncExternalStore } from 'react'
+import { useI18n } from './I18nProvider'
 
 type Theme = 'light' | 'dark'
 
@@ -29,6 +30,7 @@ function subscribe(onChange: () => void) {
  * the inline script in layout.tsx (no flash of the wrong theme).
  */
 export function ThemeToggle() {
+  const { t } = useI18n()
   // Unknown on the server (null): an empty button of the same size until hydrated.
   const theme = useSyncExternalStore<Theme | null>(subscribe, currentTheme, () => null)
 
@@ -65,8 +67,8 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       disabled={theme === null}
-      aria-label={theme === null ? 'Theme' : `Switch to ${next} theme`}
-      title={theme === null ? undefined : `Switch to ${next} theme`}
+      aria-label={theme === null ? t.theme.label : t.theme.switchTo(next)}
+      title={theme === null ? undefined : t.theme.switchTo(next)}
       className="inline-flex items-center justify-center w-8 h-8 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
     >
       {theme === 'light' && <MoonIcon />}

@@ -98,6 +98,15 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   the Discord moderation channel `MODERATION_DISCORD_WEBHOOK_URL`) behind
   `/api/comments*` on the web (`components/Comments.tsx`). Kill switch:
   `/admin` → Community settings. Every write needs a verified email.
+- **Languages (i18n, `i18n` branch until after Nov 20):** pages live under
+  `apps/web/src/app/[locale]`; English at the bare path, French under `/fr`
+  (same slugs). Every interface string goes in `lib/i18n/messages/en.ts` and
+  `fr.ts` (same keys, tested), never inline. Internal links: `import Link from
+  '@/components/LocaleLink'` (never `next/link`). Dates: `<DateText>` or
+  `lib/i18n/dates.ts` (🇬🇧 / 🇺🇸 / 🇫🇷). Server pages call
+  `setRequestLocale((await params).locale)` then `getMessages()`; metadata uses
+  `alternates(locale, path)` for canonical + hreflang. Client components use
+  `useI18n()`. The proxy handles `/en` redirects and the first-visit language.
 - **Search:** `/api/search` queries the CMS (Postgres `ILIKE`) by default and
   switches to Meilisearch when `MEILISEARCH_HOST` is set (indexing hooks in the
   CMS). Meilisearch failures fall back to the CMS. Currently running on the

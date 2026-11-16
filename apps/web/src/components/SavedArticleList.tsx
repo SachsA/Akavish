@@ -1,10 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
+import Link from '@/components/LocaleLink'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { categoryByValue } from '@/lib/categories'
+import { DateText } from './DateText'
+import { useI18n } from './I18nProvider'
 
 export interface SavedItem {
   id: string
@@ -18,6 +19,7 @@ export interface SavedItem {
 
 /** The reader's saved articles on /account, each with a Remove button. */
 export function SavedArticleList({ items }: { items: SavedItem[] }) {
+  const { t } = useI18n()
   const router = useRouter()
   const [removed, setRemoved] = useState<Set<string>>(new Set())
   const [failed, setFailed] = useState<string | null>(null)
@@ -59,10 +61,12 @@ export function SavedArticleList({ items }: { items: SavedItem[] }) {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-x-2 text-xs mb-1">
               <span className="text-emerald-500 font-bold uppercase tracking-wide">
-                {categoryByValue(item.category)?.singular ?? item.category}
+                {t.categories[item.category as keyof typeof t.categories]?.singular ?? item.category}
               </span>
               {item.game && <span className="text-zinc-400">· {item.game}</span>}
-              <span className="text-zinc-400">· Saved {formatDate(item.savedAt)}</span>
+              <span className="text-zinc-400">
+                · {t.account.savedOn} <DateText iso={item.savedAt} />
+              </span>
             </div>
             <h3 className="font-bold text-white">
               <Link href={`/article/${item.slug}`} className="hover:text-emerald-400 transition-colors">
@@ -71,7 +75,7 @@ export function SavedArticleList({ items }: { items: SavedItem[] }) {
             </h3>
             {failed === item.id && (
               <p role="status" className="text-xs text-danger mt-1">
-                Couldn’t remove it, try again.
+                {t.account.removeFailed}
               </p>
             )}
           </div>
@@ -79,16 +83,12 @@ export function SavedArticleList({ items }: { items: SavedItem[] }) {
             type="button"
             onClick={() => remove(item.id)}
             className="shrink-0 px-3 py-1.5 rounded-md border border-zinc-800 text-xs text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors"
-            aria-label={`Remove “${item.title}” from saved articles`}
+            aria-label={t.account.removeLabel(item.title)}
           >
-            Remove
+            {t.account.remove}
           </button>
         </li>
       ))}
     </ul>
   )
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }

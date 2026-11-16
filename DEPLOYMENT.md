@@ -463,7 +463,7 @@ Notes on how it's wired:
   in each app's `lib/sentry-shared.ts`): no IP address, cookies, headers, request
   bodies, query params or stack-frame variables. SDK v10's `dataCollection`
   defaults are permissive, so this is set by hand rather than relied on —
-  `/privacy` and `/fr/confidentialite` promise this behaviour by name.
+  `/privacy` and `/fr/privacy` promise this behaviour by name.
 - **Session Replay is off** on purpose — it records what readers see, a far
   bigger promise than "we log errors", and it's the heaviest thing the browser
   SDK can load. Turning it on means rewriting the privacy pages first.

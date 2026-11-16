@@ -7,6 +7,8 @@
 // whenever there were no articles. Keep anything operational out of here:
 // diagnostics belong in Sentry and the logs, not in front of visitors.
 
+import { getMessages } from '@/lib/i18n/server'
+
 function Box({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <div className="border border-zinc-800 rounded-lg p-8 text-center text-zinc-400">
@@ -18,18 +20,12 @@ function Box({ title, children }: { title: string; children?: React.ReactNode })
 
 /** The article source failed (CMS down, timeout). Temporary from the reader's side. */
 export function ContentUnavailable() {
-  return (
-    <Box title="Articles are temporarily unavailable.">
-      We&apos;re on it — please check back in a few minutes.
-    </Box>
-  )
+  const t = getMessages()
+  return <Box title={t.status.unavailableTitle}>{t.status.unavailableBody}</Box>
 }
 
 /** The list loaded fine but is empty. `what` names the kind of content, e.g. "reviews". */
-export function NothingYet({ what = 'articles' }: { what?: string }) {
-  return (
-    <Box title="Nothing here yet.">
-      New {what} are on the way — check back soon.
-    </Box>
-  )
+export function NothingYet({ what }: { what?: string }) {
+  const t = getMessages()
+  return <Box title={t.status.nothingTitle}>{t.status.nothingBody(what ?? t.status.articles)}</Box>
 }

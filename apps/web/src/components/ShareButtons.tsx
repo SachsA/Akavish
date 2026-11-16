@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useSyncExternalStore } from 'react'
+import { useI18n } from './I18nProvider'
 
 // Feature-detection for the Web Share API, read through useSyncExternalStore.
 //
@@ -30,6 +31,7 @@ const canShareOnServer = () => false
  * app the reader actually has.
  */
 export function ShareButtons({ url, title }: { url: string; title: string }) {
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const canNativeShare = useSyncExternalStore(
     subscribeToNothing,
@@ -73,7 +75,7 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-zinc-400 mr-1">Share</span>
+      <span className="text-xs text-zinc-400 mr-1">{t.share.label}</span>
 
       {links.map((link) => (
         <a
@@ -91,12 +93,12 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
           Hidden where the browser doesn't support it (most desktop browsers). */}
       {canNativeShare && (
         <button type="button" onClick={nativeShare} className={base}>
-          More…
+          {t.share.more}
         </button>
       )}
 
       <button type="button" onClick={copy} className={base} aria-live="polite">
-        {copied ? 'Link copied' : 'Copy link'}
+        {copied ? t.share.copied : t.share.copy}
       </button>
     </div>
   )
