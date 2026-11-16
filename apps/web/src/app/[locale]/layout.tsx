@@ -21,6 +21,9 @@ import '../globals.css'
 
 type Params = { params: Promise<{ locale: string }> }
 
+/** Order of the sections in the header, the phone strip and the footer (Alex, 2026-11-16). */
+const NAV_SECTIONS = ['news', 'leaks', 'esport', 'reviews', 'previews', 'conferences'] as const
+
 // Both languages are built ahead. No `dynamicParams = false`: it would also
 // apply to the article and list pages below, whose slugs aren't all built
 // ahead. Other values never get here (the proxy only lets /fr through).
@@ -121,12 +124,12 @@ function Header() {
         <Link href="/" className="flex items-center gap-2" aria-label={t.header.home}>
           <Wordmark className="text-xl" />
         </Link>
-        <nav aria-label={t.header.mainNav} className="flex items-center gap-1 sm:gap-6 text-sm text-zinc-400">
-          <Link href="/news" className="hidden lg:inline py-1 hover:text-white transition-colors">{label('news')}</Link>
-          <Link href="/leaks" className="hidden lg:inline py-1 hover:text-white transition-colors">{label('leaks')}</Link>
-          <Link href="/reviews" className="hidden lg:inline py-1 hover:text-white transition-colors">{label('reviews')}</Link>
-          <Link href="/esport" className="hidden lg:inline py-1 hover:text-white transition-colors">{label('esport')}</Link>
-          <Link href="/conferences" className="hidden lg:inline py-1 hover:text-white transition-colors">{label('conferences')}</Link>
+        <nav aria-label={t.header.mainNav} className="flex items-center gap-1 sm:gap-6 lg:gap-4 xl:gap-6 text-sm text-zinc-400">
+          {NAV_SECTIONS.map((slug) => (
+            <Link key={slug} href={`/${slug}`} className="hidden lg:inline py-1 hover:text-white transition-colors">
+              {label(slug)}
+            </Link>
+          ))}
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
@@ -142,7 +145,7 @@ function Header() {
           it the only way to another section from an article was the footer. */}
       <nav aria-label={t.header.allSections} className="lg:hidden border-t border-zinc-900">
         <ul className="flex gap-1 overflow-x-auto px-2 py-1.5 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {CATEGORIES.map((c) => (
+          {NAV_SECTIONS.map((slug) => CATEGORIES.find((x) => x.slug === slug)!).map((c) => (
             <li key={c.slug} className="shrink-0">
               <Link
                 href={`/${c.slug}`}
@@ -163,7 +166,7 @@ function Footer() {
   const sections = [
     {
       title: t.footer.sections,
-      links: ['news', 'leaks', 'reviews', 'esport', 'conferences'].map((slug) => {
+      links: NAV_SECTIONS.map((slug) => {
         const c = CATEGORIES.find((x) => x.slug === slug)!
         return { label: t.categories[c.value].label, href: `/${slug}` }
       }),

@@ -422,7 +422,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 | P2  | Legal review by a professional | The pages are written and factually accurate, but **not reviewed by a lawyer**. Worth doing before monetising (affiliate/sponsored disclosures) or if traffic grows |
 | ✅  | Homepage layout pass         | Done — lead story, top stories, per-category sections (see roadmap #9). "Trending" would need view counts, not available yet |
 | ✅  | Dark/light toggle            | Done (2026-11-07) — follows the OS, sun/moon switch in the header remembers the choice (no flash on reload). Components keep the dark classes; `tailwind.config.ts` maps zinc/white/emerald text to CSS variables that flip in `globals.css`. axe-clean in both themes, header fits from 320 px |
-| ✅  | Conferences in the header     | Done (2026-11-12) — the section links (News, Leaks, Reviews, Esport, Conferences) show from 1024 px; below that the swipeable strip of every section (was phones only, the header overflowed between 640 and 1024 px) |
+| ✅  | Sections in the header        | Done (2026-11-12) — the section links show from 1024 px; below that the swipeable strip of every section (was phones only, the header overflowed between 640 and 1024 px). Since 2026-11-16 all six, in Alex's order: News, Leaks, Esport, Reviews, Previews, Conferences (`NAV_SECTIONS` in the layout, also the phone strip and the footer); tighter gaps between 1024 and 1280 px so French fits |
 
 ### UX & quality
 
