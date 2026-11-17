@@ -16,7 +16,6 @@ import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
 import { Pagination } from '@/components/Pagination'
 import { ContentUnavailable, NothingYet } from '@/components/StatusMessage'
 import { autoUnit, groupByDate } from '@/lib/date-groups'
-import { ArticleListItem, FeaturedArticle } from '@/components/FeaturedArticle'
 
 
 
@@ -70,7 +69,6 @@ export async function ListPage({
   const { label, blurb } = t.categories[conf.value]
   const now = new Date()
   const latest = page === 1 ? articles.slice(0, 4) : []
-  const rest = articles.slice(latest.length)
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -86,35 +84,29 @@ export async function ListPage({
         <NothingYet what={label.toLowerCase()} />
       ) : (
         <>
-          {/* Page 1 opens on the 4 newest, whatever their date (a lead story
-              and three more), so a quiet section never starts on one lonely
-              card. The rest follow by date: a heading per day when the
-              section is busy, per month when it isn't (lib/date-groups.ts),
-              per year for conferences. Cards use <h3>: h1 → h2 → h3. */}
+          {/* Page 1 opens on the 4 newest, whatever their date, in one row,
+              so a quiet section never starts on one lonely card. Under it,
+              the full list by date (those 4 included): a heading per day
+              while the section is busy, per month when it isn't
+              (lib/date-groups.ts), per year for conferences. Cards use <h3>:
+              h1 → h2 → h3. */}
           {latest.length > 0 && (
-            <section aria-labelledby="latest" className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-14">
-              <h2 id="latest" className="sr-only">
+            <section aria-labelledby="latest" className="mb-12">
+              <h2
+                id="latest"
+                className="mb-4 pb-2 border-b border-zinc-800 text-sm font-semibold uppercase tracking-wider text-zinc-400"
+              >
                 {t.section.latest}
               </h2>
-              <div className={latest.length > 1 ? 'lg:col-span-2' : 'lg:col-span-3'}>
-                <FeaturedArticle article={latest[0]} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {latest.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
               </div>
-              {latest.length > 1 && (
-                <div>
-                  <p aria-hidden="true" className="text-xs uppercase tracking-widest text-zinc-400 font-bold">
-                    {t.section.latest}
-                  </p>
-                  <div className="divide-y divide-zinc-800">
-                    {latest.slice(1).map((a) => (
-                      <ArticleListItem key={a.id} article={a} />
-                    ))}
-                  </div>
-                </div>
-              )}
             </section>
           )}
           <div className="space-y-10">
-            {groupByDate(rest, conf.value === 'conference' ? 'year' : autoUnit(rest), now, locale).map((group) => (
+            {groupByDate(articles, conf.value === 'conference' ? 'year' : autoUnit(articles), now, locale).map((group) => (
               <section key={group.key} aria-labelledby={`day-${group.key}`}>
                 <h2
                   id={`day-${group.key}`}
