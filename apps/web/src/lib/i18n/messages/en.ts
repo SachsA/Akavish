@@ -72,6 +72,7 @@ export const en = {
     by: (name: string) => `By ${name}`,
   },
   dates: { undated: 'Undated' },
+  section: { latest: 'Latest' },
   pagination: {
     label: 'Pagination',
     newer: '← Newer',

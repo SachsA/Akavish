@@ -52,7 +52,7 @@ Last updated: **2026-11-06**.
 | ✅     | `ArticleCard` component               | Cover, category, date, excerpt, author                                              |
 | ✅     | Article detail page `/article/[slug]` | Renders Lexical content, SEO metadata, OG tags                                      |
 | ✅     | Lexical → React renderer              | `LexicalContent.tsx` (headings, lists, quotes, links, inline formats)               |
-| ✅     | Category pages `/[category]`          | news, leaks, reviews, esport, previews, conferences. Grouped under a heading per day (Today, Yesterday, then the date; per year for conferences), `lib/date-groups.ts`, tested |
+| ✅     | Category pages `/[category]`          | news, leaks, reviews, esport, previews, conferences. Page 1 opens on the 4 newest whatever their date (lead story + 3, like the home; since 2026-11-17, so a quiet section never starts on one lonely card), then the rest by date: a heading per day while the section is busy (2+ a day on average: Today, Yesterday, then the date), per month otherwise (`autoUnit`), per year for conferences. `lib/date-groups.ts`, tested |
 | ✅     | Author pages `/author/[slug]`         | Profile (avatar, bio, twitter) + their published articles                           |
 | ✅     | Game pages `/game/[slug]`             | Game metadata (landscape cover, consoles and genres as links into the library, developers / publishers linking their company page, one line per release: "Oct 6, 2026 · PC, Xbox Series", schema.org VideoGame) + coverage: articles whose `game` is it **or** that also cover it (`relatedGames`, e.g. conference recaps) |
 | ✅     | Company pages `/company/[slug]`       | 2026-11-17. A studio or publisher: its games (role, first release, consoles), then the news: articles about its games or tagged with it (`Companies.tag`), paginated like the tag pages (`?page=N` → `/page/N`). schema.org Organization |
@@ -548,7 +548,7 @@ this list every time the website gets a reader-facing feature.
 | Game pages, *Also covers* (11-12) | A game screen (cover, releases per console with their precision, developers / publishers linking their screen, its articles incl. `relatedGames`), linked from the article byline |
 | Tag and author pages | Tag and author screens, from the article's #tags and byline |
 | Review score /10 (11-12) | Score badge on the article screen and the cards |
-| Lists grouped by day (11-12) | Today / Yesterday / date headers in the section lists (`groupByDate`, conferences by year) |
+| Lists grouped by day (11-12), latest first (11-17) | Section lists open on the 4 newest (lead + 3), then Today / Yesterday / date headers, month headers for a quiet section (`groupByDate`, `autoUnit`), conferences by year |
 | Read next, previous / next (11-07) | Under the article |
 | Newsletter sign-up (11-09) | A form (same CMS endpoint, consent box) |
 | Light theme (11-07) | Follow the phone's light / dark setting |

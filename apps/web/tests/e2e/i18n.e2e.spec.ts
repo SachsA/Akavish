@@ -16,10 +16,12 @@ test('/fr is the French site: interface, html lang, hreflang', async ({ page }) 
   await expect(review).toHaveAttribute('href', /^\/fr\/article\//)
 })
 
-test('French section pages: labels and day headings in French', async ({ page }) => {
+test('French section pages: labels and the latest ones in French', async ({ page }) => {
   await page.goto('/fr/reviews')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tests')
-  await expect(page.locator('main h2').first()).toHaveText(/^(Aujourd'hui|Hier|[A-Z][a-zé]+ \d{1,2} [a-zéû]+( \d{4})?)$/)
+  // The section opens on its newest articles, whatever their date.
+  await expect(page.getByRole('heading', { name: 'Les derniers' })).toHaveCount(1)
+  await expect(page.locator('main a time').first()).toHaveText(/^\d{1,2} [a-zéû]+ \d{4}$/)
 })
 
 /** Open the language menu and pick an entry (retried: a click before hydration does nothing). */
@@ -34,13 +36,13 @@ async function pick(page: import('@playwright/test').Page, button: RegExp, entry
 
 test('the language menu switches language and English date style', async ({ page }) => {
   await page.goto('/reviews')
-  // The first card's date (the section headings are dates too).
+  // The lead review's date.
   const dates = page.locator('main a time').first()
-  await expect(dates).toHaveText(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/) // 🇺🇸 Nov 5, 2026
+  await expect(dates).toHaveText(/^[A-Z][a-z]+ \d{1,2}, \d{4}$/) // 🇺🇸 November 5, 2026
 
   await pick(page, /^Language:/, 'English (UK dates)')
   await expect(page).toHaveURL(/\/reviews$/)
-  await expect(dates).toHaveText(/^\d{1,2} [A-Z][a-z]{2} \d{4}$/) // 🇬🇧 5 Nov 2026
+  await expect(dates).toHaveText(/^\d{1,2} [A-Z][a-z]+ \d{4}$/) // 🇬🇧 5 November 2026
 
   await pick(page, /^Language:/, 'Français')
   await expect(page).toHaveURL(/\/fr\/reviews$/)

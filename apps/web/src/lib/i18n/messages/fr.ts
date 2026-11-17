@@ -71,6 +71,7 @@ export const fr: Messages = {
     by: (name: string) => `Par ${name}`,
   },
   dates: { undated: 'Sans date' },
+  section: { latest: 'Les derniers' },
   pagination: {
     label: 'Pagination',
     newer: '← Plus récents',

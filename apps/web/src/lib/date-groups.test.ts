@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupByDate } from './date-groups'
+import { autoUnit, groupByDate } from './date-groups'
 
 const now = new Date('2026-11-12T15:00:00Z')
 const a = (id: number, publishedAt?: string) => ({ id, publishedAt })
@@ -52,5 +52,17 @@ describe('groupByDate', () => {
       'fr',
     )
     expect(groups.map((g) => g.label)).toEqual(["Aujourd'hui", 'Hier', 'Mardi 10 novembre', 'Sans date'])
+  })
+
+  it('groups a quiet section by month', () => {
+    const items = [a(1, '2026-11-15T10:00:00Z'), a(2, '2026-11-12T10:00:00Z'), a(3, '2026-10-30T10:00:00Z')]
+    expect(autoUnit(items)).toBe('month')
+    expect(groupByDate(items, 'month', now).map((g) => [g.label, g.items.length])).toEqual([
+      ['November 2026', 2],
+      ['October 2026', 1],
+    ])
+    expect(groupByDate(items, 'month', now, 'fr')[0].label).toBe('Novembre 2026')
+    const busy = [a(1, '2026-11-12T14:00:00Z'), a(2, '2026-11-12T10:00:00Z'), a(3, '2026-11-11T10:00:00Z'), a(4, '2026-11-11T09:00:00Z')]
+    expect(autoUnit(busy)).toBe('day')
   })
 })
