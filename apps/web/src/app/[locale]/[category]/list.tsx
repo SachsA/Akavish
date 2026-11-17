@@ -19,6 +19,16 @@ import { autoUnit, groupByDate } from '@/lib/date-groups'
 
 
 
+/**
+ * Conferences by year; esport always by day (match days, Alex 2026-11-17);
+ * the other sections by day while busy, else by month (autoUnit).
+ */
+function dateUnit(category: string, articles: Article[]): 'day' | 'month' | 'year' {
+  if (category === 'conference') return 'year'
+  if (category === 'esport') return 'day'
+  return autoUnit(articles)
+}
+
 export async function listMetadata({
   params,
 }: {
@@ -88,7 +98,8 @@ export async function ListPage({
               so a quiet section never starts on one lonely card. Under it,
               the full list by date (those 4 included): a heading per day
               while the section is busy, per month when it isn't
-              (lib/date-groups.ts), per year for conferences. Cards use <h3>:
+              (lib/date-groups.ts), always per day for esport, per year for
+              conferences. Cards use <h3>:
               h1 → h2 → h3. */}
           {latest.length > 0 && (
             <section aria-labelledby="latest" className="mb-12">
@@ -106,7 +117,7 @@ export async function ListPage({
             </section>
           )}
           <div className="space-y-10">
-            {groupByDate(articles, conf.value === 'conference' ? 'year' : autoUnit(articles), now, locale).map((group) => (
+            {groupByDate(articles, dateUnit(conf.value, articles), now, locale).map((group) => (
               <section key={group.key} aria-labelledby={`day-${group.key}`}>
                 <h2
                   id={`day-${group.key}`}
