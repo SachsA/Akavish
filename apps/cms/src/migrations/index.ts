@@ -18,6 +18,7 @@ import * as migration_20261113_094425_comments from './20261113_094425_comments'
 import * as migration_20261116_130858_french_version from './20261116_130858_french_version';
 import * as migration_20261116_165443_media_credit from './20261116_165443_media_credit';
 import * as migration_20261117_095500_games_library from './20261117_095500_games_library';
+import * as migration_20261117_104444_drop_old_game_fields from './20261117_104444_drop_old_game_fields';
 
 export const migrations = [
   {
@@ -118,6 +119,11 @@ export const migrations = [
   {
     up: migration_20261117_095500_games_library.up,
     down: migration_20261117_095500_games_library.down,
-    name: '20261117_095500_games_library'
+    name: '20261117_095500_games_library',
+  },
+  {
+    up: migration_20261117_104444_drop_old_game_fields.up,
+    down: migration_20261117_104444_drop_old_game_fields.down,
+    name: '20261117_104444_drop_old_game_fields'
   },
 ];

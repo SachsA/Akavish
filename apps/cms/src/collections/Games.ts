@@ -122,14 +122,5 @@ export const Games: CollectionConfig = {
       name: 'genre', type: 'select', hasMany: true,
       options: ['FPS', 'RPG', 'Action', 'Strategy', 'Sports', 'MOBA', 'Battle Royale', 'MMO', 'Simulation', 'Other'],
     },
-    // Before the library (2026-11-17): platform families and plain-text
-    // studios. Kept, hidden, until the backfill is checked; dropped after.
-    {
-      name: 'platform', type: 'select', hasMany: true,
-      options: ['PC', 'PlayStation', 'Xbox', 'Nintendo Switch', 'Mobile'],
-      admin: { hidden: true },
-    },
-    { name: 'developer', type: 'text', admin: { hidden: true } },
-    { name: 'publisher', type: 'text', admin: { hidden: true } },
   ],
 }
