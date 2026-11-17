@@ -21,7 +21,7 @@ export default function Loading() {
           <Bar className="h-4 w-full" />
         </div>
         <div className="space-y-6">
-          {Array.from({ length: 3 }, (_, i) => (
+          {Array.from({ length: 4 }, (_, i) => (
             <div key={i} className="space-y-2">
               <Bar className="h-3 w-16" />
               <Bar className="h-5 w-full" />

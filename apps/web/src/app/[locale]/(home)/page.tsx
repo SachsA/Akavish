@@ -13,42 +13,49 @@ import { ContentUnavailable, NothingYet } from '@/components/StatusMessage'
 export const revalidate = 30
 
 /** How many stories sit in the column next to the lead. */
-const TOP_STORIES = 3
-/** How many cards each category section shows before "See all". */
-const PER_SECTION = 3
+const TOP_STORIES = 4
+/** How many cards each category section shows before "See all", in one row. */
+const PER_SECTION = 4
 
 /**
  * Layout, top to bottom:
  *
  *   1. Masthead — wordmark and tagline (the sections are in the header).
  *   2. Lead story (the editor's "featured" pick, else the newest article) +
- *      a "Top stories" column (the next 3).
- *   3. One section per category: its latest articles, the lead and top stories
- *      included (a big story at the top still shows in its own category).
+ *      a "Top stories" column (the next 4).
+ *   3. One section per category: its 4 latest articles whatever their date
+ *      (fetched per category, so a quiet one like Reviews still fills its
+ *      row), the lead and top stories included (a big story at the top still
+ *      shows in its own category).
  *
  * Each block disappears when it has nothing to show, so the page degrades
  * cleanly from "busy" all the way down to a single article, or to an
  * empty-state message.
  *
- * Two CMS requests (the latest articles + the newest featured one), grouped in
- * memory.
+ * CMS requests in parallel: the latest articles, the newest featured one, and
+ * the 4 latest of each category; all cached like the rest (30 s).
  */
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   setRequestLocale((await params).locale)
   const t = getMessages()
   let articles: Article[] = []
   let featured: Article | null = null
+  let byCategory: Article[] = []
   let cmsError = false
 
   try {
-    const [latest, picks] = await Promise.all([
+    const [latest, picks, ...perCategory] = await Promise.all([
       fetchArticles({ limit: 24 }),
       // The editor's pick is a nice-to-have: if this query fails, fall back to
       // "newest is the lead" rather than an error page.
       fetchArticles({ featured: true, limit: 1 }).catch(() => null),
+      // Each section's own latest; one failing only leaves that section to
+      // what the main list has.
+      ...NAV_CATEGORIES.map((c) => fetchArticles({ category: c.value, limit: PER_SECTION }).catch(() => null)),
     ])
     articles = latest.data
     featured = picks?.data[0] ?? null
+    byCategory = perCategory.flatMap((r) => r?.data ?? [])
   } catch {
     cmsError = true
   }
@@ -59,7 +66,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const sections = NAV_CATEGORIES.map((category) => ({
     category,
-    articles: sectionArticles(onPage, category.value, PER_SECTION),
+    articles: sectionArticles([...onPage, ...byCategory], category.value, PER_SECTION),
   })).filter((s) => s.articles.length > 0)
 
   return (
@@ -120,7 +127,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   {t.home.seeAll}
                 </Link>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {items.map((a) => (
                   <ArticleCard key={a.id} article={a} />
                 ))}
