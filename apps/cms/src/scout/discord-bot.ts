@@ -95,6 +95,8 @@ export interface DraftCard {
   game?: string
   /** Esport: the photo to find (a player, a team with the trophy). */
   photoHint?: string
+  /** What Publish will change in the games library, one line per game. */
+  gameFacts?: string[]
 }
 
 const NO_IMAGE =
@@ -136,6 +138,14 @@ export function draftMessage(card: DraftCard): BotMessage {
                     `**${card.photoHint}**. Une photo d’un organisateur qui t’a donné son accord (pas Liquipedia, dont les photos ne sont pas réutilisables) : **Modifier** → URL de l’image + son crédit.`,
                     1024,
                   ),
+                },
+              ]
+            : []),
+          ...(card.gameFacts?.length
+            ? [
+                {
+                  name: '🎮 Fiches jeux (appliqué en publiant)',
+                  value: clip(card.gameFacts.join('\n'), 1024),
                 },
               ]
             : []),

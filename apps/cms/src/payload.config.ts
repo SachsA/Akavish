@@ -12,6 +12,7 @@ import { Media } from './collections/Media'
 import { Tags } from './collections/Tags'
 import { Authors } from './collections/Authors'
 import { Games } from './collections/Games'
+import { Companies } from './collections/Companies'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
 import { Bookmarks, Readers } from './collections/Readers'
@@ -81,6 +82,7 @@ export default buildConfig({
     Tags,
     Authors,
     Games,
+    Companies,
     Articles,
     Subscribers,
     // Reader accounts (Clerk) and their saved articles (src/lib/readers.ts).

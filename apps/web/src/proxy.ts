@@ -36,7 +36,7 @@ const isProtectedRoute = createRouteMatcher(['/account(.*)', '/fr/account(.*)'])
  * - The English date style (🇬🇧 / 🇺🇸) is guessed once from the same header.
  */
 const LIST_PATH = new RegExp(
-  `^(?:/(?:${LOCALES.join('|')}))?/(?:${CATEGORIES.map((c) => c.slug).join('|')}|(?:tag|author|game)/[^/]+)$`,
+  `^(?:/(?:${LOCALES.join('|')}))?/(?:${CATEGORIES.map((c) => c.slug).join('|')}|(?:tag|author|game|company)/[^/]+)$`,
 )
 
 /**

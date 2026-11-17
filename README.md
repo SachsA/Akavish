@@ -57,7 +57,9 @@ sends the confirmation email through Resend (`apps/cms/README.md` →
 Newsletter). The **AI scout** runs inside the CMS too: it reads games news
 feeds, groups and scores stories with Claude, drafts the best ones (with a
 cover and the official videos), and asks
-for a Publish / Edit / Reject click in a private Discord channel (`apps/cms/README.md` → AI scout). Reader auth
+for a Publish / Edit / Reject click in a private Discord channel (`apps/cms/README.md` → AI scout).
+Published news also keeps the **games library** current: release dates per
+console, studios and publishers (`/games`, `/game/<slug>`, `/company/<slug>`). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately, as admin, editor or writer. A reader account saves articles
 (listed on `/account`), comments under articles (replies, likes, reports) and
@@ -193,7 +195,8 @@ pnpm seed
 It creates an admin — **only if the database has no user yet** —
 (`admin@akavish.test` / `akavish-local`, override with `SEED_ADMIN_EMAIL` /
 `SEED_ADMIN_PASSWORD` in `apps/cms/.env`), plus a sample author, four fictional
-games, tags and 8 published articles covering every category (one of them
+games (with their releases and companies: one ported to Switch later, one due
+in 2028), tags and 8 published articles covering every category (one of them
 `featured`, so it's the homepage lead), so the homepage shows its full layout. Re-running it only adds what's missing. It **refuses to run
 unless `DATABASE_URL` points at localhost**. Cover images are generated and
 uploaded only when media is stored on local disk; with `R2_BUCKET` set they're

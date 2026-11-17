@@ -36,6 +36,12 @@ export const ScoutEvents: CollectionConfig = {
     { name: 'endedAt', type: 'date' },
     { name: 'article', type: 'relationship', relationTo: 'articles' },
     { name: 'recapArticle', type: 'relationship', relationTo: 'articles' },
+    {
+      // The recap's game facts, applied to the games library on its Publish.
+      name: 'recapGameFacts',
+      type: 'json',
+      admin: { readOnly: true },
+    },
     { name: 'cover', type: 'upload', relationTo: 'media' },
     {
       name: 'published',

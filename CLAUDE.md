@@ -128,7 +128,17 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   first, then the articles, filters by section and game and highlights
   matches (`lib/search-query.ts`). Games are matched by name and initials in
   memory ("GTA" → Grand Theft Auto VI, `lib/game-match.ts`), and the articles
-  about the best matches count as results. `/games` lists every game A to Z.
+  about the best matches count as results.
+- **Games library:** `/games` filters every game by console, year, month,
+  studio / publisher, genre, out / upcoming, letter (in the browser,
+  `lib/game-library.ts`, filters in the URL). A game has *releases* (consoles
+  + date + precision day / month / quarter / year / TBA, one row per group of
+  consoles released together); `platforms` and `releaseDate` are computed
+  from them, never edit those. Consoles one by one (`lib/platforms.ts`, same
+  list in CMS and web, a test checks). Studios and publishers are
+  *Companies* with their page `/company/<slug>`. The scout fills all this
+  from official news on *Publier* (`scout/game-facts.ts`); rumours never
+  touch a game page.
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web,
   mobile, CMS and api-client), then build web + CMS (mobile isn't built — that needs EAS) and,

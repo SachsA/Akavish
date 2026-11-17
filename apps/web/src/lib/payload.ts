@@ -18,6 +18,8 @@ import type { Locale } from './i18n/config'
 import { localizeArticle, pick } from './i18n/content'
 import { getLocale } from './i18n/server'
 import { matchGames } from './game-match'
+import type { LibraryCompany, LibraryGame, Release } from './game-library'
+import { sortPlatforms } from './platforms'
 import { CMS_TAG } from './revalidate'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
@@ -71,6 +73,8 @@ interface ListParams {
   tagId?: string
   /** Only articles the editor marked as homepage lead. */
   featured?: boolean
+  /** A company's page: articles about its games, or with its tag. */
+  company?: { gameIds: string[]; tagId?: string }
   /** Language of the articles; default: the page's (route handlers pass it). */
   locale?: Locale
 }
@@ -79,7 +83,7 @@ interface ListParams {
 export async function fetchArticles(
   params: ListParams = {}
 ): Promise<PaginatedResponse<Article>> {
-  const { page = 1, limit = 20, category, authorId, gameId, tagId, featured } = params
+  const { page = 1, limit = 20, category, authorId, gameId, tagId, featured, company } = params
   const qs = new URLSearchParams({
     'where[status][equals]': 'published',
     sort: '-publishedAt',
@@ -95,6 +99,13 @@ export async function fetchArticles(
     qs.set('where[or][1][relatedGames][in]', gameId)
   }
   if (tagId) qs.set('where[tags][in]', tagId)
+  if (company) {
+    // About one of its games, or tagged with the company.
+    const ids = company.gameIds.length ? company.gameIds.join(',') : '0'
+    qs.set('where[or][0][game][in]', ids)
+    qs.set('where[or][1][relatedGames][in]', ids)
+    if (company.tagId) qs.set('where[or][2][tags][in]', company.tagId)
+  }
   if (featured) qs.set('where[featured][equals]', 'true')
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
@@ -300,21 +311,41 @@ export interface GameSearchHit {
   cover?: string
 }
 
-export interface GameListItem {
+export interface GameListItem extends LibraryGame {
   id: string
-  slug: string
-  name: string
   /** 'card' variant (960w): the /games grid and the search's game cards. */
   cover?: string
+  /** First release (search ties). */
   releaseDate?: string
 }
 
+type RawRelease = { platforms?: string[] | null; date?: string | null; precision?: string | null }
+
+/** Releases as the CMS stores them → the library's shape (day, no time). */
+export function mapReleases(rows: RawRelease[] | null | undefined): Release[] {
+  return (rows ?? []).map((r) => {
+    const precision = (['day', 'month', 'quarter', 'year', 'tba'] as const).find((p) => p === r.precision) ?? 'tba'
+    const date = precision !== 'tba' && r.date ? r.date.slice(0, 10) : null
+    return { platforms: r.platforms ?? [], date, precision: date ? precision : 'tba' }
+  })
+}
+
+const companySlugs = (v: unknown[] | null | undefined) =>
+  (v ?? []).flatMap((c) => (c && typeof c === 'object' && 'slug' in c ? [String((c as { slug: string }).slug)] : []))
+
 /**
- * Every game on the site, A to Z (a few hundred: one request, cached 5 min).
- * Used by /games and to find games by name in the search (lib/game-match.ts).
+ * Every game on the site with its releases, A to Z: the games library
+ * (/games) and the search's game matching (lib/game-match.ts). One request,
+ * only the fields used (the list grows by itself: Next caches up to 2 MB a
+ * response, about 3,000 games this way), cached 5 min.
  */
 export async function fetchAllGames(): Promise<GameListItem[]> {
-  const qs = new URLSearchParams({ depth: '1', limit: '1000', sort: 'name' })
+  const qs = new URLSearchParams({ depth: '1', pagination: 'false', sort: 'name' })
+  for (const f of ['name', 'slug', 'cover', 'releases', 'releaseDate', 'developers', 'publishers', 'genre'])
+    qs.set(`select[${f}]`, 'true')
+  for (const f of ['url', 'filename', 'prefix', 'sizes][card][url', 'sizes][card][filename'])
+    qs.set(`populate[media][${f}]`, 'true')
+  qs.set('populate[companies][slug]', 'true')
   const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
     next: { revalidate: 300 },
   })
@@ -325,6 +356,10 @@ export async function fetchAllGames(): Promise<GameListItem[]> {
     name: string
     cover?: PayloadMedia
     releaseDate?: string | null
+    releases?: RawRelease[] | null
+    developers?: unknown[] | null
+    publishers?: unknown[] | null
+    genre?: string[] | null
   }>
   return json.docs.map((doc) => ({
     id: String(doc.id),
@@ -332,7 +367,48 @@ export async function fetchAllGames(): Promise<GameListItem[]> {
     name: doc.name,
     cover: mediaUrl(doc.cover, 'card'),
     releaseDate: doc.releaseDate ?? undefined,
+    releases: mapReleases(doc.releases),
+    developers: companySlugs(doc.developers),
+    publishers: companySlugs(doc.publishers),
+    genres: doc.genre ?? [],
   }))
+}
+
+export interface CompanyEntity extends LibraryCompany {
+  id: string
+  aliases: string[]
+  logo?: string
+  tagId?: string
+}
+
+/** Every studio and publisher (the library's filter), A to Z, cached 5 min. */
+export async function fetchAllCompanies(): Promise<LibraryCompany[]> {
+  const qs = new URLSearchParams({ depth: '0', pagination: 'false', sort: 'name', 'select[name]': 'true', 'select[slug]': 'true' })
+  const res = await cmsFetch(`${CMS_URL}/api/companies?${qs.toString()}`, { next: { revalidate: 300 } })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{ slug: string; name: string }>
+  return json.docs.map((d) => ({ slug: d.slug, name: d.name }))
+}
+
+export async function fetchCompanyBySlug(slug: string): Promise<CompanyEntity | null> {
+  const doc = await fetchOneBySlug<{
+    id: string | number
+    slug: string
+    name: string
+    aliases?: string[] | null
+    logo?: PayloadMedia
+    tag?: { id: string | number } | string | number | null
+  }>('companies', slug)
+  if (!doc) return null
+  const tag = doc.tag && typeof doc.tag === 'object' ? doc.tag.id : doc.tag
+  return {
+    id: String(doc.id),
+    slug: doc.slug,
+    name: doc.name,
+    aliases: doc.aliases ?? [],
+    logo: mediaUrl(doc.logo, 'square'),
+    tagId: tag ? String(tag) : undefined,
+  }
 }
 
 /**
@@ -472,11 +548,12 @@ export interface GameEntity {
   slug: string
   name: string
   cover?: string
-  platform: string[]
+  /** Every console of its releases, in the site's order. */
+  platforms: string[]
+  releases: Release[]
   genre: string[]
-  developer?: string
-  publisher?: string
-  releaseDate?: string
+  developers: LibraryCompany[]
+  publishers: LibraryCompany[]
 }
 
 export interface TagEntity {
@@ -527,24 +604,26 @@ export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> 
     slug: string
     name: string
     cover?: { url?: string } | string | null
-    platform?: string[] | null
+    platforms?: string[] | null
+    releases?: RawRelease[] | null
     genre?: string[] | null
-    developer?: string
-    publisher?: string
-    releaseDate?: string | null
+    developers?: Array<{ slug: string; name: string } | number> | null
+    publishers?: Array<{ slug: string; name: string } | number> | null
   }>('games', slug)
   if (!doc) return null
+  const companies = (v: typeof doc.developers) =>
+    (v ?? []).flatMap((c) => (typeof c === 'object' && c ? [{ slug: c.slug, name: c.name }] : []))
   return {
     id: String(doc.id),
     slug: doc.slug,
     name: doc.name,
     // Game covers render at ~320 CSS px → 'card' (960w) is plenty at 2x.
     cover: mediaUrl(doc.cover, 'card'),
-    platform: doc.platform ?? [],
+    platforms: sortPlatforms(doc.platforms ?? []),
+    releases: mapReleases(doc.releases).sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999')),
     genre: doc.genre ?? [],
-    developer: doc.developer,
-    publisher: doc.publisher,
-    releaseDate: doc.releaseDate ?? undefined,
+    developers: companies(doc.developers),
+    publishers: companies(doc.publishers),
   }
 }
 
@@ -607,9 +686,9 @@ export async function fetchAllArticleSlugs(): Promise<SlugEntry[]> {
 
 // All slugs of a simple collection (authors / games / tags) for the sitemap.
 export async function fetchAllEntitySlugs(
-  collection: 'authors' | 'games' | 'tags'
+  collection: 'authors' | 'games' | 'tags' | 'companies'
 ): Promise<(SlugEntry & { id: string })[]> {
-  const qs = new URLSearchParams({ depth: '0', limit: '1000' })
+  const qs = new URLSearchParams({ depth: '0', pagination: 'false', 'select[slug]': 'true', 'select[updatedAt]': 'true' })
   const res = await cmsFetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
     next: { revalidate: 300 },
   })

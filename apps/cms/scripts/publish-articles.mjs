@@ -17,11 +17,12 @@
  *   type: game                      # creates the game if its slug is new
  *   slug: grand-theft-auto-vi
  *   name: Grand Theft Auto VI
- *   developer: Rockstar Games
- *   publisher: Rockstar Games
- *   platform: PlayStation, Xbox
+ *   developers: Rockstar Games      # companies, created if new
+ *   publishers: Rockstar Games
+ *   releases: ps5, xbox-series @ 2026-11-19; pc @ TBA
+ *                                   # consoles (apps/cms/src/lib/platforms.ts) @
+ *                                   # 2026-11-19 | 2026-11 | 2026-Q4 | 2026 | TBA
  *   genre: Action
- *   releaseDate: 2026-11-19
  *   cover: gta-key-art.jpg          # file in --images
  *   coverAlt: Grand Theft Auto VI official key art
  *   ---
@@ -102,6 +103,32 @@ const element = (type, children, extra = {}) => ({
  * Inline Markdown: **bold** and [label](url). A site path ([label](/game/x))
  * stays in the same tab; an outside URL opens a new one.
  */
+/**
+ * "ps5, xbox-series @ 2026-11-19; pc @ TBA" → Games releases rows. Unknown
+ * consoles or dates throw, so a typo doesn't land in the library.
+ */
+export function parseReleases(text) {
+  const PLATFORMS = ['pc', 'mac', 'ps5', 'ps4', 'ps3', 'ps2', 'ps1', 'psp', 'vita', 'xbox-series', 'xbox-one', 'xbox-360', 'xbox', 'switch-2', 'switch', 'wii-u', 'wii', 'gamecube', 'n64', '3ds', 'ds', 'ios', 'android', 'quest']
+  return (text ?? '')
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const [consoles, when = ''] = part.split('@').map((x) => x.trim())
+      const platforms = consoles.split(',').map((c) => c.trim().toLowerCase()).filter(Boolean)
+      for (const c of platforms) if (!PLATFORMS.includes(c)) throw new Error(`unknown console "${c}"`)
+      const w = when.toUpperCase()
+      let m
+      if (!w || w === 'TBA') return { platforms, date: null, precision: 'tba' }
+      if ((m = w.match(/^(\d{4})-(\d{2})-(\d{2})$/))) return { platforms, date: w, precision: 'day' }
+      if ((m = w.match(/^(\d{4})-(\d{2})$/))) return { platforms, date: `${w}-01`, precision: 'month' }
+      if ((m = w.match(/^(\d{4})-Q([1-4])$/)))
+        return { platforms, date: `${m[1]}-${String((m[2] - 1) * 3 + 1).padStart(2, '0')}-01`, precision: 'quarter' }
+      if ((m = w.match(/^(\d{4})$/))) return { platforms, date: `${w}-01-01`, precision: 'year' }
+      throw new Error(`unreadable date "${when}"`)
+    })
+}
+
 export function inline(s) {
   const out = []
   const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g
@@ -249,6 +276,25 @@ async function main() {
     return (tagIds[name] = res.doc.id)
   }
 
+  const companyIds = {}
+  async function companies(list) {
+    const ids = []
+    for (const name of (list ?? '').split(',').map((n) => n.trim()).filter(Boolean)) {
+      if (!companyIds[name]) {
+        const found = await findOne('companies', 'name', name)
+        if (found) companyIds[name] = found.id
+        else if (dry) companyIds[name] = `(create company ${name})`
+        else {
+          const res = await call('/companies', { method: 'POST', body: JSON.stringify({ name }) })
+          console.log(`company ${name}: created (${res.doc.id})`)
+          companyIds[name] = res.doc.id
+        }
+      }
+      ids.push(companyIds[name])
+    }
+    return ids
+  }
+
   async function gameId(slug) {
     const id = games[slug] ?? (await findOne('games', 'slug', slug))?.id
     if (!id && !dry) console.warn(`  ! game ${slug} not found, skipped`)
@@ -266,11 +312,10 @@ async function main() {
       const data = {
         name: meta.name,
         slug: meta.slug,
-        developer: meta.developer,
-        publisher: meta.publisher,
-        platform: meta.platform?.split(',').map((p) => p.trim()),
+        developers: await companies(meta.developers ?? meta.developer),
+        publishers: await companies(meta.publishers ?? meta.publisher),
+        releases: parseReleases(meta.releases),
         genre: meta.genre?.split(',').map((g) => g.trim()),
-        releaseDate: meta.releaseDate,
         cover: await media(meta.cover, meta.coverAlt),
       }
       if (dry) {

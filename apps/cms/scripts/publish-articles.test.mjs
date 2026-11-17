@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inline, parseFile, toLexical } from './publish-articles.mjs'
+import { inline, parseFile, parseReleases, toLexical } from './publish-articles.mjs'
 
 const SOURCE = `---
 type: game
@@ -56,5 +56,16 @@ describe('publish-articles', () => {
     expect(root.children[1].tag).toBe('h2')
     expect(root.children[2].children).toHaveLength(2)
     expect(root.children[3].children[0].text).toBe('Second paragraph on two lines.')
+  })
+
+  it('reads game releases, refuses typos', () => {
+    expect(parseReleases('ps5, xbox-series @ 2026-11-19; pc @ TBA; switch-2 @ 2027-Q2')).toEqual([
+      { platforms: ['ps5', 'xbox-series'], date: '2026-11-19', precision: 'day' },
+      { platforms: ['pc'], date: null, precision: 'tba' },
+      { platforms: ['switch-2'], date: '2027-04-01', precision: 'quarter' },
+    ])
+    expect(parseReleases(undefined)).toEqual([])
+    expect(() => parseReleases('ps6 @ 2027')).toThrow('unknown console')
+    expect(() => parseReleases('pc @ late 2027')).toThrow('unreadable date')
   })
 })

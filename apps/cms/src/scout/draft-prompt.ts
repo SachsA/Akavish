@@ -3,6 +3,8 @@
 // article (Lexical rich text + a Sources block). Pure, unit-tested.
 
 import { CATEGORIES, type Category } from './triage-prompt'
+import { parseReleaseDate, type Release } from '../lib/game-releases'
+import { PLATFORMS, PLATFORM_VALUES, type Platform } from '../lib/platforms'
 
 export interface DraftSource {
   name: string
@@ -44,17 +46,47 @@ export interface DraftAnswer {
   tags?: string[]
   /** The game the story is about: an existing name, or a new official title. */
   game?: string
-  /** `game` isn't in the list: create it with what the sources say. */
+  /** `game` isn't in the list: create it with what the sources say (its game_facts entry). */
   game_is_new?: boolean
-  new_game?: { developer?: string; publisher?: string; platforms?: string[]; genres?: string[] }
+  /**
+   * What the sources state about each game they date or place (release
+   * dates and consoles, studios): the story's game, and every game of a
+   * lineup or a showcase. Applied to the games library on Publish.
+   */
+  game_facts?: GameFactsEntry[]
   /** Tags the site doesn't have yet (at most 2 kept). */
   new_tags?: string[]
   /** Esport: the photo the cover should be (a player for a transfer, a team with the trophy for a win). */
   photo_hint?: string
 }
 
-/** The `platform` and `genre` options of the Games collection. */
-export const GAME_PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Nintendo Switch', 'Mobile'] as const
+/** A draft answer once checked (cleanDraft): game facts parsed. */
+export type CleanDraft = Omit<DraftAnswer, 'game_facts'> & { game_facts: CleanGameFactsEntry[] }
+
+/** What a story says about a game, in the model's words (dates as text). */
+export interface GameFacts {
+  developers?: string[]
+  publishers?: string[]
+  genres?: string[]
+  releases?: Array<{ platforms?: string[]; date: string }>
+}
+export interface GameFactsEntry extends GameFacts {
+  game: string
+  is_new?: boolean
+}
+/** The same, checked: known consoles, dates parsed (lib/game-releases.ts). */
+export interface CleanGameFacts {
+  developers: string[]
+  publishers: string[]
+  genres: string[]
+  releases: Release[]
+}
+export interface CleanGameFactsEntry extends CleanGameFacts {
+  game: string
+  is_new: boolean
+}
+
+/** The `genre` options of the Games collection. */
 export const GAME_GENRES = [
   'FPS',
   'RPG',
@@ -67,6 +99,31 @@ export const GAME_GENRES = [
   'Simulation',
   'Other',
 ] as const
+
+/** The tool schema of a game's facts (draft and live tools). */
+export const GAME_FACTS_PROPERTIES = {
+  releases: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        platforms: {
+          type: 'array',
+          items: { type: 'string', enum: [...PLATFORM_VALUES] },
+          description: `Consoles: ${PLATFORMS.map((p) => `${p.value} = ${p.label}`).join(', ')}. Empty when the sources don't say.`,
+        },
+        date: {
+          type: 'string',
+          description: '"YYYY-MM-DD", "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA".',
+        },
+      },
+      required: ['date'],
+    },
+  },
+  developers: { type: 'array', items: { type: 'string' } },
+  publishers: { type: 'array', items: { type: 'string' } },
+  genres: { type: 'array', items: { type: 'string', enum: [...GAME_GENRES] } },
+} as const
 
 export const DRAFT_SYSTEM = `You write news articles for Akavish, an English-language video game news site. Tone: direct, factual, no fluff, no hype words ("insane", "epic"), no clickbait, no emoji. Readers are gamers who want the facts fast.
 
@@ -82,7 +139,8 @@ Hard rules:
 - Excerpt: one or two sentences, under 200 characters, not a copy of the first paragraph.
 - SEO description: under 155 characters.
 - Write in English even when sources are in French or another language.
-- Game: the ONE game the story is about, meaning the news concerns that game itself (its release, update, DLC, sales, trailer, review, cancellation). A game only cited as context is not the subject: a PS5 sales story that mentions GTA VI has no game. Hardware, a service, a company, a studio, an event or several games: leave it empty. When the game is in the existing games list, copy its exact name ("GTA 6" is "Grand Theft Auto VI"). When it isn't, give its full official title as the publisher writes it ("The Legend of Zelda: Ocarina of Time", not "Ocarina of Time remake"), set game_is_new, and fill new_game only with what the sources state (developer, publisher, platforms, genres); leave out the rest.
+- Game: the ONE game the story is about, meaning the news concerns that game itself (its release, update, DLC, sales, trailer, review, cancellation). A game only cited as context is not the subject: a PS5 sales story that mentions GTA VI has no game. Hardware, a service, a company, a studio, an event or several games: leave it empty. When the game is in the existing games list, copy its exact name ("GTA 6" is "Grand Theft Auto VI"). When it isn't, give its full official title as the publisher writes it ("The Legend of Zelda: Ocarina of Time", not "Ocarina of Time remake") and set game_is_new.
+- Game facts: Akavish keeps a library of game pages (consoles, release dates, studios). In game_facts, add one entry for every game whose release date or window, consoles, developer or publisher the sources state as official: the story's game, and each game of a lineup, a release schedule or a showcase. Only what the sources say, never what you remember. A rumour or a leak is not official: no game_facts from it. For each entry: "game" (exact name from the existing games list, or the full official title with is_new), "releases": one per group of consoles sharing a date, with the consoles as named ("Xbox" in a 2021+ story means xbox-series, "Switch 2" is switch-2, "PlayStation" alone for a new game means ps5) and the date as "YYYY-MM-DD", "YYYY-MM", "YYYY-Qn" ("holiday 2026" or "late 2026" is 2026-Q4), "YYYY" ("2027", "early 2027") or "TBA". A delay gives the new date. A release with no console named covers all of them. "developers" and "publishers": company names as written officially. "genres": from the list.
 - Tags: 2 to 5, in this order: (1) the company behind the news (publisher, studio or platform holder: Nintendo, Sony, Bandai Namco, Obsidian Entertainment…); (2) the platforms concerned (PS5, Xbox, PC, Switch 2), only when the story is about them; (3) the theme or event (Sales, Release dates, DLC, Studio closures, Earnings, Trailers, Worlds 2026…). Copy existing tags exactly when one fits. When a needed company or theme tag doesn't exist, put it in new_tags (at most 2, short, English, Title Case, the style of the existing ones). Never the game's name, never the category, never a person, never a vague word ("Gaming", "News").
 - Videos: when videos found in the sources are listed, put in "videos" the numbers of those that are official (the publisher's, studio's, platform holder's or tournament organiser's own channel) AND directly about this story, such as the trailer the article is about. None otherwise. Do not mention a video in the text unless you selected it.
 Do not add a sources list or video links: they are appended automatically.`
@@ -159,14 +217,18 @@ export const DRAFT_TOOL = {
           'The one game the story is about: exact name from the list, or its full official title if not listed; empty if none.',
       },
       game_is_new: { type: 'boolean', description: 'True when game is not in the list.' },
-      new_game: {
-        type: 'object',
-        description: 'Only with game_is_new, only facts stated in the sources.',
-        properties: {
-          developer: { type: 'string' },
-          publisher: { type: 'string' },
-          platforms: { type: 'array', items: { type: 'string', enum: [...GAME_PLATFORMS] } },
-          genres: { type: 'array', items: { type: 'string', enum: [...GAME_GENRES] } },
+      game_facts: {
+        type: 'array',
+        description:
+          'Official facts the sources state about each game they date or place (the story game and any other). Empty for a rumour or when nothing is stated.',
+        items: {
+          type: 'object',
+          properties: {
+            game: { type: 'string', description: 'Exact existing name, or full official title.' },
+            is_new: { type: 'boolean', description: 'True when not in the existing games list.' },
+            ...GAME_FACTS_PROPERTIES,
+          },
+          required: ['game'],
         },
       },
       new_tags: {
@@ -199,7 +261,7 @@ const clip = (s: unknown, n: number) => {
 export function cleanDraft(
   answer: DraftAnswer,
   fallbackCategory: string | null | undefined,
-): DraftAnswer {
+): CleanDraft {
   const blocks: Block[] = []
   for (const b of Array.isArray(answer?.blocks) ? answer.blocks : []) {
     if (!b || typeof b !== 'object') continue
@@ -243,7 +305,7 @@ export function cleanDraft(
         ? answer.photo_hint.trim().slice(0, 120)
         : '',
     game_is_new: answer?.game_is_new === true,
-    new_game: cleanNewGame(answer?.new_game),
+    game_facts: cleanGameFactsList(answer?.game_facts),
     new_tags: (Array.isArray(answer?.new_tags) ? answer.new_tags : [])
       .filter((t): t is string => typeof t === 'string')
       .map((t) => t.trim())
@@ -405,21 +467,84 @@ export function matchGame(
   return null
 }
 
-/** The new game's facts, kept only when they fit the Games collection. Pure. */
-export function cleanNewGame(raw: unknown): DraftAnswer['new_game'] {
+/**
+ * A game's facts, kept only when they fit the Games collection: known
+ * consoles and genres, dates in one of the accepted forms (a release with an
+ * unreadable date is dropped), company names trimmed. Pure.
+ */
+export function cleanGameFacts(raw: unknown): CleanGameFacts {
   const g = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
-  const str = (v: unknown) =>
-    typeof v === 'string' && v.trim() ? v.trim().slice(0, 80) : undefined
-  const pick = <T extends string>(v: unknown, allowed: readonly T[]) => [
-    ...new Set((Array.isArray(v) ? v : []).filter((x): x is T => allowed.includes(x as T))),
-  ]
+  const names = (v: unknown) => [
+    ...new Set(
+      (Array.isArray(v) ? v : [])
+        .filter((x): x is string => typeof x === 'string')
+        .map((x) => x.replace(/\s+/g, ' ').trim())
+        .filter((x) => x.length >= 2 && x.length <= 80),
+    ),
+  ].slice(0, 4)
+  const releases: Release[] = []
+  for (const r of Array.isArray(g.releases) ? g.releases.slice(0, 8) : []) {
+    const row = (r && typeof r === 'object' ? r : {}) as Record<string, unknown>
+    const when = parseReleaseDate(typeof row.date === 'string' ? row.date : '')
+    if (!when) continue
+    const platforms = PLATFORM_VALUES.filter(
+      (p) => Array.isArray(row.platforms) && row.platforms.includes(p),
+    )
+    releases.push({ platforms, ...when })
+  }
   return {
-    developer: str(g.developer),
-    publisher: str(g.publisher),
-    platforms: pick(g.platforms, GAME_PLATFORMS),
-    genres: pick(g.genres, GAME_GENRES),
+    developers: names(g.developers),
+    publishers: names(g.publishers),
+    genres: [
+      ...new Set(
+        (Array.isArray(g.genres) ? g.genres : []).filter((x): x is (typeof GAME_GENRES)[number] =>
+          GAME_GENRES.includes(x as (typeof GAME_GENRES)[number]),
+        ),
+      ),
+    ],
+    releases,
   }
 }
+
+/** game_facts as the model gave them → checked entries with something in them (at most 30). Pure. */
+export function cleanGameFactsList(raw: unknown): CleanGameFactsEntry[] {
+  const out: CleanGameFactsEntry[] = []
+  const seen = new Set<string>()
+  for (const e of Array.isArray(raw) ? raw : []) {
+    const entry = (e && typeof e === 'object' ? e : {}) as Record<string, unknown>
+    const game = typeof entry.game === 'string' ? entry.game.replace(/\s+/g, ' ').trim().slice(0, 120) : ''
+    const key = game.toLowerCase().replace(/[^a-z0-9]+/g, '')
+    if (!key || seen.has(key)) continue
+    const facts = cleanGameFacts(entry)
+    if (!facts.releases.length && !facts.developers.length && !facts.publishers.length) continue
+    seen.add(key)
+    out.push({ game, is_new: entry.is_new === true, ...facts })
+    if (out.length >= 30) break
+  }
+  return out
+}
+
+
+/** "PS5, Xbox Series X|S · Nov 19, 2026" for Discord. Pure. */
+export function describeRelease(r: Release): string {
+  const consoles = r.platforms.map((p) => PLATFORMS.find((x) => x.value === p)?.label ?? p).join(', ')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  let when = 'TBA'
+  if (r.date) {
+    const [y, m, d] = r.date.split('-').map(Number)
+    when =
+      r.precision === 'day'
+        ? `${months[m - 1]} ${d}, ${y}`
+        : r.precision === 'month'
+          ? `${months[m - 1]} ${y}`
+          : r.precision === 'quarter'
+            ? `Q${Math.floor((m - 1) / 3) + 1} ${y}`
+            : String(y)
+  }
+  return consoles ? `${consoles} · ${when}` : when
+}
+
+export type { Platform }
 
 /**
  * The tags to create for a draft: at most `room` (2 at most), each 2 to 30

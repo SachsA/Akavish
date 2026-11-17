@@ -25,7 +25,8 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, *Also covers* (`relatedGames`: the other games a recap covers, listed on their pages too), tags, SEO, and for reviews a `score` out of 10 (shown on the article and the cards, and sent as a schema.org Review). Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
-| `games`    | Game metadata articles can be tagged to: cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), platforms, genres, dates, studio. |
+| `games`    | The games library (`/games`): cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), **releases** (one row per group of consoles released together: consoles from `src/lib/platforms.ts`, date, precision day / month / quarter / year / TBA; a port is its own row), developers and publishers (Companies), genres. A `beforeChange` hook derives the read-only `platforms`, `releaseDate` (the first) and `releaseDatePrecision` from the releases (`src/lib/game-releases.ts`, unit-tested). The old `platform` / `developer` / `publisher` fields are hidden, kept until a later migration drops them. |
+| `companies` | Studios and publishers, each with its page `/company/<slug>` (its games and the news about them): name, *aliases* (former names, other spellings: the scout matches them), logo, and the company's tag if it has one (its articles show on the page too). |
 | `tags`     | Cross-cutting topics, 2 to 5 per article: publisher or studio (Rockstar Games, Riot Games), platform (PS5, Switch 2), event (Worlds 2026, CS2 Major) or theme (Release dates, Trailers, Earnings). Not the game (that's `game`) nor the type (that's `category`). Each tag has its public page `/tag/<slug>`, linked from the article (#chips) and listed in the sitemap once it has a published article. |
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
 | `users`    | CMS editors — Payload auth (separate from reader auth, which is Clerk), each with a `role` (admin / editor / writer) and an *Author profile*. See "Roles" below. Password resets go out via Resend — see below. |
@@ -97,7 +98,11 @@ format (front matter per game or article, `tags:` as a comma list matched by
 name and created if new, Markdown body with `##` headings,
 `- ` lists, `**bold**` and links) is documented at the top of the script.
 Re-running is safe: games and media are reused, articles updated in place;
-to fix one article, re-run with `--only <slug>`. `score:` sets a review's
+to fix one article, re-run with `--only <slug>`. A game block takes
+`developers:` / `publishers:` (companies, created if new) and
+`releases: ps5, xbox-series @ 2026-11-19; pc @ TBA` (consoles from
+`src/lib/platforms.ts`; dates `2026-11-19`, `2026-11`, `2026-Q4`, `2026` or
+`TBA`; a typo stops the run). `score:` sets a review's
 score out of 10. `relatedGames:` (game slugs)
 fills *Also covers*, and `[**Name**](/game/<slug>)` in the body is a site link
 (same tab). An optional `publishedAt:`
@@ -363,12 +368,24 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    vague word), 5 in all. **Game:** the *Games* names go to the prompt too;
    `matchGame` matches the model's `game` on letters and digits; an empty
    answer means no game (the triage's game is only a dry-run fallback). A
-   game not listed comes back with `game_is_new` and `new_game` (developer,
-   publisher, platforms and genres from the collection's options,
-   `cleanNewGame`) and is created, with the official cover as its own. Both
+   game not listed comes back with `game_is_new` and is created with its
+   `game_facts` entry (below), with the official cover as its own.
+   **Game facts** (`game_facts`, `cleanGameFactsList`, `scout/game-facts.ts`):
+   for every game the sources date or place officially (the story's and any
+   other: a lineup, a showcase), its releases (consoles + "YYYY-MM-DD",
+   "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA"), developers, publishers, genres.
+   Stored on the story (`gameFacts`), previewed on the card (🎮 Fiches jeux)
+   and applied on *Publier* only: `mergeReleases` (per console the news
+   wins; a vaguer date that agrees changes nothing; without consoles it moves
+   what isn't out yet), empty studio / publisher / genre filled, companies
+   matched on name or alias or created, games marked new created, and the
+   dated games added to *Also covers*. A recap (live mode) keeps its facts on
+   the event (`recapGameFacts`) for *Publier le résumé*; the live's own new
+   games take their `new_game` facts at once. Both
    are set on every draft and revision (a *Modifier* replaces tags set by
    hand). `rejectStory` deletes the tags and game created since the story's
-   first draft that no article uses any more. **Duplicates** (`dedupe.ts`):
+   first draft that no article uses any more (and the companies created with
+   that game). **Duplicates** (`dedupe.ts`):
    before each automatic draft, Haiku compares the story with the articles of
    the last 21 days and the stories rejected in the last 10; a repeat becomes
    `rejected` with "auto : doublon de l'article …" and no Discord card. The

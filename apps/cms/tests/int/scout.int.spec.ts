@@ -358,7 +358,10 @@ describe('scout step 2 (drafts)', () => {
                   ],
                   game: 'Scouttest Saga',
                   game_is_new: true,
-                  new_game: { developer: 'Saga Studio', platforms: ['PlayStation'] },
+                  new_game: {
+                    developers: ['Scouttest Saga Studio'],
+                    releases: [{ platforms: ['ps5'], date: '2027-03' }],
+                  },
                 },
               ],
               update_entries: [],
@@ -390,7 +393,14 @@ describe('scout step 2 (drafts)', () => {
                     // A game and a tag the site doesn't have yet.
                     game: 'Scouttest Indie Quest',
                     game_is_new: true,
-                    new_game: { developer: 'Tiny Studio', platforms: ['PC', 'Switch 2'] },
+                    game_facts: [
+                      {
+                        game: 'Scouttest Indie Quest',
+                        is_new: true,
+                        developers: ['Scouttest Tiny Studio'],
+                        releases: [{ platforms: ['pc', 'switch-2', 'Switch 2'], date: 'TBA' }],
+                      },
+                    ],
                     tags: [],
                     new_tags: ['Scouttest Patches'],
                   }
@@ -399,6 +409,19 @@ describe('scout step 2 (drafts)', () => {
                     tags: ['scouttest rockstar', 'Scouttest Invented', 'Scouttest Grand Theft'],
                     new_tags: ['Scouttest Sales', 'scouttest rockstar'],
                     game: 'scouttest grand theft',
+                    // Applied to the games library only on Publish.
+                    game_facts: [
+                      {
+                        game: 'Scouttest Grand Theft',
+                        releases: [{ platforms: ['ps5', 'xbox-series'], date: '2026-11-19' }],
+                        publishers: ['Scouttest Rockstar Games'],
+                      },
+                      {
+                        game: 'Scouttest Other Game',
+                        is_new: true,
+                        releases: [{ platforms: ['pc'], date: '2027-Q2' }],
+                      },
+                    ],
                   }),
             },
           },
@@ -569,6 +592,11 @@ describe('scout step 2 (drafts)', () => {
       where: { name: { like: 'Scouttest' } },
       overrideAccess: true,
     })
+    await payload.delete({
+      collection: 'companies' as never,
+      where: { name: { like: 'Scouttest' } },
+      overrideAccess: true,
+    })
     await wipe()
   })
 
@@ -634,6 +662,15 @@ describe('scout step 2 (drafts)', () => {
     expect(rockstars.totalDocs).toBe(1)
 
     expect(discordPosts[0].url).toBe('https://discord.com/api/v10/channels/42/messages')
+    // The card says what Publish will change in the games library; nothing yet.
+    const card = JSON.stringify(discordPosts[0].body)
+    expect(card).toContain('Fiches jeux')
+    expect(card).toContain('Scouttest Grand Theft : PlayStation 5, Xbox Series X|S · Nov 19, 2026')
+    expect(card).toContain('Scouttest Other Game : PC · Q2 2027')
+    const untouched = (
+      await payload.find({ collection: 'games', where: { name: { equals: 'Scouttest Grand Theft' } }, overrideAccess: true })
+    ).docs[0] as unknown as { releaseDate?: string | null }
+    expect(untouched.releaseDate ?? null).toBeNull()
     expect(JSON.stringify(discordPosts[0].body)).toContain('scout:publish:' + gtaId)
 
     const usage = await payload.find({
@@ -705,6 +742,31 @@ describe('scout step 2 (drafts)', () => {
     })) as unknown as Record<string, unknown>
     expect(article).toMatchObject({ status: 'published', _status: 'published' })
     expect(article.publishedAt).toBeTruthy()
+
+    // The story's game facts went into the library: the date and consoles,
+    // the publisher (created), and a new game, listed as "Also covers".
+    const gta = (
+      await payload.find({
+        collection: 'games',
+        where: { name: { equals: 'Scouttest Grand Theft' } },
+        depth: 1,
+        overrideAccess: true,
+      })
+    ).docs[0] as unknown as {
+      releaseDate: string
+      releaseDatePrecision: string
+      platforms: string[]
+      publishers: Array<{ name: string }>
+    }
+    expect(gta.releaseDate).toBe('2026-11-19T00:00:00.000Z')
+    expect(gta.releaseDatePrecision).toBe('day')
+    expect(gta.platforms).toEqual(['ps5', 'xbox-series'])
+    expect(gta.publishers.map((c) => c.name)).toEqual(['Scouttest Rockstar Games'])
+    const other = (
+      await payload.find({ collection: 'games', where: { name: { equals: 'Scouttest Other Game' } }, overrideAccess: true })
+    ).docs[0] as unknown as { id: number; releaseDatePrecision: string }
+    expect(other.releaseDatePrecision).toBe('quarter')
+    expect((article.relatedGames as Array<{ id: number }>).map((g) => g.id)).toEqual([other.id])
   })
 
   it('skips an automatic draft of news the site already covers', async () => {
@@ -758,14 +820,15 @@ describe('scout step 2 (drafts)', () => {
       depth: 1,
       overrideAccess: true,
     })) as unknown as {
-      game: { name: string; developer?: string; platform?: string[] }
+      game: { name: string; developers?: number[]; platforms?: string[]; releaseDatePrecision?: string }
       tags: Array<{ name: string }>
     }
     expect(indie.game).toMatchObject({
       name: 'Scouttest Indie Quest',
-      developer: 'Tiny Studio',
-      platform: ['PC'],
+      platforms: ['pc', 'switch-2'],
+      releaseDatePrecision: 'tba',
     })
+    expect(indie.game.developers).toHaveLength(1)
     expect(indie.tags.map((t) => t.name)).toEqual(['Scouttest Patches'])
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(
       'Scouttest Indie Quest (fiche créée)',
@@ -912,8 +975,9 @@ describe('scout step 2 (drafts)', () => {
         where: { name: { equals: 'Scouttest Saga' } },
         overrideAccess: true,
       })
-    ).docs[0] as unknown as { developer: string }
-    expect(game.developer).toBe('Saga Studio')
+    ).docs[0] as unknown as { developers: Array<{ name: string }>; releaseDate: string; releaseDatePrecision: string }
+    expect(game.developers.map((c) => c.name)).toEqual(['Scouttest Saga Studio'])
+    expect(game).toMatchObject({ releaseDate: '2027-03-01T00:00:00.000Z', releaseDatePrecision: 'month' })
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(`scout:evpub:${ev.id}`)
 
     // "Publier le live" → published; later updates go live by themselves.

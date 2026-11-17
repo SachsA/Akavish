@@ -21,8 +21,16 @@ import { callTool } from './anthropic'
 import { checkBudget, recordUsage } from './budget'
 import type { ScoutContext, SettingsDoc, SourceDoc } from './context'
 import { COLORS, editBotMessage, sendBotMessage, type BotMessage } from './discord-bot'
-import { authorId, createGame, existingGames, NO_COVER } from './draft'
-import { cleanDraft, DRAFT_TOOL, matchGame, toLexical, type DraftAnswer } from './draft-prompt'
+import { authorId, existingGames, NO_COVER } from './draft'
+import { applyGameFacts, createGame } from './game-facts'
+import {
+  cleanDraft,
+  DRAFT_TOOL,
+  matchGame,
+  toLexical,
+  type CleanGameFactsEntry,
+  type DraftAnswer,
+} from './draft-prompt'
 import { extractYouTubeIds, fetchPage, USER_AGENT } from './extract'
 import {
   applyLive,
@@ -63,6 +71,8 @@ export interface EventDoc {
   itemsSince?: string | null
   lastUpdateAt?: string | null
   discordMessageId?: string | null
+  /** The recap's game facts, applied to the games library when it's published. */
+  recapGameFacts?: CleanGameFactsEntry[] | null
 }
 
 const relId = (v: unknown): number | null =>
@@ -259,10 +269,16 @@ export async function publishRecap(ctx: ScoutContext, eventId: number): Promise<
   const recapId = relId(ev.recapArticle)
   if (!recapId) throw new Error('pas de résumé')
   if (!(await hasCover(ctx, recapId))) throw new Error(NO_COVER)
+  // Every date and console the showcase announced goes into the games library.
+  const facts = await applyGameFacts(ctx, ev.recapGameFacts ?? [])
   await ctx.payload.update({
     collection: 'articles',
     id: recapId,
-    data: { _status: 'published', status: 'published' } as never,
+    data: {
+      _status: 'published',
+      status: 'published',
+      ...(facts.ids.length ? { relatedGames: facts.ids.slice(0, 12) } : {}),
+    } as never,
     overrideAccess: true,
   })
   const recap = await articleUrl(ctx, recapId)
@@ -682,7 +698,7 @@ async function writeRecap(ctx: ScoutContext, settings: SettingsDoc, ev: EventDoc
     overrideAccess: true,
   })
   const recapId = Number(created.id)
-  await saveEvent(ctx, ev.id, { recapArticle: recapId })
+  await saveEvent(ctx, ev.id, { recapArticle: recapId, recapGameFacts: clean.game_facts })
   if (ctx.config.bot) {
     const adminUrl = `${ctx.config.serverUrl}/admin/collections/articles/${recapId}`
     await sendBotMessage(

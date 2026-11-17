@@ -1266,7 +1266,13 @@ game, the category, a person or a vague word). **Game:** the one game the
 story is *about* (a PS5 sales story citing GTA VI has none), taken from
 *Games* ("GTA 6" → Grand Theft Auto VI); when it isn't there, Sonnet gives the
 full official title and the scout creates the game with what the sources say
-(developer, publisher, platforms, genres) and the official image as its cover.
+(releases per console with their dates, developers, publishers, genres) and
+the official image as its cover. **Games library:** for every game the
+sources date or place officially (the story's, and each game of a lineup or a
+showcase), the draft lists the dates, consoles and studios; the card shows
+them (🎮 *Fiches jeux*) and *Publier* writes them into the games (a delay
+replaces that console's date, a new console adds a row, new games and
+companies are created). A rumour never changes a game page.
 Rejecting a draft deletes the tags and game created for it if nothing else
 uses them. The card lists the tags and the game ("fiche créée" when new); a
 revision picks them again. **Scores.** Out of 100: the news' significance (Haiku's estimate) ×0.6, +8
@@ -1301,6 +1307,8 @@ it came from, and the videos; with no image it says so in orange.
 | Category | Sonnet (news, leak, review, preview, conference, esport), else the triage's | never |
 | Cover image + alt text | official source's `og:image` (alt: the publisher's `og:image:alt`, else "Official image from <source>: <title>"), else a still of an official video it links ("Still from the official video: <title>"), else the game's cover or *Other images* (least used in 14 days), else the URL given in *Modifier* | no official image, no video and no game image: orange warning, Publish refused |
 | Game | Sonnet: from *Games*, or created when missing | story not about one game (hardware, service, company, several games) |
+| *Also covers* | on *Publier*: the games the story dates (game facts) | no official date or console in the sources |
+| The games' releases, studios, publishers | on *Publier*, from the draft's game facts (shown on the card) | rumours, or nothing stated |
 | Tags (2 to 5) | Sonnet: existing tags, plus at most 2 created | never in practice |
 | Author | *Scout settings → defaultAuthor* | never |
 | `aiAssisted` | always ticked | never |

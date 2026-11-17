@@ -278,3 +278,31 @@ test('games: the A-Z page, and the search shows games first', async ({ page }) =
   await page.goto('/fr/games')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jeux')
 })
+
+test('games library: console + year in the URL, upcoming, game and company pages', async ({ page }) => {
+  // Seed: Neon Drift is out on PC in 2024 and on Switch / Switch 2 in
+  // November 2025; Ironclad Arena comes out in 2028 (year only).
+  await page.goto('/games?platform=switch&year=2025')
+  const grid = page.locator('main ul')
+  await expect(grid.getByRole('link')).toHaveCount(1)
+  await expect(grid.getByRole('link', { name: /Neon Drift/ })).toContainText('November 2025 · Switch 2, Switch')
+
+  // The Switch release isn't 2024: changing the year in the menu empties the list.
+  await page.getByRole('combobox', { name: 'Year' }).selectOption('2024')
+  await expect(page).toHaveURL(/\/games\?platform=switch&year=2024$/)
+  await expect(page.getByText('No game matches these filters.')).toBeVisible()
+
+  await page.goto('/games?status=upcoming')
+  await expect(page.locator('main ul').getByRole('link')).toHaveCount(1)
+  await expect(page.locator('main ul').getByRole('link', { name: /Ironclad Arena/ })).toContainText('2028 · PC')
+
+  await page.goto('/fr/games?company=halfpipe-studio')
+  await expect(page.locator('main ul').getByRole('link', { name: /Neon Drift/ })).toContainText('20 juin 2024 · PC')
+
+  await page.goto('/game/neon-drift')
+  await expect(page.getByText('November 2025')).toBeVisible()
+  await page.getByRole('link', { name: 'Halfpipe Studio' }).first().click()
+  await expect(page).toHaveURL(/\/company\/halfpipe-studio$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Halfpipe Studio')
+  await expect(page.getByRole('link', { name: /Neon Drift/ }).first()).toContainText('Developer and publisher')
+})

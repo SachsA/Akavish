@@ -141,7 +141,7 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
           id: String(game.id),
           slug: game.slug ?? '',
           name: game.name ?? '',
-          platform: [],
+          platforms: [],
           genre: [],
         }
       : undefined,

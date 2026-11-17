@@ -4,12 +4,12 @@
 // rich text. No I/O here: unit-tested.
 
 import {
-  cleanNewGame,
+  cleanGameFacts,
   element,
-  GAME_GENRES,
-  GAME_PLATFORMS,
+  GAME_FACTS_PROPERTIES,
   paragraph,
   text,
+  type CleanGameFacts,
   type DraftAnswer,
 } from './draft-prompt'
 import { CATEGORIES, type Category } from './triage-prompt'
@@ -37,7 +37,7 @@ export interface LiveEntry {
 export interface LiveGame {
   game?: string
   game_is_new?: boolean
-  new_game?: DraftAnswer['new_game']
+  new_game?: CleanGameFacts
 }
 
 export interface LiveNote {
@@ -77,7 +77,7 @@ Rules:
 - Keep entries complete: when a new note or item brings a missing fact about an existing entry (a release date, platforms, a price, the official post, the trailer), update that entry (update_entries) with a full new headline and text that keep every fact already there, plus the new links. A note naming an entry ("#3 …") is about that entry; a note correcting an entry wins over everything else.
 - Items from the feeds: keep only announcements made at this event (official posts published during the show, outlets reporting what was just shown). Leave out unrelated news.
 - Links: only URLs given in the input. Label them briefly: "Trailer", "PlayStation Blog", "Steam page", "Xbox Wire". YouTube trailers first.
-- Game: for an entry about one game, give its full official title (copy it from the existing games list when it's there). When it isn't listed, set game_is_new and new_game with only what the inputs say (developer, publisher, platforms, genres). Hardware, a service, an award without a game: no game.
+- Game: for an entry about one game, give its full official title (copy it from the existing games list when it's there). When it isn't listed, set game_is_new and new_game with only what the inputs say (releases with consoles and dates as "YYYY-MM-DD", "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA"; developers, publishers, genres). Hardware, a service, an award without a game: no game.
 - intro: two or three sentences summing up the show so far (biggest announcements first). Refresh it each time.
 - title (first update only): "<Event>: every announcement, live" or similar, under 80 characters.
 - category: "conference" for a showcase, "esport" for a tournament.
@@ -114,12 +114,8 @@ export const LIVE_TOOL = {
             game_is_new: { type: 'boolean' },
             new_game: {
               type: 'object',
-              properties: {
-                developer: { type: 'string' },
-                publisher: { type: 'string' },
-                platforms: { type: 'array', items: { type: 'string', enum: [...GAME_PLATFORMS] } },
-                genres: { type: 'array', items: { type: 'string', enum: [...GAME_GENRES] } },
-              },
+              description: 'Only with game_is_new: what the inputs say about it.',
+              properties: { ...GAME_FACTS_PROPERTIES },
             },
           },
           required: ['headline', 'text', 'links'],
@@ -146,12 +142,8 @@ export const LIVE_TOOL = {
             game_is_new: { type: 'boolean' },
             new_game: {
               type: 'object',
-              properties: {
-                developer: { type: 'string' },
-                publisher: { type: 'string' },
-                platforms: { type: 'array', items: { type: 'string', enum: [...GAME_PLATFORMS] } },
-                genres: { type: 'array', items: { type: 'string', enum: [...GAME_GENRES] } },
-              },
+              description: 'Only with game_is_new: what the inputs say about it.',
+              properties: { ...GAME_FACTS_PROPERTIES },
             },
           },
           required: ['entry', 'links'],
@@ -250,7 +242,7 @@ export function cleanLive(
   const game = (g: Partial<LiveGame> | undefined): LiveGame => {
     const name = clip(g?.game, 120)
     return name
-      ? { game: name, game_is_new: g?.game_is_new === true, new_game: cleanNewGame(g?.new_game) }
+      ? { game: name, game_is_new: g?.game_is_new === true, new_game: cleanGameFacts(g?.new_game) }
       : {}
   }
   return {

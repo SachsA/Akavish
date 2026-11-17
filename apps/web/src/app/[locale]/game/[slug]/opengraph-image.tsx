@@ -1,5 +1,6 @@
 import { fetchGameBySlug } from '@/lib/payload'
 import { renderOgImage } from '@/lib/og'
+import { platformShort } from '@/lib/platforms'
 import { isLocale } from '@/lib/i18n/config'
 import { messagesFor } from '@/lib/i18n/messages'
 import { setRequestLocale } from '@/lib/i18n/server'
@@ -18,7 +19,9 @@ export default async function OgImage({ params }: { params: Promise<{ locale: st
   const t = messagesFor(isLocale(locale) ? locale : 'en')
   const game = await fetchGameBySlug(slug).catch(() => null)
 
-  const details = [game?.developer, game?.platform.join(' · ')].filter(Boolean).join(' — ')
+  const details = [game?.developers.map((c) => c.name).join(', '), game?.platforms.map(platformShort).join(' · ')]
+    .filter(Boolean)
+    .join(' — ')
 
   return renderOgImage({
     eyebrow: t.og.game,

@@ -135,11 +135,17 @@ const AUTHOR = {
   bio: 'Sample author created by pnpm seed. Replace or delete on a real database.',
 }
 
+// Releases as stored in Games (lib/game-releases.ts): released, ported later,
+// and one still to come, so the games library has something to filter.
 const GAMES = [
-  { name: 'Starfall Tactics', slug: 'starfall-tactics', platform: ['PC', 'PlayStation', 'Xbox'], genre: ['Strategy'], developer: 'Lumen Forge', publisher: 'Northlight Interactive' },
-  { name: 'Neon Drift', slug: 'neon-drift', platform: ['PC', 'Nintendo Switch'], genre: ['Sports', 'Action'], developer: 'Halfpipe Studio', publisher: 'Halfpipe Studio' },
-  { name: 'Hollow Crown', slug: 'hollow-crown', platform: ['PC', 'PlayStation'], genre: ['RPG'], developer: 'Ashgrove Games', publisher: 'Ember & Oak' },
-  { name: 'Ironclad Arena', slug: 'ironclad-arena', platform: ['PC'], genre: ['MOBA'], developer: 'Rivet Works', publisher: 'Rivet Works' },
+  { name: 'Starfall Tactics', slug: 'starfall-tactics', genre: ['Strategy'], developers: ['Lumen Forge'], publishers: ['Northlight Interactive'],
+    releases: [{ platforms: ['pc', 'ps5', 'xbox-series'], date: '2025-03-14', precision: 'day' }] },
+  { name: 'Neon Drift', slug: 'neon-drift', genre: ['Sports', 'Action'], developers: ['Halfpipe Studio'], publishers: ['Halfpipe Studio'],
+    releases: [{ platforms: ['pc'], date: '2024-06-20', precision: 'day' }, { platforms: ['switch', 'switch-2'], date: '2025-11-01', precision: 'month' }] },
+  { name: 'Hollow Crown', slug: 'hollow-crown', genre: ['RPG'], developers: ['Ashgrove Games'], publishers: ['Ember & Oak'],
+    releases: [{ platforms: ['pc', 'ps5'], date: '2023-10-05', precision: 'day' }] },
+  { name: 'Ironclad Arena', slug: 'ironclad-arena', genre: ['MOBA'], developers: ['Rivet Works'], publishers: ['Rivet Works'],
+    releases: [{ platforms: ['pc'], date: '2028-01-01', precision: 'year' }] },
 ] as const
 
 const TAGS = [
@@ -336,12 +342,30 @@ const run = async () => {
 
   // Games
   const gameIds = new Map<string, ID>()
+  const companyIds = new Map<string, ID>()
+  const company = async (name: string): Promise<ID> => {
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    let id = companyIds.get(name) ?? (await findIdBySlug(payload, 'companies' as never, slug))
+    if (!id) {
+      const created = await payload.create({ collection: 'companies' as never, data: { name } as never })
+      id = Number((created as unknown as { id: number }).id)
+    }
+    companyIds.set(name, id)
+    return id
+  }
   for (const game of GAMES) {
     let id = await findIdBySlug(payload, 'games', game.slug)
     if (!id) {
       const doc = await payload.create({
         collection: 'games',
-        data: { ...game, platform: [...game.platform], genre: [...game.genre] },
+        data: {
+          name: game.name,
+          slug: game.slug,
+          genre: [...game.genre],
+          releases: game.releases.map((r) => ({ ...r, platforms: [...r.platforms] })),
+          developers: await Promise.all(game.developers.map(company)),
+          publishers: await Promise.all(game.publishers.map(company)),
+        } as never,
       })
       id = Number(doc.id)
     }

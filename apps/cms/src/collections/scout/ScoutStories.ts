@@ -123,6 +123,13 @@ export const ScoutStories: CollectionConfig = {
         },
         { name: 'rejectionReason', type: 'text', admin: { readOnly: true } },
         {
+          // What the draft says about games (dates, consoles, studios),
+          // applied to the games library when it's published (scout/game-facts.ts).
+          name: 'gameFacts',
+          type: 'json',
+          admin: { readOnly: true, description: 'Fiches jeux mises à jour à la publication.' },
+        },
+        {
           // The current version's text as the scout wrote it, so a revision
           // shows the model what it wrote before the feedback.
           name: 'lastDraftText',

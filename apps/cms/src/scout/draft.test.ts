@@ -5,7 +5,8 @@ import {
   blocksToText,
   cleanDraft,
   draftPrompt,
-  cleanNewGame,
+  cleanGameFacts,
+  describeRelease,
   cleanNewTags,
   matchGame,
   matchTags,
@@ -348,26 +349,56 @@ describe('matchGame', () => {
   })
 })
 
-describe('cleanNewGame', () => {
-  it('keeps only platforms and genres the Games collection has', () => {
+describe('game facts', () => {
+  it('keeps known consoles and genres, parses the dates, drops unreadable ones', () => {
     expect(
-      cleanNewGame({
-        developer: ' Nintendo ',
-        platforms: ['Nintendo Switch', 'Switch 2', 'PC', 'PC'],
+      cleanGameFacts({
+        developers: [' Nintendo EPD ', 'Nintendo EPD', 'x'],
+        publishers: ['Nintendo'],
         genres: ['Adventure', 'Action'],
+        releases: [
+          { platforms: ['switch-2', 'Switch 2', 'pc', 'pc'], date: '2026-Q4' },
+          { platforms: ['ps5'], date: 'Late 2027' },
+          { date: 'TBA' },
+        ],
       }),
     ).toEqual({
-      developer: 'Nintendo',
-      publisher: undefined,
-      platforms: ['Nintendo Switch', 'PC'],
+      developers: ['Nintendo EPD'],
+      publishers: ['Nintendo'],
       genres: ['Action'],
+      releases: [
+        { platforms: ['pc', 'switch-2'], date: '2026-10-01', precision: 'quarter' },
+        { platforms: [], date: null, precision: 'tba' },
+      ],
     })
-    expect(cleanNewGame(undefined)).toEqual({
-      developer: undefined,
-      publisher: undefined,
-      platforms: [],
-      genres: [],
-    })
+    expect(cleanGameFacts(undefined)).toEqual({ developers: [], publishers: [], genres: [], releases: [] })
+  })
+
+  it('one entry per game, only with something in it, kept by cleanDraft', () => {
+    const facts = cleanDraft(
+      answer({
+        game_facts: [
+          { game: ' Metro 2039 ', releases: [{ platforms: ['pc', 'ps5', 'xbox-series'], date: '2027-02-04' }] },
+          { game: 'metro 2039', releases: [{ date: '2028' }] },
+          { game: 'Nothing Said', genres: ['RPG'] },
+          { game: 'New Game', is_new: true, publishers: ['Sega'] },
+        ],
+      }),
+      'news',
+    ).game_facts
+    expect(facts.map((f) => [f.game, f.is_new])).toEqual([
+      ['Metro 2039', false],
+      ['New Game', true],
+    ])
+    expect(facts[0].releases[0]).toEqual({ platforms: ['pc', 'ps5', 'xbox-series'], date: '2027-02-04', precision: 'day' })
+  })
+
+  it('describes a release for Discord', () => {
+    expect(describeRelease({ platforms: ['ps5', 'xbox-series'], date: '2026-11-19', precision: 'day' })).toBe(
+      'PlayStation 5, Xbox Series X|S · Nov 19, 2026',
+    )
+    expect(describeRelease({ platforms: [], date: '2027-07-01', precision: 'quarter' })).toBe('Q3 2027')
+    expect(describeRelease({ platforms: ['pc'], date: null, precision: 'tba' })).toBe('PC · TBA')
   })
 })
 

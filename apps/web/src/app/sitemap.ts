@@ -36,18 +36,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   // Pull dynamic content; tolerate a CMS hiccup by falling back to empty lists.
-  const [articles, authors, games, tags, used] = await Promise.all([
+  const [articles, authors, games, tags, companies, used] = await Promise.all([
     fetchAllArticleSlugs().catch(() => []),
     fetchAllEntitySlugs('authors').catch(() => []),
     fetchAllEntitySlugs('games').catch(() => []),
     fetchAllEntitySlugs('tags').catch(() => []),
+    fetchAllEntitySlugs('companies').catch(() => []),
     // If this one fails we can't tell which pages are empty, so it resolves to
     // `null` and the filter below lets everything through — a sitemap with a
     // few thin pages beats one that silently drops real ones.
     fetchUsedTaxonomyIds().catch(() => null),
   ])
 
-  // Only list author/game/tag pages that have at least one published article.
+  // Only list author and tag pages that have at least one published article.
+  // Game and company pages are the games library: each has its facts
+  // (releases, studios), so all of them are listed.
   // Generic so the result keeps the caller's full item type (slug, updatedAt…),
   // not just the `{ id }` the filter needs.
   const inUse = <T extends { id: string }>(items: T[], ids: Set<string> | undefined): T[] =>
@@ -83,7 +86,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticEntries,
     ...articleEntries,
     ...entityEntries(inUse(authors, used?.authors), 'author', 0.5),
-    ...entityEntries(inUse(games, used?.games), 'game', 0.5),
+    ...entityEntries(games, 'game', 0.5),
+    ...entityEntries(companies, 'company', 0.4),
     ...entityEntries(inUse(tags, used?.tags), 'tag', 0.4),
   ]
 }

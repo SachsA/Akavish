@@ -19,12 +19,14 @@ import {
   matchGame,
   matchTags,
   toLexical,
+  type CleanGameFactsEntry,
   type DraftAnswer,
   type DraftSource,
 } from './draft-prompt'
 import { duplicateReason } from './dedupe'
 import { fetchPage, type PageRead } from './extract'
 import { pickCover, uploadImage, videoCandidates, type Cover, type Video } from './media'
+import { applyGameFacts, createGame, dropOrphanCompanies, previewGameFacts } from './game-facts'
 import { periodStarts } from './schedule'
 
 const MAX_SOURCES = 6
@@ -38,6 +40,8 @@ type StoryWithDraft = StoryDoc & {
   feedback?: Array<{ text: string; version?: number }> | null
   lastDraftText?: string | null
   draftedAt?: string | null
+  /** The draft's game facts, applied to the games library on Publish. */
+  gameFacts?: CleanGameFactsEntry[] | null
 }
 
 const RANK = { official: 0, high: 1, variable: 2 } as const
@@ -116,7 +120,7 @@ export async function existingGames(
 ): Promise<Array<{ id: number; name: string }>> {
   const { docs } = await ctx.payload.find({
     collection: 'games',
-    limit: 300,
+    pagination: false,
     sort: 'name',
     depth: 0,
     overrideAccess: true,
@@ -125,26 +129,6 @@ export async function existingGames(
     id: Number(g.id),
     name: g.name,
   }))
-}
-
-/** Create a game the model named that isn't in Games yet. */
-export async function createGame(
-  ctx: ScoutContext,
-  name: string,
-  facts: DraftAnswer['new_game'],
-): Promise<number> {
-  const created = await ctx.payload.create({
-    collection: 'games',
-    data: {
-      name,
-      ...(facts?.developer ? { developer: facts.developer } : {}),
-      ...(facts?.publisher ? { publisher: facts.publisher } : {}),
-      ...(facts?.platforms?.length ? { platform: facts.platforms } : {}),
-      ...(facts?.genres?.length ? { genre: facts.genres } : {}),
-    } as never,
-    overrideAccess: true,
-  })
-  return Number(created.id)
 }
 
 /** The site's tags, for the model to pick from or add to. */
@@ -298,9 +282,15 @@ export async function draftStory(
   let gameId = matchGame(ctx.config.dryRun ? undefined : clean.game, story.game, gameList)
   let gameName = gameList.find((g) => g.id === gameId)?.name
   let newGameId: number | null = null
+  const sameGame = (name: string) =>
+    name.toLowerCase().replace(/[^a-z0-9]+/g, '') === clean.game?.toLowerCase().replace(/[^a-z0-9]+/g, '')
+  let gameFacts = clean.game_facts
   if (!gameId && clean.game && clean.game_is_new && !ctx.config.dryRun) {
-    newGameId = gameId = await createGame(ctx, clean.game, clean.new_game)
+    // The article links its game: a new one is created now, with what the
+    // sources say about it (deleted again if the draft is rejected).
+    newGameId = gameId = await createGame(ctx, clean.game, gameFacts.find((f) => sameGame(f.game)))
     gameName = clean.game
+    gameFacts = gameFacts.filter((f) => !sameGame(f.game))
   }
   const tagIds = matchTags(clean.tags, tagList, [story.game, gameName, clean.category])
   const tagNames = tagList.filter((t) => tagIds.includes(t.id)).map((t) => t.name)
@@ -401,11 +391,13 @@ export async function draftStory(
     tags: tagNames,
     game: gameName ? `${gameName}${newGameId ? ' (fiche créée)' : ''}` : undefined,
     photoHint: clean.photo_hint || undefined,
+    gameFacts: ctx.config.dryRun ? [] : await previewGameFacts(ctx, gameFacts),
     cover,
     imageError,
     feedback,
     storyUpdate: {
       lastDraftText: bodyText,
+      gameFacts,
       ...(feedback
         ? {
             feedback: [
@@ -457,6 +449,7 @@ async function imageOnly(
     category: art.category ?? story.category ?? 'news',
     sources: (await sourcesFor(ctx, storyId, false)).map((s) => ({ name: s.name, url: s.url })),
     videos: [],
+    gameFacts: await previewGameFacts(ctx, story.gameFacts ?? []),
     cover,
     imageError,
     imageChange: true,
@@ -480,6 +473,7 @@ async function postCard(
     tags?: string[]
     game?: string
     photoHint?: string
+    gameFacts?: string[]
     cover: Cover | null
     imageError?: string
     imageChange?: boolean
@@ -519,6 +513,7 @@ async function postCard(
     tags: c.tags,
     game: c.game,
     photoHint: c.photoHint,
+    gameFacts: c.gameFacts,
   }
   if (ctx.config.bot && !ctx.config.dryRun) {
     messageId = await sendBotMessage(
@@ -636,10 +631,25 @@ export async function publishStory(ctx: ScoutContext, storyId: number): Promise<
     : null
   if (!articleRef) throw new Error('no draft for this story')
   if (!(await currentCover(ctx, Number(articleRef)))) throw new Error(NO_COVER)
+  // What the story says about games goes into the library now that the
+  // editor validated it; the games it dates are listed as "Also covers".
+  const facts = await applyGameFacts(ctx, story.gameFacts ?? [])
+  const before = (await ctx.payload.findByID({
+    collection: 'articles',
+    id: articleRef,
+    depth: 0,
+    draft: true,
+    overrideAccess: true,
+  })) as unknown as { game?: unknown; relatedGames?: unknown[] | null }
+  const idOf = (v: unknown) => Number(v && typeof v === 'object' ? (v as { id: unknown }).id : v)
+  const main = before.game ? idOf(before.game) : null
+  const related = [...new Set([...(before.relatedGames ?? []).map(idOf), ...facts.ids])].filter(
+    (id) => id !== main,
+  )
   const article = await ctx.payload.update({
     collection: 'articles',
     id: articleRef,
-    data: { _status: 'published', status: 'published' },
+    data: { _status: 'published', status: 'published', relatedGames: related.slice(0, 12) } as never,
     overrideAccess: true,
   })
   await ctx.payload.update({
@@ -692,7 +702,17 @@ export async function rejectStory(
       await ctx.payload.delete({ collection: 'articles', id: articleRef, overrideAccess: true })
       const id = (v: number | { id: number }) => (typeof v === 'object' ? v.id : v)
       await dropOrphans(ctx, 'tags', (a.tags ?? []).map(id), 'tags', story.draftedAt)
-      if (a.game) await dropOrphans(ctx, 'games', [id(a.game)], 'game', story.draftedAt)
+      if (a.game && story.draftedAt) {
+        // The game's companies, created with it, go with it.
+        const g = (await ctx.payload
+          .findByID({ collection: 'games', id: id(a.game), depth: 0, overrideAccess: true })
+          .catch(() => null)) as { developers?: unknown[]; publishers?: unknown[] } | null
+        const companies = [...(g?.developers ?? []), ...(g?.publishers ?? [])].map((c) =>
+          id(c as number | { id: number }),
+        )
+        await dropOrphans(ctx, 'games', [id(a.game)], 'game', story.draftedAt)
+        await dropOrphanCompanies(ctx, companies, story.draftedAt)
+      }
     }
   }
 }
