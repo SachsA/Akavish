@@ -444,7 +444,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | --- | ------------------------------- | --------------------------------------------------------- |
 | ✅  | OG images for non-article pages | Done — shared `lib/og.tsx`; default + category/author/game/tag |
 | ✅  | Breadcrumb JSON-LD              | Done (2026-11-06) — `BreadcrumbList` on article (Home › Category › Article), category, author, game and tag pages (`lib/structured-data.ts`, unit-tested) |
-| P3  | Per-locale hreflang             | Only once i18n lands (area 6)                             |
+| ✅  | Per-locale hreflang             | Done (2026-11-16) with the French version: every page lists its `en`, `fr` and `x-default` alternates, canonical per language, sitemap with both languages |
 
 ## 3. CMS / back-office (`apps/cms`)
 
@@ -459,7 +459,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | ✅  | "Archived" status works      | Fixed 2026-11-07: `status` and Payload's `_status` shared one Postgres enum (draft/published), so saving Archived failed. `status` now has its own (`enumName`, migration `editorial_status_enum`) |
 | ✅  | Pagination                    | Done (2026-11-07) — category, tag, author and game pages: 24 per page, `?page=N` with Newer/Older links, canonical per page, junk or out-of-range pages are 404s (`lib/pagination.ts`, tested) |
 | ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
-| P3  | i18n fields                   | Localized title/content if going bilingual (area 6)                            |
+| ✅  | i18n fields                   | Done (2026-11-16) differently: a **Français** group on Articles (`fr`), `altFr` on Media, `nameFr` on Tags, `bioFr` on Authors, filled by the translation on publish (§6) |
 | ✅  | Review score                  | Done (2026-11-12) — `score` on Articles (reviews only, out of 10, halves allowed, migration `review_score`): shown next to the category on the article and on cards, and sent as a schema.org `Review` with its `Rating` for search engines. The mobile app doesn't show it yet Since 2026-11-18 the score is a coloured pill everywhere (`ScoreBadge`, `lib/score.ts`, tested): metallic gold with a ring for 10, green from lime at 7 to very deep at 9, amber at 5 to yellow at 6, red below (dark maroon toward 0), each a small gradient with white text, colours far apart so 7, 8 and 9 read differently; on the review, the cards and the lead story |
 | ✅  | Related games                 | Done (2026-11-12) — `relatedGames` on Articles ("Also covers", migration `related_games_gallery`): a recap lists on every game page it covers. Games also get `gallery` ("Other images") for the scout's cover rotation |
 
