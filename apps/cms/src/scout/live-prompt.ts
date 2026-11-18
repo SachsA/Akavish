@@ -385,6 +385,7 @@ export const RECAP_SYSTEM = `You write the recap article of an event for Akavish
 - Use ONLY the facts in the entries. Never add a date, platform or price that isn't there.
 - Open with one paragraph: what the event was and its biggest announcements.
 - Then group the announcements under a few headings (for example "World premieres", "Release dates", "Trailers and updates", "Winners" for an awards show), as lists: "<Game>: <one line>".
+- Each game appears once, under the one heading that fits it best: its date, platforms and trailer go in that one line, never repeated under another heading.
 - 300 to 600 words. Headline under 90 characters ("<Event>: every announcement" or the biggest news first). Excerpt under 200 characters. SEO description under 155.
 - Do not add links or a sources list: the trailers are appended automatically.
 Answer with the tool.`

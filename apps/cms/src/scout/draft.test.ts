@@ -372,6 +372,10 @@ describe('game facts', () => {
       ],
     })
     expect(cleanGameFacts(undefined)).toEqual({ developers: [], publishers: [], genres: [], releases: [] })
+    // "PC, PS6 and Xbox": a console the site doesn't know → the date without consoles, not "PC" alone.
+    expect(
+      cleanGameFacts({ releases: [{ platforms: ['pc', 'other'], date: '2028' }] }).releases,
+    ).toEqual([{ platforms: [], date: '2028-01-01', precision: 'year' }])
   })
 
   it('one entry per game, only with something in it, kept by cleanDraft', () => {

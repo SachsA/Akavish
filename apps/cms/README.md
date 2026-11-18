@@ -378,7 +378,9 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    **Game facts** (`game_facts`, `cleanGameFactsList`, `scout/game-facts.ts`):
    for every game the sources date or place officially (the story's and any
    other: a lineup, a showcase), its releases (consoles + "YYYY-MM-DD",
-   "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA"), developers, publishers, genres.
+   "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA"; a console the site doesn't list is
+   `other`, which keeps the date without consoles so "PC, PS6" never becomes
+   "PC" alone), developers, publishers, genres.
    Stored on the story (`gameFacts`), previewed on the card (🎮 Fiches jeux)
    and applied on *Publier* only: `mergeReleases` (per console the news
    wins; a vaguer date that agrees changes nothing; without consoles it moves

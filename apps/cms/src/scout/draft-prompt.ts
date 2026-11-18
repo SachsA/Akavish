@@ -109,8 +109,8 @@ export const GAME_FACTS_PROPERTIES = {
       properties: {
         platforms: {
           type: 'array',
-          items: { type: 'string', enum: [...PLATFORM_VALUES] },
-          description: `Consoles: ${PLATFORMS.map((p) => `${p.value} = ${p.label}`).join(', ')}. Empty when the sources don't say.`,
+          items: { type: 'string', enum: [...PLATFORM_VALUES, 'other'] },
+          description: `Consoles: ${PLATFORMS.map((p) => `${p.value} = ${p.label}`).join(', ')}. "other" when the sources name a console that isn't in this list (a console not out yet, a next generation): never leave such a console out, the list would look complete. Empty when the sources don't say.`,
         },
         date: {
           type: 'string',
@@ -487,9 +487,13 @@ export function cleanGameFacts(raw: unknown): CleanGameFacts {
     const row = (r && typeof r === 'object' ? r : {}) as Record<string, unknown>
     const when = parseReleaseDate(typeof row.date === 'string' ? row.date : '')
     if (!when) continue
-    const platforms = PLATFORM_VALUES.filter(
-      (p) => Array.isArray(row.platforms) && row.platforms.includes(p),
-    )
+    // A console the site doesn't know ("other": a next generation) makes the
+    // list partial: "PC" alone would read as PC only. The date is kept,
+    // without consoles, like a release whose consoles aren't given.
+    const partial = Array.isArray(row.platforms) && row.platforms.includes('other')
+    const platforms = partial
+      ? []
+      : PLATFORM_VALUES.filter((p) => Array.isArray(row.platforms) && row.platforms.includes(p))
     releases.push({ platforms, ...when })
   }
   return {
