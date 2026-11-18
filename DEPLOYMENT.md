@@ -335,6 +335,16 @@ NEXT_PUBLIC_R2_PUBLIC_URL=https://media.akavish.gg
 
 Redeploy both. New uploads now land in R2 and survive redeploys.
 
+> **Vercel's image quota.** The free plan includes 5,000 image transformations
+> a month (Vercel → *Usage* → *Image Optimization*; an email at 75 % and 100 %,
+> and past 100 % new transformations fail, so uncached images break). A
+> transformation is counted on every cache miss, and Next 16 keeps a copy only
+> 4 hours by default: since 2026-11-18 `next.config.ts` keeps them 31 days
+> (media URLs never change) with 4 widths, WebP only and one quality. If the
+> quota still runs short: Vercel Pro, or serve the sizes Payload already makes
+> (`thumbnail` 480, `card` 960, `hero` 1920, on `media.akavish.gg`) without
+> `next/image`'s optimizer.
+
 > **Set the same R2 values locally too.** The storage plugin adds a `prefix`
 > field to the media collection when it's enabled — if it's on in prod but off in
 > dev, the two schemas drift. Configuring both keeps migrations honest.

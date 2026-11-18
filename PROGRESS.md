@@ -653,6 +653,12 @@ checklist it walks through.
   `next/link` sends French readers to the English page. Server pages call
   `setRequestLocale((await params).locale)` first (and in `generateMetadata`),
   or `getMessages()` falls back to English.
+- **Vercel counts an image transformation on every cache miss** (free plan:
+  5,000 a month, 75 % used on 2026-11-18, past 100 % new ones fail). Next 16
+  keeps an optimized image 4 hours by default; `next.config.ts` now keeps it 31
+  days (`minimumCacheTTL`; media URLs never change) with 4 device widths, 3
+  small widths, WebP only, quality 75. Don't add widths, formats or qualities
+  without a reason. `DEPLOYMENT.md` §4b.
 - **List pagination uses plain `<a>` links, not `LocaleLink`** (fixed
   2026-11-18). List pages read their page from the path the proxy rewrites
   `?page=N` to (`/news/page/2`), so on French pages the client router took
