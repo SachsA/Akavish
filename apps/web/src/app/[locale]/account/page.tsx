@@ -82,7 +82,7 @@ export default async function AccountPage({
     slug: a.slug,
     title: a.title,
     category: a.category,
-    coverImage: a.coverImage,
+    coverImage: a.coverImageCard ?? a.coverImage,
     game: a.game?.name,
     savedAt: a.savedAt,
   }))

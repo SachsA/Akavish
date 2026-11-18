@@ -46,17 +46,12 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ['@akavish/ui', '@akavish/types', '@akavish/api-client'],
   images: {
-    // Vercel's free plan includes 5,000 image transformations a month, and a
-    // transformation is counted each time its cached copy is missing or
-    // expired (75 % used on 2026-11-18). Media URLs never change (a new upload
-    // gets a new file name), so a copy can stay cached a month: each image is
-    // transformed once per width per month. Fewer widths, one format and one
-    // quality keep the number of copies per image low.
-    minimumCacheTTL: 2_678_400, // 31 days
-    deviceSizes: [640, 828, 1200, 1920],
-    imageSizes: [128, 256, 384],
-    formats: ['image/webp'],
-    qualities: [75],
+    // No Vercel image optimization (2026-11-18): its free plan counts every
+    // transformation (5,000 a month, 75 % used in a week). Payload already
+    // makes WebP sizes at upload (thumbnail 480, card 960, hero 1920, square
+    // 256, on media.akavish.gg behind Cloudflare), and each <Image> gets the
+    // size it needs from `mediaUrl` (cards: card, article top: hero).
+    unoptimized: true,
     remotePatterns: [
       ...(cmsPattern ? [cmsPattern] : []),
       ...(mediaPattern ? [mediaPattern] : []),

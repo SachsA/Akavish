@@ -16,7 +16,8 @@ export function ArticleCard({ article }: { article: Article }) {
       <div className="relative aspect-video bg-zinc-800 overflow-hidden">
         {article.coverImage ? (
           <Image
-            src={article.coverImage}
+            // The 960 px size: the full one is for the article's top.
+            src={article.coverImageCard ?? article.coverImage}
             // Decorative: the title sits right next to it inside the same
             // link, so a real alt would make screen readers read it twice.
             alt=""

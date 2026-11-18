@@ -64,7 +64,7 @@ Last updated: **2026-11-06**.
 | ✅     | Legal pages (EN + FR)                 | `/privacy`, `/terms`, `/legal`, in French at `/fr/privacy`, `/fr/terms`, `/fr/legal` (the old `/fr/confidentialite`, `/fr/conditions`, `/fr/mentions-legales` 308 there since the i18n branch). Both texts are written by hand (`en.tsx` / `fr.tsx` next to each `page.tsx`). Facts (processors, publisher, date) live once in `lib/legal.ts` |
 | ✅     | RSS feeds                             | `/feed.xml` (English) and `/fr/feed.xml` (French, translated articles only, since 2026-11-16), latest 50 published articles (`lib/feed.ts`); `<link rel="alternate">` on the home |
 | ✅     | Loading states                        | Home only (`app/(home)/loading.tsx`). The other routes dropped theirs on 2026-11-07 so `notFound()` and slug redirects answer real 404/308 statuses (see gotchas) |
-| ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns` |
+| ✅     | `next/image` everywhere               | Replaced raw `<img>`; media URLs absolutised; CMS host allowed via `remotePatterns`. Since 2026-11-18 without Vercel's optimizer (`unoptimized`): each image is a size Payload made at upload (see gotchas) |
 | ✅     | `tsconfig` baseUrl fix                | `@/*` alias now resolves reliably at build                                          |
 | ✅     | Article page polish                   | Reading time (`lib/reading-time.ts`), share row (`ShareButtons`), "Read next" suggestions and prev/next nav (`fetchRelatedArticles` / `fetchAdjacentArticles`) |
 | ✅     | Share targets                         | X, Reddit, Bluesky, WhatsApp + copy link, plus the **Web Share API** sheet where supported. No Discord/Messenger buttons on purpose: Discord has no web share intent, and Messenger's Send Dialog needs a Facebook App ID and doesn't work on mobile — the native sheet covers both |
@@ -653,12 +653,14 @@ checklist it walks through.
   `next/link` sends French readers to the English page. Server pages call
   `setRequestLocale((await params).locale)` first (and in `generateMetadata`),
   or `getMessages()` falls back to English.
-- **Vercel counts an image transformation on every cache miss** (free plan:
-  5,000 a month, 75 % used on 2026-11-18, past 100 % new ones fail). Next 16
-  keeps an optimized image 4 hours by default; `next.config.ts` now keeps it 31
-  days (`minimumCacheTTL`; media URLs never change) with 4 device widths, 3
-  small widths, WebP only, quality 75. Don't add widths, formats or qualities
-  without a reason. `DEPLOYMENT.md` §4b.
+- **No Vercel image optimization** (2026-11-18): its free plan counts every
+  transformation (5,000 a month, 75 % used in the first week, past 100 % images
+  break). `images.unoptimized: true`; every `<Image>` gets a size Payload
+  already made, from `mediaUrl(…, 'card' | 'hero' | 'square')`: cards, search
+  and saved articles use `coverImageCard`, the article top and the home lead
+  `coverImage` (hero). A new `<Image>` must pick the smallest size that fits.
+  Possible later: WebP for every size (`formatOptions` on the Media sizes; some
+  PNG cards weigh 500 KB). `DEPLOYMENT.md` §4b.
 - **List pagination uses plain `<a>` links, not `LocaleLink`** (fixed
   2026-11-18). List pages read their page from the path the proxy rewrites
   `?page=N` to (`/news/page/2`), so on French pages the client router took

@@ -42,6 +42,17 @@ describe('mediaUrl', () => {
     const m = { url: '/small.jpg', sizes: { hero: { url: undefined } } }
     expect(mediaUrl(m, CMS, 'hero')).toBe(`${CMS}/small.jpg`)
   })
+
+  it('takes the next size down rather than a heavy original', () => {
+    const m = {
+      url: '/big.png',
+      filesize: 2_700_000,
+      sizes: { hero: { url: undefined }, card: { url: '/big-960x540.webp' } },
+    }
+    expect(mediaUrl(m, CMS, 'hero')).toBe(`${CMS}/big-960x540.webp`)
+    // A light original is still better than a smaller size.
+    expect(mediaUrl({ ...m, filesize: 200_000 }, CMS, 'hero')).toBe(`${CMS}/big.png`)
+  })
 })
 
 describe('mediaAlt', () => {

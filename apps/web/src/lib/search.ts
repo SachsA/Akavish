@@ -57,7 +57,8 @@ export function articleToSearchHit(article: Article): SearchHit {
     author: article.author?.name,
     game: article.game?.name,
     gameSlug: article.game?.slug,
-    coverImage: article.coverImage,
+    // A thumbnail in the results: the 960 px size, not the full one.
+    coverImage: article.coverImageCard ?? article.coverImage,
     publishedAt: article.publishedAt,
   }
 }

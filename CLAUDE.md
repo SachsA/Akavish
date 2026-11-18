@@ -213,6 +213,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   Saturdays, `GET /api/scout/report` for editors. Design and steps in
   `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.
+- **Images:** `next/image` with `images.unoptimized` (no Vercel quota):
+  pass the Payload size that fits (`coverImageCard` for cards, `coverImage`
+  = hero for an article's top, `mediaUrl(m, 'square')` for avatars), never the
+  original. PROGRESS gotchas.
 - **Site refresh:** the CMS pings the web's `POST /api/revalidate` after any
   public change (articles, games, tags, authors; `lib/revalidate-web.ts`),
   `REVALIDATE_SECRET` identical on both apps. Every web CMS fetch carries the

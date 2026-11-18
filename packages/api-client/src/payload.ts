@@ -34,12 +34,17 @@ export type PayloadMedia =
       altFr?: string | null
       /** Credit shown under the image (CMS Media `credit`). */
       credit?: string | null
-      sizes?: Record<string, { url?: string } | undefined>
+      sizes?: Record<string, { url?: string; filesize?: number | null } | undefined>
+      /** Bytes of the original. */
+      filesize?: number | null
     }
   | null
   | undefined
 
 export type MediaSize = 'thumbnail' | 'card' | 'hero' | 'square'
+
+/** Past this, an original is served only when no smaller size exists (the site doesn't resize images). */
+const HEAVY_ORIGINAL = 600_000
 
 /** A raw article doc, relationships populated (`depth=1`). */
 export interface PayloadArticle {
@@ -96,6 +101,15 @@ export function mediaUrl(
   if (preferred) {
     const sized = absolutise(m.sizes?.[preferred]?.url, cmsUrl)
     if (sized) return sized
+    // No such size (the original is smaller): the original, unless it's a
+    // heavy file (a 1,600 px PNG can weigh 2.7 MB), then the next size down.
+    if ((m.filesize ?? 0) > HEAVY_ORIGINAL) {
+      const order: MediaSize[] = ['hero', 'card', 'thumbnail']
+      for (const size of order.slice(order.indexOf(preferred) + 1)) {
+        const smaller = absolutise(m.sizes?.[size]?.url, cmsUrl)
+        if (smaller) return smaller
+      }
+    }
   }
   return absolutise(m.url, cmsUrl)
 }
