@@ -25,7 +25,7 @@ export function ConfidentialitePage() {
         de profils de lecteurs et nous n’utilisons aucun cookie publicitaire. Si
         vous créez un compte, nous conservons votre adresse e-mail pour vous
         permettre de vous reconnecter, ainsi que les articles que vous
-        enregistrez. Si vous vous abonnez à la newsletter, nous
+        enregistrez et les jeux que vous suivez. Si vous vous abonnez à la newsletter, nous
         conservons votre adresse e-mail pour vous l’envoyer, jusqu’à votre
         désinscription. Rien de plus.
       </p>
@@ -59,7 +59,7 @@ export function ConfidentialitePage() {
         Notre propre base de données (Neon) conserve une copie du nom, de
         l’adresse e-mail et de l’avatar de votre compte tels que Clerk les
         connaît, votre rôle sur le site (le badge affiché à côté de votre nom,
-        par exemple « Author ») et les articles que vous enregistrez, pour les
+        par exemple « Author »), les articles que vous enregistrez et les jeux que vous suivez, pour les
         afficher sur votre page de compte.
       </p>
       <p>

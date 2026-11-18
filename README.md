@@ -62,9 +62,9 @@ Published news also keeps the **games library** current: release dates per
 console, studios and publishers (`/games`, `/game/<slug>`, `/company/<slug>`). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately, as admin, editor or writer. A reader account saves articles
-(listed on `/account`), comments under articles (replies, likes, reports) and
+and follows games (listed on `/account`, with the news of those games), comments under articles (replies, likes, reports) and
 carries a role badge (Owner, Admin, Mod, Author); the CMS keeps those in
-`readers`, `bookmarks` and `comments` (`apps/cms/README.md` → Reader accounts,
+`readers`, `bookmarks`, `game-follows` and `comments` (`apps/cms/README.md` → Reader accounts,
 Comments; `DEPLOYMENT.md` §6.5b, §6.5c).
 
 In production, with the services around them:

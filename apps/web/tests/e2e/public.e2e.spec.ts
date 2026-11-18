@@ -301,6 +301,8 @@ test('games library: console + year in the URL, upcoming, game and company pages
 
   await page.goto('/game/neon-drift')
   await expect(page.getByText('November 2025')).toBeVisible()
+  // Follow is for signed-in readers: here it's the button that opens sign-in.
+  await expect(page.getByRole('button', { name: 'Follow' })).toBeVisible()
   await page.getByRole('link', { name: 'Halfpipe Studio' }).first().click()
   await expect(page).toHaveURL(/\/company\/halfpipe-studio$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Halfpipe Studio')

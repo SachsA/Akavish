@@ -15,6 +15,10 @@
 //       GET    /api/reader-api/saved       ?clerkId&articles=1,2,3   → { saved: [ids] }
 //       POST   /api/reader-api/bookmarks   { profile, articleId }    → save (verified accounts)
 //       DELETE /api/reader-api/bookmarks   { clerkId, articleId }    → unsave
+//       GET    /api/reader-api/follows     ?clerkId                  → followed games, newest follow first
+//       GET    /api/reader-api/following   ?clerkId&games=1,2,3      → { following: [ids] }
+//       POST   /api/reader-api/follows     { profile, gameId }       → follow (verified accounts)
+//       DELETE /api/reader-api/follows     { clerkId, gameId }       → unfollow
 //
 //  2. **Clerk's webhook** (POST /api/clerk/webhook, signed, CLERK_WEBHOOK_SECRET):
 //     user.created / user.updated refresh the profile, user.deleted deletes the
@@ -305,6 +309,96 @@ export async function removeBookmark(
   })
 }
 
+// ─── Followed games ─────────────────────────────────────────────────────────
+
+/** At most this many followed games per reader (a list, not a mirror of the library). */
+export const MAX_FOLLOWS = 200
+
+/** The reader's followed games (id, name, slug, cover), newest follow first. */
+export async function listFollows(payload: Payload, readerId: number | string) {
+  const { docs } = await payload.find({
+    collection: 'game-follows' as never,
+    where: { reader: { equals: readerId } },
+    sort: '-createdAt',
+    limit: MAX_FOLLOWS,
+    // game → its cover.
+    depth: 2,
+    overrideAccess: true,
+  })
+  return {
+    docs: docs.flatMap((f) => {
+      const g = (f as unknown as { game: unknown; createdAt: string }).game as
+        | { id: number; name: string; slug: string; cover?: unknown }
+        | null
+      return g && typeof g === 'object'
+        ? [{ followedAt: (f as unknown as { createdAt: string }).createdAt, game: { id: g.id, name: g.name, slug: g.slug, cover: g.cover ?? null } }]
+        : []
+    }),
+  }
+}
+
+/** Which of these games the reader follows. */
+export async function followedAmong(
+  payload: Payload,
+  readerId: number | string,
+  gameIds: Array<number | string>,
+): Promise<Array<number | string>> {
+  if (gameIds.length === 0) return []
+  const { docs } = await payload.find({
+    collection: 'game-follows' as never,
+    where: { and: [{ reader: { equals: readerId } }, { game: { in: gameIds } }] },
+    limit: gameIds.length,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return docs.map((f) => idOf((f as unknown as { game: unknown }).game)!).filter((v) => v !== null)
+}
+
+export type FollowOutcome = 'following' | 'not-found' | 'too-many'
+
+export async function addFollow(
+  payload: Payload,
+  readerId: number | string,
+  gameId: number | string,
+): Promise<FollowOutcome> {
+  const { totalDocs } = await payload.count({
+    collection: 'games',
+    where: { id: { equals: gameId } },
+    overrideAccess: true,
+  })
+  if (totalDocs === 0) return 'not-found'
+  if ((await followedAmong(payload, readerId, [gameId])).length > 0) return 'following'
+  const { totalDocs: count } = await payload.count({
+    collection: 'game-follows' as never,
+    where: { reader: { equals: readerId } },
+    overrideAccess: true,
+  })
+  if (count >= MAX_FOLLOWS) return 'too-many'
+  try {
+    await payload.create({
+      collection: 'game-follows' as never,
+      data: { reader: readerId, game: gameId } as never,
+      overrideAccess: true,
+    })
+  } catch (error) {
+    // Double click: the unique (reader, game) index refused the second one.
+    if ((await followedAmong(payload, readerId, [gameId])).length === 0) throw error
+  }
+  return 'following'
+}
+
+export async function removeFollow(
+  payload: Payload,
+  readerId: number | string,
+  gameId: number | string,
+): Promise<void> {
+  await payload.delete({
+    collection: 'game-follows' as never,
+    where: { and: [{ reader: { equals: readerId } }, { game: { equals: gameId } }] },
+    overrideAccess: true,
+  })
+}
+
 // ─── HTTP: the website's calls ──────────────────────────────────────────────
 
 export const json = (body: unknown, status = 200) =>
@@ -431,6 +525,53 @@ export const readerSavedHandler: PayloadHandler = async (req) => {
   // No reader yet means nothing saved yet: don't create one just for a lookup.
   const reader = await findReader(req.payload, clerkId)
   return json({ saved: reader ? await savedAmong(req.payload, reader.id, ids) : [] })
+}
+
+export const readerFollowsHandler: PayloadHandler = async (req) => {
+  const denied = checkSecret(req.headers)
+  if (denied) return denied
+
+  if (req.method === 'GET') {
+    const clerkId = req.searchParams.get('clerkId')
+    if (!isClerkId(clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    // No reader yet means nothing followed yet.
+    const reader = await findReader(req.payload, clerkId)
+    return json(reader ? await listFollows(req.payload, reader.id) : { docs: [] })
+  }
+
+  const body = await readBody(req)
+  const gameId = articleIdOf(body.gameId)
+
+  if (req.method === 'DELETE') {
+    // Unfollowing is always allowed, even for a banned or unverified account.
+    if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    if (gameId === null) return json({ error: 'invalid gameId' }, 400)
+    const reader = await ensureReader(req.payload, body.clerkId)
+    await removeFollow(req.payload, reader.id, gameId)
+    return json({ following: false })
+  }
+  // Following: a verified account (the full profile, not just an id).
+  const writer = await writerFrom(req.payload, body.profile)
+  if ('error' in writer) return writer.error
+  if (gameId === null) return json({ error: 'invalid gameId' }, 400)
+  const outcome = await addFollow(req.payload, writer.reader.id, gameId)
+  if (outcome === 'not-found') return json({ error: 'game not found' }, 404)
+  if (outcome === 'too-many') return json({ error: 'too-many' }, 409)
+  return json({ following: true })
+}
+
+export const readerFollowingHandler: PayloadHandler = async (req) => {
+  const denied = checkSecret(req.headers)
+  if (denied) return denied
+  const clerkId = req.searchParams.get('clerkId')
+  if (!isClerkId(clerkId)) return json({ error: 'invalid clerkId' }, 400)
+  const ids = (req.searchParams.get('games') ?? '')
+    .split(',')
+    .map(articleIdOf)
+    .filter((n): n is number => n !== null)
+    .slice(0, 50)
+  const reader = await findReader(req.payload, clerkId)
+  return json({ following: reader ? await followedAmong(req.payload, reader.id, ids) : [] })
 }
 
 // ─── Clerk's webhook ─────────────────────────────────────────────────────────

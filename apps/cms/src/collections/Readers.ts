@@ -55,12 +55,18 @@ export const Readers: CollectionConfig = {
         return data
       },
     ],
-    // Their saved articles go with them (GDPR: deleting an account deletes its
+    // Their saved articles and followed games go with them (GDPR: deleting an account deletes its
     // data). Before, not after: a saved article can't point to no reader.
     beforeDelete: [
       async ({ id, req }) => {
         await req.payload.delete({
           collection: 'bookmarks',
+          where: { reader: { equals: id } },
+          overrideAccess: true,
+          req,
+        })
+        await req.payload.delete({
+          collection: 'game-follows' as never,
           where: { reader: { equals: id } },
           overrideAccess: true,
           req,
@@ -142,7 +148,7 @@ export const Readers: CollectionConfig = {
       access: { update: adminsField },
       admin: {
         position: 'sidebar',
-        description: 'Can no longer comment, vote, report or save. Their comments stay unless you delete them.',
+        description: 'Can no longer comment, vote, report, save or follow. Their comments stay unless you delete them.',
       },
     },
     {
@@ -176,5 +182,22 @@ export const Bookmarks: CollectionConfig = {
   fields: [
     { name: 'reader', type: 'relationship', relationTo: 'readers', required: true, index: true },
     { name: 'article', type: 'relationship', relationTo: 'articles', required: true, index: true },
+  ],
+}
+
+/** Followed games ("Follow" on a game page, listed on /account with their news). */
+export const GameFollows: CollectionConfig = {
+  slug: 'game-follows',
+  labels: { singular: 'Followed game', plural: 'Followed games' },
+  admin: {
+    group: 'Readers',
+    defaultColumns: ['reader', 'game', 'createdAt'],
+    description: 'Games readers follow. Written by the site only.',
+  },
+  access: { create: () => false, read: admins, update: () => false, delete: admins },
+  indexes: [{ fields: ['reader', 'game'], unique: true }],
+  fields: [
+    { name: 'reader', type: 'relationship', relationTo: 'readers', required: true, index: true },
+    { name: 'game', type: 'relationship', relationTo: 'games', required: true, index: true },
   ],
 }

@@ -26,6 +26,17 @@ export const Games: CollectionConfig = {
       },
     ],
     afterChange: [revalidateAfterChange],
+    // Readers following it stop following it (the link can't point to nothing).
+    beforeDelete: [
+      async ({ id, req }) => {
+        await req.payload.delete({
+          collection: 'game-follows' as never,
+          where: { game: { equals: id } },
+          overrideAccess: true,
+          req,
+        })
+      },
+    ],
     afterDelete: [revalidateAfterDelete],
   },
   access: { read: () => true, delete: editors },

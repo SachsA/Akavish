@@ -75,6 +75,8 @@ interface ListParams {
   featured?: boolean
   /** A company's page: articles about its games, or with its tag. */
   company?: { gameIds: string[]; tagId?: string }
+  /** About one of these games (main game or Also covers): a reader's followed games. */
+  gameIds?: string[]
   /** Language of the articles; default: the page's (route handlers pass it). */
   locale?: Locale
 }
@@ -83,7 +85,7 @@ interface ListParams {
 export async function fetchArticles(
   params: ListParams = {}
 ): Promise<PaginatedResponse<Article>> {
-  const { page = 1, limit = 20, category, authorId, gameId, tagId, featured, company } = params
+  const { page = 1, limit = 20, category, authorId, gameId, tagId, featured, company, gameIds } = params
   const qs = new URLSearchParams({
     'where[status][equals]': 'published',
     sort: '-publishedAt',
@@ -99,6 +101,11 @@ export async function fetchArticles(
     qs.set('where[or][1][relatedGames][in]', gameId)
   }
   if (tagId) qs.set('where[tags][in]', tagId)
+  if (gameIds) {
+    const ids = gameIds.length ? gameIds.join(',') : '0'
+    qs.set('where[or][0][game][in]', ids)
+    qs.set('where[or][1][relatedGames][in]', ids)
+  }
   if (company) {
     // About one of its games, or tagged with the company.
     const ids = company.gameIds.length ? company.gameIds.join(',') : '0'

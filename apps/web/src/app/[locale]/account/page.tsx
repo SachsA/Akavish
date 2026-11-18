@@ -9,11 +9,22 @@ import { Pagination } from '@/components/Pagination'
 import { RoleBadge } from '@/components/RoleBadge'
 import { SavedArticleList, type SavedItem } from '@/components/SavedArticleList'
 import { parsePage } from '@/lib/pagination'
-import { fetchSavedArticles, profileFromUser, syncReader, type Reader } from '@/lib/readers'
+import {
+  fetchFollowedGames,
+  fetchSavedArticles,
+  profileFromUser,
+  syncReader,
+  type FollowedGame,
+  type Reader,
+} from '@/lib/readers'
+import { ArticleCard } from '@/components/ArticleCard'
+import { GameCard } from '@/components/GameCard'
+import { fetchArticles } from '@/lib/payload'
+import type { Article } from '@akavish/types'
 import { log } from '@/lib/log'
 
-// The signed-in reader's page: who they are (with their badge) and the
-// articles they saved. Protected by the middleware (`/account(.*)`), personal,
+// The signed-in reader's page: who they are (with their badge), the games
+// they follow with the latest news about them, and the articles they saved. Protected by the middleware (`/account(.*)`), personal,
 // so never cached and never indexed.
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +36,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 const SAVED_PER_PAGE = 12
+/** Latest articles about the followed games, under them. */
+const GAMES_NEWS = 6
 
 export default async function AccountPage({
   params,
@@ -48,9 +61,17 @@ export default async function AccountPage({
   // page still shows who you are, and says the rest is unavailable.
   let reader: Reader | null = null
   let saved: Awaited<ReturnType<typeof fetchSavedArticles>> | null = null
+  let games: FollowedGame[] | null = null
+  let gamesNews: Article[] = []
   try {
     reader = await syncReader(profile)
-    saved = await fetchSavedArticles(user.id, { page, limit: SAVED_PER_PAGE })
+    ;[saved, games] = await Promise.all([
+      fetchSavedArticles(user.id, { page, limit: SAVED_PER_PAGE }),
+      fetchFollowedGames(user.id).catch(() => null),
+    ])
+    if (games?.length) {
+      gamesNews = (await fetchArticles({ gameIds: games.map((g) => g.id), limit: GAMES_NEWS }).catch(() => null))?.data ?? []
+    }
   } catch (error) {
     log.warn('account page without reader data', { error })
   }
@@ -111,7 +132,41 @@ export default async function AccountPage({
         <AccountActions />
       </div>
 
-      <h2 className="text-xl font-bold text-white mb-4">
+      {page === 1 && (
+        <>
+          <h2 id="games" className="text-xl font-bold text-white mb-4 scroll-mt-24">
+            {t.account.games}
+            {games && games.length > 0 ? ` (${games.length})` : ''}
+          </h2>
+          {!games ? (
+            <p className="text-zinc-400 mb-12">{t.account.gamesUnavailable}</p>
+          ) : games.length === 0 ? (
+            <p className="text-zinc-400 mb-12">{t.account.nothingFollowed(t.follow.follow)}</p>
+          ) : (
+            <>
+              <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-10">
+                {games.map((g) => (
+                  <li key={g.id}>
+                    <GameCard slug={g.slug} name={g.name} cover={g.cover} />
+                  </li>
+                ))}
+              </ul>
+              <h2 className="text-xl font-bold text-white mb-4">{t.account.gamesNews}</h2>
+              {gamesNews.length === 0 ? (
+                <p className="text-zinc-400 mb-12">{t.account.noGamesNews}</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
+                  {gamesNews.map((a) => (
+                    <ArticleCard key={a.id} article={a} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      <h2 id="saved" className="text-xl font-bold text-white mb-4 scroll-mt-24">
         {t.account.saved}
         {saved && saved.total > 0 ? ` (${saved.total})` : ''}
       </h2>

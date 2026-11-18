@@ -9,7 +9,13 @@ import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 import {
   addBookmark,
+  addFollow,
   clerkWebhookHandler,
+  followedAmong,
+  listFollows,
+  readerFollowingHandler,
+  readerFollowsHandler,
+  removeFollow,
   deleteReader,
   ensureReader,
   listBookmarks,
@@ -34,6 +40,8 @@ let authorId: number | string
 let otherAuthorId: number | string
 let published: number | string
 let draft: number | string
+let gameA: number | string
+let gameB: number | string
 
 const richText = {
   root: {
@@ -86,6 +94,8 @@ beforeAll(async () => {
   otherAuthorId = (await payload.create({ collection: 'authors', data: { name: `${RUN} Other` } as never })).id
   published = await article('published', 'published')
   draft = await article('draft', 'draft')
+  gameA = (await payload.create({ collection: 'games', data: { name: `${RUN} Game A` } as never })).id
+  gameB = (await payload.create({ collection: 'games', data: { name: `${RUN} Game B` } as never })).id
 })
 
 afterAll(async () => {
@@ -93,6 +103,7 @@ afterAll(async () => {
   await payload.delete({ collection: 'articles', where: { title: { like: RUN } }, overrideAccess: true })
   await payload.delete({ collection: 'users', where: { email: { like: RUN } }, overrideAccess: true })
   await payload.delete({ collection: 'authors', where: { name: { like: RUN } }, overrideAccess: true })
+  await payload.delete({ collection: 'games', where: { name: { like: RUN } }, overrideAccess: true })
 })
 
 describe('reader accounts', () => {
@@ -226,6 +237,37 @@ describe('saved articles', () => {
   })
 })
 
+describe('followed games', () => {
+  it('follows existing games only, once, newest first, and unfollows', async () => {
+    const reader = await ensureReader(payload, clerk('f'))
+    expect(await addFollow(payload, reader.id, 99_999_999)).toBe('not-found')
+    expect(await addFollow(payload, reader.id, gameA)).toBe('following')
+    expect(await addFollow(payload, reader.id, gameA)).toBe('following') // double click
+    await addFollow(payload, reader.id, gameB)
+    const list = await listFollows(payload, reader.id)
+    expect(list.docs.map((d) => d.game.id)).toEqual([gameB, gameA])
+    expect(list.docs[0].game.name).toBe(`${RUN} Game B`)
+    await removeFollow(payload, reader.id, gameB)
+    expect(await followedAmong(payload, reader.id, [gameA, gameB])).toEqual([gameA])
+  })
+
+  it('a deleted game or reader takes its follows with it', async () => {
+    const reader = await ensureReader(payload, clerk('g'))
+    const temp = (await payload.create({ collection: 'games', data: { name: `${RUN} Temp` } as never })).id
+    await addFollow(payload, reader.id, temp)
+    await addFollow(payload, reader.id, gameA)
+    await payload.delete({ collection: 'games', id: temp, overrideAccess: true })
+    expect((await listFollows(payload, reader.id)).docs.map((d) => d.game.id)).toEqual([gameA])
+    await deleteReader(payload, clerk('g'))
+    const { totalDocs } = await payload.count({
+      collection: 'game-follows' as never,
+      where: { reader: { equals: reader.id } },
+      overrideAccess: true,
+    })
+    expect(totalDocs).toBe(0)
+  })
+})
+
 describe('the website endpoints (READER_API_SECRET)', () => {
   const SECRET = 'test-reader-secret'
   const req = (init: {
@@ -288,6 +330,26 @@ describe('the website endpoints (READER_API_SECRET)', () => {
       req({ method: 'DELETE', body: { clerkId: id, articleId: published } }),
     )
     expect(await unsave.json()).toEqual({ saved: false })
+  })
+
+  it('follows, answers "following?", lists and unfollows', async () => {
+    const id = clerk('wf')
+    const profile = { clerkId: id, emailVerified: true }
+    expect((await readerFollowsHandler(req({ body: { profile, gameId: 'x' } }))).status).toBe(400)
+    expect((await readerFollowsHandler(req({ body: { profile, gameId: 99_999_999 } }))).status).toBe(404)
+    expect(
+      (await readerFollowsHandler(req({ body: { profile: { clerkId: id, emailVerified: false }, gameId: gameA } }))).status,
+    ).toBe(403)
+    expect(await (await readerFollowsHandler(req({ body: { profile, gameId: gameA } }))).json()).toEqual({ following: true })
+    const following = await readerFollowingHandler(req({ method: 'GET', query: `clerkId=${id}&games=${gameA},${gameB}` }))
+    expect((await following.json()).following).toEqual([gameA])
+    const list = await (await readerFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
+    expect(list.docs.map((d: { game: { slug: string } }) => d.game.slug)).toEqual([`${RUN.toLowerCase()}-game-a`])
+    const off = await readerFollowsHandler(req({ method: 'DELETE', body: { clerkId: id, gameId: gameA } }))
+    expect(await off.json()).toEqual({ following: false })
+    // Nobody yet: nothing followed, and no reader created to say so.
+    const ghost = await readerFollowsHandler(req({ method: 'GET', query: `clerkId=${clerk('ghost2')}` }))
+    expect((await ghost.json()).docs).toEqual([])
   })
 
   it('does not create a reader just to answer "saved?"', async () => {

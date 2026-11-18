@@ -15,7 +15,7 @@ import { Games } from './collections/Games'
 import { Companies } from './collections/Companies'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
-import { Bookmarks, Readers } from './collections/Readers'
+import { Bookmarks, GameFollows, Readers } from './collections/Readers'
 import { CommentReports, Comments, CommentVotes, CommunitySettings } from './collections/Comments'
 import { ScoutItems } from './collections/scout/ScoutItems'
 import { ScoutSettings } from './collections/scout/ScoutSettings'
@@ -38,6 +38,8 @@ import {
 import {
   clerkWebhookHandler,
   readerBookmarksHandler,
+  readerFollowingHandler,
+  readerFollowsHandler,
   readerSavedHandler,
   readerSyncHandler,
 } from './lib/readers'
@@ -88,6 +90,7 @@ export default buildConfig({
     // Reader accounts (Clerk) and their saved articles (src/lib/readers.ts).
     Readers,
     Bookmarks,
+    GameFollows,
     // Comments under articles (src/lib/comments.ts).
     Comments,
     CommentVotes,
@@ -123,6 +126,10 @@ export default buildConfig({
     { path: '/reader-api/bookmarks', method: 'post', handler: readerBookmarksHandler },
     { path: '/reader-api/bookmarks', method: 'delete', handler: readerBookmarksHandler },
     { path: '/reader-api/saved', method: 'get', handler: readerSavedHandler },
+    { path: '/reader-api/follows', method: 'get', handler: readerFollowsHandler },
+    { path: '/reader-api/follows', method: 'post', handler: readerFollowsHandler },
+    { path: '/reader-api/follows', method: 'delete', handler: readerFollowsHandler },
+    { path: '/reader-api/following', method: 'get', handler: readerFollowingHandler },
     { path: '/reader-api/comments', method: 'get', handler: commentsHandler },
     { path: '/reader-api/comments', method: 'post', handler: commentsHandler },
     { path: '/reader-api/comments', method: 'delete', handler: commentsHandler },

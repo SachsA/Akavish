@@ -109,6 +109,12 @@ export const fr: Messages = {
     saved: 'Sauvegardé',
     failed: "Ça n'a pas marché, réessayez.",
   },
+  follow: {
+    follow: 'Suivre',
+    following: 'Suivi',
+    failed: "Ça n'a pas marché, réessayez.",
+    hint: 'Suivre ce jeu : ses actus se regroupent sur votre page de compte.',
+  },
   games: {
     title: 'Jeux',
     description:
@@ -210,10 +216,16 @@ export const fr: Messages = {
     title: 'Votre compte',
     reader: 'Lecteur',
     commentsAs: 'Vous commentez en tant que',
-    verifyEmail: 'Vérifiez votre adresse e-mail (Gérer le compte) pour sauvegarder des articles et commenter.',
+    verifyEmail: 'Vérifiez votre adresse e-mail (Gérer le compte) pour sauvegarder des articles, suivre des jeux et commenter.',
     authorPage: "Votre page d'auteur",
     saved: 'Articles sauvegardés',
     savedMenu: 'Articles sauvegardés',
+    gamesMenu: 'Jeux suivis',
+    games: 'Jeux suivis',
+    gamesNews: 'Les actus de vos jeux',
+    nothingFollowed: (follow: string) => `Aucun jeu pour l'instant. Cliquez sur ${follow} sur la page d'un jeu et ses actus se regrouperont ici.`,
+    noGamesNews: "Aucun article sur vos jeux pour l'instant.",
+    gamesUnavailable: 'Vos jeux suivis sont indisponibles pour le moment. Réessayez dans un instant.',
     unavailable: 'Vos articles sauvegardés sont indisponibles pour le moment. Réessayez dans un instant.',
     nothingSaved: (save: string) =>
       `Rien de sauvegardé pour l'instant. Cliquez sur ${save} sur n'importe quel article et il vous attendra ici.`,
@@ -295,6 +307,7 @@ export const fr: Messages = {
     'not-found': "Ce commentaire ou cet article n'existe plus.",
     'reply-target': "On ne peut plus répondre à ce commentaire.",
     'bad-reason': 'Choisissez une raison.',
+    'too-many': 'Vous suivez déjà 200 jeux, le maximum. Arrêtez d’en suivre un d’abord.',
     unavailable: 'Indisponible pour le moment. Réessayez dans un instant.',
     'signed-out': "Connectez-vous d'abord.",
     'rate-limited': 'Trop de requêtes, doucement.',

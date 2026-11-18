@@ -8,7 +8,7 @@
 // Never import this from a client component.
 
 import type { Article } from '@akavish/types'
-import { mapArticle, type PayloadArticle } from '@akavish/api-client/payload'
+import { mapArticle, mediaUrl, type PayloadArticle, type PayloadMedia } from '@akavish/api-client/payload'
 import type { ReaderRole } from './roles'
 import { log } from './log'
 
@@ -168,6 +168,46 @@ export async function saveArticle(profile: ReaderProfile, articleId: string): Pr
 
 export async function unsaveArticle(clerkId: string, articleId: string): Promise<void> {
   await call('bookmarks', { method: 'DELETE', body: { clerkId, articleId: Number(articleId) } })
+}
+
+// ─── Followed games ─────────────────────────────────────────────────────────
+
+export interface FollowedGame {
+  id: string
+  slug: string
+  name: string
+  cover?: string
+  followedAt: string
+}
+
+/** The reader's followed games, newest follow first. */
+export async function fetchFollowedGames(clerkId: string): Promise<FollowedGame[]> {
+  const res = await call<{
+    docs: { followedAt: string; game: { id: number; slug: string; name: string; cover: PayloadMedia } }[]
+  }>('follows', { query: new URLSearchParams({ clerkId }) })
+  return res.docs.map((d) => ({
+    id: String(d.game.id),
+    slug: d.game.slug,
+    name: d.game.name,
+    cover: mediaUrl(d.game.cover, CMS_URL, 'card'),
+    followedAt: d.followedAt,
+  }))
+}
+
+/** Which of these game ids the reader follows. */
+export async function followedGameIds(clerkId: string, gameIds: string[]): Promise<string[]> {
+  const query = new URLSearchParams({ clerkId, games: gameIds.join(',') })
+  const { following } = await call<{ following: Array<number | string> }>('following', { query })
+  return following.map(String)
+}
+
+/** Following needs the full profile: the CMS checks the email is verified. */
+export async function followGame(profile: ReaderProfile, gameId: string): Promise<void> {
+  await call('follows', { method: 'POST', body: { profile, gameId: Number(gameId) } })
+}
+
+export async function unfollowGame(clerkId: string, gameId: string): Promise<void> {
+  await call('follows', { method: 'DELETE', body: { clerkId, gameId: Number(gameId) } })
 }
 
 // ─── Comments (apps/cms/src/lib/comments.ts) ────────────────────────────────

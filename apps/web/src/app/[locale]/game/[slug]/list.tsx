@@ -14,6 +14,7 @@ import { ArticleCard } from '@/components/ArticleCard'
 import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
 import { Pagination } from '@/components/Pagination'
 import Link from '@/components/LocaleLink'
+import { FollowButton } from '@/components/FollowButton'
 import { ReleaseDate } from '@/components/ReleaseDate'
 import { formatPlatforms } from '@/lib/game-library'
 import { platformLabel, platformShort } from '@/lib/platforms'
@@ -122,7 +123,10 @@ export async function ListPage({
           </div>
         )}
         <div className="space-y-4 min-w-0">
-          <h1 className="text-4xl font-black tracking-tight text-white">{game.name}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-4xl font-black tracking-tight text-white">{game.name}</h1>
+            <FollowButton gameId={game.id} />
+          </div>
           {(game.platforms.length > 0 || game.genre.length > 0) && (
             <div className="flex flex-wrap gap-2">
               {game.platforms.map((p) => (

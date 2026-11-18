@@ -762,9 +762,10 @@ tests). The mobile app has no reader accounts yet.
 ### 6.5b Reader accounts: saved articles, roles, Clerk webhook
 
 Since 2026-11-13 a reader account does something: **Save** on an article page,
-the list on `/account`, and a role shown as a badge (Owner, Admin, Mod,
-Author). The CMS keeps one `readers` row per Clerk account and their saved
-articles (`apps/cms/src/lib/readers.ts`); the site reaches it server to server.
+**Follow** on a game page (since 2026-11-18), both listed on `/account`, and a
+role shown as a badge (Owner, Admin, Mod, Author). The CMS keeps one `readers`
+row per Clerk account, their saved articles and followed games
+(`apps/cms/src/lib/readers.ts`); the site reaches it server to server.
 
 1. **Shared secret.** `openssl rand -hex 32`, then the **same value** as
    `READER_API_SECRET` on **Railway** and on **Vercel** (Production), redeploy
@@ -774,7 +775,7 @@ articles (`apps/cms/src/lib/readers.ts`); the site reaches it server to server.
    `user.created`, `user.updated`, `user.deleted`. Copy the endpoint's
    **Signing secret** (`whsec_…`) into `CLERK_WEBHOOK_SECRET` on **Railway**,
    redeploy. It keeps names and avatars in sync, and deleting an account in
-   Clerk deletes the reader and their saved articles (what `/privacy`
+   Clerk deletes the reader, their saved articles and followed games (what `/privacy`
    promises). Without it, readers are still created on their first visit to
    `/account` or first Save, but a deleted account would leave its row behind.
    Check: Clerk → the endpoint → **Send example** of `user.updated` → 200.
