@@ -1129,8 +1129,29 @@ describe('scout step 2 (drafts)', () => {
           overrideAccess: true,
         })
       ).docs[0] as unknown as Record<string, any> | undefined
-    const gamesBefore = (await payload.count({ collection: 'games', overrideAccess: true }))
-      .totalDocs
+    // Only this test's games: other test files run at the same time on the
+    // same database and add or delete their own.
+    const scoutGames = async () =>
+      JSON.stringify(
+        (
+          await payload.find({
+            collection: 'games',
+            where: { name: { like: 'Scouttest' } },
+            sort: 'id',
+            pagination: false,
+            depth: 0,
+            overrideAccess: true,
+          })
+        ).docs,
+      )
+    const rehearsalGame = async () =>
+      (
+        await payload.count({
+          collection: 'games',
+          where: { name: { equals: 'Scouttest Rehearsal Quest' } },
+          overrideAccess: true,
+        })
+      ).totalDocs
     // The daily cap is spent: a live runs anyway (the month is what stops it).
     const capped = (): ScoutContext => ({
       ...ctx2(),
@@ -1162,9 +1183,7 @@ describe('scout step 2 (drafts)', () => {
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain('RÉPÉTITION')
     expect(discordPosts.at(-1)!.url).toContain('/channels/77/')
     // No game page for a rehearsal.
-    expect((await payload.count({ collection: 'games', overrideAccess: true })).totalDocs).toBe(
-      gamesBefore,
-    )
+    expect(await rehearsalGame()).toBe(0)
 
     // "Publier le live": the flow switches, the article stays a draft.
     const pub = await (
@@ -1196,12 +1215,7 @@ describe('scout step 2 (drafts)', () => {
     expect(card).toContain(`scout:evpurge:${ev.id}`)
     expect(discordPosts.at(-1)!.url).toContain('/channels/77/')
     expect(card).toContain('Fiches jeux')
-    const gamesNow = await payload.find({
-      collection: 'games',
-      pagination: false,
-      depth: 0,
-      overrideAccess: true,
-    })
+    const gamesNow = await scoutGames()
     const recap = await (
       await interact({ type: 3, ...owner, data: { custom_id: `scout:evrecap:${ev.id}` } })
     ).json()
@@ -1212,13 +1226,8 @@ describe('scout step 2 (drafts)', () => {
       (await payload.findByID({ collection: 'articles', id: recapId, overrideAccess: true }))
         ._status,
     ).toBe('draft')
-    const gamesAfter = await payload.find({
-      collection: 'games',
-      pagination: false,
-      depth: 0,
-      overrideAccess: true,
-    })
-    expect(JSON.stringify(gamesAfter.docs)).toBe(JSON.stringify(gamesNow.docs))
+    expect(await scoutGames()).toBe(gamesNow)
+    expect(await rehearsalGame()).toBe(0)
 
     // "Supprimer la répétition": articles, image, tag and event gone.
     const purged = await (
