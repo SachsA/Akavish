@@ -205,7 +205,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (`live.ts`): `/live` on Discord, one live article updated every 5 min,
   auto-published only after the editor's first click, recap drafted on stop;
   `test:True` = a rehearsal (drafts only, no game changes, deleted with a button);
-  live and recap check the monthly budget only. Weekly report (`report.ts`): Discord on
+  live and recap check the monthly budget only; `SCOUT_DISCORD_LIVE_CHANNEL_ID`
+  gives `/live` its own Discord channel. Weekly report (`report.ts`): Discord on
   Saturdays, `GET /api/scout/report` for editors. Design and steps in
   `PROGRESS.md`, setup in `DEPLOYMENT.md` §11. Fetch as an identified
   bot only (no browser User-Agent), no Reddit, X through its paid API only.

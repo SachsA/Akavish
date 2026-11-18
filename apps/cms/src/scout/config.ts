@@ -9,6 +9,8 @@ export interface DiscordBotConfig {
   /** Verifies that interactions (button clicks) really come from Discord. */
   publicKey: string
   channelId: string
+  /** Optional: a channel of its own for event mode (/live cards, updates, recaps). */
+  liveChannelId?: string
   /** The only Discord user whose clicks are accepted. */
   ownerId: string
 }
@@ -49,6 +51,9 @@ export function scoutConfig(env: Record<string, string | undefined> = process.en
           publicKey: env.DISCORD_PUBLIC_KEY,
           channelId: env.SCOUT_DISCORD_CHANNEL_ID,
           ownerId: env.SCOUT_DISCORD_OWNER_ID,
+          ...(env.SCOUT_DISCORD_LIVE_CHANNEL_ID
+            ? { liveChannelId: env.SCOUT_DISCORD_LIVE_CHANNEL_ID }
+            : {}),
         }
       : undefined
   return {

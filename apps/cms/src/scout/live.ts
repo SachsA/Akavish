@@ -82,6 +82,15 @@ export interface EventDoc {
   rehearsal?: boolean | null
 }
 
+/**
+ * The bot, posting in the conferences channel when there is one
+ * (SCOUT_DISCORD_LIVE_CHANNEL_ID), else in the scout's channel.
+ */
+const liveBot = (ctx: ScoutContext) =>
+  ctx.config.bot
+    ? { ...ctx.config.bot, channelId: ctx.config.bot.liveChannelId || ctx.config.bot.channelId }
+    : undefined
+
 /** Whether the live page is public: published, and not a rehearsal. */
 const isPublic = (ev: EventDoc) => !!ev.published && !ev.rehearsal
 const tag = (ev: EventDoc) => (ev.rehearsal ? '🧪 RÉPÉTITION · ' : '')
@@ -688,7 +697,8 @@ async function updateEvent(
     ...(cover ? { cover } : {}),
   }
 
-  if (ctx.config.bot) {
+  const bot = liveBot(ctx)
+  if (bot) {
     if (!ev.published) {
       // One card, kept up to date, until the editor publishes.
       const msg = card(ev, {
@@ -699,20 +709,18 @@ async function updateEvent(
         hasCover: !!cover,
       })
       if (ev.discordMessageId) {
-        await editBotMessage(ctx.config.bot, ev.discordMessageId, msg, ctx.fetch).catch(
-          async () => {
-            update.discordMessageId = await sendBotMessage(ctx.config.bot!, msg, ctx.fetch)
-          },
-        )
+        await editBotMessage(bot, ev.discordMessageId, msg, ctx.fetch).catch(async () => {
+          update.discordMessageId = await sendBotMessage(bot, msg, ctx.fetch)
+        })
       } else {
-        update.discordMessageId = await sendBotMessage(ctx.config.bot, msg, ctx.fetch)
+        update.discordMessageId = await sendBotMessage(bot, msg, ctx.fetch)
       }
     } else if (applied.added.length || applied.changed) {
       const rev = (ev.rev ?? 0) + 1
       update.rev = rev
       update.previous = { intro: ev.intro ?? '', entries }
       await sendBotMessage(
-        ctx.config.bot,
+        bot,
         {
           content: `${tag(ev)}🔴 MAJ live « ${ev.name} » :\n${[
             ...applied.added.map(
@@ -786,12 +794,13 @@ async function writeRecap(ctx: ScoutContext, settings: SettingsDoc, ev: EventDoc
   })
   const recapId = Number(created.id)
   await saveEvent(ctx, ev.id, { recapArticle: recapId, recapGameFacts: clean.game_facts })
-  if (ctx.config.bot) {
+  const bot = liveBot(ctx)
+  if (bot) {
     const adminUrl = `${ctx.config.serverUrl}/admin/collections/articles/${recapId}`
     // What "Publier le résumé" will change in the games library, like a draft's card.
     const facts = await previewGameFacts(ctx, clean.game_facts).catch(() => [] as string[])
     await sendBotMessage(
-      ctx.config.bot,
+      bot,
       {
         content: `${tag(ev)}📋 **Résumé de « ${ev.name} »** prêt (${entries.length} annonces).`,
         embeds: [
@@ -856,11 +865,11 @@ async function alertFailure(ctx: ScoutContext, ev: EventDoc, err: unknown): Prom
   const key = `${ev.id}:${message.slice(0, 80)}`
   if (lastAlert.key === key && ctx.now.getTime() - lastAlert.at < 30 * 60_000) return
   lastAlert = { key, at: ctx.now.getTime() }
-  await ctx
-    .notify({
-      content: `${tag(ev)}⚠️ Live « ${ev.name} » : la mise à jour a échoué (${message.slice(0, 300)}). Nouvel essai dans 5 min ; tes /live add sont gardés.`,
-    })
-    .catch(() => {})
+  const content = `${tag(ev)}⚠️ Live « ${ev.name} » : la mise à jour a échoué (${message.slice(0, 300)}). Nouvel essai dans 5 min ; tes /live add sont gardés.`
+  const bot = liveBot(ctx)
+  await (bot ? sendBotMessage(bot, { content }, ctx.fetch) : ctx.notify({ content })).catch(
+    () => {},
+  )
 }
 
 /** The scout run's live step: update the running event, close it when asked. */
@@ -897,9 +906,10 @@ export async function runLive(ctx: ScoutContext, settings: SettingsDoc): Promise
       })
     }
     await writeRecap(ctx, settings, { ...fresh, status: 'ended' })
-    if (fresh.discordMessageId && ctx.config.bot && !fresh.published) {
+    const bot = liveBot(ctx)
+    if (fresh.discordMessageId && bot && !fresh.published) {
       await editBotMessage(
-        ctx.config.bot,
+        bot,
         fresh.discordMessageId,
         {
           content: `${tag(fresh)}⏹️ Live « ${fresh.name} » terminé sans avoir été publié. Résumé en brouillon ci-dessous.`,
@@ -909,9 +919,9 @@ export async function runLive(ctx: ScoutContext, settings: SettingsDoc): Promise
       ).catch(() => {})
     }
     // A rehearsal with no announcement has no recap card: its delete button is here.
-    if (fresh.rehearsal && !(fresh.entries ?? []).length && ctx.config.bot) {
+    if (fresh.rehearsal && !(fresh.entries ?? []).length && bot) {
       await sendBotMessage(
-        ctx.config.bot,
+        bot,
         {
           content: `🧪 Répétition « ${fresh.name} » terminée, sans annonce donc sans résumé.`,
           components: [

@@ -1243,6 +1243,7 @@ Automatic drafts are **off** until you tick *Scout settings → draftsEnabled*.
 | `DISCORD_PUBLIC_KEY` | — | Same page. Checks that clicks really come from Discord. |
 | `SCOUT_DISCORD_CHANNEL_ID` | — | The private channel (Developer Mode → Copy Channel ID). |
 | `SCOUT_DISCORD_OWNER_ID` | — | Your user ID: only your clicks count. |
+| `SCOUT_DISCORD_LIVE_CHANNEL_ID` | the scout channel | Optional: a channel for event mode only (`#scout-conference`): live cards, live updates, recaps, failed-update alerts. Drafts, digests and budget alerts stay in the scout channel. |
 
 **Step 2, the Discord bot (once).** A webhook can only post; buttons need a
 bot. Discord calls the CMS when you click, at `/api/scout/discord`.
@@ -1432,6 +1433,17 @@ big show: about 20 minutes and well under 1 $.
    🎮 Fiches jeux. **Publier le résumé** lists what it would change; check the
    recap in /admin.
 5. **Supprimer la répétition**. /admin → *Scout events* is empty of it.
+**Conferences channel (optional, set up 2026-11-18).** So a show doesn't
+drown the day's drafts: Discord → create `#scout-conference` (private, like
+the scout channel) → its settings → *Permissions* → add the bot's role with
+*View Channel*, *Send Messages*, *Embed Links*, *Read Message History* →
+right-click the channel → *Copy Channel ID* → Railway → CMS → *Variables* →
+`SCOUT_DISCORD_LIVE_CHANNEL_ID` = that ID (Railway redeploys). From then on the
+live card, the "MAJ live" messages, the recap and the failure alerts go
+there. Type the `/live` commands there too (they work in any channel, the
+answers are only visible to you). The drafts the scout writes about single
+announcements during the show stay in the scout channel, with the other news.
+
 Setup: none. The CMS registers the `/live` command with Discord at start-up
 (log line `[scout] Discord /live command registered`). If `/live` doesn't show
 in Discord, the bot was invited without the commands scope: reinvite it with
@@ -1535,6 +1547,7 @@ The site is in English and French (`/fr`). Interface text lives in the web
 | `DISCORD_BOT_TOKEN`   | `…`                              | **Secret**, scout bot (§11)         |
 | `DISCORD_APPLICATION_ID` / `DISCORD_PUBLIC_KEY` | `…` | Scout bot, developer portal (§11) |
 | `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |
+| `SCOUT_DISCORD_LIVE_CHANNEL_ID` | `…` (optional) | Channel for `/live` (cards, updates, recaps); unset = the scout channel (§11) |
 | `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
 | `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
 | `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |

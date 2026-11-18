@@ -446,7 +446,10 @@ decides every `_status` / `draft:` write, so its articles stay drafts;
 returns the `previewGameFacts` lines instead of publishing; no translation
 queued; `scout:evpurge:<event>` (`purgeRehearsal`, refused on a real event)
 deletes the articles, the cover when no article uses it, the tag when no
-article uses it, and the event. Int test: *event mode rehearsal*.
+article uses it, and the event. Int test: *event mode rehearsal*. Every
+event-mode post goes through `liveBot(ctx)`: the bot with
+`SCOUT_DISCORD_LIVE_CHANNEL_ID` as its channel when set (a `#scout-conference`
+channel), else the scout channel.
 
 **Discord validation** (`discord-bot.ts`, `interactions.ts`). Each draft is a
 bot message with **Publier** / **Modifier** / **Rejeter** and a link to

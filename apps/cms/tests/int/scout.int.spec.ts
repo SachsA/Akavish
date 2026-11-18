@@ -1138,6 +1138,8 @@ describe('scout step 2 (drafts)', () => {
         SCOUT_ENABLED: 'true',
         ANTHROPIC_API_KEY: 'test-key',
         SCOUT_DAILY_BUDGET_USD: '0',
+        // Event mode posts in its own channel when there is one.
+        SCOUT_DISCORD_LIVE_CHANNEL_ID: '77',
         ...BOT_ENV,
       }),
     })
@@ -1158,6 +1160,7 @@ describe('scout step 2 (drafts)', () => {
     const articleId = Number(ev.article)
     const coverId = Number(ev.cover)
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain('RÉPÉTITION')
+    expect(discordPosts.at(-1)!.url).toContain('/channels/77/')
     // No game page for a rehearsal.
     expect((await payload.count({ collection: 'games', overrideAccess: true })).totalDocs).toBe(
       gamesBefore,
@@ -1191,6 +1194,7 @@ describe('scout step 2 (drafts)', () => {
     )
     const card = JSON.stringify(discordPosts.at(-1)!.body)
     expect(card).toContain(`scout:evpurge:${ev.id}`)
+    expect(discordPosts.at(-1)!.url).toContain('/channels/77/')
     expect(card).toContain('Fiches jeux')
     const gamesNow = await payload.find({
       collection: 'games',
