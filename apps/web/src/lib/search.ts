@@ -24,6 +24,13 @@ export interface GameHit {
   cover?: string
 }
 
+/** A console's or a studio's page the query names ("ps5", "rockstar"). */
+export interface EntityHit {
+  kind: 'platform' | 'company'
+  path: string
+  name: string
+}
+
 /** What /api/search returns. `facets` and `games` only when asked for. */
 export interface SearchResponse {
   query: string
@@ -36,6 +43,8 @@ export interface SearchResponse {
   facets?: Record<string, number>
   /** Matching games (`?games=1`). */
   games?: GameHit[]
+  /** Matching consoles and studios (with `?games=1`), shown before the games. */
+  entities?: EntityHit[]
   /** Name of the game in the `game` filter, for its chip. */
   gameName?: string
 }

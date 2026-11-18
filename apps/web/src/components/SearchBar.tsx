@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from '@/components/LocaleLink'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useId, useRef, useState } from 'react'
-import type { GameHit, SearchHit, SearchResponse } from '@/lib/search'
+import type { EntityHit, GameHit, SearchHit, SearchResponse } from '@/lib/search'
 import { searchHref, SUGGEST_MIN_CHARS } from '@/lib/search-query'
 import { Highlight } from './Highlight'
 import { useI18n } from './I18nProvider'
@@ -13,11 +13,12 @@ const DEBOUNCE_MS = 200
 const SUGGESTED_ARTICLES = 5
 
 type Option =
+  | { kind: 'entity'; href: string; entity: EntityHit }
   | { kind: 'game'; href: string; game: GameHit }
   | { kind: 'article'; href: string; hit: SearchHit }
   | { kind: 'all'; href: string }
 
-// Header search box, with suggestions as you type (games, then articles, then
+// Header search box, with suggestions as you type (consoles and studios, games, then articles, then
 // "See all results"). Enter without a highlighted suggestion goes to /search.
 //
 // The input stays uncontrolled on purpose: a controlled input would be reset to
@@ -38,9 +39,12 @@ export function SearchBar() {
   const [text, setText] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
-  const [result, setResult] = useState<{ q: string; hits: SearchHit[]; games: GameHit[] } | null>(
-    null
-  )
+  const [result, setResult] = useState<{
+    q: string
+    hits: SearchHit[]
+    games: GameHit[]
+    entities: EntityHit[]
+  } | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
   const q = text.trim()
@@ -56,7 +60,7 @@ export function SearchBar() {
       })
         .then((r) => (r.ok ? r.json() : Promise.reject(r)))
         .then((data: SearchResponse) => {
-          setResult({ q, hits: data.hits, games: data.games ?? [] })
+          setResult({ q, hits: data.hits, games: data.games ?? [], entities: data.entities ?? [] })
           // The list just changed under the highlight: start over from the box.
           setActive(-1)
         })
@@ -81,6 +85,11 @@ export function SearchBar() {
   const options: Option[] = !ready
     ? []
     : [
+        ...(fresh?.entities ?? []).map((entity) => ({
+          kind: 'entity' as const,
+          href: entity.path,
+          entity,
+        })),
         ...(fresh?.games ?? []).map((game) => ({
           kind: 'game' as const,
           href: `/game/${game.slug}`,
@@ -188,6 +197,7 @@ export function SearchBar() {
                   i === active ? 'bg-zinc-900' : ''
                 } ${option.kind === 'all' ? 'border-t border-zinc-800 text-emerald-400 font-semibold' : ''}`}
               >
+                {option.kind === 'entity' && <EntityRow entity={option.entity} q={q} />}
                 {option.kind === 'game' && <GameRow game={option.game} q={q} />}
                 {option.kind === 'article' && <ArticleRow hit={option.hit} q={q} />}
                 {option.kind === 'all' && <span>{t.search.seeAllFor(q)}</span>}
@@ -195,7 +205,7 @@ export function SearchBar() {
             </li>
           ))}
         </ul>
-        {fresh && fresh.hits.length === 0 && fresh.games.length === 0 && (
+        {fresh && fresh.hits.length === 0 && fresh.games.length === 0 && fresh.entities.length === 0 && (
           <p className="px-3 pb-2 -mt-1 text-xs text-zinc-400">{t.search.noQuickMatch}</p>
         )}
       </div>
@@ -208,6 +218,28 @@ function Thumb({ src }: { src?: string }) {
     <span className="relative shrink-0 w-14 aspect-video rounded overflow-hidden bg-zinc-800">
       {src && <Image src={src} alt="" fill sizes="56px" className="object-cover" />}
     </span>
+  )
+}
+
+function EntityRow({ entity, q }: { entity: EntityHit; q: string }) {
+  const { t } = useI18n()
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="shrink-0 w-14 aspect-video rounded bg-zinc-800 flex items-center justify-center text-base"
+      >
+        {entity.kind === 'platform' ? '🎮' : '🏢'}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[11px] uppercase tracking-wide font-bold text-zinc-400">
+          {entity.kind === 'platform' ? t.search.console : t.search.studio}
+        </span>
+        <span className="block truncate text-zinc-100">
+          <Highlight text={entity.name} query={q} />
+        </span>
+      </span>
+    </>
   )
 }
 

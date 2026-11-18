@@ -19,6 +19,7 @@ import { localizeArticle, pick } from './i18n/content'
 import { getLocale } from './i18n/server'
 import { matchGames } from './game-match'
 import type { LibraryCompany, LibraryGame, Release } from './game-library'
+import { matchEntities } from './entity-match'
 import { PLATFORM_FAMILIES, sortPlatforms, type PlatformFamily, type PlatformInfo } from './platforms'
 import { CMS_TAG } from './revalidate'
 
@@ -357,6 +358,8 @@ export interface PlatformEntity extends PlatformInfo {
   release?: Release
   logo?: string
   tagId?: string
+  /** Its tag's slug: an article tagged with it links here (`fetchTagPages`). */
+  tagSlug?: string
 }
 
 /**
@@ -366,7 +369,7 @@ export interface PlatformEntity extends PlatformInfo {
 export async function fetchAllPlatforms(): Promise<PlatformEntity[]> {
   const qs = new URLSearchParams({ depth: '1', pagination: 'false', sort: 'position' })
   for (const f of ['url', 'filename', 'prefix', 'sizes][square][url']) qs.set(`populate[media][${f}]`, 'true')
-  qs.set('populate[tags][id]', 'true')
+  qs.set('populate[tags][slug]', 'true')
   const res = await cmsFetch(`${CMS_URL}/api/platforms?${qs.toString()}`, { next: { revalidate: 300 } })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
@@ -380,10 +383,11 @@ export async function fetchAllPlatforms(): Promise<PlatformEntity[]> {
     releaseDate?: string | null
     releasePrecision?: string | null
     logo?: PayloadMedia
-    tag?: { id: string | number } | string | number | null
+    tag?: { id: string | number; slug?: string } | string | number | null
   }>
   const list = json.docs.map((d): PlatformEntity => {
     const tag = d.tag && typeof d.tag === 'object' ? d.tag.id : d.tag
+    const tagSlug = d.tag && typeof d.tag === 'object' ? d.tag.slug : undefined
     const release = mapReleases([{ date: d.releaseDate, precision: d.releasePrecision }])[0]
     return {
       id: String(d.id),
@@ -396,6 +400,7 @@ export async function fetchAllPlatforms(): Promise<PlatformEntity[]> {
       ...(release.date ? { release } : {}),
       logo: mediaUrl(d.logo, 'square'),
       tagId: tag ? String(tag) : undefined,
+      tagSlug,
     }
   })
   return sortPlatforms(list.map((p) => p.value), list).map((v) => list.find((p) => p.value === v)!)
@@ -457,13 +462,74 @@ export interface CompanyEntity extends LibraryCompany {
   tagId?: string
 }
 
-/** Every studio and publisher (the library's filter), A to Z, cached 5 min. */
-export async function fetchAllCompanies(): Promise<LibraryCompany[]> {
-  const qs = new URLSearchParams({ depth: '0', pagination: 'false', sort: 'name', 'select[name]': 'true', 'select[slug]': 'true' })
+export interface CompanyListItem extends LibraryCompany {
+  aliases: string[]
+  /** Its tag's slug, when it has one. */
+  tagSlug?: string
+}
+
+/** Every studio and publisher (the library's filter, the search), A to Z, cached 5 min. */
+export async function fetchAllCompanies(): Promise<CompanyListItem[]> {
+  const qs = new URLSearchParams({ depth: '1', pagination: 'false', sort: 'name' })
+  for (const f of ['name', 'slug', 'aliases', 'tag']) qs.set(`select[${f}]`, 'true')
+  qs.set('populate[tags][slug]', 'true')
   const res = await cmsFetch(`${CMS_URL}/api/companies?${qs.toString()}`, { next: { revalidate: 300 } })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
-  const json = (await res.json()) as PayloadListResponse<{ slug: string; name: string }>
-  return json.docs.map((d) => ({ slug: d.slug, name: d.name }))
+  const json = (await res.json()) as PayloadListResponse<{
+    slug: string
+    name: string
+    aliases?: string[] | null
+    tag?: { slug?: string } | number | string | null
+  }>
+  return json.docs.map((d) => ({
+    slug: d.slug,
+    name: d.name,
+    aliases: d.aliases ?? [],
+    tagSlug: d.tag && typeof d.tag === 'object' ? d.tag.slug : undefined,
+  }))
+}
+
+/** A console's or a studio's page, for the search and for the tags that stand for one. */
+export interface EntityLink {
+  kind: 'platform' | 'company'
+  path: string
+  name: string
+}
+
+/**
+ * The tags that stand for a console or a studio ("PS5", "Rockstar Games") →
+ * that page: an article's tag chip and the tag page link there.
+ */
+export async function fetchTagPages(): Promise<Map<string, EntityLink>> {
+  const [platforms, companies] = await Promise.all([
+    fetchAllPlatforms().catch(() => [] as PlatformEntity[]),
+    fetchAllCompanies().catch(() => [] as CompanyListItem[]),
+  ])
+  const out = new Map<string, EntityLink>()
+  for (const c of companies)
+    if (c.tagSlug) out.set(c.tagSlug, { kind: 'company', path: `/company/${c.slug}`, name: c.name })
+  for (const p of platforms)
+    if (p.tagSlug) out.set(p.tagSlug, { kind: 'platform', path: `/platform/${p.value}`, name: p.label })
+  return out
+}
+
+/** Consoles, then studios, the query names ("ps5", "rockstar"), for the search. */
+export async function searchEntities(q: string, limit = 3): Promise<EntityLink[]> {
+  const [platforms, companies] = await Promise.all([
+    fetchAllPlatforms().catch(() => [] as PlatformEntity[]),
+    fetchAllCompanies().catch(() => [] as CompanyListItem[]),
+  ])
+  const consoles = matchEntities(
+    platforms.map((p) => ({ ...p, names: [p.label, p.short, p.value, ...p.aliases] })),
+    q,
+    limit,
+  ).map((p): EntityLink => ({ kind: 'platform', path: `/platform/${p.value}`, name: p.label }))
+  const studios = matchEntities(
+    companies.map((c) => ({ ...c, names: [c.name, ...c.aliases] })),
+    q,
+    limit,
+  ).map((c): EntityLink => ({ kind: 'company', path: `/company/${c.slug}`, name: c.name }))
+  return [...consoles, ...studios].slice(0, limit)
 }
 
 export async function fetchCompanyBySlug(slug: string): Promise<CompanyEntity | null> {

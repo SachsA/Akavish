@@ -27,6 +27,7 @@ import {
 import { intlTag } from '@/lib/i18n/config'
 import { PLATFORM_FAMILIES, platformInfo, type PlatformInfo } from '@/lib/platforms'
 import { GameCard } from './GameCard'
+import Link from './LocaleLink'
 import { useI18n, useRegion } from './I18nProvider'
 import { ReleaseDate } from './ReleaseDate'
 
@@ -252,6 +253,11 @@ export function GamesLibrary({
         <p className="text-sm text-zinc-400" aria-live="polite">
           {t.games.results(hits.length)}
         </p>
+        {filters.platform && platformInfo(filters.platform, platformList) && (
+          <Link href={`/platform/${filters.platform}`} className="text-sm text-emerald-400 hover:text-emerald-300">
+            {t.games.consolePage(platformInfo(filters.platform, platformList)!.short)}
+          </Link>
+        )}
         {active && (
           <button
             type="button"

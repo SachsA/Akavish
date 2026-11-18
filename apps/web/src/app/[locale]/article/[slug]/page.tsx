@@ -13,6 +13,8 @@ import {
   fetchLiveArticleIds,
   fetchCurrentSlugFor,
   fetchRelatedArticles,
+  fetchTagPages,
+  type EntityLink,
 } from '@/lib/payload'
 import { LexicalContent } from '@/components/LexicalContent'
 import { ArticleCard } from '@/components/ArticleCard'
@@ -102,11 +104,13 @@ export default async function ArticlePage({ params }: Params) {
   // Secondary content: never let it break the page. The article itself is what
   // matters — if the CMS is slow or these queries fail, we drop the extras
   // rather than 500 on a page that already has everything a reader came for.
-  const [related, adjacent, liveIds] = await Promise.all([
+  const [related, adjacent, liveIds, tagPages] = await Promise.all([
     fetchRelatedArticles(article).catch(() => []),
     fetchAdjacentArticles(article).catch(() => ({ next: null, previous: null })),
     // Only French pages need to know (a live page stays English until it ends).
     locale === 'en' ? Promise.resolve([] as string[]) : fetchLiveArticleIds(),
+    // A tag that stands for a console or a studio links to its page.
+    fetchTagPages().catch(() => new Map<string, EntityLink>()),
   ])
   const liveInEnglish = !isInLanguage(article, locale) && liveIds.includes(article.id)
 
@@ -280,15 +284,26 @@ export default async function ArticlePage({ params }: Params) {
 
         {article.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-10 pt-6 border-t border-zinc-800">
-            {article.tags.map((tag) => (
-              <Link
-                key={tag}
-                href={`/tag/${tag}`}
-                className="px-3 py-1 rounded-full border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
-              >
-                #{tag}
-              </Link>
-            ))}
+            {article.tags.map((tag) => {
+              const page = tagPages.get(tag)
+              return page ? (
+                <Link
+                  key={tag}
+                  href={page.path}
+                  className="px-3 py-1 rounded-full border border-zinc-700 text-xs text-zinc-200 hover:text-emerald-400 hover:border-emerald-500 transition-colors"
+                >
+                  {page.name}
+                </Link>
+              ) : (
+                <Link
+                  key={tag}
+                  href={`/tag/${tag}`}
+                  className="px-3 py-1 rounded-full border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                >
+                  #{tag}
+                </Link>
+              )
+            })}
           </div>
         )}
       </article>

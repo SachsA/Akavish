@@ -152,6 +152,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   a console the news names for the first time (a PS6 reveal: `consoles` in
   the draft and live tools, or a game announced on it); rumours never touch
   a game page.
+  Readers reach console and company pages from game pages, the `/games`
+  consoles row, the search (`searchEntities`, `lib/entity-match.ts`) and
+  article tag chips that stand for one (`fetchTagPages`).
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web,
   mobile, CMS and api-client), then build web + CMS (mobile isn't built — that needs EAS) and,

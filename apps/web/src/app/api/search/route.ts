@@ -8,7 +8,7 @@ import {
   type SearchHit,
   type SearchResponse,
 } from '@/lib/search'
-import { fetchAllGames, fetchGameName, searchArticles, searchCategoryCounts } from '@/lib/payload'
+import { fetchAllGames, fetchGameName, searchArticles, searchCategoryCounts, searchEntities } from '@/lib/payload'
 import { matchGames } from '@/lib/game-match'
 import { CATEGORIES } from '@/lib/categories'
 import { parseSearchQuery, SEARCH_PAGE_SIZE, type SearchQuery } from '@/lib/search-query'
@@ -121,6 +121,8 @@ export async function GET(req: NextRequest) {
   const games: GameHit[] | undefined = withGames
     ? matched.slice(0, gamesLimit).map((g) => ({ slug: g.slug, name: g.name, cover: g.cover }))
     : undefined
+  // Consoles and studios the query names: their pages come first.
+  const entitiesPromise = withGames ? searchEntities(query.q, 3).catch(() => []) : Promise.resolve(undefined)
   // The articles about the 5 best-matching games count as results (not when
   // the search is already narrowed to one game).
   const gameIds = query.game ? [] : matched.slice(0, 5).map((g) => g.id)
@@ -162,12 +164,14 @@ export async function GET(req: NextRequest) {
   }
 
   const gameName = await gameNamePromise
+  const entities = await entitiesPromise
   const body: SearchResponse = {
     query: query.q,
     ...page,
     engine,
     ...(facets ? { facets } : {}),
     ...(games ? { games } : {}),
+    ...(entities?.length ? { entities } : {}),
     ...(gameName ? { gameName } : {}),
   }
   return NextResponse.json(body, { headers: publicCache(60) })

@@ -310,10 +310,17 @@ test('games library: console + year in the URL, upcoming, game and company pages
 
   // A console's page, from the game page's console chips.
   await page.goto('/game/neon-drift')
-  await page.getByRole('link', { name: 'Switch 2', exact: true }).click()
+  // The chips under the title (the release line links to it too).
+  await page.getByRole('link', { name: 'Switch 2', exact: true }).first().click()
   await expect(page).toHaveURL(/\/platform\/switch-2$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nintendo Switch 2')
   await expect(page.getByRole('link', { name: /Neon Drift/ }).first()).toContainText('November 2025')
+  // And from the library's console list, and the search.
+  await page.goto('/games')
+  await page.getByRole('navigation', { name: 'Consoles' }).getByRole('link', { name: 'Switch 2', exact: true }).click()
+  await expect(page).toHaveURL(/\/platform\/switch-2$/)
+  const suggest = await page.request.get('/api/search?q=switch&games=1&limit=1')
+  expect((await suggest.json()).entities?.[0]).toMatchObject({ kind: 'platform', path: '/platform/switch' })
   await page.goto('/platform/ps9')
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('PlayStation 9')
 })

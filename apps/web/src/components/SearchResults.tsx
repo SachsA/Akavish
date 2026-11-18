@@ -66,6 +66,29 @@ export function SearchResults() {
         <p className="text-zinc-400 mb-8">{t.search.typeQuery}</p>
       )}
 
+      {res?.entities && res.entities.length > 0 && (
+        <section aria-labelledby="search-pages" className="mb-8">
+          <h2 id="search-pages" className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-4">
+            {t.search.pages}
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {res.entities.map((e) => (
+              <li key={e.path}>
+                <Link
+                  href={e.path}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-700 text-sm text-zinc-100 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
+                >
+                  <span className="text-[11px] uppercase tracking-wide font-bold text-zinc-400">
+                    {e.kind === 'platform' ? t.search.console : t.search.studio}
+                  </span>
+                  {e.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {res?.games && res.games.length > 0 && (
         <section aria-labelledby="search-games" className="mb-10">
           <h2 id="search-games" className="text-xs uppercase tracking-widest text-zinc-400 font-bold mb-4">

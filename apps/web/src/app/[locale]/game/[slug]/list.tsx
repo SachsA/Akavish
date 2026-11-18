@@ -16,8 +16,7 @@ import { Pagination } from '@/components/Pagination'
 import Link from '@/components/LocaleLink'
 import { FollowButton } from '@/components/FollowButton'
 import { ReleaseDate } from '@/components/ReleaseDate'
-import { formatPlatforms } from '@/lib/game-library'
-import { platformLabel, platformShort, type PlatformInfo } from '@/lib/platforms'
+import { platformLabel, platformShort, sortPlatforms, type PlatformInfo } from '@/lib/platforms'
 
 
 function CompanyLinks({ companies }: { companies: Array<{ slug: string; name: string }> }) {
@@ -26,7 +25,7 @@ function CompanyLinks({ companies }: { companies: Array<{ slug: string; name: st
       {companies.map((c, i) => (
         <span key={c.slug}>
           {i > 0 && ', '}
-          <Link href={`/company/${c.slug}`} className="hover:text-emerald-400 underline-offset-2 hover:underline">
+          <Link href={`/company/${c.slug}`} className="text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline">
             {c.name}
           </Link>
         </span>
@@ -134,7 +133,7 @@ export async function ListPage({
                 <Link
                   key={p}
                   href={`/platform/${p}`}
-                  className="px-2.5 py-1 rounded-full border border-zinc-700 text-xs text-zinc-200 hover:border-emerald-500 hover:text-white transition-colors"
+                  className="px-2.5 py-1 rounded-full border border-emerald-800 text-xs font-medium text-emerald-400 hover:border-emerald-500 hover:text-emerald-300 transition-colors"
                 >
                   {platformShort(p, platforms)}
                 </Link>
@@ -177,7 +176,17 @@ export async function ListPage({
                     <li key={i}>
                       <ReleaseDate release={r} />
                       {r.platforms.length > 0 && (
-                        <span className="text-zinc-400"> · {formatPlatforms(r.platforms, platforms)}</span>
+                        <span className="text-zinc-400">
+                          {' · '}
+                          {sortPlatforms(r.platforms, platforms).map((p, j) => (
+                            <span key={p}>
+                              {j > 0 && ', '}
+                              <Link href={`/platform/${p}`} className="hover:text-emerald-400 underline-offset-2 hover:underline">
+                                {platformShort(p, platforms)}
+                              </Link>
+                            </span>
+                          ))}
+                        </span>
                       )}
                     </li>
                   ))}
