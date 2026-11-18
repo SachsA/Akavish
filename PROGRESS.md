@@ -405,6 +405,7 @@ readers**, which the site doesn't have yet — revisit once publishing is regula
 | --- | --- |
 | Newsletter: the digest | Sign-ups are live since 2026-11-09 (see §1); what waits is **sending** issues: a digest template with the per-subscriber unsubscribe link (`unsubscribeUrl(id)` in `apps/cms/src/lib/newsletter.ts`) and a `List-Unsubscribe` header, sent to `status: confirmed` only. Resend's free tier is 100 emails/day, so a list past ~100 needs its paid plan or batched sends. The AI scout can feed it Also: the confirmation email and the issues in the subscriber's language (French sign-ups from /fr), since the site is bilingual (2026-11-16). |
 | Analytics review | Vercel Analytics is collecting; reading it means something once there's traffic |
+| Google Reader Revenue Manager | Google's paywall / contributions / newsletter sign-up tool (Publisher Center). Not used: its snippet (`swg-basic.js` on every article) adds a Google script and its cookies, so it needs a consent banner and a privacy update first. Only if Akavish ever charges for content or asks for contributions (2026-11-18) |
 
 ---
 
