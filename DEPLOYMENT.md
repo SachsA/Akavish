@@ -852,6 +852,31 @@ domain change:
   nameserver change.
 - Update `apps/web/next.config.ts` / docs if the media host changes.
 
+### 6.8 Google Search Console and Google News
+
+The site side is ready (2026-11-18): `/sitemap.xml` (every page, both
+languages), `/news-sitemap.xml` (articles of the last 48 hours, Google News
+format), both listed in `/robots.txt`, `NewsArticle` markup and large image
+previews on every article. What's left is done by hand, once:
+
+1. **Search Console.** [search.google.com/search-console](https://search.google.com/search-console)
+   → *Add property* → **Domain** → `akavish.gg`. Google gives a TXT record:
+   Cloudflare → DNS → *Add record* → Type `TXT`, Name `@`, the value Google
+   gave → back in Search Console, *Verify* (a few minutes).
+2. **Sitemaps.** Search Console → *Sitemaps* → submit `sitemap.xml`, then
+   `news-sitemap.xml`. Both should read *Success* within a day.
+3. **Google News.** [publishercenter.google.com](https://publishercenter.google.com)
+   → *Add publication*: name **Akavish**, website `https://akavish.gg` (it
+   picks up the Search Console verification), languages English and French,
+   category *Video games* / *Technology*, logo `apps/web/src/app/icon.png`,
+   contact `hello@akavish.gg`. Google News lists sites automatically when they
+   follow its policies (dates, authors, transparency pages: `/about`,
+   `/contact`, `/legal` are there); the Publisher Center only manages how the
+   publication shows.
+4. **Check.** Search Console → *URL inspection* on a fresh article: *URL is on
+   Google* after a while, and *Enhancements* lists the Article markup without
+   errors.
+
 ---
 
 ## 7. Post-deploy checklist

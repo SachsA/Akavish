@@ -131,6 +131,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   matches (`lib/search-query.ts`). Games are matched by name and initials in
   memory ("GTA" → Grand Theft Auto VI, `lib/game-match.ts`), and the articles
   about the best matches count as results.
+- **SEO:** `/sitemap.xml` (every page, both languages) and `/news-sitemap.xml`
+  (Google News: articles of the last 48 hours, `lib/news-sitemap.ts`), both in
+  `robots.txt`; `NewsArticle` JSON-LD on articles, large image previews.
+  Search Console / Publisher Center setup: `DEPLOYMENT.md` §6.8.
 - **Games library:** `/games` filters every game by console, year, month,
   studio / publisher, genre, out / upcoming, letter (in the browser,
   `lib/game-library.ts`, filters in the URL). A game has *releases* (consoles

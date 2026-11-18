@@ -691,6 +691,36 @@ export async function fetchAllArticleSlugs(): Promise<SlugEntry[]> {
   return json.docs.map((d) => ({ slug: d.slug, updatedAt: d.updatedAt, translated: Boolean(d.fr?.title) }))
 }
 
+/** Articles published since `sinceIso` (the Google News sitemap), newest first. */
+export async function fetchRecentArticles(
+  sinceIso: string
+): Promise<Array<{ slug: string; title: string; publishedAt: string; frTitle?: string }>> {
+  const qs = new URLSearchParams({
+    'where[status][equals]': 'published',
+    'where[publishedAt][greater_than]': sinceIso,
+    depth: '0',
+    limit: '1000',
+    sort: '-publishedAt',
+    'select[slug]': 'true',
+    'select[title]': 'true',
+    'select[publishedAt]': 'true',
+    'select[fr]': 'true',
+  })
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, { next: { revalidate: 300 } })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{
+    slug: string
+    title: string
+    publishedAt?: string | null
+    fr?: { title?: string | null } | null
+  }>
+  return json.docs.flatMap((d) =>
+    d.publishedAt
+      ? [{ slug: d.slug, title: d.title, publishedAt: d.publishedAt, ...(d.fr?.title ? { frTitle: d.fr.title } : {}) }]
+      : []
+  )
+}
+
 // All slugs of a simple collection (authors / games / tags) for the sitemap.
 export async function fetchAllEntitySlugs(
   collection: 'authors' | 'games' | 'tags' | 'companies'

@@ -9,6 +9,7 @@ export default function robots(): MetadataRoute.Robots {
       // `/monitoring` is Sentry's tunnel endpoint, not a page.
       disallow: ['/api/', '/account', '/sign-in', '/sign-up', '/monitoring'],
     },
-    sitemap: absoluteUrl('/sitemap.xml'),
+    // The full sitemap, and the Google News one (last 48 hours of articles).
+    sitemap: [absoluteUrl('/sitemap.xml'), absoluteUrl('/news-sitemap.xml')],
   }
 }

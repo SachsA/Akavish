@@ -22,7 +22,7 @@ import { SaveButton } from '@/components/SaveButton'
 import { ScoreBadge } from '@/components/ScoreBadge'
 import { Comments } from '@/components/Comments'
 import { countWords, readingTimeMinutes } from '@/lib/reading-time'
-import { absoluteUrl, SITE_NAME } from '@/lib/site'
+import { absoluteUrl, SITE_NAME, SITE_URL } from '@/lib/site'
 import { categoryByValue } from '@/lib/categories'
 import { breadcrumbList } from '@/lib/structured-data'
 import { JsonLd } from '@/components/JsonLd'
@@ -123,8 +123,18 @@ export default async function ArticlePage({ params }: Params) {
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
     image: article.coverImage ? [article.coverImage] : undefined,
-    author: { '@type': 'Person', name: article.author.name },
-    publisher: { '@type': 'Organization', name: SITE_NAME },
+    author: {
+      '@type': 'Person',
+      name: article.author.name,
+      ...(article.author.slug ? { url: absoluteUrl(localizePath(locale, `/author/${article.author.slug}`)) } : {}),
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: absoluteUrl('/icon.png') },
+    },
+    isAccessibleForFree: true,
     inLanguage: isInLanguage(article, locale) ? locale : 'en',
     mainEntityOfPage: { '@type': 'WebPage', '@id': shareUrl },
     // Now that reading time is computed, expose it to search engines too.

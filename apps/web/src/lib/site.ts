@@ -27,7 +27,7 @@ export const SITE_TWITTER = '@akavish33'
  */
 export const SITE_SOCIALS = {
   x: 'https://x.com/akavish33',
-  discord: 'https://discord.gg/b9qUBbM9Ku',
+  discord: 'https://discord.gg/4E2zJefGCX',
   youtube: 'https://www.youtube.com/@akavish33',
 } as const
 

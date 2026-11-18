@@ -50,7 +50,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       type: 'website',
     },
     twitter: { card: 'summary_large_image', site: SITE_TWITTER },
-    robots: { index: true, follow: true },
+    // Large image previews, full snippets: what Google News and Discover use.
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
+    },
   }
 }
 
