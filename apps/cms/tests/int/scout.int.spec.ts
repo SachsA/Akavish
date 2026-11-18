@@ -234,26 +234,54 @@ describe('scout', () => {
     for (const [name, url] of outlets) {
       const src = await payload.create({
         collection: 'scout-sources',
-        data: { name, url, kind: 'rss', reliability: 'high', cadence: 'normal', language: 'en', active: false } as never,
+        data: {
+          name,
+          url,
+          kind: 'rss',
+          reliability: 'high',
+          cadence: 'normal',
+          language: 'en',
+          active: false,
+        } as never,
         overrideAccess: true,
       })
       made.push(src.id)
       await payload.create({
         collection: 'scout-items',
-        data: { title: `Rescore ${name}`, url: `${url}#item`, source: src.id, story: story.id, status: 'triaged' } as never,
+        data: {
+          title: `Rescore ${name}`,
+          url: `${url}#item`,
+          source: src.id,
+          story: story.id,
+          status: 'triaged',
+        } as never,
         overrideAccess: true,
       })
     }
-    expect(await rescoreRecent(ctx(new Date(NOW.getTime() + 3_600_000)), 60)).toBeGreaterThanOrEqual(1)
-    const after = await payload.findByID({ collection: 'scout-stories', id: story.id, overrideAccess: true })
+    expect(
+      await rescoreRecent(ctx(new Date(NOW.getTime() + 3_600_000)), 60),
+    ).toBeGreaterThanOrEqual(1)
+    const after = await payload.findByID({
+      collection: 'scout-stories',
+      id: story.id,
+      overrideAccess: true,
+    })
     // 3 outlets (IGN + IGN France = one): 30 + 16 + 15 = 61, over the
     // threshold, so back to "new" for the drafts.
     expect(after).toMatchObject({ score: 61, status: 'new' })
     // Two days on it's out of play: not touched any more.
     expect(await rescoreRecent(ctx(new Date(NOW.getTime() + 48 * 3_600_000)), 60)).toBe(0)
-    await payload.delete({ collection: 'scout-items', where: { story: { equals: story.id } }, overrideAccess: true })
+    await payload.delete({
+      collection: 'scout-items',
+      where: { story: { equals: story.id } },
+      overrideAccess: true,
+    })
     await payload.delete({ collection: 'scout-stories', id: story.id, overrideAccess: true })
-    await payload.delete({ collection: 'scout-sources', where: { id: { in: made } }, overrideAccess: true })
+    await payload.delete({
+      collection: 'scout-sources',
+      where: { id: { in: made } },
+      overrideAccess: true,
+    })
   })
 
   it('pauses itself and warns once when the monthly budget is spent', async () => {
@@ -327,6 +355,34 @@ describe('scout step 2 (drafts)', () => {
             },
           ],
           usage: { input_tokens: 2000, output_tokens: 40 },
+        })
+      }
+      if (body.tools?.[0]?.name === 'update_live' && text.includes('Rehearsal Quest')) {
+        // A rehearsal: one entry, about a game the site doesn't have.
+        return Response.json({
+          content: [
+            {
+              type: 'tool_use',
+              name: 'update_live',
+              input: {
+                title: 'Scouttest Rehearsal: every announcement, live',
+                category: 'conference',
+                intro: 'Scouttest Rehearsal so far: Rehearsal Quest revealed.',
+                new_entries: [
+                  {
+                    headline: 'Rehearsal Quest: revealed',
+                    text: 'A new game was revealed.',
+                    links: [],
+                    game: 'Scouttest Rehearsal Quest',
+                    game_is_new: true,
+                    new_game: { releases: [{ platforms: ['pc'], date: '2027' }] },
+                  },
+                ],
+                update_entries: [],
+              },
+            },
+          ],
+          usage: { input_tokens: 5000, output_tokens: 300 },
         })
       }
       if (body.tools?.[0]?.name === 'update_live') {
@@ -421,6 +477,16 @@ describe('scout step 2 (drafts)', () => {
                         is_new: true,
                         releases: [{ platforms: ['pc'], date: '2027-Q2' }],
                       },
+                      // The rehearsal's recap: a game its Publish would create.
+                      ...(text.includes('Rehearsal Quest')
+                        ? [
+                            {
+                              game: 'Scouttest Rehearsal Quest',
+                              is_new: true,
+                              releases: [{ platforms: ['pc'], date: '2027' }],
+                            },
+                          ]
+                        : []),
                     ],
                   }),
             },
@@ -668,7 +734,11 @@ describe('scout step 2 (drafts)', () => {
     expect(card).toContain('Scouttest Grand Theft : PlayStation 5, Xbox Series X|S · Nov 19, 2026')
     expect(card).toContain('Scouttest Other Game : PC · Q2 2027')
     const untouched = (
-      await payload.find({ collection: 'games', where: { name: { equals: 'Scouttest Grand Theft' } }, overrideAccess: true })
+      await payload.find({
+        collection: 'games',
+        where: { name: { equals: 'Scouttest Grand Theft' } },
+        overrideAccess: true,
+      })
     ).docs[0] as unknown as { releaseDate?: string | null }
     expect(untouched.releaseDate ?? null).toBeNull()
     expect(JSON.stringify(discordPosts[0].body)).toContain('scout:publish:' + gtaId)
@@ -763,7 +833,11 @@ describe('scout step 2 (drafts)', () => {
     expect(gta.platforms).toEqual(['ps5', 'xbox-series'])
     expect(gta.publishers.map((c) => c.name)).toEqual(['Scouttest Rockstar Games'])
     const other = (
-      await payload.find({ collection: 'games', where: { name: { equals: 'Scouttest Other Game' } }, overrideAccess: true })
+      await payload.find({
+        collection: 'games',
+        where: { name: { equals: 'Scouttest Other Game' } },
+        overrideAccess: true,
+      })
     ).docs[0] as unknown as { id: number; releaseDatePrecision: string }
     expect(other.releaseDatePrecision).toBe('quarter')
     expect((article.relatedGames as Array<{ id: number }>).map((g) => g.id)).toEqual([other.id])
@@ -820,7 +894,12 @@ describe('scout step 2 (drafts)', () => {
       depth: 1,
       overrideAccess: true,
     })) as unknown as {
-      game: { name: string; developers?: number[]; platforms?: string[]; releaseDatePrecision?: string }
+      game: {
+        name: string
+        developers?: number[]
+        platforms?: string[]
+        releaseDatePrecision?: string
+      }
       tags: Array<{ name: string }>
     }
     expect(indie.game).toMatchObject({
@@ -975,9 +1054,16 @@ describe('scout step 2 (drafts)', () => {
         where: { name: { equals: 'Scouttest Saga' } },
         overrideAccess: true,
       })
-    ).docs[0] as unknown as { developers: Array<{ name: string }>; releaseDate: string; releaseDatePrecision: string }
+    ).docs[0] as unknown as {
+      developers: Array<{ name: string }>
+      releaseDate: string
+      releaseDatePrecision: string
+    }
     expect(game.developers.map((c) => c.name)).toEqual(['Scouttest Saga Studio'])
-    expect(game).toMatchObject({ releaseDate: '2027-03-01T00:00:00.000Z', releaseDatePrecision: 'month' })
+    expect(game).toMatchObject({
+      releaseDate: '2027-03-01T00:00:00.000Z',
+      releaseDatePrecision: 'month',
+    })
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(`scout:evpub:${ev.id}`)
 
     // "Publier le live" → published; later updates go live by themselves.
@@ -1023,6 +1109,154 @@ describe('scout step 2 (drafts)', () => {
     ).json()
     expect(recap.data.embeds?.[0]?.footer?.text).toMatch(/Résumé publié/)
     expect(await articleText(articleId, false)).toContain('Full recap')
+  })
+
+  it('event mode rehearsal: same steps, nothing public, nothing changed, deleted at the end', async () => {
+    const owner = { member: { user: { id: 'owner' } } }
+    const live = (sub: string, options: Array<{ name: string; value: string | boolean }> = []) =>
+      interact({
+        type: 2,
+        ...owner,
+        data: { name: 'live', options: [{ name: sub, type: 1, options }] },
+      }).then((r) => r.json())
+    const event = async () =>
+      (
+        await payload.find({
+          collection: 'scout-events' as never,
+          where: { name: { equals: 'Scouttest Rehearsal' } } as never,
+          limit: 1,
+          depth: 0,
+          overrideAccess: true,
+        })
+      ).docs[0] as unknown as Record<string, any> | undefined
+    const gamesBefore = (await payload.count({ collection: 'games', overrideAccess: true }))
+      .totalDocs
+    // The daily cap is spent: a live runs anyway (the month is what stops it).
+    const capped = (): ScoutContext => ({
+      ...ctx2(),
+      config: scoutConfig({
+        SCOUT_ENABLED: 'true',
+        ANTHROPIC_API_KEY: 'test-key',
+        SCOUT_DAILY_BUDGET_USD: '0',
+        ...BOT_ENV,
+      }),
+    })
+
+    expect(
+      (
+        await live('start', [
+          { name: 'nom', value: 'Scouttest Rehearsal' },
+          { name: 'test', value: true },
+        ])
+      ).data.content,
+    ).toContain('Répétition')
+    await live('image', [{ name: 'url', value: 'https://scout-test.invalid/img/rehearsal.png' }])
+    await live('add', [{ name: 'texte', value: 'Rehearsal Quest revealed' }])
+    expect(await runLive(capped(), await settings())).toBe(1)
+    let ev = (await event())!
+    expect(ev.rehearsal).toBe(true)
+    const articleId = Number(ev.article)
+    const coverId = Number(ev.cover)
+    expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain('RÉPÉTITION')
+    // No game page for a rehearsal.
+    expect((await payload.count({ collection: 'games', overrideAccess: true })).totalDocs).toBe(
+      gamesBefore,
+    )
+
+    // "Publier le live": the flow switches, the article stays a draft.
+    const pub = await (
+      await interact({ type: 3, ...owner, data: { custom_id: `scout:evpub:${ev.id}` } })
+    ).json()
+    expect(pub.data.embeds?.[0]?.footer?.text).toMatch(/Répétition/)
+    const art = await payload.findByID({
+      collection: 'articles',
+      id: articleId,
+      overrideAccess: true,
+    })
+    expect(art._status).toBe('draft')
+
+    // Stop: no French version queued, a recap whose Publish changes nothing.
+    await live('stop')
+    await runLive(capped(), await settings())
+    ev = (await event())!
+    expect(ev.status).toBe('ended')
+    const jobs = await payload.find({
+      collection: 'payload-jobs',
+      where: { taskSlug: { equals: 'translateArticle' } },
+      limit: 100,
+      overrideAccess: true,
+    })
+    expect(jobs.docs.some((j) => (j.input as { articleId?: number }).articleId === articleId)).toBe(
+      false,
+    )
+    const card = JSON.stringify(discordPosts.at(-1)!.body)
+    expect(card).toContain(`scout:evpurge:${ev.id}`)
+    expect(card).toContain('Fiches jeux')
+    const gamesNow = await payload.find({
+      collection: 'games',
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const recap = await (
+      await interact({ type: 3, ...owner, data: { custom_id: `scout:evrecap:${ev.id}` } })
+    ).json()
+    expect(recap.data.content).toMatch(/rien publié/)
+    expect(recap.data.content).toContain('Scouttest Rehearsal Quest')
+    const recapId = Number(ev.recapArticle)
+    expect(
+      (await payload.findByID({ collection: 'articles', id: recapId, overrideAccess: true }))
+        ._status,
+    ).toBe('draft')
+    const gamesAfter = await payload.find({
+      collection: 'games',
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+    })
+    expect(JSON.stringify(gamesAfter.docs)).toBe(JSON.stringify(gamesNow.docs))
+
+    // "Supprimer la répétition": articles, image, tag and event gone.
+    const purged = await (
+      await interact({ type: 3, ...owner, data: { custom_id: `scout:evpurge:${ev.id}` } })
+    ).json()
+    expect(purged.data.embeds?.[0]?.footer?.text).toMatch(/supprimée/)
+    expect(await event()).toBeUndefined()
+    for (const [collection, id] of [
+      ['articles', articleId],
+      ['articles', recapId],
+      ['media', coverId],
+    ] as const) {
+      const { totalDocs } = await payload.count({
+        collection,
+        where: { id: { equals: id } },
+        overrideAccess: true,
+      })
+      expect(totalDocs).toBe(0)
+    }
+    expect(
+      (
+        await payload.count({
+          collection: 'tags',
+          where: { name: { equals: 'Scouttest Rehearsal' } },
+          overrideAccess: true,
+        })
+      ).totalDocs,
+    ).toBe(0)
+
+    // A real live can't be deleted that way.
+    const real = (
+      await payload.find({
+        collection: 'scout-events' as never,
+        where: { name: { equals: 'Scouttest Show' } } as never,
+        limit: 1,
+        overrideAccess: true,
+      })
+    ).docs[0] as unknown as { id: number }
+    const refused = await (
+      await interact({ type: 3, ...owner, data: { custom_id: `scout:evpurge:${real.id}` } })
+    ).json()
+    expect(JSON.stringify(refused)).toContain('pas une répétition')
   })
 })
 

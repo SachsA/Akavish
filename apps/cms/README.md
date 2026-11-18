@@ -419,7 +419,8 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    without an editor session).
 
 **Event mode** (`live.ts`, `live-prompt.ts`, `discord-commands.ts`, collection
-`scout-events`). `/live start|add|image|stop|status` slash commands, registered
+`scout-events`). `/live start|add|image|stop|status` slash commands (`start`
+takes `nom`, `image`, `test`), registered
 at start-up (`onInit` in `payload.config.ts`, global commands, PUT overwrite)
 and answered on the same interactions endpoint (type 2). The event keeps its
 entries, the editor's notes (`n<k>`, done or pending), the previous version
@@ -433,8 +434,19 @@ draft article and one Discord card edited in place; after **Publier le live**
 every change is published with an **Annuler cette MAJ** button
 (`scout:evundo:<event>:<rev>`). `/live stop` → status `ending` → next run:
 final update, "the show is over", recap drafted (`RECAP_SYSTEM`, the draft
-tool, trailers in *Watch*) with **Publier le résumé** / **Rejeter**. Auto-stop
-after 8 h. Usage purposes `live` and `recap`.
+tool, trailers in *Watch*) with **Publier le résumé** / **Rejeter**, and the
+card's 🎮 Fiches jeux (`previewGameFacts`). Auto-stop after 8 h. Usage
+purposes `live` and `recap`; both call `checkBudget(…, { monthOnly: true })`
+(the daily cap doesn't stop a show). A failed update throws (logged, retried
+next run) after `alertFailure` posts it on Discord, once per event and error
+per 30 min (in memory). **Rehearsal**: `/live start … test:True` sets
+`rehearsal` on the event; `isPublic(ev)` (published and not a rehearsal)
+decides every `_status` / `draft:` write, so its articles stay drafts;
+`resolveGames(…, create = false)` links existing games only; `publishRecap`
+returns the `previewGameFacts` lines instead of publishing; no translation
+queued; `scout:evpurge:<event>` (`purgeRehearsal`, refused on a real event)
+deletes the articles, the cover when no article uses it, the tag when no
+article uses it, and the event. Int test: *event mode rehearsal*.
 
 **Discord validation** (`discord-bot.ts`, `interactions.ts`). Each draft is a
 bot message with **Publier** / **Modifier** / **Rejeter** and a link to

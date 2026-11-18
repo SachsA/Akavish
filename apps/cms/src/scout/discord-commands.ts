@@ -7,6 +7,7 @@ import type { FetchLike } from './anthropic'
 import type { DiscordBotConfig } from './config'
 
 const STRING = 3
+const BOOLEAN = 5
 const SUB = 1
 
 export const LIVE_COMMAND = {
@@ -30,6 +31,12 @@ export const LIVE_COMMAND = {
           type: STRING,
           name: 'image',
           description: 'URL d’une image officielle (facultatif)',
+          required: false,
+        },
+        {
+          type: BOOLEAN,
+          name: 'test',
+          description: 'Répétition : rien de public, tout se supprime à la fin',
           required: false,
         },
       ],

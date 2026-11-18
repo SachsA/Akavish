@@ -24,6 +24,7 @@ import {
   addNote,
   liveStatus,
   publishLive,
+  purgeRehearsal,
   publishRecap,
   rejectRecap,
   setLiveImage,
@@ -114,7 +115,7 @@ export async function handleInteraction(
     try {
       const answer =
         sub === 'start'
-          ? await startLive(ctx, args.nom ?? 'Live', args.image || undefined)
+          ? await startLive(ctx, args.nom ?? 'Live', args.image || undefined, args.test === 'true')
           : sub === 'add'
             ? await addNote(ctx, args.texte ?? '')
             : sub === 'image'
@@ -199,12 +200,14 @@ export async function handleInteraction(
     // ── Event mode buttons ──
     if (i.type === InteractionType.COMPONENT && action === 'evpub') {
       try {
-        const url = await publishLive(ctx, storyId)
+        const { url, rehearsal } = await publishLive(ctx, storyId)
         return json({
           type: ResponseType.UPDATE_MESSAGE,
           data: closedMessage(
             original,
-            `Live publié · ${url} · les mises à jour partent seules`,
+            rehearsal
+              ? `🧪 Répétition : live « publié », la page reste en brouillon · ${url} · les mises à jour partent seules`
+              : `Live publié · ${url} · les mises à jour partent seules`,
             COLORS.published,
           ),
         })
@@ -229,10 +232,18 @@ export async function handleInteraction(
     }
     if (i.type === InteractionType.COMPONENT && action === 'evrecap') {
       try {
-        const url = await publishRecap(ctx, storyId)
+        const done = await publishRecap(ctx, storyId)
+        if (done.rehearsal) {
+          const changes = done.changes.length
+            ? `En vrai, ce clic aurait publié le résumé et mis à jour ces fiches :\n${done.changes.join('\n')}`
+            : 'En vrai, ce clic aurait publié le résumé (aucune fiche jeu à changer).'
+          return json(
+            ephemeral(`🧪 Répétition : rien publié, rien modifié. ${changes}`.slice(0, 1900)),
+          )
+        }
         return json({
           type: ResponseType.UPDATE_MESSAGE,
-          data: closedMessage(original, `Résumé publié · ${url}`, COLORS.published),
+          data: closedMessage(original, `Résumé publié · ${done.url}`, COLORS.published),
         })
       } catch (err) {
         if (err instanceof Error && err.message === NO_COVER) {
@@ -240,6 +251,17 @@ export async function handleInteraction(
         }
         throw err
       }
+    }
+    if (i.type === InteractionType.COMPONENT && action === 'evpurge') {
+      await purgeRehearsal(ctx, storyId)
+      return json({
+        type: ResponseType.UPDATE_MESSAGE,
+        data: closedMessage(
+          original,
+          '🧪 Répétition supprimée (articles, image, tag, événement).',
+          COLORS.rejected,
+        ),
+      })
     }
     if (i.type === InteractionType.COMPONENT && action === 'evrecapno') {
       await rejectRecap(ctx, storyId)

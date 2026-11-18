@@ -1,7 +1,7 @@
 // ─── Event mode (step 5) ─────────────────────────────────────────────────────
 // One live article during a showcase. The editor drives it from Discord:
 //
-//   /live start <name> [image]   starts it (one live at a time)
+//   /live start <name> [image] [test]   starts it (one live at a time)
 //   /live add <text>             what they just saw, links pasted as is
 //   /live image <url>            the article's cover (an official visual)
 //   /live stop                   ends it; the next run writes the recap
@@ -16,13 +16,18 @@
 // up to date; after that click every update goes live by itself and is
 // announced with "Annuler cette MAJ". On stop, a final update, the page says
 // the show is over, and a recap article is drafted for the usual validation.
+//
+// A rehearsal (`/live start … test:True`) runs the same steps for real (model,
+// cards, buttons, updates, undo, recap) without anything reaching readers:
+// its articles stay drafts whatever is clicked, it creates no game page and
+// changes no game, and "Supprimer la répétition" deletes what it made.
 
 import { callTool } from './anthropic'
 import { checkBudget, recordUsage } from './budget'
 import type { ScoutContext, SettingsDoc, SourceDoc } from './context'
 import { COLORS, editBotMessage, sendBotMessage, type BotMessage } from './discord-bot'
 import { authorId, existingGames, NO_COVER } from './draft'
-import { applyGameFacts, createGame } from './game-facts'
+import { applyGameFacts, createGame, previewGameFacts } from './game-facts'
 import {
   cleanDraft,
   DRAFT_TOOL,
@@ -73,7 +78,13 @@ export interface EventDoc {
   discordMessageId?: string | null
   /** The recap's game facts, applied to the games library when it's published. */
   recapGameFacts?: CleanGameFactsEntry[] | null
+  /** A rehearsal: nothing it does is public, and it can be deleted whole. */
+  rehearsal?: boolean | null
 }
+
+/** Whether the live page is public: published, and not a rehearsal. */
+const isPublic = (ev: EventDoc) => !!ev.published && !ev.rehearsal
+const tag = (ev: EventDoc) => (ev.rehearsal ? '🧪 RÉPÉTITION · ' : '')
 
 const relId = (v: unknown): number | null =>
   v == null ? null : typeof v === 'object' ? Number((v as { id: number }).id) : Number(v)
@@ -114,6 +125,7 @@ export async function startLive(
   ctx: ScoutContext,
   name: string,
   imageUrl?: string,
+  rehearsal = false,
 ): Promise<string> {
   const running = await current(ctx)
   if (running) return `Un live tourne déjà : « ${running.name} ». /live stop d'abord.`
@@ -137,10 +149,13 @@ export async function startLive(
       entries: [],
       notes: [],
       rev: 0,
+      rehearsal,
       ...(cover ? { cover } : {}),
     } as never,
     overrideAccess: true,
   })
+  if (rehearsal)
+    return `🧪 Répétition « ${name} » lancée${imageNote}. Tout tourne comme un vrai live (/live add, mises à jour toutes les 5 min, boutons), mais rien n'est publié, aucune fiche jeu n'est créée ni modifiée, et « Supprimer la répétition » efface tout à la fin.`
   return `🔴 Live « ${name} » lancé${imageNote}. Envoie ce que tu vois avec /live add (texte + liens). Mise à jour toutes les 5 min ; la page reste en brouillon jusqu'à ton clic sur « Publier le live ».`
 }
 
@@ -171,7 +186,7 @@ export async function setLiveImage(ctx: ScoutContext, url: string): Promise<stri
         collection: 'articles',
         id: articleId,
         data: { coverImage: up.id } as never,
-        draft: !ev.published,
+        draft: !isPublic(ev),
         overrideAccess: true,
       })
     }
@@ -194,7 +209,7 @@ export async function liveStatus(ctx: ScoutContext): Promise<string> {
   if (!ev) return 'Aucun live en cours.'
   const entries = ev.entries ?? []
   const pending = (ev.notes ?? []).filter((n) => !n.done).length
-  return `« ${ev.name} » : ${ev.status === 'live' ? 'en cours' : 'arrêt en cours'}, ${entries.length} annonce(s), ${pending} note(s) en attente, ${ev.published ? 'publié (MAJ automatiques)' : 'en brouillon (attend « Publier le live »)'}${ev.cover ? '' : ", ⚠️ pas encore d'image"}.`
+  return `${tag(ev)}« ${ev.name} » : ${ev.status === 'live' ? 'en cours' : 'arrêt en cours'}, ${entries.length} annonce(s), ${pending} note(s) en attente, ${ev.published ? (ev.rehearsal ? 'publié pour de faux (MAJ automatiques, reste en brouillon)' : 'publié (MAJ automatiques)') : 'en brouillon (attend « Publier le live »)'}${ev.cover ? '' : ", ⚠️ pas encore d'image"}.`
 }
 
 // ─── Buttons ─────────────────────────────────────────────────────────────────
@@ -213,6 +228,9 @@ async function articleUrl(
   return { title: art.title, url: `${ctx.config.webUrl}/article/${art.slug}` }
 }
 
+const adminUrl = (ctx: ScoutContext, id: number) =>
+  `${ctx.config.serverUrl}/admin/collections/articles/${id}`
+
 async function hasCover(ctx: ScoutContext, articleId: number): Promise<boolean> {
   const art = (await ctx.payload.findByID({
     collection: 'articles',
@@ -224,12 +242,23 @@ async function hasCover(ctx: ScoutContext, articleId: number): Promise<boolean> 
   return !!art.coverImage
 }
 
-/** "Publier le live": the article goes live, and every later update too. */
-export async function publishLive(ctx: ScoutContext, eventId: number): Promise<string> {
+/**
+ * "Publier le live": the article goes live, and every later update too. A
+ * rehearsal switches to the published flow (updates without a card, undo)
+ * but its article stays a draft: the link is then the /admin page.
+ */
+export async function publishLive(
+  ctx: ScoutContext,
+  eventId: number,
+): Promise<{ url: string; rehearsal: boolean }> {
   const ev = await getEvent(ctx, eventId)
   const articleId = relId(ev.article)
   if (!articleId) throw new Error("pas encore d'article pour ce live")
   if (!(await hasCover(ctx, articleId))) throw new Error(NO_COVER)
+  if (ev.rehearsal) {
+    await saveEvent(ctx, eventId, { published: true })
+    return { url: adminUrl(ctx, articleId), rehearsal: true }
+  }
   await ctx.payload.update({
     collection: 'articles',
     id: articleId,
@@ -237,7 +266,7 @@ export async function publishLive(ctx: ScoutContext, eventId: number): Promise<s
     overrideAccess: true,
   })
   await saveEvent(ctx, eventId, { published: true })
-  return (await articleUrl(ctx, articleId)).url
+  return { url: (await articleUrl(ctx, articleId)).url, rehearsal: false }
 }
 
 /** "Annuler cette MAJ": back to the page as it was before update `rev`. */
@@ -263,12 +292,20 @@ export async function undoLive(ctx: ScoutContext, eventId: number, rev: number):
   })
 }
 
-/** "Publier le résumé". */
-export async function publishRecap(ctx: ScoutContext, eventId: number): Promise<string> {
+/**
+ * "Publier le résumé". In a rehearsal nothing is published or changed: the
+ * answer lists what the click would have done to the games library.
+ */
+export async function publishRecap(
+  ctx: ScoutContext,
+  eventId: number,
+): Promise<{ url: string; rehearsal: false } | { rehearsal: true; changes: string[] }> {
   const ev = await getEvent(ctx, eventId)
   const recapId = relId(ev.recapArticle)
   if (!recapId) throw new Error('pas de résumé')
   if (!(await hasCover(ctx, recapId))) throw new Error(NO_COVER)
+  if (ev.rehearsal)
+    return { rehearsal: true, changes: await previewGameFacts(ctx, ev.recapGameFacts ?? []) }
   // Every date and console the showcase announced goes into the games library.
   const facts = await applyGameFacts(ctx, ev.recapGameFacts ?? [])
   await ctx.payload.update({
@@ -287,7 +324,7 @@ export async function publishRecap(ctx: ScoutContext, eventId: number): Promise<
   if (liveId) {
     await writeArticle(ctx, ev, liveId, ev.intro ?? '', ev.entries ?? [], true, recap)
   }
-  return recap.url
+  return { url: recap.url, rehearsal: false }
 }
 
 /** "Rejeter le résumé": the draft goes, the live page stays as it is. */
@@ -297,6 +334,53 @@ export async function rejectRecap(ctx: ScoutContext, eventId: number): Promise<v
   if (recapId)
     await ctx.payload.delete({ collection: 'articles', id: recapId, overrideAccess: true })
   await saveEvent(ctx, eventId, { recapArticle: null })
+}
+
+/**
+ * "Supprimer la répétition": the rehearsal's articles, its image, its tag
+ * when nothing else uses it, and the event itself. Refused on a real live.
+ */
+export async function purgeRehearsal(ctx: ScoutContext, eventId: number): Promise<void> {
+  const ev = await getEvent(ctx, eventId)
+  if (!ev.rehearsal) throw new Error("ce n'est pas une répétition : rien supprimé")
+  for (const id of [relId(ev.article), relId(ev.recapArticle)])
+    if (id) await ctx.payload.delete({ collection: 'articles', id, overrideAccess: true })
+  await ctx.payload.delete({
+    collection: 'scout-events' as never,
+    id: eventId,
+    overrideAccess: true,
+  })
+  const cover = relId(ev.cover)
+  if (cover) {
+    const { totalDocs } = await ctx.payload.count({
+      collection: 'articles',
+      where: { coverImage: { equals: cover } },
+      overrideAccess: true,
+    })
+    if (!totalDocs)
+      await ctx.payload
+        .delete({ collection: 'media', id: cover, overrideAccess: true })
+        .catch(() => {})
+  }
+  const { docs } = await ctx.payload.find({
+    collection: 'tags',
+    where: { name: { equals: ev.name.slice(0, 60) } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const t = docs[0]
+  if (t) {
+    const { totalDocs } = await ctx.payload.count({
+      collection: 'articles',
+      where: { tags: { in: [t.id] } },
+      overrideAccess: true,
+    })
+    if (!totalDocs)
+      await ctx.payload
+        .delete({ collection: 'tags', id: t.id, overrideAccess: true })
+        .catch(() => {})
+  }
 }
 
 // ─── The update, every run ───────────────────────────────────────────────────
@@ -341,9 +425,9 @@ async function writeArticle(
         webUrl: ctx.config.webUrl,
       }),
       ...(intro ? { excerpt: intro.slice(0, 300) } : {}),
-      ...(ev.published ? { _status: 'published', status: 'published' } : {}),
+      ...(isPublic(ev) ? { _status: 'published', status: 'published' } : {}),
     } as never,
-    draft: !ev.published,
+    draft: !isPublic(ev),
     overrideAccess: true,
   })
 }
@@ -378,12 +462,14 @@ async function resolveGames(
   ctx: ScoutContext,
   answer: LiveAnswer,
   list: Array<{ id: number; name: string }>,
+  /** A rehearsal links existing games only. */
+  create: boolean,
 ): Promise<Map<string, NonNullable<LiveEntry['game']>>> {
   const out = new Map<string, NonNullable<LiveEntry['game']>>()
   for (const g of [...answer.new_entries, ...answer.update_entries]) {
     if (!g.game || out.has(g.game.toLowerCase())) continue
     let id = matchGame(g.game, null, list)
-    if (!id && g.game_is_new) {
+    if (!id && g.game_is_new && create) {
       id = await createGame(ctx, g.game, g.new_game)
       list.push({ id, name: g.game })
     }
@@ -432,7 +518,7 @@ function card(
     .map((e) => `#${e.id.slice(1)} ${e.headline}`)
     .join('\n')
   return {
-    content: `🔴 **Live « ${ev.name} »** : brouillon, ${args.entries.length} annonce(s). Mis à jour toutes les 5 min tant que tu n'as pas publié. Pour corriger ou compléter une annonce : /live add #numéro + ce qu'il faut changer.`,
+    content: `${tag(ev)}🔴 **Live « ${ev.name} »** : brouillon, ${args.entries.length} annonce(s). Mis à jour toutes les 5 min tant que tu n'as pas publié. Pour corriger ou compléter une annonce : /live add #numéro + ce qu'il faut changer.`,
     embeds: [
       {
         title: args.title.slice(0, 256),
@@ -498,7 +584,9 @@ async function updateEvent(
   if (!notes.length && !items.length) return false
   if (ctx.config.dryRun) return false
 
-  const budget = await checkBudget(ctx, settings)
+  // The month only: a show is the editor's call, and the daily cap (shared
+  // with drafts and translations) must not cut a live short.
+  const budget = await checkBudget(ctx, settings, { monthOnly: true })
   if (!budget.ok) throw new Error(`budget: ${budget.reason}`)
   const entries = ev.entries ?? []
   const titles = await videoTitles(ctx, notes)
@@ -529,7 +617,7 @@ async function updateEvent(
     outputTokens: result.outputTokens,
   })
   const answer = cleanLive(result.input, entries, allowed)
-  const games = await resolveGames(ctx, answer, gameList)
+  const games = await resolveGames(ctx, answer, gameList, !ev.rehearsal)
   const applied = applyLive(entries, answer, ctx.now.toISOString(), notes.length > 0, games)
   const intro = answer.intro || ev.intro || ''
 
@@ -547,7 +635,6 @@ async function updateEvent(
   let cover = relId(ev.cover)
   if (!cover) cover = await coverFromItems(ctx, ev, items)
   let articleId = relId(ev.article)
-  const adminUrl = (id: number) => `${ctx.config.serverUrl}/admin/collections/articles/${id}`
   const title = answer.title || `${ev.name}: every announcement, live`
 
   if (!articleId) {
@@ -586,7 +673,7 @@ async function updateEvent(
         collection: 'articles',
         id: articleId,
         data: { coverImage: cover } as never,
-        draft: !ev.published,
+        draft: !isPublic(ev),
         overrideAccess: true,
       })
     }
@@ -608,7 +695,7 @@ async function updateEvent(
         title,
         intro,
         entries: applied.entries,
-        adminUrl: adminUrl(articleId),
+        adminUrl: adminUrl(ctx, articleId),
         hasCover: !!cover,
       })
       if (ev.discordMessageId) {
@@ -627,7 +714,7 @@ async function updateEvent(
       await sendBotMessage(
         ctx.config.bot,
         {
-          content: `🔴 MAJ live « ${ev.name} » :\n${[
+          content: `${tag(ev)}🔴 MAJ live « ${ev.name} » :\n${[
             ...applied.added.map(
               (e) => `+ #${e.id.slice(1)} ${e.headline}${e.game ? ` (jeu : ${e.game.name})` : ''}`,
             ),
@@ -660,7 +747,7 @@ async function updateEvent(
 async function writeRecap(ctx: ScoutContext, settings: SettingsDoc, ev: EventDoc): Promise<void> {
   const entries = ev.entries ?? []
   if (!entries.length || ctx.config.dryRun || relId(ev.recapArticle)) return
-  const budget = await checkBudget(ctx, settings)
+  const budget = await checkBudget(ctx, settings, { monthOnly: true })
   if (!budget.ok) throw new Error(`budget: ${budget.reason}`)
   const result = await callTool<DraftAnswer>({
     apiKey: ctx.config.anthropicKey!,
@@ -701,10 +788,12 @@ async function writeRecap(ctx: ScoutContext, settings: SettingsDoc, ev: EventDoc
   await saveEvent(ctx, ev.id, { recapArticle: recapId, recapGameFacts: clean.game_facts })
   if (ctx.config.bot) {
     const adminUrl = `${ctx.config.serverUrl}/admin/collections/articles/${recapId}`
+    // What "Publier le résumé" will change in the games library, like a draft's card.
+    const facts = await previewGameFacts(ctx, clean.game_facts).catch(() => [] as string[])
     await sendBotMessage(
       ctx.config.bot,
       {
-        content: `📋 **Résumé de « ${ev.name} »** prêt (${entries.length} annonces).`,
+        content: `${tag(ev)}📋 **Résumé de « ${ev.name} »** prêt (${entries.length} annonces).`,
         embeds: [
           {
             title: clean.title.slice(0, 256),
@@ -718,6 +807,16 @@ async function writeRecap(ctx: ScoutContext, settings: SettingsDoc, ev: EventDoc
                   ? 'celle du live'
                   : "⚠️ pas d'image : ajoute-la dans /admin avant de publier.",
               },
+              ...(facts.length
+                ? [
+                    {
+                      name: ev.rehearsal
+                        ? '🎮 Fiches jeux (répétition : rien ne sera modifié)'
+                        : '🎮 Fiches jeux',
+                      value: facts.join('\n').slice(0, 1024),
+                    },
+                  ]
+                : []),
             ],
           },
         ],
@@ -731,7 +830,14 @@ async function writeRecap(ctx: ScoutContext, settings: SettingsDoc, ev: EventDoc
                 label: 'Publier le résumé',
                 custom_id: `scout:evrecap:${ev.id}`,
               },
-              { type: 2, style: 4, label: 'Rejeter', custom_id: `scout:evrecapno:${ev.id}` },
+              ev.rehearsal
+                ? {
+                    type: 2,
+                    style: 4,
+                    label: 'Supprimer la répétition',
+                    custom_id: `scout:evpurge:${ev.id}`,
+                  }
+                : { type: 2, style: 4, label: 'Rejeter', custom_id: `scout:evrecapno:${ev.id}` },
               { type: 2, style: 5, label: 'Ouvrir dans /admin', url: adminUrl },
             ],
           },
@@ -740,6 +846,21 @@ async function writeRecap(ctx: ScoutContext, settings: SettingsDoc, ev: EventDoc
       ctx.fetch,
     )
   }
+}
+
+// A failed update is retried on the next run (5 min); the editor hears about
+// it once per kind of error per half hour, not every run.
+let lastAlert = { key: '', at: 0 }
+async function alertFailure(ctx: ScoutContext, ev: EventDoc, err: unknown): Promise<void> {
+  const message = err instanceof Error ? err.message : String(err)
+  const key = `${ev.id}:${message.slice(0, 80)}`
+  if (lastAlert.key === key && ctx.now.getTime() - lastAlert.at < 30 * 60_000) return
+  lastAlert = { key, at: ctx.now.getTime() }
+  await ctx
+    .notify({
+      content: `${tag(ev)}⚠️ Live « ${ev.name} » : la mise à jour a échoué (${message.slice(0, 300)}). Nouvel essai dans 5 min ; tes /live add sont gardés.`,
+    })
+    .catch(() => {})
 }
 
 /** The scout run's live step: update the running event, close it when asked. */
@@ -753,7 +874,13 @@ export async function runLive(ctx: ScoutContext, settings: SettingsDoc): Promise
     await saveEvent(ctx, ev.id, { status: 'ending' })
     ev = { ...ev, status: 'ending' }
   }
-  const changed = await updateEvent(ctx, settings, ev)
+  let changed: boolean
+  try {
+    changed = await updateEvent(ctx, settings, ev)
+  } catch (err) {
+    await alertFailure(ctx, ev, err)
+    throw err
+  }
   if (ev.status === 'ending') {
     const fresh = await getEvent(ctx, ev.id)
     const articleId = relId(fresh.article)
@@ -762,7 +889,7 @@ export async function runLive(ctx: ScoutContext, settings: SettingsDoc): Promise
     }
     await saveEvent(ctx, ev.id, { status: 'ended', endedAt: ctx.now.toISOString() })
     // English only while live (lib/translate.ts): one French version now.
-    if (articleId && fresh.published) {
+    if (articleId && isPublic(fresh)) {
       await ctx.payload.jobs.queue({
         task: 'translateArticle',
         input: { articleId },
@@ -775,11 +902,34 @@ export async function runLive(ctx: ScoutContext, settings: SettingsDoc): Promise
         ctx.config.bot,
         fresh.discordMessageId,
         {
-          content: `⏹️ Live « ${fresh.name} » terminé sans avoir été publié. Résumé en brouillon ci-dessous.`,
+          content: `${tag(fresh)}⏹️ Live « ${fresh.name} » terminé sans avoir été publié. Résumé en brouillon ci-dessous.`,
           components: [],
         },
         ctx.fetch,
       ).catch(() => {})
+    }
+    // A rehearsal with no announcement has no recap card: its delete button is here.
+    if (fresh.rehearsal && !(fresh.entries ?? []).length && ctx.config.bot) {
+      await sendBotMessage(
+        ctx.config.bot,
+        {
+          content: `🧪 Répétition « ${fresh.name} » terminée, sans annonce donc sans résumé.`,
+          components: [
+            {
+              type: 1,
+              components: [
+                {
+                  type: 2,
+                  style: 4,
+                  label: 'Supprimer la répétition',
+                  custom_id: `scout:evpurge:${fresh.id}`,
+                },
+              ],
+            },
+          ],
+        },
+        ctx.fetch,
+      )
     }
   }
   return changed ? 1 : 0

@@ -857,7 +857,8 @@ domain change:
 The site side is ready (2026-11-18): `/sitemap.xml` (every page, both
 languages), `/news-sitemap.xml` (articles of the last 48 hours, Google News
 format), both listed in `/robots.txt`, `NewsArticle` markup and large image
-previews on every article. What's left is done by hand, once:
+previews on every article. Done by hand once, on 2026-11-18 (both sitemaps
+*Success* on day 1, publication verified in the Publisher Center):
 
 1. **Search Console.** [search.google.com/search-console](https://search.google.com/search-console)
    → *Add property* → **Domain** → `akavish.gg`. Google gives a TXT record:
@@ -868,7 +869,9 @@ previews on every article. What's left is done by hand, once:
 3. **Google News.** [publishercenter.google.com](https://publishercenter.google.com)
    → *Add publication*: name **Akavish**, website `https://akavish.gg` (it
    picks up the Search Console verification), languages English and French,
-   category *Video games* / *Technology*, logo `apps/web/src/app/icon.png`,
+   category *Video games* / *Technology*, logos: square = the app icon at
+   1000 px (`apps/web/scripts/generate-icons.py`), rectangular = the
+   "Akavish" wordmark on a dark tile (readable on light and dark),
    contact `hello@akavish.gg`. Google News lists sites automatically when they
    follow its policies (dates, authors, transparency pages: `/about`,
    `/contact`, `/legal` are there); the Publisher Center only manages how the
@@ -1400,8 +1403,35 @@ minutes while it runs.
    **Rejeter**. Publishing it adds a "Full recap" link on the live page. A live
    left running stops by itself after 8 hours.
 
-Cost: about 0.02-0.03 $ per update with something new (nothing new, no call),
-so under 1 $ for a two-hour show, plus about 0.03 $ for the recap.
+Cost: about 0.02-0.04 $ per update with something new (nothing new, no call),
+so 1-2 $ for a three-hour show, plus about 0.03 $ for the recap. Live and
+recap calls only check the **monthly** budget: the daily cap
+(`SCOUT_DAILY_BUDGET_USD`, shared with drafts and translations) never stops a
+show. A failed update is retried on the next run, and Discord gets a
+"⚠️ … la mise à jour a échoué" message (once per error per half hour); your
+`/live add` notes are kept until an update goes through.
+
+**Rehearsal (`test:True`).** `/live start nom:"Rehearsal" test:True` runs the
+same thing for real (Sonnet, the card, *Publier le live*, automatic updates,
+*Annuler cette MAJ*, stop, the recap) with nothing public: messages say
+🧪 RÉPÉTITION, the live article and the recap stay drafts whatever you click,
+no game page is created or changed (*Publier le résumé* answers with the
+changes it would have made), no French version is queued. The recap card has
+**Supprimer la répétition** instead of *Rejeter*: it deletes both articles, the
+image, the tag (when nothing else uses it) and the event. Do one before each
+big show: about 20 minutes and well under 1 $.
+
+1. `/live start nom:"Akavish Rehearsal" test:True image:<an official visual's URL>`
+   (or `/live image url:…` afterwards).
+2. Three or four `/live add`, as during a show: a reveal with a trailer link
+   (`… https://www.youtube.com/watch?v=…`), a date for an existing game, then
+   a correction (`#1 …`). Wait for the card (5 min): entries, links, image.
+3. **Publier le live** (answer: "Répétition … reste en brouillon"), one more
+   `/live add`, wait for the "MAJ live" message, try **Annuler cette MAJ**.
+4. `/live status`, then `/live stop`. Within 5 min: the recap card, with
+   🎮 Fiches jeux. **Publier le résumé** lists what it would change; check the
+   recap in /admin.
+5. **Supprimer la répétition**. /admin → *Scout events* is empty of it.
 Setup: none. The CMS registers the `/live` command with Discord at start-up
 (log line `[scout] Discord /live command registered`). If `/live` doesn't show
 in Discord, the bot was invited without the commands scope: reinvite it with

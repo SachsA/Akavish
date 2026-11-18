@@ -43,8 +43,13 @@ export type BudgetState = { ok: true } | { ok: false; reason: string }
 /**
  * Whether a paid call may run now. Sends each alert once (stamped in
  * scout-settings) and pauses the scout when the monthly budget is spent.
+ * `monthOnly`: the live mode, which the daily cap must not stop mid-show.
  */
-export async function checkBudget(ctx: ScoutContext, settings: SettingsDoc): Promise<BudgetState> {
+export async function checkBudget(
+  ctx: ScoutContext,
+  settings: SettingsDoc,
+  opts: { monthOnly?: boolean } = {},
+): Promise<BudgetState> {
   const { month, day } = periodStarts(ctx.now)
   const [monthSpent, daySpent] = await Promise.all([spentSince(ctx, month), spentSince(ctx, day)])
   const { monthlyBudgetUsd, dailyBudgetUsd } = ctx.config
@@ -79,7 +84,7 @@ export async function checkBudget(ctx: ScoutContext, settings: SettingsDoc): Pro
     )
     return { ok: false, reason: 'monthly budget spent' }
   }
-  if (daySpent >= dailyBudgetUsd) {
+  if (daySpent >= dailyBudgetUsd && !opts.monthOnly) {
     await alertOnce(
       `${dayKey}:day`,
       `**Scout** : plafond du jour atteint (${fmt(daySpent)} sur ${fmt(dailyBudgetUsd)}). Le tri reprend demain.`,

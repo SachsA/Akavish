@@ -4,7 +4,8 @@ import { editors } from '../../access/roles'
 /**
  * Event mode (step 5): one live article during a showcase, fed by the scout's
  * feeds and by the editor's `/live add` on Discord, updated every 5 minutes,
- * then a recap article when the editor runs `/live stop`. Created and driven
+ * then a recap article when the editor runs `/live stop`. `/live start … test`
+ * makes a rehearsal that nothing public sees. Created and driven
  * from Discord (src/scout/live.ts); read-only here except for fixes.
  */
 export const ScoutEvents: CollectionConfig = {
@@ -31,6 +32,16 @@ export const ScoutEvents: CollectionConfig = {
         { label: 'Ending (recap on the next run)', value: 'ending' },
         { label: 'Ended', value: 'ended' },
       ],
+    },
+    {
+      name: 'rehearsal',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        readOnly: true,
+        description:
+          '/live start … test:True. Runs like a real live, but its articles stay drafts, no game page is created or changed, and "Supprimer la répétition" deletes it all.',
+      },
     },
     { name: 'startedAt', type: 'date', required: true },
     { name: 'endedAt', type: 'date' },
