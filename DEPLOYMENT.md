@@ -1245,7 +1245,7 @@ Automatic drafts are **off** until you tick *Scout settings → draftsEnabled*.
 | `SCOUT_DISCORD_OWNER_ID` | — | Your user ID: only your clicks count. |
 | `SCOUT_DISCORD_LIVE_CHANNEL_ID` | the scout channel | Optional: a channel for event mode only (`#scout-conferences`): live cards, live updates, recaps, failed-update alerts. |
 | `SCOUT_DISCORD_BUDGET_CHANNEL_ID` | the scout channel | Optional: a channel for the budget alerts (`#scout-alert-budget`): 80 % of the month, daily cap reached, scout paused. |
-| `SCOUT_DISCORD_REPORT_CHANNEL_ID` | the scout channel | Optional: a channel for the weekly report (`#scout-rapport-hebdo`), Saturday morning. |
+| `SCOUT_DISCORD_REPORT_CHANNEL_ID` | the scout channel | Optional: a channel for the weekly report (`#scout-weekly-report`), Saturday morning. |
 
 **Step 2, the Discord bot (once).** A webhook can only post; buttons need a
 bot. Discord calls the CMS when you click, at `/api/scout/discord`.
@@ -1442,7 +1442,7 @@ big show: about 20 minutes and well under 1 $.
 | `#scout-news` | Digests (8 am / 8 pm, "Rédiger…" menu), drafts with Publier / Modifier / Rejeter, their V2, failed drafts | `SCOUT_DISCORD_CHANNEL_ID` (renaming a channel keeps its ID) |
 | `#scout-conferences` | Event mode: live card, "MAJ live" + undo, recap card, failed live updates; type `/live` here | `SCOUT_DISCORD_LIVE_CHANNEL_ID` |
 | `#scout-alert-budget` | Budget alerts: 80 % of the month, daily cap reached, scout paused | `SCOUT_DISCORD_BUDGET_CHANNEL_ID` |
-| `#scout-rapport-hebdo` | The weekly report, Saturday morning | `SCOUT_DISCORD_REPORT_CHANNEL_ID` |
+| `#scout-weekly-report` | The weekly report, Saturday morning | `SCOUT_DISCORD_REPORT_CHANNEL_ID` |
 | `#moderation` | Comment reports | `MODERATION_DISCORD_WEBHOOK_URL` (a webhook, not the bot) |
 
 For each bot channel: create it (private) → its settings → *Permissions* →
