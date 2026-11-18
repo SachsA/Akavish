@@ -653,6 +653,13 @@ checklist it walks through.
   `next/link` sends French readers to the English page. Server pages call
   `setRequestLocale((await params).locale)` first (and in `generateMetadata`),
   or `getMessages()` falls back to English.
+- **List pagination uses plain `<a>` links, not `LocaleLink`** (fixed
+  2026-11-18). List pages read their page from the path the proxy rewrites
+  `?page=N` to (`/news/page/2`), so on French pages the client router took
+  `/fr/news` and `/fr/news?page=2` for the same cached page: the address
+  changed, the list didn't (English worked because its proxy rewrite told the
+  router more). `components/Pagination.tsx` builds the href with `localHref`
+  and does a full load. Same for any future link that only changes `?page=`.
 - **A reader's `emailVerified` in the CMS can be stale.** It's refreshed from
   Clerk on each write (and on `/account`), not when the reader verifies. So the
   comments form trusts Clerk's own client-side status, never the CMS copy

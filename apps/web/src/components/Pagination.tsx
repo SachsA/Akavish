@@ -1,8 +1,15 @@
-import Link from '@/components/LocaleLink'
 import { pageHref } from '@/lib/pagination'
-import { getMessages } from '@/lib/i18n/server'
+import { getMessages, localHref } from '@/lib/i18n/server'
 
-/** "← Newer · Page 2 of 5 · Older →" under an article list. Nothing when there's one page. */
+/**
+ * "← Newer · Page 2 of 5 · Older →" under an article list. Nothing when there's one page.
+ *
+ * Plain links (a full page load), not next/link: the list pages read their
+ * page from the path the proxy rewrites `?page=N` to, so the client router
+ * sees `/fr/news` and `/fr/news?page=2` as the same cached page and changed
+ * the address without changing the list (French pages, 2026-11-18). The
+ * pages are cached, so the load is quick.
+ */
 export function Pagination({
   basePath,
   page,
@@ -19,9 +26,9 @@ export function Pagination({
   return (
     <nav aria-label={t.label} className="mt-10 flex items-center justify-between gap-4">
       {page > 1 ? (
-        <Link href={pageHref(basePath, page - 1)} rel="prev" className={link}>
+        <a href={localHref(pageHref(basePath, page - 1))} rel="prev" className={link}>
           {t.newer}
-        </Link>
+        </a>
       ) : (
         <span />
       )}
@@ -29,9 +36,9 @@ export function Pagination({
         {t.pageOf(page, totalPages)}
       </p>
       {page < totalPages ? (
-        <Link href={pageHref(basePath, page + 1)} rel="next" className={link}>
+        <a href={localHref(pageHref(basePath, page + 1))} rel="next" className={link}>
           {t.older}
-        </Link>
+        </a>
       ) : (
         <span />
       )}

@@ -70,7 +70,8 @@ exists in English (bare path) and French (`/fr/…`).
   `setRequestLocale((await params).locale)`, then take every word from
   `getMessages()` (client components: `useI18n()`). New strings go in both
   `lib/i18n/messages/en.ts` and `fr.ts`; the unit test fails if French misses a
-  key. Links: `import Link from '@/components/LocaleLink'`, never `next/link`.
+  key. Links: `import Link from '@/components/LocaleLink'`, never `next/link`
+  (list pagination is the exception: plain `<a>` with `localHref`).
   Dates: `<DateText iso=… />`, never `toLocaleDateString` by hand.
 
 - **Data:** fetch through `src/lib/payload.ts` (it already filters to

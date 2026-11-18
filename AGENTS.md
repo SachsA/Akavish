@@ -104,7 +104,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `apps/web/src/app/[locale]`; English at the bare path, French under `/fr`
   (same slugs). Every interface string goes in `lib/i18n/messages/en.ts` and
   `fr.ts` (same keys, tested), never inline. Internal links: `import Link from
-  '@/components/LocaleLink'` (never `next/link`). Dates: `<DateText>` or
+  '@/components/LocaleLink'` (never `next/link`), except `?page=` links, which
+  are plain `<a>` built with `localHref` (`Pagination.tsx`, see PROGRESS
+  gotchas). Dates: `<DateText>` or
   `lib/i18n/dates.ts` (🇬🇧 / 🇺🇸 / 🇫🇷). Server pages call
   `setRequestLocale((await params).locale)` then `getMessages()`; metadata uses
   `alternates(locale, path)` for canonical + hreflang. Client components use
