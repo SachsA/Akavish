@@ -45,6 +45,9 @@ describe('cleanDraft', () => {
 
   it('refuses an answer without a title or a paragraph', () => {
     expect(() => cleanDraft(answer({ title: ' ' }), 'news')).toThrow()
+    // Reviews and previews are the editor's own: "GTA VI reviews are in" is news.
+    expect(cleanDraft(answer({ category: 'review' }), 'review').category).toBe('news')
+    expect(cleanDraft(answer({ category: 'preview' }), 'news').category).toBe('news')
     expect(() =>
       cleanDraft(answer({ blocks: [{ type: 'heading', text: 'Only a heading' }] }), 'news'),
     ).toThrow()

@@ -1302,7 +1302,10 @@ the news every day gets varied pictures. Never a press
 outlet's image: their photos aren't ours to reuse. YouTube videos embedded or
 linked in the sources are looked up (title and channel, YouTube oEmbed, no
 key); Sonnet keeps the official ones about the story and the article links them
-in a **Watch** section above *Sources*. **Tags:** 2 to 5, in this order: the
+in a **Watch** section above *Sources*. **Category:** never *Reviews* or
+*Previews*, which are the editor's own (with a score): a story about other
+outlets' reviews or Metacritic is *News* (`cleanDraft` forces it since
+2026-11-18, after three GTA VI review roundups landed in Reviews). **Tags:** 2 to 5, in this order: the
 company behind the news (publisher, studio, platform holder), the platforms
 concerned, then the theme or event (Sales, DLC, Studio closures…). Sonnet uses
 the existing tags and may create at most 2 missing ones per draft (never the
