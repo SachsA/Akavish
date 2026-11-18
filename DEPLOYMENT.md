@@ -1243,7 +1243,9 @@ Automatic drafts are **off** until you tick *Scout settings → draftsEnabled*.
 | `DISCORD_PUBLIC_KEY` | — | Same page. Checks that clicks really come from Discord. |
 | `SCOUT_DISCORD_CHANNEL_ID` | — | The private channel (Developer Mode → Copy Channel ID). |
 | `SCOUT_DISCORD_OWNER_ID` | — | Your user ID: only your clicks count. |
-| `SCOUT_DISCORD_LIVE_CHANNEL_ID` | the scout channel | Optional: a channel for event mode only (`#scout-conference`): live cards, live updates, recaps, failed-update alerts. Drafts, digests and budget alerts stay in the scout channel. |
+| `SCOUT_DISCORD_LIVE_CHANNEL_ID` | the scout channel | Optional: a channel for event mode only (`#scout-conferences`): live cards, live updates, recaps, failed-update alerts. |
+| `SCOUT_DISCORD_BUDGET_CHANNEL_ID` | the scout channel | Optional: a channel for the budget alerts (`#scout-alert-budget`): 80 % of the month, daily cap reached, scout paused. |
+| `SCOUT_DISCORD_REPORT_CHANNEL_ID` | the scout channel | Optional: a channel for the weekly report (`#scout-rapport-hebdo`), Saturday morning. |
 
 **Step 2, the Discord bot (once).** A webhook can only post; buttons need a
 bot. Discord calls the CMS when you click, at `/api/scout/discord`.
@@ -1433,14 +1435,21 @@ big show: about 20 minutes and well under 1 $.
    🎮 Fiches jeux. **Publier le résumé** lists what it would change; check the
    recap in /admin.
 5. **Supprimer la répétition**. /admin → *Scout events* is empty of it.
-**Conferences channel (optional, set up 2026-11-18).** So a show doesn't
-drown the day's drafts: Discord → create `#scout-conference` (private, like
-the scout channel) → its settings → *Permissions* → add the bot's role with
-*View Channel*, *Send Messages*, *Embed Links*, *Read Message History* →
-right-click the channel → *Copy Channel ID* → Railway → CMS → *Variables* →
-`SCOUT_DISCORD_LIVE_CHANNEL_ID` = that ID (Railway redeploys). From then on the
-live card, the "MAJ live" messages, the recap and the failure alerts go
-there. Type the `/live` commands there too (they work in any channel, the
+**Discord channels (set up 2026-11-18).** Five private channels:
+
+| Channel | What goes there | Set by |
+| --- | --- | --- |
+| `#scout-news` | Digests (8 am / 8 pm, "Rédiger…" menu), drafts with Publier / Modifier / Rejeter, their V2, failed drafts | `SCOUT_DISCORD_CHANNEL_ID` (renaming a channel keeps its ID) |
+| `#scout-conferences` | Event mode: live card, "MAJ live" + undo, recap card, failed live updates; type `/live` here | `SCOUT_DISCORD_LIVE_CHANNEL_ID` |
+| `#scout-alert-budget` | Budget alerts: 80 % of the month, daily cap reached, scout paused | `SCOUT_DISCORD_BUDGET_CHANNEL_ID` |
+| `#scout-rapport-hebdo` | The weekly report, Saturday morning | `SCOUT_DISCORD_REPORT_CHANNEL_ID` |
+| `#moderation` | Comment reports | `MODERATION_DISCORD_WEBHOOK_URL` (a webhook, not the bot) |
+
+For each bot channel: create it (private) → its settings → *Permissions* →
+add the bot's role with *View Channel*, *Send Messages*, *Embed Links*,
+*Read Message History* → right-click → *Copy Channel ID* → Railway → CMS →
+*Variables* → the variable above = that ID (Railway redeploys). An unset
+variable sends that kind of message to `#scout-news`. Type the `/live` commands there too (they work in any channel, the
 answers are only visible to you). The drafts the scout writes about single
 announcements during the show stay in the scout channel, with the other news.
 
@@ -1547,7 +1556,7 @@ The site is in English and French (`/fr`). Interface text lives in the web
 | `DISCORD_BOT_TOKEN`   | `…`                              | **Secret**, scout bot (§11)         |
 | `DISCORD_APPLICATION_ID` / `DISCORD_PUBLIC_KEY` | `…` | Scout bot, developer portal (§11) |
 | `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |
-| `SCOUT_DISCORD_LIVE_CHANNEL_ID` | `…` (optional) | Channel for `/live` (cards, updates, recaps); unset = the scout channel (§11) |
+| `SCOUT_DISCORD_LIVE_CHANNEL_ID` / `_BUDGET_` / `_REPORT_` | `…` (optional) | Channels of their own for `/live`, the budget alerts and the weekly report; unset = the scout channel (§11) |
 | `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
 | `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
 | `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |

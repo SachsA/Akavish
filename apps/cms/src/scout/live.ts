@@ -24,6 +24,7 @@
 
 import { callTool } from './anthropic'
 import { checkBudget, recordUsage } from './budget'
+import { botIn } from './config'
 import type { ScoutContext, SettingsDoc, SourceDoc } from './context'
 import { COLORS, editBotMessage, sendBotMessage, type BotMessage } from './discord-bot'
 import { authorId, existingGames, NO_COVER } from './draft'
@@ -86,10 +87,7 @@ export interface EventDoc {
  * The bot, posting in the conferences channel when there is one
  * (SCOUT_DISCORD_LIVE_CHANNEL_ID), else in the scout's channel.
  */
-const liveBot = (ctx: ScoutContext) =>
-  ctx.config.bot
-    ? { ...ctx.config.bot, channelId: ctx.config.bot.liveChannelId || ctx.config.bot.channelId }
-    : undefined
+const liveBot = (ctx: ScoutContext) => (ctx.config.bot ? botIn(ctx.config.bot, 'live') : undefined)
 
 /** Whether the live page is public: published, and not a rehearsal. */
 const isPublic = (ev: EventDoc) => !!ev.published && !ev.rehearsal

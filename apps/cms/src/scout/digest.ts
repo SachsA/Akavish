@@ -9,6 +9,7 @@
 import type { ItemDoc, ScoutContext, SettingsDoc, SourceDoc, StoryDoc } from './context'
 import { digestMessages, type DigestStory } from './discord'
 import { pickMenu, sendBotMessage } from './discord-bot'
+import { botIn } from './config'
 import { gatherReport, isReportDay, reportMessages } from './report'
 import { dueDigest, parisClock, type DigestSlot } from './schedule'
 
@@ -108,7 +109,8 @@ export async function maybeSendDigest(
       const report = await gatherReport(ctx, settings.threshold ?? 60, 7)
       for (const message of reportMessages(report)) {
         if (ctx.config.bot && !ctx.config.dryRun) {
-          await sendBotMessage(ctx.config.bot, message, ctx.fetch)
+          // Its own channel when SCOUT_DISCORD_REPORT_CHANNEL_ID is set.
+          await sendBotMessage(botIn(ctx.config.bot, 'report'), message, ctx.fetch)
         } else {
           await ctx.notify(message)
         }

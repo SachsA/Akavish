@@ -6,6 +6,8 @@
 // and the prepaid balance.
 
 import type { ScoutContext, SettingsDoc } from './context'
+import { botIn } from './config'
+import { sendBotMessage } from './discord-bot'
 import { costUsd } from './pricing'
 import { periodStarts } from './schedule'
 
@@ -61,7 +63,11 @@ export async function checkBudget(
   const sent = (settings.lastBudgetAlert ?? '').split(',').filter(Boolean)
   const alertOnce = async (key: string, text: string) => {
     if (sent.includes(key)) return
-    await ctx.notify({ content: text })
+    // Its own channel when SCOUT_DISCORD_BUDGET_CHANNEL_ID is set.
+    const bot = ctx.config.bot
+    if (bot?.budgetChannelId && !ctx.config.dryRun)
+      await sendBotMessage(botIn(bot, 'budget'), { content: text }, ctx.fetch)
+    else await ctx.notify({ content: text })
     sent.push(key)
     settings.lastBudgetAlert = sent.slice(-10).join(',')
     await ctx.payload.updateGlobal({

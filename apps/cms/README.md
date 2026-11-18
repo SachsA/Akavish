@@ -447,9 +447,12 @@ returns the `previewGameFacts` lines instead of publishing; no translation
 queued; `scout:evpurge:<event>` (`purgeRehearsal`, refused on a real event)
 deletes the articles, the cover when no article uses it, the tag when no
 article uses it, and the event. Int test: *event mode rehearsal*. Every
-event-mode post goes through `liveBot(ctx)`: the bot with
-`SCOUT_DISCORD_LIVE_CHANNEL_ID` as its channel when set (a `#scout-conference`
-channel), else the scout channel.
+event-mode post goes through `liveBot(ctx)` = `botIn(bot, 'live')`
+(`config.ts`): the bot with `SCOUT_DISCORD_LIVE_CHANNEL_ID` as its channel when
+set, else the scout channel. Same for the budget alerts (`botIn(bot,
+'budget')`, `SCOUT_DISCORD_BUDGET_CHANNEL_ID`) and the weekly report
+(`'report'`, `SCOUT_DISCORD_REPORT_CHANNEL_ID`); digests and drafts stay in
+`SCOUT_DISCORD_CHANNEL_ID`. Unit test `config.test.ts`.
 
 **Discord validation** (`discord-bot.ts`, `interactions.ts`). Each draft is a
 bot message with **Publier** / **Modifier** / **Rejeter** and a link to

@@ -11,6 +11,10 @@ export interface DiscordBotConfig {
   channelId: string
   /** Optional: a channel of its own for event mode (/live cards, updates, recaps). */
   liveChannelId?: string
+  /** Optional: a channel of its own for the budget alerts. */
+  budgetChannelId?: string
+  /** Optional: a channel of its own for the weekly report. */
+  reportChannelId?: string
   /** The only Discord user whose clicks are accepted. */
   ownerId: string
 }
@@ -30,6 +34,21 @@ export interface ScoutConfig {
   /** Links in Discord messages. */
   serverUrl: string
   webUrl: string
+}
+
+/**
+ * The bot posting in a channel of its own when one is set: `live` (event
+ * mode), `budget` (budget alerts), `report` (weekly report). Else the scout
+ * channel, where digests and drafts go.
+ */
+export function botIn(
+  bot: DiscordBotConfig,
+  channel: 'live' | 'budget' | 'report',
+): DiscordBotConfig {
+  const id = { live: bot.liveChannelId, budget: bot.budgetChannelId, report: bot.reportChannelId }[
+    channel
+  ]
+  return id ? { ...bot, channelId: id } : bot
 }
 
 const num = (v: string | undefined, fallback: number) => {
@@ -53,6 +72,12 @@ export function scoutConfig(env: Record<string, string | undefined> = process.en
           ownerId: env.SCOUT_DISCORD_OWNER_ID,
           ...(env.SCOUT_DISCORD_LIVE_CHANNEL_ID
             ? { liveChannelId: env.SCOUT_DISCORD_LIVE_CHANNEL_ID }
+            : {}),
+          ...(env.SCOUT_DISCORD_BUDGET_CHANNEL_ID
+            ? { budgetChannelId: env.SCOUT_DISCORD_BUDGET_CHANNEL_ID }
+            : {}),
+          ...(env.SCOUT_DISCORD_REPORT_CHANNEL_ID
+            ? { reportChannelId: env.SCOUT_DISCORD_REPORT_CHANNEL_ID }
             : {}),
         }
       : undefined
