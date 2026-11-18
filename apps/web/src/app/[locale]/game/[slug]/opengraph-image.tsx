@@ -1,4 +1,4 @@
-import { fetchGameBySlug } from '@/lib/payload'
+import { fetchAllPlatforms, fetchGameBySlug } from '@/lib/payload'
 import { renderOgImage } from '@/lib/og'
 import { platformShort } from '@/lib/platforms'
 import { isLocale } from '@/lib/i18n/config'
@@ -18,8 +18,12 @@ export default async function OgImage({ params }: { params: Promise<{ locale: st
   setRequestLocale(locale)
   const t = messagesFor(isLocale(locale) ? locale : 'en')
   const game = await fetchGameBySlug(slug).catch(() => null)
+  const platforms = await fetchAllPlatforms().catch(() => [])
 
-  const details = [game?.developers.map((c) => c.name).join(', '), game?.platforms.map(platformShort).join(' · ')]
+  const details = [
+    game?.developers.map((c) => c.name).join(', '),
+    game?.platforms.map((p) => platformShort(p, platforms)).join(' · '),
+  ]
     .filter(Boolean)
     .join(' — ')
 

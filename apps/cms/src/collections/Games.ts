@@ -3,7 +3,7 @@ import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-
 import { slugField } from '../fields/slug'
 import { editors } from '../access/roles'
 import { cleanReleases, summarize } from '../lib/game-releases'
-import { DATE_PRECISIONS, PLATFORMS } from '../lib/platforms'
+import { DATE_PRECISIONS } from '../lib/platforms'
 
 export const Games: CollectionConfig = {
   slug: 'games',
@@ -73,10 +73,12 @@ export const Games: CollectionConfig = {
       fields: [
         {
           name: 'platforms',
-          type: 'select',
+          type: 'relationship',
+          relationTo: 'platforms',
           hasMany: true,
-          options: PLATFORMS.map((p) => ({ label: p.label, value: p.value })),
-          admin: { description: 'Vide = consoles pas encore annoncées.' },
+          admin: {
+            description: 'Vide = consoles pas encore annoncées. Une console qui manque : « Create new » (ou Platforms).',
+          },
         },
         {
           type: 'row',
@@ -111,9 +113,9 @@ export const Games: CollectionConfig = {
       // Derived from the releases on save (read-only): every console and the
       // first known date. The site sorts and filters on these.
       name: 'platforms',
-      type: 'select',
+      type: 'relationship',
+      relationTo: 'platforms',
       hasMany: true,
-      options: PLATFORMS.map((p) => ({ label: p.label, value: p.value })),
       admin: { readOnly: true, position: 'sidebar', description: 'Calculé depuis les sorties.' },
     },
     {

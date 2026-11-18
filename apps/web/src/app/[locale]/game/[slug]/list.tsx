@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import type { Article } from '@akavish/types'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
-import { fetchGameBySlug, fetchArticles } from '@/lib/payload'
+import { fetchAllPlatforms, fetchGameBySlug, fetchArticles } from '@/lib/payload'
 import { breadcrumbList } from '@/lib/structured-data'
 import { JsonLd } from '@/components/JsonLd'
 import { ArticleCard } from '@/components/ArticleCard'
@@ -17,7 +17,7 @@ import Link from '@/components/LocaleLink'
 import { FollowButton } from '@/components/FollowButton'
 import { ReleaseDate } from '@/components/ReleaseDate'
 import { formatPlatforms } from '@/lib/game-library'
-import { platformLabel, platformShort } from '@/lib/platforms'
+import { platformLabel, platformShort, type PlatformInfo } from '@/lib/platforms'
 
 
 function CompanyLinks({ companies }: { companies: Array<{ slug: string; name: string }> }) {
@@ -72,6 +72,7 @@ export async function ListPage({
   const page = parsePage((await params).n)
   if (page === null) notFound()
 
+  const platforms: PlatformInfo[] = await fetchAllPlatforms().catch(() => [])
   let game
   try {
     game = await fetchGameBySlug(slug)
@@ -102,7 +103,7 @@ export async function ListPage({
           '@type': 'VideoGame',
           name: game.name,
           ...(game.cover ? { image: game.cover } : {}),
-          ...(game.platforms.length ? { gamePlatform: game.platforms.map(platformLabel) } : {}),
+          ...(game.platforms.length ? { gamePlatform: game.platforms.map((p) => platformLabel(p, platforms)) } : {}),
           ...(game.genre.length ? { genre: game.genre } : {}),
           ...(game.developers.length ? { author: game.developers.map((c) => ({ '@type': 'Organization', name: c.name })) } : {}),
           ...(game.publishers.length ? { publisher: game.publishers.map((c) => ({ '@type': 'Organization', name: c.name })) } : {}),
@@ -132,10 +133,10 @@ export async function ListPage({
               {game.platforms.map((p) => (
                 <Link
                   key={p}
-                  href={`/games?platform=${p}`}
+                  href={`/platform/${p}`}
                   className="px-2.5 py-1 rounded-full border border-zinc-700 text-xs text-zinc-200 hover:border-emerald-500 hover:text-white transition-colors"
                 >
-                  {platformShort(p)}
+                  {platformShort(p, platforms)}
                 </Link>
               ))}
               {game.genre.map((g) => (
@@ -176,7 +177,7 @@ export async function ListPage({
                     <li key={i}>
                       <ReleaseDate release={r} />
                       {r.platforms.length > 0 && (
-                        <span className="text-zinc-400"> · {formatPlatforms(r.platforms)}</span>
+                        <span className="text-zinc-400"> · {formatPlatforms(r.platforms, platforms)}</span>
                       )}
                     </li>
                   ))}

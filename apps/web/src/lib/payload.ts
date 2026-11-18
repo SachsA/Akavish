@@ -19,7 +19,7 @@ import { localizeArticle, pick } from './i18n/content'
 import { getLocale } from './i18n/server'
 import { matchGames } from './game-match'
 import type { LibraryCompany, LibraryGame, Release } from './game-library'
-import { sortPlatforms } from './platforms'
+import { PLATFORM_FAMILIES, sortPlatforms, type PlatformFamily, type PlatformInfo } from './platforms'
 import { CMS_TAG } from './revalidate'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
@@ -326,15 +326,83 @@ export interface GameListItem extends LibraryGame {
   releaseDate?: string
 }
 
-type RawRelease = { platforms?: string[] | null; date?: string | null; precision?: string | null }
+type RawRelease = { platforms?: unknown[] | null; date?: string | null; precision?: string | null }
 
-/** Releases as the CMS stores them → the library's shape (day, no time). */
+/**
+ * Consoles as populated by the CMS ({ slug }) → their slugs. A plain string
+ * is already a slug (the CMS before its Platforms migration, during a deploy).
+ */
+export const platformSlugs = (v: unknown[] | null | undefined): string[] =>
+  (v ?? []).flatMap((p) =>
+    typeof p === 'string'
+      ? [p]
+      : p && typeof p === 'object' && 'slug' in p
+        ? [String((p as { slug: string }).slug)]
+        : [],
+  )
+
+/** Releases as the CMS stores them → the library's shape (day, no time, console slugs). */
 export function mapReleases(rows: RawRelease[] | null | undefined): Release[] {
   return (rows ?? []).map((r) => {
     const precision = (['day', 'month', 'quarter', 'year', 'tba'] as const).find((p) => p === r.precision) ?? 'tba'
     const date = precision !== 'tba' && r.date ? r.date.slice(0, 10) : null
-    return { platforms: r.platforms ?? [], date, precision: date ? precision : 'tba' }
+    return { platforms: platformSlugs(r.platforms), date, precision: date ? precision : 'tba' }
   })
+}
+
+export interface PlatformEntity extends PlatformInfo {
+  id: string
+  aliases: string[]
+  /** The console's own release (YYYY-MM-DD + precision), when known. */
+  release?: Release
+  logo?: string
+  tagId?: string
+}
+
+/**
+ * Every console (Platforms in the CMS), in the site's order: the library's
+ * filter, the labels on game pages, the console pages. Cached 5 min.
+ */
+export async function fetchAllPlatforms(): Promise<PlatformEntity[]> {
+  const qs = new URLSearchParams({ depth: '1', pagination: 'false', sort: 'position' })
+  for (const f of ['url', 'filename', 'prefix', 'sizes][square][url']) qs.set(`populate[media][${f}]`, 'true')
+  qs.set('populate[tags][id]', 'true')
+  const res = await cmsFetch(`${CMS_URL}/api/platforms?${qs.toString()}`, { next: { revalidate: 300 } })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{
+    id: string | number
+    slug: string
+    name: string
+    short?: string | null
+    family?: string | null
+    position?: number | null
+    aliases?: string[] | null
+    releaseDate?: string | null
+    releasePrecision?: string | null
+    logo?: PayloadMedia
+    tag?: { id: string | number } | string | number | null
+  }>
+  const list = json.docs.map((d): PlatformEntity => {
+    const tag = d.tag && typeof d.tag === 'object' ? d.tag.id : d.tag
+    const release = mapReleases([{ date: d.releaseDate, precision: d.releasePrecision }])[0]
+    return {
+      id: String(d.id),
+      value: d.slug,
+      label: d.name,
+      short: d.short?.trim() || d.name,
+      family: (PLATFORM_FAMILIES as readonly string[]).includes(d.family ?? '') ? (d.family as PlatformFamily) : 'other',
+      position: Number(d.position ?? 0),
+      aliases: d.aliases ?? [],
+      ...(release.date ? { release } : {}),
+      logo: mediaUrl(d.logo, 'square'),
+      tagId: tag ? String(tag) : undefined,
+    }
+  })
+  return sortPlatforms(list.map((p) => p.value), list).map((v) => list.find((p) => p.value === v)!)
+}
+
+export async function fetchPlatformBySlug(slug: string): Promise<PlatformEntity | null> {
+  return (await fetchAllPlatforms()).find((p) => p.value === slug) ?? null
 }
 
 const companySlugs = (v: unknown[] | null | undefined) =>
@@ -353,6 +421,7 @@ export async function fetchAllGames(): Promise<GameListItem[]> {
   for (const f of ['url', 'filename', 'prefix', 'sizes][card][url', 'sizes][card][filename'])
     qs.set(`populate[media][${f}]`, 'true')
   qs.set('populate[companies][slug]', 'true')
+  qs.set('populate[platforms][slug]', 'true')
   const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
     next: { revalidate: 300 },
   })
@@ -611,7 +680,7 @@ export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> 
     slug: string
     name: string
     cover?: { url?: string } | string | null
-    platforms?: string[] | null
+    platforms?: unknown[] | null
     releases?: RawRelease[] | null
     genre?: string[] | null
     developers?: Array<{ slug: string; name: string } | number> | null
@@ -626,7 +695,7 @@ export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> 
     name: doc.name,
     // Game covers render at ~320 CSS px → 'card' (960w) is plenty at 2x.
     cover: mediaUrl(doc.cover, 'card'),
-    platforms: sortPlatforms(doc.platforms ?? []),
+    platforms: sortPlatforms(platformSlugs(doc.platforms), await fetchAllPlatforms().catch(() => [])),
     releases: mapReleases(doc.releases).sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999')),
     genre: doc.genre ?? [],
     developers: companies(doc.developers),
@@ -723,7 +792,7 @@ export async function fetchRecentArticles(
 
 // All slugs of a simple collection (authors / games / tags) for the sitemap.
 export async function fetchAllEntitySlugs(
-  collection: 'authors' | 'games' | 'tags' | 'companies'
+  collection: 'authors' | 'games' | 'tags' | 'companies' | 'platforms'
 ): Promise<(SlugEntry & { id: string })[]> {
   const qs = new URLSearchParams({ depth: '0', pagination: 'false', 'select[slug]': 'true', 'select[updatedAt]': 'true' })
   const res = await cmsFetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {

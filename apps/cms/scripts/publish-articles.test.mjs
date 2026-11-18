@@ -59,13 +59,14 @@ describe('publish-articles', () => {
   })
 
   it('reads game releases, refuses typos', () => {
-    expect(parseReleases('ps5, xbox-series @ 2026-11-19; pc @ TBA; switch-2 @ 2027-Q2')).toEqual([
+    const known = ['pc', 'ps5', 'xbox-series', 'switch-2']
+    expect(parseReleases('ps5, xbox-series @ 2026-11-19; pc @ TBA; switch-2 @ 2027-Q2', known)).toEqual([
       { platforms: ['ps5', 'xbox-series'], date: '2026-11-19', precision: 'day' },
       { platforms: ['pc'], date: null, precision: 'tba' },
       { platforms: ['switch-2'], date: '2027-04-01', precision: 'quarter' },
     ])
     expect(parseReleases(undefined)).toEqual([])
-    expect(() => parseReleases('ps6 @ 2027')).toThrow('unknown console')
-    expect(() => parseReleases('pc @ late 2027')).toThrow('unreadable date')
+    expect(() => parseReleases('ps6 @ 2027', known)).toThrow('unknown console')
+    expect(() => parseReleases('pc @ late 2027', known)).toThrow('unreadable date')
   })
 })

@@ -28,7 +28,7 @@ import { botIn } from './config'
 import type { ScoutContext, SettingsDoc, SourceDoc } from './context'
 import { COLORS, editBotMessage, sendBotMessage, type BotMessage } from './discord-bot'
 import { authorId, existingGames, NO_COVER } from './draft'
-import { applyGameFacts, createGame, previewGameFacts } from './game-facts'
+import { applyConsoleFacts, applyGameFacts, createGame, previewGameFacts } from './game-facts'
 import {
   cleanDraft,
   DRAFT_TOOL,
@@ -624,6 +624,9 @@ async function updateEvent(
     outputTokens: result.outputTokens,
   })
   const answer = cleanLive(result.input, entries, allowed)
+  // A console revealed at the show gets its page now (not in a rehearsal),
+  // before the games, so a game announced for it links to it.
+  if (!ev.rehearsal) await applyConsoleFacts(ctx, answer.consoles, true)
   const games = await resolveGames(ctx, answer, gameList, !ev.rehearsal)
   const applied = applyLive(entries, answer, ctx.now.toISOString(), notes.length > 0, games)
   const intro = answer.intro || ev.intro || ''

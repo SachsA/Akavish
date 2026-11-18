@@ -15,7 +15,7 @@ import { formatPlatforms } from '@/lib/game-library'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
 import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
-import { fetchAllGames, fetchArticles, fetchCompanyBySlug, type GameListItem } from '@/lib/payload'
+import { fetchAllGames, fetchAllPlatforms, fetchArticles, fetchCompanyBySlug, type GameListItem } from '@/lib/payload'
 import { breadcrumbList } from '@/lib/structured-data'
 
 type Params = { params: Promise<{ locale: string; slug: string; n?: string }> }
@@ -50,6 +50,7 @@ export async function ListPage({ params }: Params) {
   const company = await fetchCompanyBySlug(slug).catch(() => null)
   if (!company) notFound()
 
+  const platforms = await fetchAllPlatforms().catch(() => [])
   // Its games, newest release first (upcoming ones on top).
   const games = (await fetchAllGames().catch(() => [] as GameListItem[]))
     .filter((g) => g.developers.includes(slug) || g.publishers.includes(slug))
@@ -138,7 +139,7 @@ export async function ListPage({ params }: Params) {
                             <ReleaseDate release={first} />
                           </>
                         )}
-                        {first?.platforms.length ? <> · {formatPlatforms(first.platforms)}</> : null}
+                        {first?.platforms.length ? <> · {formatPlatforms(first.platforms, platforms)}</> : null}
                       </>
                     }
                   />

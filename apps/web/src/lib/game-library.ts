@@ -8,7 +8,7 @@
 
 import { formatDate } from './i18n/dates'
 import { intlTag, type Locale, type Region } from './i18n/config'
-import { PLATFORM_VALUES, platformInfo } from './platforms'
+import { platformShort, sortPlatforms, type PlatformInfo } from './platforms'
 
 export type Precision = 'day' | 'month' | 'quarter' | 'year' | 'tba'
 
@@ -60,8 +60,9 @@ export function parseFilters(sp: URLSearchParams): LibraryFilters {
   if (q) f.q = q.slice(0, 80)
   const letter = sp.get('letter')?.toUpperCase()
   if (letter && /^([A-Z]|#)$/.test(letter)) f.letter = letter
+  // Any console slug: the list comes from the CMS (a new one appears there).
   const platform = sp.get('platform')
-  if (platform && PLATFORM_VALUES.includes(platform)) f.platform = platform
+  if (platform && /^[a-z0-9-]{1,40}$/.test(platform)) f.platform = platform
   const year = Number(sp.get('year'))
   if (Number.isInteger(year) && year >= 1970 && year <= 2100) f.year = year
   const month = Number(sp.get('month'))
@@ -159,10 +160,10 @@ export function formatRelease(r: Release, locale: Locale, region?: Region): stri
   }
 }
 
-/** The consoles of a release, short names, in the site's order: "PS5, Xbox Series, PC". */
-export function formatPlatforms(platforms: readonly string[]): string {
-  return PLATFORM_VALUES.filter((p) => platforms.includes(p))
-    .map((p) => platformInfo(p)?.short ?? p)
+/** The consoles of a release, short names, in the site's order: "PC, PS5, Xbox Series". */
+export function formatPlatforms(platforms: readonly string[], list: readonly PlatformInfo[]): string {
+  return sortPlatforms(platforms, list)
+    .map((p) => platformShort(p, list))
     .join(', ')
 }
 
@@ -271,7 +272,6 @@ export function yearsOf(games: LibraryGame[]): number[] {
 }
 
 /** The consoles at least one game is on, in the site's order. */
-export function platformsOf(games: LibraryGame[]): string[] {
-  const used = new Set(games.flatMap((g) => g.releases.flatMap((r) => r.platforms)))
-  return PLATFORM_VALUES.filter((p) => used.has(p))
+export function platformsOf(games: LibraryGame[], list: readonly PlatformInfo[]): string[] {
+  return sortPlatforms([...new Set(games.flatMap((g) => g.releases.flatMap((r) => r.platforms)))], list)
 }

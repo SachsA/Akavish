@@ -5,7 +5,8 @@ import { ContentUnavailable } from '@/components/StatusMessage'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
 import type { LibraryCompany } from '@/lib/game-library'
-import { fetchAllCompanies, fetchAllGames, type GameListItem } from '@/lib/payload'
+import { fetchAllCompanies, fetchAllGames, fetchAllPlatforms, type GameListItem } from '@/lib/payload'
+import type { PlatformInfo } from '@/lib/platforms'
 import { breadcrumbList } from '@/lib/structured-data'
 
 // The games library: every game on the site, filtered by console, year and
@@ -33,8 +34,16 @@ export default async function GamesPage({ params }: Params) {
 
   let games: GameListItem[] | null = null
   let companies: LibraryCompany[] = []
+  let platforms: PlatformInfo[] = []
   try {
-    ;[games, companies] = await Promise.all([fetchAllGames(), fetchAllCompanies().catch(() => [])])
+    ;[games, companies, platforms] = await Promise.all([
+      fetchAllGames(),
+      fetchAllCompanies().catch(() => []),
+      // Only what the filter and the cards use.
+      fetchAllPlatforms()
+        .then((list) => list.map(({ value, short, label, family, position }) => ({ value, short, label, family, position })))
+        .catch(() => []),
+    ])
   } catch {
     games = null
   }
@@ -67,6 +76,7 @@ export default async function GamesPage({ params }: Params) {
             genres,
           }))}
           companies={companies}
+          platforms={platforms}
           genres={genres}
           today={today}
         />

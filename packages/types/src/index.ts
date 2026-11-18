@@ -61,7 +61,7 @@ export interface Game {
   slug: string
   name: string
   coverImage?: string
-  /** Consoles ("ps5", "switch-2"…, apps/cms/src/lib/platforms.ts). */
+  /** Console slugs ("ps5", "switch-2"…: the CMS Platforms collection). */
   platforms: string[]
   genre: string[]
   releaseDate?: string

@@ -367,15 +367,16 @@ describe('game facts', () => {
       publishers: ['Nintendo'],
       genres: ['Action'],
       releases: [
-        { platforms: ['pc', 'switch-2'], date: '2026-10-01', precision: 'quarter' },
+        // As named (matched to Platforms when applied), repeats dropped.
+        { platforms: ['switch-2', 'pc'], date: '2026-10-01', precision: 'quarter' },
         { platforms: [], date: null, precision: 'tba' },
       ],
     })
     expect(cleanGameFacts(undefined)).toEqual({ developers: [], publishers: [], genres: [], releases: [] })
-    // "PC, PS6 and Xbox": a console the site doesn't know → the date without consoles, not "PC" alone.
+    // A console the site doesn't have yet keeps its official name (created on Publish).
     expect(
-      cleanGameFacts({ releases: [{ platforms: ['pc', 'other'], date: '2028' }] }).releases,
-    ).toEqual([{ platforms: [], date: '2028-01-01', precision: 'year' }])
+      cleanGameFacts({ releases: [{ platforms: ['pc', ' PlayStation  6 ', 7], date: '2028' }] }).releases,
+    ).toEqual([{ platforms: ['pc', 'PlayStation 6'], date: '2028-01-01', precision: 'year' }])
   })
 
   it('one entry per game, only with something in it, kept by cleanDraft', () => {

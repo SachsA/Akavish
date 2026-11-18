@@ -25,7 +25,8 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, *Also covers* (`relatedGames`: the other games a recap covers, listed on their pages too), tags, SEO, and for reviews a `score` out of 10 (shown on the article and the cards, and sent as a schema.org Review). Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
-| `games`    | The games library (`/games`): cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), **releases** (one row per group of consoles released together: consoles from `src/lib/platforms.ts`, date, precision day / month / quarter / year / TBA; a port is its own row), developers and publishers (Companies), genres. A `beforeChange` hook derives the read-only `platforms`, `releaseDate` (the first) and `releaseDatePrecision` from the releases (`src/lib/game-releases.ts`, unit-tested). The old `platform` (families) / `developer` / `publisher` (text) fields are gone (migration `drop_old_game_fields`, 2026-11-17). |
+| `games`    | The games library (`/games`): cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), **releases** (one row per group of consoles released together: consoles from Platforms, date, precision day / month / quarter / year / TBA; a port is its own row), developers and publishers (Companies), genres. A `beforeChange` hook derives the read-only `platforms`, `releaseDate` (the first) and `releaseDatePrecision` from the releases (`src/lib/game-releases.ts`, unit-tested). The old `platform` (families) / `developer` / `publisher` (text) fields are gone (migration `drop_old_game_fields`, 2026-11-17). |
+| `platforms` | Consoles (and PC, mobile, VR), since 2026-11-18 (🟠 migration `20261118_154700_platforms_collection` turned the old select values into links): name, slug (`ps5`), short label (`PS5`), family (the library's groups), position (order in the family, newest first), aliases (the scout matches them), release date + precision, logo, tag (its articles show on its page `/platform/<slug>`). A game release links to them; the scout creates one the news names for the first time (`src/lib/platforms.ts` has the 24 it started with and `familyOf`). |
 | `companies` | Studios and publishers, each with its page `/company/<slug>` (its games and the news about them): name, *aliases* (former names, other spellings: the scout matches them), logo, and the company's tag if it has one (its articles show on the page too). |
 | `tags`     | Cross-cutting topics, 2 to 5 per article: publisher or studio (Rockstar Games, Riot Games), platform (PS5, Switch 2), event (Worlds 2026, CS2 Major) or theme (Release dates, Trailers, Earnings). Not the game (that's `game`) nor the type (that's `category`). Each tag has its public page `/tag/<slug>`, linked from the article (#chips) and listed in the sitemap once it has a published article. |
 | `media`    | Uploaded images (cover images, avatars). Stored in Cloudflare R2 — see below.                                                                       |
@@ -100,8 +101,8 @@ name and created if new, Markdown body with `##` headings,
 Re-running is safe: games and media are reused, articles updated in place;
 to fix one article, re-run with `--only <slug>`. A game block takes
 `developers:` / `publishers:` (companies, created if new) and
-`releases: ps5, xbox-series @ 2026-11-19; pc @ TBA` (consoles from
-`src/lib/platforms.ts`; dates `2026-11-19`, `2026-11`, `2026-Q4`, `2026` or
+`releases: ps5, xbox-series @ 2026-11-19; pc @ TBA` (console slugs from
+the CMS's Platforms; dates `2026-11-19`, `2026-11`, `2026-Q4`, `2026` or
 `TBA`; a typo stops the run). `score:` sets a review's
 score out of 10. `relatedGames:` (game slugs)
 fills *Also covers*, and `[**Name**](/game/<slug>)` in the body is a site link
@@ -378,9 +379,17 @@ own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
    **Game facts** (`game_facts`, `cleanGameFactsList`, `scout/game-facts.ts`):
    for every game the sources date or place officially (the story's and any
    other: a lineup, a showcase), its releases (consoles + "YYYY-MM-DD",
-   "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA"; a console the site doesn't list is
-   `other`, which keeps the date without consoles so "PC, PS6" never becomes
-   "PC" alone), developers, publishers, genres.
+   "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA"; consoles as a slug or, for one the
+   site doesn't have, its official name), developers, publishers, genres.
+   **Consoles** (`resolveConsoles`): matched on slug, name or alias; a new
+   one is created (family from `familyOf`, first in its family) when facts
+   are applied; a family alone ("Xbox", "next-gen consoles") is never
+   created and the release keeps its date only, so "PC, PS6 and Xbox" never
+   reads "PC". `consoles` (draft and live tools, `cleanConsoleFacts`): a
+   console announced or dated, stored on the story (`consoleFacts`), shown
+   on the card (🕹️), created or dated on *Publier* (`applyConsoleFacts`,
+   before the games); in live mode at once (not in a rehearsal). A rejected
+   draft takes the consoles created with its game (`dropOrphanPlatforms`).
    Stored on the story (`gameFacts`), previewed on the card (🎮 Fiches jeux)
    and applied on *Publier* only: `mergeReleases` (per console the news
    wins; a vaguer date that agrees changes nothing; without consoles it moves

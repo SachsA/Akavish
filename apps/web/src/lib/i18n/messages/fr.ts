@@ -148,7 +148,7 @@ export const fr: Messages = {
     noResults: 'Aucun jeu ne correspond à ces filtres.',
     more: (n: number) => `Voir ${n} de plus`,
     vague: 'Date précise pas encore annoncée',
-    families: { pc: 'PC', playstation: 'PlayStation', xbox: 'Xbox', nintendo: 'Nintendo', mobile: 'Mobile', vr: 'VR' },
+    families: { pc: 'PC', playstation: 'PlayStation', xbox: 'Xbox', nintendo: 'Nintendo', mobile: 'Mobile', vr: 'VR', other: 'Autres' },
   },
   author: {
     notFound: 'Auteur introuvable',
@@ -178,6 +178,19 @@ export const fr: Messages = {
     news: 'Actus',
     noGames: "Aucun jeu dans la bibliothèque pour l'instant.",
     none: "Aucun article publié sur ses jeux pour l'instant.",
+  },
+  platform: {
+    notFound: 'Console introuvable',
+    description: (name: string) => `${name} : ses jeux dans la bibliothèque d’Akavish, ce qui arrive et l’actu.`,
+    also: (names: string) => `Aussi appelée ${names}`,
+    release: 'Sortie : ',
+    games: (n: number) => (n === 1 ? '1 jeu' : `${n} jeux`),
+    library: 'Tout voir dans la bibliothèque',
+    upcoming: 'À venir',
+    released: 'Dernières sorties',
+    news: 'Actus',
+    noGames: "Aucun jeu dans la bibliothèque pour l'instant.",
+    none: "Aucun article publié sur elle pour l'instant.",
   },
   tag: {
     notFound: 'Tag introuvable',
@@ -397,5 +410,6 @@ export const fr: Messages = {
     gameFallback: 'Actus, leaks et tests',
     topic: 'Sujet',
     company: 'Studio / éditeur',
+    platform: 'Console',
   },
 }

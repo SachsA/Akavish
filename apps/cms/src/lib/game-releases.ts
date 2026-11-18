@@ -5,10 +5,16 @@
 // the site sorts and filters on. The scout merges what a news story says into
 // the rows (mergeReleases). Pure, unit-tested.
 
-import { DATE_PRECISIONS, PLATFORM_VALUES, type DatePrecision, type Platform } from './platforms'
+import { DATE_PRECISIONS, type DatePrecision } from './platforms'
+
+/**
+ * A console: its id in the `platforms` collection (as stored), or its slug
+ * (the scout's facts before they're resolved, the tests). Opaque here.
+ */
+export type PlatformRef = number | string
 
 export interface Release {
-  platforms: Platform[]
+  platforms: PlatformRef[]
   /** ISO date: the day, or the first day of the month / quarter / year. Null when TBA. */
   date: string | null
   precision: DatePrecision
@@ -60,15 +66,23 @@ export function period(r: Pick<Release, 'date' | 'precision'>): [string, string]
   }
 }
 
-/** Rows as stored → clean rows (known consoles only, valid precision, date only when not TBA). */
+/** A stored console: an id, a populated doc ({ id }) or a slug. */
+function refOf(p: unknown): PlatformRef | null {
+  if (typeof p === 'number' && Number.isFinite(p)) return p
+  if (typeof p === 'string' && p.trim()) return /^\d+$/.test(p) ? Number(p) : p.trim()
+  if (p && typeof p === 'object' && 'id' in p) return refOf((p as { id: unknown }).id)
+  return null
+}
+
+/** Rows as stored → clean rows (consoles as ids, valid precision, date only when not TBA). */
 export function cleanReleases(rows: unknown): Release[] {
   if (!Array.isArray(rows)) return []
   return rows.flatMap((row) => {
     const r = (row && typeof row === 'object' ? row : {}) as Record<string, unknown>
     const platforms = [
-      ...new Set((Array.isArray(r.platforms) ? r.platforms : []).filter((p): p is Platform =>
-        PLATFORM_VALUES.includes(p as Platform),
-      )),
+      ...new Set(
+        (Array.isArray(r.platforms) ? r.platforms : []).map(refOf).filter((p): p is PlatformRef => p !== null),
+      ),
     ]
     const precision = DATE_PRECISIONS.includes(r.precision as DatePrecision)
       ? (r.precision as DatePrecision)
@@ -100,11 +114,12 @@ const byDate = (a: Release, b: Release) =>
  * its first known date (TBA when none).
  */
 export function summarize(releases: Release[]): {
-  platforms: Platform[]
+  platforms: PlatformRef[]
   releaseDate: string | null
   releaseDatePrecision: DatePrecision | null
 } {
-  const platforms = PLATFORM_VALUES.filter((p) => releases.some((r) => r.platforms.includes(p)))
+  // Oldest release's consoles first (the site sorts them its own way).
+  const platforms = [...new Set([...releases].sort(byDate).flatMap((r) => r.platforms))]
   const first = [...releases].sort(byDate).find((r) => r.date)
   return {
     platforms,
@@ -156,7 +171,7 @@ export function mergeReleases(current: Release[], incoming: Release[], today: st
     out = out.filter((r) => r.platforms.length > 0)
     // Rows with the same date and precision become one.
     const same = out.find((r) => r.date === inc.date && r.precision === inc.precision)
-    if (same) same.platforms = PLATFORM_VALUES.filter((p) => same.platforms.includes(p) || inc.platforms.includes(p))
+    if (same) same.platforms = [...new Set([...same.platforms, ...inc.platforms])]
     else out.push({ ...inc, platforms: [...inc.platforms] })
   }
   return out.sort(byDate)

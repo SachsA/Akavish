@@ -28,16 +28,18 @@ describe('period', () => {
 })
 
 describe('cleanReleases + summarize', () => {
-  it('keeps known consoles, finds the first date, rounds the admin time zone', () => {
+  it('reads the consoles as stored, finds the first date, rounds the admin time zone', () => {
     const rows = cleanReleases([
-      { platforms: ['ps5', 'xbox-series', 'atari'], date: '2022-02-15T00:00:00.000Z', precision: 'day' },
+      // ids, populated docs and slugs all read as the console; junk goes.
+      { platforms: [12, { id: 13 }, '14', null, '', 12], date: '2022-02-15T00:00:00.000Z', precision: 'day' },
       { platforms: ['pc', 'ps4', 'xbox-one'], date: '2020-12-09T23:00:00.000Z', precision: 'day' }, // Paris midnight
       { platforms: ['switch-2'], date: null, precision: 'tba' },
     ])
-    expect(rows[0].platforms).toEqual(['ps5', 'xbox-series'])
+    expect(rows[0].platforms).toEqual([12, 13, 14])
     expect(rows[1].date).toBe('2020-12-10')
     expect(summarize(rows)).toEqual({
-      platforms: ['pc', 'ps5', 'ps4', 'xbox-series', 'xbox-one', 'switch-2'],
+      // The oldest release's consoles first.
+      platforms: ['pc', 'ps4', 'xbox-one', 12, 13, 14, 'switch-2'],
       releaseDate: '2020-12-10T00:00:00.000Z',
       releaseDatePrecision: 'day',
     })
@@ -64,7 +66,7 @@ describe('mergeReleases', () => {
   })
   it('joins a row with the same date', () => {
     const out = mergeReleases([r(['ps5'], '2027-03-12'), r(['pc'], 'TBA')], [r(['pc'], '2027-03-12')], today)
-    expect(out).toEqual([r(['pc', 'ps5'], '2027-03-12')])
+    expect(out).toEqual([r(['ps5', 'pc'], '2027-03-12')])
   })
   it('a vaguer date that agrees changes nothing', () => {
     const known = [r(['ps5', 'xbox-series'], '2026-11-19')]

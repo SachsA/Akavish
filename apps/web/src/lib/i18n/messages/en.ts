@@ -150,7 +150,7 @@ export const en = {
     noResults: 'No game matches these filters.',
     more: (n: number) => `Show ${n} more`,
     vague: 'Exact date not announced yet',
-    families: { pc: 'PC', playstation: 'PlayStation', xbox: 'Xbox', nintendo: 'Nintendo', mobile: 'Mobile', vr: 'VR' },
+    families: { pc: 'PC', playstation: 'PlayStation', xbox: 'Xbox', nintendo: 'Nintendo', mobile: 'Mobile', vr: 'VR', other: 'Other' },
   },
   author: {
     notFound: 'Author not found',
@@ -180,6 +180,19 @@ export const en = {
     news: 'News',
     noGames: 'No games in the library yet.',
     none: 'No published articles about its games yet.',
+  },
+  platform: {
+    notFound: 'Console not found',
+    description: (name: string) => `${name}: its games in the Akavish library, what's coming and the news.`,
+    also: (names: string) => `Also known as ${names}`,
+    release: 'Release: ',
+    games: (n: number): string => (n === 1 ? '1 game' : `${n} games`),
+    library: 'See all in the games library',
+    upcoming: 'Coming',
+    released: 'Latest releases',
+    news: 'News',
+    noGames: 'No games in the library yet.',
+    none: 'No published articles about it yet.',
   },
   tag: {
     notFound: 'Tag not found',
@@ -395,6 +408,7 @@ export const en = {
     gameFallback: 'News, leaks and reviews',
     topic: 'Topic',
     company: 'Studio / publisher',
+    platform: 'Console',
   },
 }
 

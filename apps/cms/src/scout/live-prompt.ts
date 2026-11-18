@@ -4,7 +4,10 @@
 // rich text. No I/O here: unit-tested.
 
 import {
+  cleanConsoleFacts,
   cleanGameFacts,
+  CONSOLES_PROPERTY,
+  type ConsoleFact,
   element,
   GAME_FACTS_PROPERTIES,
   paragraph,
@@ -66,6 +69,8 @@ export interface LiveAnswer {
   update_entries: Array<
     { entry: string; headline?: string; text?: string; links: LiveLink[] } & LiveGame
   >
+  /** Consoles announced or dated at the show (a PS6 reveal): their pages are created or dated. */
+  consoles: ConsoleFact[]
 }
 
 export const LIVE_SYSTEM = `You run the live page of Akavish, an English-language video game news site, during a showcase or event. The page is a list of short entries, newest first: one entry per announcement, with links. Readers skim it during the show.
@@ -78,6 +83,8 @@ Rules:
 - Items from the feeds: keep only announcements made at this event (official posts published during the show, outlets reporting what was just shown). Leave out unrelated news.
 - Links: only URLs given in the input. Label them briefly: "Trailer", "PlayStation Blog", "Steam page", "Xbox Wire". YouTube trailers first.
 - Game: for an entry about one game, give its full official title (copy it from the existing games list when it's there). When it isn't listed, set game_is_new and new_game with only what the inputs say (releases with consoles and dates as "YYYY-MM-DD", "YYYY-MM", "YYYY-Qn", "YYYY" or "TBA"; developers, publishers, genres). Hardware, a service, an award without a game: no game.
+- Consoles: a console (hardware) announced or dated at the show goes in consoles with its full official name ("PlayStation 6") and its release: it gets its own page, and new games for it link to it. Its entry is a normal entry, without a game.
+- Consoles of a game: a console that isn't in the known list (a new generation) by its full official name, never left out.
 - intro: two or three sentences summing up the show so far (biggest announcements first). Refresh it each time.
 - title (first update only): "<Event>: every announcement, live" or similar, under 80 characters.
 - category: "conference" for a showcase, "esport" for a tournament.
@@ -149,6 +156,7 @@ export const LIVE_TOOL = {
           required: ['entry', 'links'],
         },
       },
+      consoles: CONSOLES_PROPERTY,
     },
     required: ['intro', 'new_entries', 'update_entries'],
   },
@@ -269,6 +277,7 @@ export function cleanLive(
         ...game(u),
       }))
       .filter((u) => u.headline || u.text || u.links.length || u.game),
+    consoles: cleanConsoleFacts(answer?.consoles),
   }
 }
 

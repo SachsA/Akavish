@@ -59,7 +59,7 @@ feeds, groups and scores stories with Claude, drafts the best ones (with a
 cover and the official videos), and asks
 for a Publish / Edit / Reject click in a private Discord channel (`apps/cms/README.md` → AI scout).
 Published news also keeps the **games library** current: release dates per
-console, studios and publishers (`/games`, `/game/<slug>`, `/company/<slug>`). Reader auth
+console, studios and publishers (`/games`, `/game/<slug>`, `/company/<slug>`, `/platform/<slug>`). Reader auth
 (login/signup) is handled by **Clerk** on the web; CMS editors log into Payload
 admin separately, as admin, editor or writer. A reader account saves articles
 and follows games (listed on `/account`, with the news of those games), comments under articles (replies, likes, reports) and

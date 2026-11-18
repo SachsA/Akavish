@@ -1,50 +1,46 @@
 // ─── Consoles ────────────────────────────────────────────────────────────────
-// The CMS's list (apps/cms/src/lib/platforms.ts, same values and order; a
-// test checks) with the labels the site shows and the family each belongs to,
-// for the games library's console filter.
+// Consoles are CMS documents (collection `platforms`): the scout creates a new
+// one when the news names it (a PS6 reveal), and each has a page
+// (/platform/<slug>). `fetchAllPlatforms` (lib/payload.ts) gives the list;
+// everything here takes it as an argument. The games library groups them by
+// family, newest first inside a family.
 
-export const PLATFORM_FAMILIES = ['pc', 'playstation', 'xbox', 'nintendo', 'mobile', 'vr'] as const
+export const PLATFORM_FAMILIES = ['pc', 'playstation', 'xbox', 'nintendo', 'mobile', 'vr', 'other'] as const
 export type PlatformFamily = (typeof PLATFORM_FAMILIES)[number]
 
-export const PLATFORMS = [
-  { value: 'pc', short: 'PC', label: 'PC', family: 'pc' },
-  { value: 'mac', short: 'Mac', label: 'Mac', family: 'pc' },
-  { value: 'ps5', short: 'PS5', label: 'PlayStation 5', family: 'playstation' },
-  { value: 'ps4', short: 'PS4', label: 'PlayStation 4', family: 'playstation' },
-  { value: 'ps3', short: 'PS3', label: 'PlayStation 3', family: 'playstation' },
-  { value: 'ps2', short: 'PS2', label: 'PlayStation 2', family: 'playstation' },
-  { value: 'ps1', short: 'PS1', label: 'PlayStation', family: 'playstation' },
-  { value: 'psp', short: 'PSP', label: 'PSP', family: 'playstation' },
-  { value: 'vita', short: 'Vita', label: 'PS Vita', family: 'playstation' },
-  { value: 'xbox-series', short: 'Xbox Series', label: 'Xbox Series X|S', family: 'xbox' },
-  { value: 'xbox-one', short: 'Xbox One', label: 'Xbox One', family: 'xbox' },
-  { value: 'xbox-360', short: 'Xbox 360', label: 'Xbox 360', family: 'xbox' },
-  { value: 'xbox', short: 'Xbox', label: 'Xbox (2001)', family: 'xbox' },
-  { value: 'switch-2', short: 'Switch 2', label: 'Nintendo Switch 2', family: 'nintendo' },
-  { value: 'switch', short: 'Switch', label: 'Nintendo Switch', family: 'nintendo' },
-  { value: 'wii-u', short: 'Wii U', label: 'Wii U', family: 'nintendo' },
-  { value: 'wii', short: 'Wii', label: 'Wii', family: 'nintendo' },
-  { value: 'gamecube', short: 'GameCube', label: 'GameCube', family: 'nintendo' },
-  { value: 'n64', short: 'N64', label: 'Nintendo 64', family: 'nintendo' },
-  { value: '3ds', short: '3DS', label: 'Nintendo 3DS', family: 'nintendo' },
-  { value: 'ds', short: 'DS', label: 'Nintendo DS', family: 'nintendo' },
-  { value: 'ios', short: 'iOS', label: 'iOS', family: 'mobile' },
-  { value: 'android', short: 'Android', label: 'Android', family: 'mobile' },
-  { value: 'quest', short: 'Quest', label: 'Meta Quest', family: 'vr' },
-] as const satisfies ReadonlyArray<{ value: string; short: string; label: string; family: PlatformFamily }>
-
-export type Platform = (typeof PLATFORMS)[number]['value']
-export const PLATFORM_VALUES: readonly string[] = PLATFORMS.map((p) => p.value)
-
-export function platformInfo(value: string) {
-  return PLATFORMS.find((p) => p.value === value)
+export interface PlatformInfo {
+  /** The slug, as in URLs and in a release's consoles. */
+  value: string
+  /** "PS5", "Xbox Series". */
+  short: string
+  /** "PlayStation 5". */
+  label: string
+  family: PlatformFamily
+  /** Order inside the family (0 = first, the newest). */
+  position: number
 }
 
-/** "PS5", "Xbox Series"… (the value itself for one the site doesn't know). */
-export const platformShort = (value: string) => platformInfo(value)?.short ?? value
-export const platformLabel = (value: string) => platformInfo(value)?.label ?? value
+/** The site's order: family, then position, then name. */
+export function orderPlatforms(list: readonly PlatformInfo[]): PlatformInfo[] {
+  const fam = (p: PlatformInfo) => {
+    const i = PLATFORM_FAMILIES.indexOf(p.family)
+    return i < 0 ? PLATFORM_FAMILIES.length : i
+  }
+  return [...list].sort((a, b) => fam(a) - fam(b) || a.position - b.position || a.label.localeCompare(b.label))
+}
 
-/** Known values only, in the list's order (newest consoles first per family). */
-export function sortPlatforms(values: readonly string[]): string[] {
-  return PLATFORM_VALUES.filter((p) => values.includes(p))
+export function platformInfo(value: string, list: readonly PlatformInfo[]): PlatformInfo | undefined {
+  return list.find((p) => p.value === value)
+}
+
+/** "PS5", "Xbox Series"… (the value itself for one the list doesn't have). */
+export const platformShort = (value: string, list: readonly PlatformInfo[]) =>
+  platformInfo(value, list)?.short ?? value
+export const platformLabel = (value: string, list: readonly PlatformInfo[]) =>
+  platformInfo(value, list)?.label ?? value
+
+/** These consoles in the site's order; ones the list doesn't have go last. */
+export function sortPlatforms(values: readonly string[], list: readonly PlatformInfo[]): string[] {
+  const known = orderPlatforms(list).map((p) => p.value).filter((p) => values.includes(p))
+  return [...known, ...values.filter((v) => !known.includes(v))]
 }

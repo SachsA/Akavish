@@ -20,13 +20,21 @@ import {
   matchTags,
   toLexical,
   type CleanGameFactsEntry,
+  type ConsoleFact,
   type DraftAnswer,
   type DraftSource,
 } from './draft-prompt'
 import { duplicateReason } from './dedupe'
 import { fetchPage, type PageRead } from './extract'
 import { pickCover, uploadImage, videoCandidates, type Cover, type Video } from './media'
-import { applyGameFacts, createGame, dropOrphanCompanies, previewGameFacts } from './game-facts'
+import {
+  applyConsoleFacts,
+  applyGameFacts,
+  createGame,
+  dropOrphanCompanies,
+  dropOrphanPlatforms,
+  previewGameFacts,
+} from './game-facts'
 import { periodStarts } from './schedule'
 
 const MAX_SOURCES = 6
@@ -42,6 +50,8 @@ type StoryWithDraft = StoryDoc & {
   draftedAt?: string | null
   /** The draft's game facts, applied to the games library on Publish. */
   gameFacts?: CleanGameFactsEntry[] | null
+  /** Consoles it announces or dates, created or dated on Publish. */
+  consoleFacts?: ConsoleFact[] | null
 }
 
 const RANK = { official: 0, high: 1, variable: 2 } as const
@@ -391,13 +401,19 @@ export async function draftStory(
     tags: tagNames,
     game: gameName ? `${gameName}${newGameId ? ' (fiche créée)' : ''}` : undefined,
     photoHint: clean.photo_hint || undefined,
-    gameFacts: ctx.config.dryRun ? [] : await previewGameFacts(ctx, gameFacts),
+    gameFacts: ctx.config.dryRun
+      ? []
+      : [
+          ...(await applyConsoleFacts(ctx, clean.consoles, false)),
+          ...(await previewGameFacts(ctx, gameFacts)),
+        ],
     cover,
     imageError,
     feedback,
     storyUpdate: {
       lastDraftText: bodyText,
       gameFacts,
+      consoleFacts: clean.consoles,
       ...(feedback
         ? {
             feedback: [
@@ -449,7 +465,10 @@ async function imageOnly(
     category: art.category ?? story.category ?? 'news',
     sources: (await sourcesFor(ctx, storyId, false)).map((s) => ({ name: s.name, url: s.url })),
     videos: [],
-    gameFacts: await previewGameFacts(ctx, story.gameFacts ?? []),
+    gameFacts: [
+      ...(await applyConsoleFacts(ctx, story.consoleFacts ?? [], false)),
+      ...(await previewGameFacts(ctx, story.gameFacts ?? [])),
+    ],
     cover,
     imageError,
     imageChange: true,
@@ -633,6 +652,8 @@ export async function publishStory(ctx: ScoutContext, storyId: number): Promise<
   if (!(await currentCover(ctx, Number(articleRef)))) throw new Error(NO_COVER)
   // What the story says about games goes into the library now that the
   // editor validated it; the games it dates are listed as "Also covers".
+  // Consoles first, so a game dated on a new console links to it.
+  await applyConsoleFacts(ctx, story.consoleFacts ?? [], true)
   const facts = await applyGameFacts(ctx, story.gameFacts ?? [])
   const before = (await ctx.payload.findByID({
     collection: 'articles',
@@ -706,12 +727,19 @@ export async function rejectStory(
         // The game's companies, created with it, go with it.
         const g = (await ctx.payload
           .findByID({ collection: 'games', id: id(a.game), depth: 0, overrideAccess: true })
-          .catch(() => null)) as { developers?: unknown[]; publishers?: unknown[] } | null
+          .catch(() => null)) as {
+          developers?: unknown[]
+          publishers?: unknown[]
+          platforms?: unknown[]
+        } | null
         const companies = [...(g?.developers ?? []), ...(g?.publishers ?? [])].map((c) =>
           id(c as number | { id: number }),
         )
+        const consoles = (g?.platforms ?? []).map((c) => id(c as number | { id: number }))
         await dropOrphans(ctx, 'games', [id(a.game)], 'game', story.draftedAt)
         await dropOrphanCompanies(ctx, companies, story.draftedAt)
+        // And the consoles created with it (a PS6 named by a rejected draft).
+        await dropOrphanPlatforms(ctx, consoles, story.draftedAt)
       }
     }
   }

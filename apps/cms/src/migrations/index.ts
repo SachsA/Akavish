@@ -21,6 +21,7 @@ import * as migration_20261117_095500_games_library from './20261117_095500_game
 import * as migration_20261117_104444_drop_old_game_fields from './20261117_104444_drop_old_game_fields';
 import * as migration_20261118_085243_game_follows from './20261118_085243_game_follows';
 import * as migration_20261118_125206_live_rehearsal from './20261118_125206_live_rehearsal';
+import * as migration_20261118_154700_platforms_collection from './20261118_154700_platforms_collection';
 
 export const migrations = [
   {
@@ -137,5 +138,10 @@ export const migrations = [
     up: migration_20261118_125206_live_rehearsal.up,
     down: migration_20261118_125206_live_rehearsal.down,
     name: '20261118_125206_live_rehearsal'
+  },
+  {
+    up: migration_20261118_154700_platforms_collection.up,
+    down: migration_20261118_154700_platforms_collection.down,
+    name: '20261118_154700_platforms_collection'
   },
 ];

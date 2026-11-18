@@ -13,6 +13,7 @@ import { Tags } from './collections/Tags'
 import { Authors } from './collections/Authors'
 import { Games } from './collections/Games'
 import { Companies } from './collections/Companies'
+import { Platforms } from './collections/Platforms'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
 import { Bookmarks, GameFollows, Readers } from './collections/Readers'
@@ -85,6 +86,7 @@ export default buildConfig({
     Authors,
     Games,
     Companies,
+    Platforms,
     Articles,
     Subscribers,
     // Reader accounts (Clerk) and their saved articles (src/lib/readers.ts).

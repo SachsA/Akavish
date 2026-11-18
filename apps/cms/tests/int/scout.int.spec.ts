@@ -465,6 +465,8 @@ describe('scout step 2 (drafts)', () => {
                     tags: ['scouttest rockstar', 'Scouttest Invented', 'Scouttest Grand Theft'],
                     new_tags: ['Scouttest Sales', 'scouttest rockstar'],
                     game: 'scouttest grand theft',
+                    // Announced at the same time: the console gets its page.
+                    consoles: [{ name: 'Scouttest PlayStation 6', release: '2027-Q4' }],
                     // Applied to the games library only on Publish.
                     game_facts: [
                       {
@@ -475,7 +477,8 @@ describe('scout step 2 (drafts)', () => {
                       {
                         game: 'Scouttest Other Game',
                         is_new: true,
-                        releases: [{ platforms: ['pc'], date: '2027-Q2' }],
+                        // A console the site doesn't have yet, by its name: created on Publish.
+                        releases: [{ platforms: ['pc', 'Scouttest PlayStation 6'], date: '2027-Q2' }],
                       },
                       // The rehearsal's recap: a game its Publish would create.
                       ...(text.includes('Rehearsal Quest')
@@ -659,6 +662,11 @@ describe('scout step 2 (drafts)', () => {
       overrideAccess: true,
     })
     await payload.delete({
+      collection: 'platforms' as never,
+      where: { name: { like: 'Scouttest' } } as never,
+      overrideAccess: true,
+    })
+    await payload.delete({
       collection: 'companies' as never,
       where: { name: { like: 'Scouttest' } },
       overrideAccess: true,
@@ -732,7 +740,7 @@ describe('scout step 2 (drafts)', () => {
     const card = JSON.stringify(discordPosts[0].body)
     expect(card).toContain('Fiches jeux')
     expect(card).toContain('Scouttest Grand Theft : PlayStation 5, Xbox Series X|S · Nov 19, 2026')
-    expect(card).toContain('Scouttest Other Game : PC · Q2 2027')
+    expect(card).toContain('Scouttest Other Game : PC, 🆕 Scouttest PlayStation 6 · Q2 2027')
     const untouched = (
       await payload.find({
         collection: 'games',
@@ -825,21 +833,34 @@ describe('scout step 2 (drafts)', () => {
     ).docs[0] as unknown as {
       releaseDate: string
       releaseDatePrecision: string
-      platforms: string[]
+      platforms: Array<{ slug: string }>
       publishers: Array<{ name: string }>
     }
     expect(gta.releaseDate).toBe('2026-11-19T00:00:00.000Z')
     expect(gta.releaseDatePrecision).toBe('day')
-    expect(gta.platforms).toEqual(['ps5', 'xbox-series'])
+    // Consoles are Platforms documents now.
+    expect(gta.platforms.map((p) => p.slug)).toEqual(['ps5', 'xbox-series'])
     expect(gta.publishers.map((c) => c.name)).toEqual(['Scouttest Rockstar Games'])
     const other = (
       await payload.find({
         collection: 'games',
         where: { name: { equals: 'Scouttest Other Game' } },
+        depth: 0,
         overrideAccess: true,
       })
-    ).docs[0] as unknown as { id: number; releaseDatePrecision: string }
+    ).docs[0] as unknown as { id: number; releaseDatePrecision: string; platforms: number[] }
     expect(other.releaseDatePrecision).toBe('quarter')
+    // The new console: created with its family and date, and linked to the game.
+    const ps6 = (
+      await payload.find({
+        collection: 'platforms' as never,
+        where: { name: { equals: 'Scouttest PlayStation 6' } } as never,
+        depth: 0,
+        overrideAccess: true,
+      })
+    ).docs[0] as unknown as { id: number; family: string; releasePrecision: string; releaseDate: string }
+    expect(ps6).toMatchObject({ family: 'playstation', releasePrecision: 'quarter', releaseDate: '2027-10-01T00:00:00.000Z' })
+    expect(other.platforms).toContain(ps6.id)
     expect((article.relatedGames as Array<{ id: number }>).map((g) => g.id)).toEqual([other.id])
   })
 
@@ -897,16 +918,18 @@ describe('scout step 2 (drafts)', () => {
       game: {
         name: string
         developers?: number[]
-        platforms?: string[]
+        platforms?: number[]
         releaseDatePrecision?: string
       }
       tags: Array<{ name: string }>
     }
-    expect(indie.game).toMatchObject({
-      name: 'Scouttest Indie Quest',
-      platforms: ['pc', 'switch-2'],
-      releaseDatePrecision: 'tba',
+    expect(indie.game).toMatchObject({ name: 'Scouttest Indie Quest', releaseDatePrecision: 'tba' })
+    const consoles = await payload.find({
+      collection: 'platforms' as never,
+      where: { id: { in: indie.game.platforms ?? [] } } as never,
+      overrideAccess: true,
     })
+    expect(consoles.docs.map((p) => (p as unknown as { slug: string }).slug).sort()).toEqual(['pc', 'switch-2'])
     expect(indie.game.developers).toHaveLength(1)
     expect(indie.tags.map((t) => t.name)).toEqual(['Scouttest Patches'])
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(

@@ -20,6 +20,7 @@ import 'dotenv/config'
 import { getPayload, type Payload } from 'payload'
 import sharp from 'sharp'
 import config from '../payload.config'
+import { INITIAL_PLATFORMS } from '../lib/platforms'
 // No import from '../payload-types': that file is generated and gitignored, so
 // CI type-checks without it. The few types needed are spelled out here.
 // Postgres ids are numbers; without the generated types Payload reports them as
@@ -353,6 +354,18 @@ const run = async () => {
     companyIds.set(name, id)
     return id
   }
+  // Consoles: the migration adds the first 24; a database without them gets them here.
+  const platformIds = new Map<string, ID>()
+  const platform = async (slug: string): Promise<ID> => {
+    let id = platformIds.get(slug) ?? (await findIdBySlug(payload, 'platforms' as never, slug))
+    if (!id) {
+      const p = INITIAL_PLATFORMS.find((x) => x.slug === slug)!
+      const created = await payload.create({ collection: 'platforms' as never, data: { ...p } as never })
+      id = Number((created as unknown as { id: number }).id)
+    }
+    platformIds.set(slug, id)
+    return id
+  }
   for (const game of GAMES) {
     let id = await findIdBySlug(payload, 'games', game.slug)
     if (!id) {
@@ -362,7 +375,9 @@ const run = async () => {
           name: game.name,
           slug: game.slug,
           genre: [...game.genre],
-          releases: game.releases.map((r) => ({ ...r, platforms: [...r.platforms] })),
+          releases: await Promise.all(
+            game.releases.map(async (r) => ({ ...r, platforms: await Promise.all(r.platforms.map(platform)) })),
+          ),
           developers: await Promise.all(game.developers.map(company)),
           publishers: await Promise.all(game.publishers.map(company)),
         } as never,

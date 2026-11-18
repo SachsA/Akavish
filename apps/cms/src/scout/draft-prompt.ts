@@ -3,8 +3,8 @@
 // article (Lexical rich text + a Sources block). Pure, unit-tested.
 
 import { CATEGORIES, type Category } from './triage-prompt'
-import { parseReleaseDate, type Release } from '../lib/game-releases'
-import { PLATFORMS, PLATFORM_VALUES, type Platform } from '../lib/platforms'
+import { parseReleaseDate, type PlatformRef, type Release } from '../lib/game-releases'
+import { INITIAL_PLATFORMS } from '../lib/platforms'
 
 export interface DraftSource {
   name: string
@@ -54,6 +54,8 @@ export interface DraftAnswer {
    * lineup or a showcase. Applied to the games library on Publish.
    */
   game_facts?: GameFactsEntry[]
+  /** Consoles announced or dated (a PS6 reveal): created or dated on Publish. */
+  consoles?: Array<{ name: string; release?: string }>
   /** Tags the site doesn't have yet (at most 2 kept). */
   new_tags?: string[]
   /** Esport: the photo the cover should be (a player for a transfer, a team with the trophy for a win). */
@@ -61,7 +63,48 @@ export interface DraftAnswer {
 }
 
 /** A draft answer once checked (cleanDraft): game facts parsed. */
-export type CleanDraft = Omit<DraftAnswer, 'game_facts'> & { game_facts: CleanGameFactsEntry[] }
+export type CleanDraft = Omit<DraftAnswer, 'game_facts' | 'consoles'> & {
+  game_facts: CleanGameFactsEntry[]
+  consoles: ConsoleFact[]
+}
+
+/** A console the sources announce or date ("PlayStation 6", Q4 2027), checked. */
+export interface ConsoleFact {
+  name: string
+  date: string | null
+  precision: Release['precision']
+}
+
+/** Consoles in a draft or a live update: announced or dated hardware. */
+export const CONSOLES_PROPERTY = {
+  type: 'array',
+  description:
+    'Consoles (hardware: a new PlayStation, Xbox or Nintendo console, a handheld, a headset) the sources officially announce or date: each gets its own page on the site. "name": the full official name ("PlayStation 6"); "release": "YYYY-MM-DD", "YYYY-MM", "YYYY-Qn" ("holiday 2027" is 2027-Q4), "YYYY" or "TBA". Never from a rumour or a leak, never a family alone ("Xbox"). Empty when there is none.',
+  items: {
+    type: 'object',
+    properties: { name: { type: 'string' }, release: { type: 'string' } },
+    required: ['name'],
+  },
+} as const
+
+/** consoles as the model gave them → checked (at most 5, unreadable dates as TBA). Pure. */
+export function cleanConsoleFacts(raw: unknown): ConsoleFact[] {
+  const out: ConsoleFact[] = []
+  for (const e of Array.isArray(raw) ? raw : []) {
+    const c = (e && typeof e === 'object' ? e : {}) as Record<string, unknown>
+    const name = typeof c.name === 'string' ? c.name.replace(/\s+/g, ' ').trim() : ''
+    const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '')
+    if (name.length < 2 || name.length > 40 || !key) continue
+    if (out.some((x) => x.name.toLowerCase().replace(/[^a-z0-9]+/g, '') === key)) continue
+    const when = parseReleaseDate(typeof c.release === 'string' ? c.release : '') ?? {
+      date: null,
+      precision: 'tba' as const,
+    }
+    out.push({ name, ...when })
+    if (out.length >= 5) break
+  }
+  return out
+}
 
 /** What a story says about a game, in the model's words (dates as text). */
 export interface GameFacts {
@@ -74,7 +117,11 @@ export interface GameFactsEntry extends GameFacts {
   game: string
   is_new?: boolean
 }
-/** The same, checked: known consoles, dates parsed (lib/game-releases.ts). */
+/**
+ * The same, checked: dates parsed (lib/game-releases.ts), consoles as the
+ * model named them (a slug or an official name), matched to the Platforms
+ * collection when applied (game-facts.ts).
+ */
 export interface CleanGameFacts {
   developers: string[]
   publishers: string[]
@@ -109,8 +156,8 @@ export const GAME_FACTS_PROPERTIES = {
       properties: {
         platforms: {
           type: 'array',
-          items: { type: 'string', enum: [...PLATFORM_VALUES, 'other'] },
-          description: `Consoles: ${PLATFORMS.map((p) => `${p.value} = ${p.label}`).join(', ')}. "other" when the sources name a console that isn't in this list (a console not out yet, a next generation): never leave such a console out, the list would look complete. Empty when the sources don't say.`,
+          items: { type: 'string' },
+          description: `Consoles: the slug of a known one (${INITIAL_PLATFORMS.map((p) => `${p.slug} = ${p.name}`).join(', ')}); a console that isn't in this list (a new generation: "PlayStation 6"), its full official name, as the sources give it: it gets its own page. Never a family alone ("xbox" is the 2001 Xbox only). Empty when the sources don't say.`,
         },
         date: {
           type: 'string',
@@ -140,7 +187,8 @@ Hard rules:
 - SEO description: under 155 characters.
 - Write in English even when sources are in French or another language.
 - Game: the ONE game the story is about, meaning the news concerns that game itself (its release, update, DLC, sales, trailer, review, cancellation). A game only cited as context is not the subject: a PS5 sales story that mentions GTA VI has no game. Hardware, a service, a company, a studio, an event or several games: leave it empty. When the game is in the existing games list, copy its exact name ("GTA 6" is "Grand Theft Auto VI"). When it isn't, give its full official title as the publisher writes it ("The Legend of Zelda: Ocarina of Time", not "Ocarina of Time remake") and set game_is_new.
-- Game facts: Akavish keeps a library of game pages (consoles, release dates, studios). In game_facts, add one entry for every game whose release date or window, consoles, developer or publisher the sources state as official: the story's game, and each game of a lineup, a release schedule or a showcase. Only what the sources say, never what you remember. A rumour or a leak is not official: no game_facts from it. For each entry: "game" (exact name from the existing games list, or the full official title with is_new), "releases": one per group of consoles sharing a date, with the consoles as named ("Xbox" in a 2021+ story means xbox-series, "Switch 2" is switch-2, "PlayStation" alone for a new game means ps5) and the date as "YYYY-MM-DD", "YYYY-MM", "YYYY-Qn" ("holiday 2026" or "late 2026" is 2026-Q4), "YYYY" ("2027", "early 2027") or "TBA". A delay gives the new date. A release with no console named covers all of them. "developers" and "publishers": company names as written officially. "genres": from the list.
+- Game facts: Akavish keeps a library of game pages (consoles, release dates, studios). In game_facts, add one entry for every game whose release date or window, consoles, developer or publisher the sources state as official: the story's game, and each game of a lineup, a release schedule or a showcase. Only what the sources say, never what you remember. A rumour or a leak is not official: no game_facts from it. For each entry: "game" (exact name from the existing games list, or the full official title with is_new), "releases": one per group of consoles sharing a date, with the consoles as named ("Xbox" in a 2021+ story means xbox-series, "Switch 2" is switch-2, "PlayStation" alone for a new game means ps5; a console that isn't in the list, such as a new generation, by its full official name: it gets its own page, so never drop it) and the date as "YYYY-MM-DD", "YYYY-MM", "YYYY-Qn" ("holiday 2026" or "late 2026" is 2026-Q4), "YYYY" ("2027", "early 2027") or "TBA". A delay gives the new date. A release with no console named covers all of them. "developers" and "publishers": company names as written officially. "genres": from the list.
+- Consoles: when the sources officially announce or date a console (a new PlayStation, Xbox or Nintendo hardware, a handheld, a headset), list it in consoles with its full official name and its release: it gets its own page on the site, and the games announced for it link to it.
 - Tags: 2 to 5, in this order: (1) the company behind the news (publisher, studio or platform holder: Nintendo, Sony, Bandai Namco, Obsidian Entertainment…); (2) the platforms concerned (PS5, Xbox, PC, Switch 2), only when the story is about them; (3) the theme or event (Sales, Release dates, DLC, Studio closures, Earnings, Trailers, Worlds 2026…). Copy existing tags exactly when one fits. When a needed company or theme tag doesn't exist, put it in new_tags (at most 2, short, English, Title Case, the style of the existing ones). Never the game's name, never the category, never a person, never a vague word ("Gaming", "News").
 - Videos: when videos found in the sources are listed, put in "videos" the numbers of those that are official (the publisher's, studio's, platform holder's or tournament organiser's own channel) AND directly about this story, such as the trailer the article is about. None otherwise. Do not mention a video in the text unless you selected it.
 Do not add a sources list or video links: they are appended automatically.`
@@ -231,6 +279,7 @@ export const DRAFT_TOOL = {
           required: ['game'],
         },
       },
+      consoles: CONSOLES_PROPERTY,
       new_tags: {
         type: 'array',
         items: { type: 'string' },
@@ -306,6 +355,7 @@ export function cleanDraft(
         : '',
     game_is_new: answer?.game_is_new === true,
     game_facts: cleanGameFactsList(answer?.game_facts),
+    consoles: cleanConsoleFacts(answer?.consoles),
     new_tags: (Array.isArray(answer?.new_tags) ? answer.new_tags : [])
       .filter((t): t is string => typeof t === 'string')
       .map((t) => t.trim())
@@ -487,14 +537,18 @@ export function cleanGameFacts(raw: unknown): CleanGameFacts {
     const row = (r && typeof r === 'object' ? r : {}) as Record<string, unknown>
     const when = parseReleaseDate(typeof row.date === 'string' ? row.date : '')
     if (!when) continue
-    // A console the site doesn't know ("other": a next generation) makes the
-    // list partial: "PC" alone would read as PC only. The date is kept,
-    // without consoles, like a release whose consoles aren't given.
-    const partial = Array.isArray(row.platforms) && row.platforms.includes('other')
-    const platforms = partial
-      ? []
-      : PLATFORM_VALUES.filter((p) => Array.isArray(row.platforms) && row.platforms.includes(p))
-    releases.push({ platforms, ...when })
+    // Consoles as named: a slug ("ps5") or an official name ("PlayStation
+    // 6"), matched or created when applied (game-facts.ts).
+    const platforms: string[] = []
+    for (const p of Array.isArray(row.platforms) ? row.platforms : []) {
+      if (typeof p !== 'string') continue
+      const name = p.replace(/\s+/g, ' ').trim()
+      const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '')
+      if (name.length < 2 || name.length > 40 || !key) continue
+      if (platforms.some((x) => x.toLowerCase().replace(/[^a-z0-9]+/g, '') === key)) continue
+      platforms.push(name)
+    }
+    releases.push({ platforms: platforms.slice(0, 10), ...when })
   }
   return {
     developers: names(g.developers),
@@ -529,9 +583,13 @@ export function cleanGameFactsList(raw: unknown): CleanGameFactsEntry[] {
 }
 
 
+/** A console's name for Discord: a known slug's name, else what was given. */
+const defaultLabel = (p: PlatformRef) =>
+  INITIAL_PLATFORMS.find((x) => x.slug === p)?.name ?? String(p)
+
 /** "PS5, Xbox Series X|S · Nov 19, 2026" for Discord. Pure. */
-export function describeRelease(r: Release): string {
-  const consoles = r.platforms.map((p) => PLATFORMS.find((x) => x.value === p)?.label ?? p).join(', ')
+export function describeRelease(r: Release, label: (p: PlatformRef) => string = defaultLabel): string {
+  const consoles = r.platforms.map(label).join(', ')
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   let when = 'TBA'
   if (r.date) {
@@ -548,7 +606,6 @@ export function describeRelease(r: Release): string {
   return consoles ? `${consoles} · ${when}` : when
 }
 
-export type { Platform }
 
 /**
  * The tags to create for a draft: at most `room` (2 at most), each 2 to 30

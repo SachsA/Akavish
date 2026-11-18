@@ -104,11 +104,11 @@ const element = (type, children, extra = {}) => ({
  * stays in the same tab; an outside URL opens a new one.
  */
 /**
- * "ps5, xbox-series @ 2026-11-19; pc @ TBA" → Games releases rows. Unknown
- * consoles or dates throw, so a typo doesn't land in the library.
+ * "ps5, xbox-series @ 2026-11-19; pc @ TBA" → Games releases rows, consoles
+ * as slugs. A console not in `known` (the CMS's Platforms slugs) or an
+ * unreadable date throws, so a typo doesn't land in the library.
  */
-export function parseReleases(text) {
-  const PLATFORMS = ['pc', 'mac', 'ps5', 'ps4', 'ps3', 'ps2', 'ps1', 'psp', 'vita', 'xbox-series', 'xbox-one', 'xbox-360', 'xbox', 'switch-2', 'switch', 'wii-u', 'wii', 'gamecube', 'n64', '3ds', 'ds', 'ios', 'android', 'quest']
+export function parseReleases(text, known = []) {
   return (text ?? '')
     .split(';')
     .map((part) => part.trim())
@@ -116,7 +116,7 @@ export function parseReleases(text) {
     .map((part) => {
       const [consoles, when = ''] = part.split('@').map((x) => x.trim())
       const platforms = consoles.split(',').map((c) => c.trim().toLowerCase()).filter(Boolean)
-      for (const c of platforms) if (!PLATFORMS.includes(c)) throw new Error(`unknown console "${c}"`)
+      for (const c of platforms) if (!known.includes(c)) throw new Error(`unknown console "${c}"`)
       const w = when.toUpperCase()
       let m
       if (!w || w === 'TBA') return { platforms, date: null, precision: 'tba' }
@@ -295,6 +295,16 @@ async function main() {
     return ids
   }
 
+  let platformIdsCache = null
+  /** slug → id of every console in the CMS (Platforms). */
+  async function platformIds() {
+    if (!platformIdsCache) {
+      const res = await call('/platforms?pagination=false&depth=0&select[slug]=true')
+      platformIdsCache = Object.fromEntries(res.docs.map((p) => [p.slug, p.id]))
+    }
+    return platformIdsCache
+  }
+
   async function gameId(slug) {
     const id = games[slug] ?? (await findOne('games', 'slug', slug))?.id
     if (!id && !dry) console.warn(`  ! game ${slug} not found, skipped`)
@@ -314,7 +324,11 @@ async function main() {
         slug: meta.slug,
         developers: await companies(meta.developers ?? meta.developer),
         publishers: await companies(meta.publishers ?? meta.publisher),
-        releases: parseReleases(meta.releases),
+        // Consoles are Platforms documents: slugs → ids.
+        releases: parseReleases(meta.releases, Object.keys(await platformIds())).map((r) => ({
+          ...r,
+          platforms: r.platforms.map((slug) => platformIdsCache[slug]),
+        })),
         genre: meta.genre?.split(',').map((g) => g.trim()),
         cover: await media(meta.cover, meta.coverAlt),
       }

@@ -25,7 +25,7 @@ import {
   type LibraryHit,
 } from '@/lib/game-library'
 import { intlTag } from '@/lib/i18n/config'
-import { PLATFORM_FAMILIES, platformInfo } from '@/lib/platforms'
+import { PLATFORM_FAMILIES, platformInfo, type PlatformInfo } from '@/lib/platforms'
 import { GameCard } from './GameCard'
 import { useI18n, useRegion } from './I18nProvider'
 import { ReleaseDate } from './ReleaseDate'
@@ -39,11 +39,14 @@ const field =
 export function GamesLibrary({
   games,
   companies,
+  platforms: platformList,
   genres,
   today,
 }: {
   games: LibraryGame[]
   companies: LibraryCompany[]
+  /** Every console (CMS Platforms), in the site's order. */
+  platforms: PlatformInfo[]
   genres: string[]
   /** The page's day (YYYY-MM-DD), so "upcoming" agrees with the server. */
   today: string
@@ -89,7 +92,7 @@ export function GamesLibrary({
   const hits = useMemo(() => filterGames(games, live, today, locale), [games, live.q, filters, today, locale]) // eslint-disable-line react-hooks/exhaustive-deps
   const sort = effectiveSort(filters)
   const years = useMemo(() => yearsOf(games), [games])
-  const platforms = useMemo(() => platformsOf(games), [games])
+  const platforms = useMemo(() => platformsOf(games, platformList), [games, platformList])
   const usedCompanies = useMemo(() => {
     const used = new Set(games.flatMap((g) => [...g.developers, ...g.publishers]))
     return companies.filter((c) => used.has(c.slug))
@@ -146,13 +149,13 @@ export function GamesLibrary({
         >
           <option value="">{t.games.allConsoles}</option>
           {PLATFORM_FAMILIES.map((fam) => {
-            const list = platforms.filter((p) => platformInfo(p)?.family === fam)
+            const list = platforms.filter((p) => (platformInfo(p, platformList)?.family ?? 'other') === fam)
             if (!list.length) return null
             return (
               <optgroup key={fam} label={t.games.families[fam]}>
                 {list.map((p) => (
                   <option key={p} value={p}>
-                    {platformInfo(p)?.label}
+                    {platformInfo(p, platformList)?.label ?? p}
                   </option>
                 ))}
               </optgroup>
@@ -314,7 +317,7 @@ export function GamesLibrary({
                         h.release ? (
                           <>
                             <ReleaseDate release={h.release} />
-                            {h.release.platforms.length > 0 && <> · {formatPlatforms(h.release.platforms)}</>}
+                            {h.release.platforms.length > 0 && <> · {formatPlatforms(h.release.platforms, platformList)}</>}
                           </>
                         ) : undefined
                       }

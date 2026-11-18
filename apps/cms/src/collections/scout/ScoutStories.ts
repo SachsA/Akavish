@@ -130,6 +130,13 @@ export const ScoutStories: CollectionConfig = {
           admin: { readOnly: true, description: 'Fiches jeux mises à jour à la publication.' },
         },
         {
+          // Consoles the draft announces or dates (a PS6 reveal), created or
+          // dated when it's published (scout/game-facts.ts).
+          name: 'consoleFacts',
+          type: 'json',
+          admin: { readOnly: true, description: 'Consoles créées ou datées à la publication.' },
+        },
+        {
           // The current version's text as the scout wrote it, so a revision
           // shows the model what it wrote before the feedback.
           name: 'lastDraftText',

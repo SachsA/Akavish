@@ -142,11 +142,16 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `lib/game-library.ts`, filters in the URL). A game has *releases* (consoles
   + date + precision day / month / quarter / year / TBA, one row per group of
   consoles released together); `platforms` and `releaseDate` are computed
-  from them, never edit those. Consoles one by one (`lib/platforms.ts`, same
-  list in CMS and web, a test checks). Studios and publishers are
-  *Companies* with their page `/company/<slug>`. The scout fills all this
-  from official news on *Publier* (`scout/game-facts.ts`); rumours never
-  touch a game page.
+  from them, never edit those. Consoles are *Platforms* documents (since
+  2026-11-18: slug, name, short label, family, position, aliases, release,
+  tag), each with its page `/platform/<slug>`; a release links to them. The
+  web gets the list from the CMS (`fetchAllPlatforms`) and passes it to
+  `lib/platforms.ts` / `lib/game-library.ts` helpers. Studios and publishers
+  are *Companies* with their page `/company/<slug>`. The scout fills all
+  this from official news on *Publier* (`scout/game-facts.ts`), and creates
+  a console the news names for the first time (a PS6 reveal: `consoles` in
+  the draft and live tools, or a game announced on it); rumours never touch
+  a game page.
 - **CI:** `.github/workflows/ci.yml` — lint web/CMS/mobile, type-check
   web/CMS/mobile/shared packages, unit tests (`pnpm test`: vitest in web,
   mobile, CMS and api-client), then build web + CMS (mobile isn't built — that needs EAS) and,

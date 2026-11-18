@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PLATFORMS as CMS_PLATFORMS } from '../../../cms/src/lib/platforms'
+import { INITIAL_PLATFORMS } from '../../../cms/src/lib/platforms'
 import {
   dateGroupLabel,
   effectiveSort,
@@ -15,7 +15,15 @@ import {
   type LibraryGame,
   type Release,
 } from './game-library'
-import { PLATFORMS } from './platforms'
+import { orderPlatforms, type PlatformInfo } from './platforms'
+
+// The consoles the CMS started with, as fetchAllPlatforms gives them.
+const familyPos = new Map<string, number>()
+const LIST: PlatformInfo[] = INITIAL_PLATFORMS.map((p) => {
+  const position = familyPos.get(p.family) ?? 0
+  familyPos.set(p.family, position + 1)
+  return { value: p.slug, short: p.short, label: p.name, family: p.family, position }
+})
 
 const r = (platforms: string[], date: string | null, precision: Release['precision'] = 'day'): Release => ({
   platforms,
@@ -44,8 +52,11 @@ const witcher = game('The Witcher 4', [r(['pc', 'ps5'], null, 'tba')])
 const all = [skyrim, gta, fable, metro, witcher]
 
 describe('platforms', () => {
-  it('match the CMS list, value for value', () => {
-    expect(PLATFORMS.map((p) => p.value)).toEqual(CMS_PLATFORMS.map((p) => p.value))
+  it('are ordered by family, then position; a new console goes where its family is', () => {
+    // The scout puts a new console before the others of its family (position -1).
+    const ps6: PlatformInfo = { value: 'ps6', short: 'PS6', label: 'PlayStation 6', family: 'playstation', position: -1 }
+    const order = orderPlatforms([...LIST, ps6]).map((p) => p.value)
+    expect(order.slice(0, 4)).toEqual(['pc', 'mac', 'ps6', 'ps5'])
   })
 })
 
@@ -54,7 +65,9 @@ describe('URL filters', () => {
     const f = parseFilters(new URLSearchParams('platform=ps5&year=2027&month=11&status=upcoming&sort=old&letter=g'))
     expect(f).toEqual({ platform: 'ps5', year: 2027, month: 11, status: 'upcoming', sort: 'old', letter: 'G' })
     expect(filtersToQuery(f)).toBe('?letter=G&platform=ps5&year=2027&month=11&status=upcoming&sort=old')
-    expect(parseFilters(new URLSearchParams('platform=ps6&year=3000&month=4&status=soon&company=<x>'))).toEqual({})
+    expect(parseFilters(new URLSearchParams('platform=<ps6>&year=3000&month=4&status=soon&company=<x>'))).toEqual({})
+    // Any console slug: a new one comes from the CMS.
+    expect(parseFilters(new URLSearchParams('platform=ps6'))).toEqual({ platform: 'ps6' })
     expect(filtersToQuery({})).toBe('')
   })
   it('sorts by date once a period or upcoming is asked', () => {
@@ -75,7 +88,8 @@ describe('dates', () => {
     expect(formatRelease(r([], '2027-10-01', 'quarter'), 'fr')).toBe('T4 2027')
     expect(formatRelease(r([], '2027-01-01', 'year'), 'en')).toBe('2027')
     expect(formatRelease(r([], null, 'tba'), 'fr')).toBe('Date à venir')
-    expect(formatPlatforms(['xbox-series', 'pc', 'ps5'])).toBe('PC, PS5, Xbox Series')
+    expect(formatPlatforms(['xbox-series', 'pc', 'ps5'], LIST)).toBe('PC, PS5, Xbox Series')
+    expect(formatPlatforms(['ps6', 'pc'], LIST)).toBe('PC, ps6') // not in the list yet: last, as is
   })
   it('a month is out once it is over', () => {
     expect(isOut(r([], '2026-11-01', 'month'), TODAY)).toBe(false)
@@ -126,7 +140,7 @@ describe('filtering', () => {
   })
   it('menus and headings', () => {
     expect(yearsOf(all)).toEqual([2027, 2026, 2017, 2011])
-    expect(platformsOf(all)).toEqual(['pc', 'ps5', 'ps3', 'xbox-series', 'xbox-360', 'switch'])
+    expect(platformsOf(all, LIST)).toEqual(['pc', 'ps5', 'ps3', 'xbox-series', 'xbox-360', 'switch'])
     expect(dateGroupLabel(r([], '2026-11-19'), 'fr')).toBe('Novembre 2026')
     expect(dateGroupLabel(undefined, 'en')).toBe('TBA')
   })

@@ -307,4 +307,13 @@ test('games library: console + year in the URL, upcoming, game and company pages
   await expect(page).toHaveURL(/\/company\/halfpipe-studio$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Halfpipe Studio')
   await expect(page.getByRole('link', { name: /Neon Drift/ }).first()).toContainText('Developer and publisher')
+
+  // A console's page, from the game page's console chips.
+  await page.goto('/game/neon-drift')
+  await page.getByRole('link', { name: 'Switch 2', exact: true }).click()
+  await expect(page).toHaveURL(/\/platform\/switch-2$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nintendo Switch 2')
+  await expect(page.getByRole('link', { name: /Neon Drift/ }).first()).toContainText('November 2025')
+  await page.goto('/platform/ps9')
+  await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('PlayStation 9')
 })
