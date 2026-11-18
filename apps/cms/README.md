@@ -320,7 +320,10 @@ link). Sending issues isn't built yet: when it is, send to
 and asks for validation on Discord; nothing is published without a click.
 
 How a run goes (`src/scout/run.ts`, the `scoutTick` job every 5 minutes in its
-own `scout` queue, a no-op unless `SCOUT_ENABLED=true`):
+own `scout` queue, a no-op unless `SCOUT_ENABLED=true`). Payload schedules no
+new run while one is unfinished, and never retries a run a stopped server left
+"processing": the schedule's `beforeSchedule` first deletes such a run once
+it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
 
 1. **Sources** (`default-sources.ts`): loaded into `scout-sources` the first
    time, then edited in the admin. Official feeds every 5 min, the rest every 15.

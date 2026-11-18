@@ -1218,7 +1218,12 @@ Two things that differ from the platforms:
 
 The scout (`apps/cms/src/scout/`, design doc linked in `PROGRESS.md`) runs
 inside the CMS as the `scoutTick` job, every 5 minutes, in its own `scout`
-queue. It is **off** until `SCOUT_ENABLED=true`. Step 1 observes: it collects
+queue. It is **off** until `SCOUT_ENABLED=true`. A redeploy that stops it
+mid-run leaves that run "processing", which blocked every next one until
+2026-11-18 (no digest, no drafts after a deploy): the next scheduling now drops
+a run older than 20 minutes (log `[scout] stale run released`), so the scout
+resumes by itself within about 20 minutes of a deploy, and a missed digest
+goes out late. Step 1 observes: it collects
 38 RSS feeds, groups items into stories with Claude Haiku, scores them, and
 posts a digest to Discord at 8 am and 8 pm (Paris time). Step 2 writes: a story
 above the threshold becomes a **draft** article (Claude Sonnet), sent to Discord

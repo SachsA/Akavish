@@ -102,3 +102,34 @@ export async function runScout(payload: Payload, opts: RunOptions = {}): Promise
   payload.logger.info({ msg: '[scout] run', dryRun: config.dryRun, ...report })
   return report
 }
+
+/** A run older than this is dead: a run takes a minute or two. */
+const STALE_MS = 20 * 60_000
+
+/**
+ * Remove scout runs left "processing" by a server that stopped mid-run (a
+ * redeploy, a crash). Payload never retries such a job, and schedules no new
+ * one while it exists: the scout would stay stopped (2026-11-18, from 17:45
+ * to the evening, after a deploy). Called before each scheduling.
+ */
+export async function releaseStaleScoutRuns(payload: Payload, now = new Date()): Promise<number> {
+  const { docs } = await payload.find({
+    collection: 'payload-jobs',
+    where: {
+      and: [
+        { taskSlug: { equals: 'scoutTick' } },
+        { processing: { equals: true } },
+        { completedAt: { exists: false } },
+        { updatedAt: { less_than: new Date(now.getTime() - STALE_MS).toISOString() } },
+      ],
+    },
+    limit: 20,
+    depth: 0,
+    overrideAccess: true,
+  })
+  for (const job of docs) {
+    await payload.delete({ collection: 'payload-jobs', id: job.id, overrideAccess: true })
+    payload.logger.warn({ msg: '[scout] stale run released', job: job.id, since: job.updatedAt })
+  }
+  return docs.length
+}

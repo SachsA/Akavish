@@ -630,6 +630,12 @@ checklist it walks through.
   date picker saves local midnight, the hook takes the nearest UTC day. Early
   access vs 1.0: the backfill used the full release (1.0) when announced.
   A cancelled game has no release row (it then shows in no period).
+- **A deploy can stop the scout mid-run** (2026-11-18: nothing from 17:45
+  to the evening, no 8 pm digest). Payload leaves the run "processing",
+  schedules nothing while it exists and never retries it. Fixed: the
+  schedule's `beforeSchedule` deletes a scout run older than 20 minutes
+  (`releaseStaleScoutRuns`). If Discord goes quiet, check `scout-sources`
+  *lastFetchedAt* in /admin: it moves every 5 minutes when the scout runs.
 - **Consoles are documents, matched by name** (2026-11-18). A release links
   to *Platforms*; the scout matches a console on its slug, name or alias and
   creates the ones it doesn't find. A console it created under a different

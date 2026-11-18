@@ -27,7 +27,7 @@ import { ScoutUsage } from './collections/scout/ScoutUsage'
 import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
 import { scoutConfig } from './scout/config'
 import { registerCommands } from './scout/discord-commands'
-import { runScout } from './scout/run'
+import { releaseStaleScoutRuns, runScout } from './scout/run'
 import { confirmHandler, subscribeHandler, unsubscribeHandler } from './lib/newsletter'
 import { schedulePublishHandler } from './lib/schedule-publish'
 import {
@@ -227,7 +227,21 @@ export default buildConfig({
         // Does nothing unless SCOUT_ENABLED=true. The schedule is declared
         // either way so the database schema doesn't depend on an env var.
         slug: 'scoutTick',
-        schedule: [{ cron: '0 */5 * * * *', queue: 'scout' }],
+        schedule: [
+          {
+            cron: '0 */5 * * * *',
+            queue: 'scout',
+            hooks: {
+              // A run killed mid-way (a redeploy) would block every next one.
+              beforeSchedule: async (args) => {
+                await releaseStaleScoutRuns(args.req.payload).catch((err) =>
+                  args.req.payload.logger.error({ msg: '[scout] stale run check failed', error: String(err) }),
+                )
+                return args.defaultBeforeSchedule(args)
+              },
+            },
+          },
+        ],
         retries: 0,
         handler: async ({ req }) => {
           await runScout(req.payload)

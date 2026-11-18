@@ -20,7 +20,7 @@ import { runLive } from '@/scout/live'
 import { gatherReport } from '@/scout/report'
 import type { DiscordMessage } from '@/scout/discord'
 import { checkBudget } from '@/scout/budget'
-import { runScout } from '@/scout/run'
+import { releaseStaleScoutRuns, runScout } from '@/scout/run'
 import { rescoreRecent, triage } from '@/scout/triage'
 
 import sharp from 'sharp'
@@ -1293,6 +1293,35 @@ describe('scout step 2 (drafts)', () => {
       await interact({ type: 3, ...owner, data: { custom_id: `scout:evpurge:${real.id}` } })
     ).json()
     expect(JSON.stringify(refused)).toContain('pas une répétition')
+  })
+})
+
+// ─── A run killed mid-way ────────────────────────────────────────────────────
+
+describe('scout schedule', () => {
+  it('releases a run left processing by a stopped server, not a live one', async () => {
+    const mk = async () =>
+      (await payload.create({
+        collection: 'payload-jobs',
+        data: { taskSlug: 'scoutTick', queue: 'scout', processing: true, input: {} } as never,
+        overrideAccess: true,
+      })) as unknown as { id: number | string }
+    const stale = await mk()
+    const fresh = await mk()
+    // The stale one started an hour ago (a redeploy killed it).
+    await payload.db.updateOne({
+      collection: 'payload-jobs',
+      id: stale.id,
+      data: { updatedAt: new Date(Date.now() - 3_600_000).toISOString() },
+    })
+    expect(await releaseStaleScoutRuns(payload)).toBe(1)
+    const left = await payload.find({
+      collection: 'payload-jobs',
+      where: { id: { in: [stale.id, fresh.id] } },
+      overrideAccess: true,
+    })
+    expect(left.docs.map((d) => d.id)).toEqual([fresh.id])
+    await payload.delete({ collection: 'payload-jobs', id: fresh.id, overrideAccess: true })
   })
 })
 
