@@ -3,6 +3,7 @@ import type { Article } from '@akavish/types'
 import Link from '@/components/LocaleLink'
 import { Wordmark } from '@/components/Wordmark'
 import { DateText } from '@/components/DateText'
+import { ScoreBadge } from '@/components/ScoreBadge'
 import { getMessages } from '@/lib/i18n/server'
 
 export function ArticleCard({ article }: { article: Article }) {
@@ -42,7 +43,9 @@ export function ArticleCard({ article }: { article: Article }) {
             </span>
           )}
           {article.score !== undefined && (
-            <span className="text-zinc-200 font-semibold">· {article.score}/10</span>
+            <span className="ml-auto">
+              <ScoreBadge score={article.score} />
+            </span>
           )}
         </div>
         <h3 className="font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors">

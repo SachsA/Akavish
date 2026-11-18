@@ -19,6 +19,7 @@ import { ArticleCard } from '@/components/ArticleCard'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { ShareButtons } from '@/components/ShareButtons'
 import { SaveButton } from '@/components/SaveButton'
+import { ScoreBadge } from '@/components/ScoreBadge'
 import { Comments } from '@/components/Comments'
 import { countWords, readingTimeMinutes } from '@/lib/reading-time'
 import { absoluteUrl, SITE_NAME } from '@/lib/site'
@@ -187,11 +188,7 @@ export default async function ArticlePage({ params }: Params) {
             <span className="text-emerald-500 text-xs font-bold uppercase tracking-wide">
               {t.categories[article.category]?.singular ?? article.category}
             </span>
-            {article.score !== undefined && (
-              <span className="px-2 py-0.5 rounded-md border border-emerald-700 text-emerald-400 text-sm font-bold">
-                {article.score}/10
-              </span>
-            )}
+            {article.score !== undefined && <ScoreBadge score={article.score} size="lg" />}
             <span className="ml-auto">
               <SaveButton articleId={article.id} />
             </span>

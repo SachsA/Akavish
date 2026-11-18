@@ -460,7 +460,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | ✅  | Pagination                    | Done (2026-11-07) — category, tag, author and game pages: 24 per page, `?page=N` with Newer/Older links, canonical per page, junk or out-of-range pages are 404s (`lib/pagination.ts`, tested) |
 | ✅  | Slug redirects                | Done — `previousSlugs` on Articles, filled by a hook on rename; the article page 308-redirects old URLs. No separate redirects collection needed |
 | P3  | i18n fields                   | Localized title/content if going bilingual (area 6)                            |
-| ✅  | Review score                  | Done (2026-11-12) — `score` on Articles (reviews only, out of 10, halves allowed, migration `review_score`): shown next to the category on the article and on cards, and sent as a schema.org `Review` with its `Rating` for search engines. The mobile app doesn't show it yet |
+| ✅  | Review score                  | Done (2026-11-12) — `score` on Articles (reviews only, out of 10, halves allowed, migration `review_score`): shown next to the category on the article and on cards, and sent as a schema.org `Review` with its `Rating` for search engines. The mobile app doesn't show it yet Since 2026-11-18 the score is a coloured pill everywhere (`ScoreBadge`, `lib/score.ts`, tested): gold for 10, green from 7 (yellowish) to 9 (very deep), yellow for 5 and 6, red below (darker toward 0), each a small gradient; on the review, the cards and the lead story |
 | ✅  | Related games                 | Done (2026-11-12) — `relatedGames` on Articles ("Also covers", migration `related_games_gallery`): a recap lists on every game page it covers. Games also get `gallery` ("Other images") for the scout's cover rotation |
 
 ### Media & storage
@@ -549,7 +549,7 @@ this list every time the website gets a reader-facing feature.
 | Search with suggestions and filters (11-13, games first and initials since 11-16) | A search screen on `/api/search` (`games=1`, `facets=1`, `category`, `game`, highlighting from `lib/search-query.ts`) |
 | Game pages, *Also covers* (11-12) | A game screen (cover, releases per console with their precision, developers / publishers linking their screen, its articles incl. `relatedGames`), linked from the article byline |
 | Tag and author pages | Tag and author screens, from the article's #tags and byline |
-| Review score /10 (11-12) | Score badge on the article screen and the cards |
+| Review score /10 (11-12), coloured (11-18) | Score pill on the article screen and the cards, same colours as the site (`scoreColors` in `apps/web/src/lib/score.ts`: gold 10, green 7-9, yellow 5-6, red 0-4) |
 | Lists grouped by day (11-12), latest first (11-17) | Section lists open on the 4 newest in one row, then the whole list with Today / Yesterday / date headers, month headers for a quiet section (`groupByDate`, `autoUnit`; esport always by day), conferences by year |
 | Read next, previous / next (11-07) | Under the article |
 | Newsletter sign-up (11-09) | A form (same CMS endpoint, consent box) |

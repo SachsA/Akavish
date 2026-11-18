@@ -3,6 +3,7 @@ import type { Article } from '@akavish/types'
 import Link from '@/components/LocaleLink'
 import { Wordmark } from '@/components/Wordmark'
 import { DateText } from '@/components/DateText'
+import { ScoreBadge } from '@/components/ScoreBadge'
 import { getMessages } from '@/lib/i18n/server'
 
 /** The lead story on the home page: big image, big headline, excerpt. */
@@ -44,6 +45,11 @@ export function FeaturedArticle({ article }: { article: Article }) {
           {article.publishedAt && (
             <span className="text-zinc-400">
               · <DateText iso={article.publishedAt} style="long" />
+            </span>
+          )}
+          {article.score !== undefined && (
+            <span className="ml-auto">
+              <ScoreBadge score={article.score} size="lg" />
             </span>
           )}
         </div>
