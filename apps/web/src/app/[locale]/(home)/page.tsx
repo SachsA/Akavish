@@ -10,7 +10,8 @@ import { Wordmark } from '@/components/Wordmark'
 import { ContentUnavailable, NothingYet } from '@/components/StatusMessage'
 
 // Revalidate the home page periodically so freshly published articles appear.
-export const revalidate = 30
+// Safety net only: the CMS pings /api/revalidate on every change (lib/revalidate.ts).
+export const revalidate = 300
 
 /** How many stories sit in the column next to the lead. */
 const TOP_STORIES = 4

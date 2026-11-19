@@ -542,17 +542,21 @@ upgrade if ever needed: a shared store (Upstash Redis) behind the same helper.
 **Caching:** the API routes answer with `Cache-Control: public, s-maxage=60,
 stale-while-revalidate=300`, so Vercel's CDN serves repeat requests (same
 search, same article) without calling the function or the CMS; errors and
-429s are `no-store`. Pages keep their ISR settings (articles and lists 30 s,
-sitemap and RSS 5 min). Past those 30 s Next serves the old page once while it
-rebuilds, which is why a new article took a few reloads to show on a category
-page. **On-demand revalidation** (since 2026-11-11) fixes it: after a public
-change (article published, edited, unpublished or deleted, game, tag, author)
-the CMS posts to `https://akavish.gg/api/revalidate` with the header
-`x-revalidate-secret`, and the site drops its CMS cache at once
-(`apps/cms/src/lib/revalidate-web.ts`, `apps/web/src/app/api/revalidate`).
-Needs **`REVALIDATE_SECRET`, the same value on Railway and Vercel**
-(`openssl rand -hex 32`); unset on either side, nothing breaks, the 30 s timer
-still applies. Check: publish something, the category page shows it on the
+429s are `no-store`. Pages keep their ISR settings (home and sections 5 min,
+article, game, tag, author, studio, console pages and `/games` 1 h, sitemap
+and RSS 5 min); past them Next serves the old page once while it rebuilds.
+**On-demand revalidation** (since 2026-11-11, targeted since 2026-11-19) makes
+changes show at once: after a public change (article published, edited,
+unpublished or deleted, game, tag, author, studio, console) the CMS posts to
+`https://akavish.gg/api/revalidate` with the header `x-revalidate-secret` and
+the cache tags of what changed (`articles`, `article:<slug>`, `game:<slug>`,
+`tag:`, `author:`, `company:`, `platform:`, `games`, `taxonomy`), and the site
+drops only those (`apps/cms/src/lib/revalidate-web.ts`,
+`apps/web/src/app/api/revalidate`). A ping without tags (or with over 100)
+drops everything. Vercel logs show `revalidated` with the tags. Needs
+**`REVALIDATE_SECRET`, the same value on Railway and Vercel**
+(`openssl rand -hex 32`); unset on either side, nothing breaks, but changes
+wait for the timers (up to 1 h). Check: publish something, the category page shows it on the
 first reload; Railway logs say `[revalidate] web refused` if the secrets
 differ. **Media** is served from `media.akavish.gg` (since
 2026-11-09), the R2 bucket's custom domain, which Cloudflare caches; `*.r2.dev`
@@ -946,7 +950,7 @@ Neon, R2 or Resend, never through the CMS. Check *those* services' logs.
 | `SENTRY_AUTH_TOKEN` | Railway **and** Vercel | Sentry → Settings → Developer Settings → Organization Tokens | Nothing at runtime — build-time only | 🟡 |
 | `CLERK_SECRET_KEY` | Vercel | Clerk → API Keys → roll | Reader sign-in, until Vercel redeploys | 🟠 reader accounts |
 | `MEILISEARCH_API_KEY` | (unset today) | Meilisearch → keys | Search falls back to the CMS | 🟡 |
-| `REVALIDATE_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Instant refresh only, the 30 s cache still works | 🟡 flush the site's cache |
+| `REVALIDATE_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Instant refresh only, the cache timers (5 min / 1 h) still work | 🟡 flush the site's cache |
 | `READER_API_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Saved articles and `/account` say "unavailable" | 🟠 read and edit any reader's saved articles |
 | `CLERK_WEBHOOK_SECRET` | Railway | Clerk → Webhooks → the endpoint → Signing secret → rotate | Profile sync and account deletion, until Railway redeploys | 🟠 fake profile updates or deletions |
 | `MODERATION_DISCORD_WEBHOOK_URL` | Railway | Discord → the moderation channel → Integrations → Webhooks → delete, create a new one | Report alerts (still in `/admin`) | 🟡 post into the channel |

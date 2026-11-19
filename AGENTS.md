@@ -117,8 +117,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   English with a notice until it exists. Live showcase pages stay English
   until the live ends, then get translated once. RSS: `/feed.xml` and
   `/fr/feed.xml` (`lib/feed.ts`).
-- **Page cache (ISR):** pages are cached (`revalidate = 30`, dropped at once
-  by `/api/revalidate`). Never read `cookies()`, `headers()`, `searchParams`
+- **Page cache (ISR):** pages are cached (`revalidate = 300` for home and
+  sections, `3600` for the rest, dropped at once by `/api/revalidate`). Never read `cookies()`, `headers()`, `searchParams`
   or a server Clerk helper in a page or the layout: it makes it per-request
   for everyone. Auth UI is client-side (`HeaderAuth`); list pages take `?page`
   as a path param (the proxy rewrites it, `list.tsx` + `page/[n]`); dynamic
@@ -229,10 +229,14 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   = hero for an article's top, `mediaUrl(m, 'square')` for avatars), never the
   original. PROGRESS gotchas.
 - **Site refresh:** the CMS pings the web's `POST /api/revalidate` after any
-  public change (articles, games, tags, authors; `lib/revalidate-web.ts`),
-  `REVALIDATE_SECRET` identical on both apps. Every web CMS fetch carries the
-  `cms` tag (`cmsFetch` in `apps/web/src/lib/payload.ts`); a new CMS read must
-  go through `cmsFetch` to be refreshed.
+  public change (articles, games, tags, authors, companies, platforms;
+  `lib/revalidate-web.ts` `tagsFor`) with the cache tags of what changed,
+  `REVALIDATE_SECRET` identical on both apps. Every web CMS fetch goes through
+  `cmsFetch` (`apps/web/src/lib/payload.ts`, `cms` tag) and picks a tag from
+  `TAGS` (`lib/revalidate.ts`) plus a `CACHE` delay: lists `TAGS.articles`
+  (5 min), one document its own tag (1 h), an entity page's articles
+  `fetchArticles({ cacheTags })`. A new tag shape goes in both `TAGS`,
+  `cleanTags` and `tagsFor`. Never flush everything on a save.
 - **Articles from Markdown:** `apps/cms/scripts/publish-articles.mjs` posts
   articles (covers, games, publish now / schedule / draft, optional
   backdated `publishedAt` for archives, `relatedGames`, review `score`, site links

@@ -1,6 +1,7 @@
 import { ListPage, listMetadata } from './list'
 
-export const revalidate = 30
+// Safety net only: the CMS pings /api/revalidate on every change (lib/revalidate.ts).
+export const revalidate = 3600
 
 // None built ahead: each page is rendered on its first visit, then cached
 // (ISR) like the others. Without this export a dynamic segment is rendered on

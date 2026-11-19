@@ -91,7 +91,8 @@ exists in English (bare path) and French (`/fr/…`).
   path param: the proxy rewrites `?page=N` to `/page/N` (see `[category]/list.tsx`
   and `[category]/page/[n]`), so a new list follows the same pattern and adds
   its path to `LIST_PATH` in `src/proxy.ts`.
-- **Caching:** pages are ISR (`revalidate = 30`). Don't read `cookies()`,
+- **Caching:** pages are ISR (`revalidate = 300` lists, `3600` the rest; the
+  CMS ping drops the right cache tags, `lib/revalidate.ts`). Don't read `cookies()`,
   `headers()`, `searchParams` or server Clerk helpers in a page: it turns it
   into a per-request page for everyone. Per-reader things (signed in, saved,
   comments) live in client components. A page with a dynamic slug exports
@@ -122,10 +123,10 @@ exists in English (bare path) and French (`/fr/…`).
 
 | Where | What | Command |
 | --- | --- | --- |
-| `apps/web/src/**/*.test.ts` | Pure logic: homepage lead and category sections, JSON-LD, pagination, rate limiting, revalidation secret, search queries and highlighting, the reader API client and role badges; the `/api/bookmarks` route (Clerk and the CMS mocked) | `pnpm test` |
+| `apps/web/src/**/*.test.ts` | Pure logic: homepage lead and category sections, JSON-LD, pagination, rate limiting, revalidation secret and cache tags, search queries and highlighting, the reader API client and role badges; the `/api/bookmarks` route (Clerk and the CMS mocked) | `pnpm test` |
 | `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper, categories (vs the CMS), reading time | `pnpm test` |
 | `apps/mobile/src/lib/*.test.ts` | App helpers: dates, feed paging, Lexical parsing, links | `pnpm test` |
-| `apps/cms/src/**/*.test.ts`, `apps/cms/scripts/**/*.test.mjs` | CMS pure logic: the AI scout's feeds parsing, score, clock, triage answers, digests, drafts (Watch videos, share image and its alt, YouTube ids, tag and game matching and creation, duplicate check, score weights, triage of already-covered items, live page: links, merges, completions, rendering, slash command parsing), Discord signatures and buttons, weekly report, which saves refresh the site; the Markdown → Lexical article importer | `pnpm test` |
+| `apps/cms/src/**/*.test.ts`, `apps/cms/scripts/**/*.test.mjs` | CMS pure logic: the AI scout's feeds parsing, score, clock, triage answers, digests, drafts (Watch videos, share image and its alt, YouTube ids, tag and game matching and creation, duplicate check, score weights, triage of already-covered items, live page: links, merges, completions, rendering, slash command parsing), Discord signatures and buttons, weekly report, which saves refresh the site and which cache tags they drop; the Markdown → Lexical article importer | `pnpm test` |
 | `apps/cms/tests/int/` | Payload against a real DB: slugs, publish date, redirects, access, newsletter opt-in, the AI scout run, drafts with their cover and videos, Discord clicks, the no-cover Publish refusal, a whole /live event (network faked; empties the local scout tables), reader accounts, saved articles, Clerk's webhook, the editorial roles, and comments (rules, threads, votes, reports, moderation, deletions) | `cd apps/cms && pnpm test:int` |
 | `apps/cms/tests/e2e/` | Playwright through the admin panel | `cd apps/cms && pnpm test:e2e` |
 | `apps/web/tests/e2e/` | Playwright on the public site, newsletter form, Save and comments (signed out) included (seeded CMS + web running, `READER_API_SECRET` on both) | `cd apps/web && pnpm test:e2e` |

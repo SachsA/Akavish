@@ -16,7 +16,8 @@ import { breadcrumbList } from '@/lib/structured-data'
 // (components/GamesLibrary.tsx, in the browser, filters in the URL). The
 // server renders the first cards A to Z; every game page is in the sitemap.
 
-export const revalidate = 30
+// Safety net only: the CMS pings /api/revalidate on every change (lib/revalidate.ts).
+export const revalidate = 3600
 
 type Params = { params: Promise<{ locale: string }> }
 

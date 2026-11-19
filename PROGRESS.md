@@ -214,7 +214,11 @@ Publish). Drafts carry a cover and the official videos since 2026-11-11.
 **Instant site refresh** (2026-11-11): the CMS pings `/api/revalidate` after
 every public change, so a new article shows on its category page at the first
 reload instead of after 30 s and a few reloads. Needs `REVALIDATE_SECRET`
-(same value) on Railway and Vercel — `DEPLOYMENT.md` §4e. **Automatic drafts are on since 2026-11-11** (threshold 60, at most 20 a
+(same value) on Railway and Vercel — `DEPLOYMENT.md` §4e. **Targeted since
+2026-11-19:** the ping carries cache tags (the article, the lists, its games,
+tags, author, studios and consoles) and only those pages rebuild; the timers
+went from 30 s to 5 min (home, sections) and 1 h (everything else). The full
+flush on every scout save cost ~15K Vercel ISR writes a day. **Automatic drafts are on since 2026-11-11** (threshold 60, at most 20 a
 day), a few days ahead of the plan; the weekend review (Nov 14-15) tunes
 them, so they're ready for GTA VI on Thursday Nov 19.
 
@@ -696,6 +700,16 @@ checklist it walks through.
   reloads to show a new article (Nov 2026). Fixed with on-demand revalidation
   (`/api/revalidate`, `cms` cache tag); every web read of the CMS must go
   through `cmsFetch` to get the tag.
+- **Flushing the whole cache on every save is expensive.** Until 2026-11-19
+  each CMS save (the scout saves games, tags, translations…) dropped every
+  cached page: ~15K Vercel ISR writes a day (137K of the 200K free a month)
+  and most of the CPU. Now the ping names cache tags (`TAGS` in
+  `apps/web/src/lib/revalidate.ts`, built the same way in
+  `apps/cms/src/lib/revalidate-web.ts`). A new CMS read picks its tag: a list
+  of articles → `TAGS.articles` (5 min), one document → its own tag (1 h), an
+  entity page's articles → the entity's tag (`fetchArticles({ cacheTags })`).
+  Untagged reads only follow their timer. Renames shown on other pages
+  (a studio's name on a game page) catch up within the hour.
 - Articles must be **Published** to appear publicly; drafts are editor-only.
 - **CI and Ubuntu's apt mirrors.** GitHub runners sometimes can't resolve the
   Ubuntu mirrors; `playwright install --with-deps` then hung 25 min and failed

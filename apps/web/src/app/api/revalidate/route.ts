@@ -1,7 +1,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 import { log } from '@/lib/log'
-import { CMS_TAG, isValidSecret } from '@/lib/revalidate'
+import { CMS_TAG, cleanTags, isValidSecret } from '@/lib/revalidate'
 
 // POST /api/revalidate, called by the CMS after a public change (an article
 // published, edited or removed, a game, a tag, an author). Header
@@ -15,16 +15,24 @@ export async function POST(req: NextRequest) {
   }
 
   let reason = ''
+  let tags: string[] = []
   try {
-    reason = String(((await req.json()) as { reason?: unknown }).reason ?? '').slice(0, 120)
+    const body = (await req.json()) as { reason?: unknown; tags?: unknown }
+    reason = String(body.reason ?? '').slice(0, 120)
+    tags = cleanTags(body.tags)
   } catch {
     // no body: fine
   }
   // `expire: 0` drops the cached CMS data now, as Next 15's one-argument call
-  // did; the 'max' profile would serve stale data once more.
-  revalidateTag(CMS_TAG, { expire: 0 })
-  revalidatePath('/', 'layout')
-  log.info('revalidated', { route: '/api/revalidate', reason })
+  // did; the 'max' profile would serve stale data once more. With tags, only
+  // what changed (the pages that read it go stale with it); without, all of it.
+  if (tags.length) {
+    for (const tag of tags) revalidateTag(tag, { expire: 0 })
+  } else {
+    revalidateTag(CMS_TAG, { expire: 0 })
+    revalidatePath('/', 'layout')
+  }
+  log.info('revalidated', { route: '/api/revalidate', reason, tags: tags.length ? tags : 'all' })
   return NextResponse.json(
     { revalidated: true, at: new Date().toISOString() },
     { headers: { 'Cache-Control': 'no-store' } }

@@ -537,12 +537,17 @@ description, status, date), Media has `altFr`, Tags `nameFr`, Authors `bioFr`
 
 ## Site refresh (on-demand revalidation)
 
-The site caches its CMS reads for 30 s and serves the stale copy once past
-that, so a new article could take a few reloads to show. `src/lib/revalidate-web.ts`
-hooks `afterChange` / `afterDelete` on articles, games, tags and authors: when
-the change is public (drafts of never-published articles are skipped) it posts
-to `WEB_URL/api/revalidate` with `x-revalidate-secret: REVALIDATE_SECRET`,
-fire-and-forget. The web route drops the `cms` cache tag and the whole layout.
+The site caches its CMS reads (5 min for lists, 1 h for the rest).
+`src/lib/revalidate-web.ts` hooks `afterChange` / `afterDelete` on articles,
+games, tags, authors, companies and platforms: when the change is public
+(drafts of never-published articles are skipped) it posts to
+`WEB_URL/api/revalidate` with `x-revalidate-secret: REVALIDATE_SECRET` and the
+cache tags of what changed, fire-and-forget. `tagsFor` builds them: an article
+drops the lists, its own page, its games, tags, author and the studio and
+console pages of its games or tags; a game drops its page and the games list;
+a studio or console its page and the taxonomy lists. The web route drops only
+those tags (no tags or over 100 → everything). Since 2026-11-19; before, every
+save flushed the whole site (~15K Vercel ISR writes a day).
 Same secret on both apps; unset → no ping, nothing breaks. `DEPLOYMENT.md` §4e.
 
 ## ⚠️ After adding or removing a Payload plugin

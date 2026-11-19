@@ -29,7 +29,8 @@ import { categoryByValue } from '@/lib/categories'
 import { breadcrumbList } from '@/lib/structured-data'
 import { JsonLd } from '@/components/JsonLd'
 
-export const revalidate = 30
+// Safety net only: the CMS pings /api/revalidate on every change (lib/revalidate.ts).
+export const revalidate = 3600
 
 // None built ahead: each page is rendered on its first visit, then cached
 // (ISR) like the others. Without this export a dynamic segment is rendered on
@@ -107,8 +108,9 @@ export default async function ArticlePage({ params }: Params) {
   const [related, adjacent, liveIds, tagPages] = await Promise.all([
     fetchRelatedArticles(article).catch(() => []),
     fetchAdjacentArticles(article).catch(() => ({ next: null, previous: null })),
-    // Only French pages need to know (a live page stays English until it ends).
-    locale === 'en' ? Promise.resolve([] as string[]) : fetchLiveArticleIds(),
+    // Only untranslated French pages need to know (a live page stays English
+    // until it ends): a translated page doesn't depend on the 5 min list.
+    locale === 'en' || isInLanguage(article, locale) ? Promise.resolve([] as string[]) : fetchLiveArticleIds(),
     // A tag that stands for a console or a studio links to its page.
     fetchTagPages().catch(() => new Map<string, EntityLink>()),
   ])

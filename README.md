@@ -50,8 +50,9 @@ workspace exposes a `type-check` script so CI covers apps _and_ shared packages.
 The **CMS** (Payload, port 3001) owns the content and the database. It exposes a
 REST API at `http://localhost:3001/api`. The **web** app (port 3000) is a thin
 frontend: its server components fetch published articles from the CMS via
-`CMS_URL` and render them, cached 30 s; the CMS pings the web's
-`/api/revalidate` after each public change so new articles show at once. The **mobile** app hits the same CMS API. Newsletter
+`CMS_URL` and render them, cached (5 min for lists, 1 h for the rest); the CMS
+pings the web's `/api/revalidate` after each public change with the cache tags
+of what changed, so only those pages rebuild and new articles show at once. The **mobile** app hits the same CMS API. Newsletter
 sign-ups go from the web's `/api/newsletter` to the CMS, which stores them and
 sends the confirmation email through Resend (`apps/cms/README.md` →
 Newsletter). The **AI scout** runs inside the CMS too: it reads games news

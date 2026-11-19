@@ -21,7 +21,7 @@ import { matchGames } from './game-match'
 import type { LibraryCompany, LibraryGame, Release } from './game-library'
 import { matchEntities } from './entity-match'
 import { PLATFORM_FAMILIES, sortPlatforms, type PlatformFamily, type PlatformInfo } from './platforms'
-import { CMS_TAG } from './revalidate'
+import { CACHE, CMS_TAG, TAGS } from './revalidate'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
@@ -80,6 +80,11 @@ interface ListParams {
   gameIds?: string[]
   /** Language of the articles; default: the page's (route handlers pass it). */
   locale?: Locale
+  /**
+   * Cache tags: an entity page's list goes with its entity (`TAGS.game(slug)`…)
+   * so a new article only refreshes the pages it's about. Default: the article lists.
+   */
+  cacheTags?: string[]
 }
 
 // Fetch a paginated list of *published* articles, newest first.
@@ -117,8 +122,9 @@ export async function fetchArticles(
   if (featured) qs.set('where[featured][equals]', 'true')
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    // Revalidate periodically so new articles show up without a redeploy.
-    next: { revalidate: 30 },
+    next: params.cacheTags
+      ? { revalidate: CACHE.details, tags: params.cacheTags }
+      : { revalidate: CACHE.lists, tags: [TAGS.articles] },
   })
 
   if (!res.ok) {
@@ -146,7 +152,7 @@ export async function fetchArticleBySlug(slug: string): Promise<Article | null> 
   })
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    next: { revalidate: 30 },
+    next: { revalidate: CACHE.details, tags: [TAGS.article(slug)] },
   })
 
   if (!res.ok) {
@@ -172,7 +178,7 @@ export async function fetchCurrentSlugFor(oldSlug: string): Promise<string | nul
     'select[slug]': 'true',
   })
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    next: { revalidate: 30 },
+    next: { revalidate: CACHE.lists, tags: [TAGS.articles] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{ slug: string }>
@@ -268,7 +274,7 @@ export async function searchArticles({
   qs.set('page', String(page))
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    next: { revalidate: 30 },
+    next: { revalidate: CACHE.lists, tags: [TAGS.articles] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
 
@@ -300,7 +306,7 @@ export async function searchCategoryCounts(
       qs.set('select[id]', 'true')
       try {
         const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-          next: { revalidate: 30 },
+          next: { revalidate: CACHE.lists, tags: [TAGS.articles] },
         })
         if (!res.ok) return [category, 0] as const
         const json = (await res.json()) as PayloadListResponse<unknown>
@@ -370,7 +376,9 @@ export async function fetchAllPlatforms(): Promise<PlatformEntity[]> {
   const qs = new URLSearchParams({ depth: '1', pagination: 'false', sort: 'position' })
   for (const f of ['url', 'filename', 'prefix', 'sizes][square][url']) qs.set(`populate[media][${f}]`, 'true')
   qs.set('populate[tags][slug]', 'true')
-  const res = await cmsFetch(`${CMS_URL}/api/platforms?${qs.toString()}`, { next: { revalidate: 300 } })
+  const res = await cmsFetch(`${CMS_URL}/api/platforms?${qs.toString()}`, {
+    next: { revalidate: CACHE.details, tags: [TAGS.taxonomy] },
+  })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
     id: string | number
@@ -428,7 +436,7 @@ export async function fetchAllGames(): Promise<GameListItem[]> {
   qs.set('populate[companies][slug]', 'true')
   qs.set('populate[platforms][slug]', 'true')
   const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
-    next: { revalidate: 300 },
+    next: { revalidate: CACHE.details, tags: [TAGS.games] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
@@ -473,7 +481,9 @@ export async function fetchAllCompanies(): Promise<CompanyListItem[]> {
   const qs = new URLSearchParams({ depth: '1', pagination: 'false', sort: 'name' })
   for (const f of ['name', 'slug', 'aliases', 'tag']) qs.set(`select[${f}]`, 'true')
   qs.set('populate[tags][slug]', 'true')
-  const res = await cmsFetch(`${CMS_URL}/api/companies?${qs.toString()}`, { next: { revalidate: 300 } })
+  const res = await cmsFetch(`${CMS_URL}/api/companies?${qs.toString()}`, {
+    next: { revalidate: CACHE.details, tags: [TAGS.taxonomy] },
+  })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
     slug: string
@@ -574,7 +584,7 @@ export async function fetchGameName(slug: string): Promise<string | null> {
     'select[name]': 'true',
   })
   const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
-    next: { revalidate: 300 },
+    next: { revalidate: CACHE.details, tags: [TAGS.games] },
   })
   if (!res.ok) return null
   const json = (await res.json()) as PayloadListResponse<{ name: string }>
@@ -585,8 +595,10 @@ export async function fetchGameName(slug: string): Promise<string | null> {
 
 /** Run an articles query and map the results. Shared by the helpers below. */
 async function fetchArticleList(qs: URLSearchParams): Promise<Article[]> {
+  // No article tag: a new article doesn't rebuild every article page for its
+  // "related" and prev / next links; they catch up within the hour.
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    next: { revalidate: 30 },
+    next: { revalidate: CACHE.details },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<PayloadArticle>
@@ -704,6 +716,13 @@ export interface TagEntity {
   name: string
 }
 
+const ENTITY_TAG: Record<string, (slug: string) => string> = {
+  authors: TAGS.author,
+  games: TAGS.game,
+  tags: TAGS.tag,
+  companies: TAGS.company,
+}
+
 // Generic helper: fetch one doc from a collection by slug.
 async function fetchOneBySlug<T>(collection: string, slug: string): Promise<T | null> {
   const qs = new URLSearchParams({
@@ -712,7 +731,7 @@ async function fetchOneBySlug<T>(collection: string, slug: string): Promise<T | 
     limit: '1',
   })
   const res = await cmsFetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
-    next: { revalidate: 30 },
+    next: { revalidate: CACHE.details, tags: ENTITY_TAG[collection] ? [ENTITY_TAG[collection](slug)] : [] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<T>
@@ -788,7 +807,8 @@ export async function fetchTagBySlug(slug: string): Promise<TagEntity | null> {
  */
 export async function fetchLiveArticleIds(): Promise<string[]> {
   try {
-    const res = await cmsFetch(`${CMS_URL}/api/live-articles`, { next: { revalidate: 30 } })
+    // A live starting or ending doesn't ping the site: 5 min at most.
+    const res = await cmsFetch(`${CMS_URL}/api/live-articles`, { next: { revalidate: CACHE.lists } })
     if (!res.ok) return []
     const json = (await res.json()) as { ids?: Array<number | string> }
     return (json.ids ?? []).map(String)
@@ -815,7 +835,7 @@ export async function fetchAllArticleSlugs(): Promise<SlugEntry[]> {
     sort: '-publishedAt',
   })
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    next: { revalidate: 300 },
+    next: { revalidate: CACHE.lists, tags: [TAGS.articles] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
@@ -841,7 +861,9 @@ export async function fetchRecentArticles(
     'select[publishedAt]': 'true',
     'select[fr]': 'true',
   })
-  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, { next: { revalidate: 300 } })
+  const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
+    next: { revalidate: CACHE.lists, tags: [TAGS.articles] },
+  })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
     slug: string
@@ -862,7 +884,8 @@ export async function fetchAllEntitySlugs(
 ): Promise<(SlugEntry & { id: string })[]> {
   const qs = new URLSearchParams({ depth: '0', pagination: 'false', 'select[slug]': 'true', 'select[updatedAt]': 'true' })
   const res = await cmsFetch(`${CMS_URL}/api/${collection}?${qs.toString()}`, {
-    next: { revalidate: 300 },
+    // The sitemap's list: new games come with the scout's articles.
+    next: { revalidate: CACHE.lists, tags: [TAGS.articles, TAGS.games] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{
@@ -893,7 +916,7 @@ export async function fetchUsedTaxonomyIds(): Promise<{
     'select[tags]': 'true',
   })
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    next: { revalidate: 300 },
+    next: { revalidate: CACHE.lists, tags: [TAGS.articles] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<{

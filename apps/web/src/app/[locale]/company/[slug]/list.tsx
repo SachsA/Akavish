@@ -16,6 +16,7 @@ import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
 import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
 import { fetchAllGames, fetchAllPlatforms, fetchArticles, fetchCompanyBySlug, type GameListItem } from '@/lib/payload'
+import { TAGS } from '@/lib/revalidate'
 import { breadcrumbList } from '@/lib/structured-data'
 
 type Params = { params: Promise<{ locale: string; slug: string; n?: string }> }
@@ -64,6 +65,7 @@ export async function ListPage({ params }: Params) {
         company: { gameIds: games.map((g) => g.id), tagId: company.tagId },
         page,
         limit: PAGE_SIZE,
+        cacheTags: [TAGS.company(slug)],
       })
       articles = result.data
       totalPages = result.totalPages

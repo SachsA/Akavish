@@ -8,6 +8,7 @@ import type { Article } from '@akavish/types'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
 import { fetchAuthorBySlug, fetchArticles } from '@/lib/payload'
+import { TAGS } from '@/lib/revalidate'
 import { breadcrumbList } from '@/lib/structured-data'
 import { JsonLd } from '@/components/JsonLd'
 import { ArticleCard } from '@/components/ArticleCard'
@@ -58,7 +59,7 @@ export async function ListPage({
   let articles: Article[] = []
   let totalPages = 1
   try {
-    const result = await fetchArticles({ authorId: author.id, page, limit: PAGE_SIZE })
+    const result = await fetchArticles({ authorId: author.id, page, limit: PAGE_SIZE, cacheTags: [TAGS.author(slug)] })
     articles = result.data
     totalPages = result.totalPages
   } catch {

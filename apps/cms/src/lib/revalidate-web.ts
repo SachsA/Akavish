@@ -1,13 +1,21 @@
 // ─── Tell the website something changed ──────────────────────────────────────
-// The site caches its CMS reads (ISR, 30 s) and serves the stale copy while it
-// refreshes in the background, so a new article could take a few reloads to
-// show on a category page. After a change that the public can see, the CMS
-// pings the site's /api/revalidate, which drops its cache at once.
+// The site caches its CMS reads (ISR: 5 min for lists, 1 h for the rest).
+// After a change that the public can see, the CMS pings the site's
+// /api/revalidate with the cache tags of what changed: the article, the
+// lists, its games, tags, author, and the studio and console pages they lead
+// to. Only those pages rebuild (apps/web/src/lib/revalidate.ts, `TAGS`), not
+// the whole site: a full flush on every scout save cost ~15K Vercel ISR
+// writes a day (2026-11-19).
 //
 // Off unless REVALIDATE_SECRET is set (same value on the CMS and the site).
-// Fire-and-forget: a failure is logged and the 30 s cache still catches up.
+// Fire-and-forget: a failure is logged and the cache timers still catch up.
+// Renames (a studio, a tag) only refresh their own page; the pages that show
+// the name elsewhere catch up within the hour.
 
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, Payload } from 'payload'
+
+/** Same cap as the site's (apps/web/src/lib/revalidate.ts). */
+const MAX_TAGS = 100
 
 const webUrl = () => (process.env.WEB_URL || 'http://localhost:3000').replace(/\/+$/, '')
 
@@ -21,15 +29,146 @@ export function isPublicChange(
   return live(doc) || live(previousDoc)
 }
 
-export function revalidateWeb(payload: Payload, reason: string): void {
+type Ref = number | string | { id?: number | string; slug?: string | null } | null | undefined
+type Doc = Record<string, unknown> | null | undefined
+
+const idOf = (r: Ref): number | string | undefined =>
+  r == null ? undefined : typeof r === 'object' ? r.id : r
+
+const refs = (v: unknown): Ref[] => (Array.isArray(v) ? (v as Ref[]) : v == null ? [] : [v as Ref])
+
+const ids = (...vals: unknown[]): Array<number | string> => [
+  ...new Set(vals.flatMap(refs).map(idOf).filter((x): x is number | string => x != null && x !== '')),
+]
+
+const slugOf = (d: Doc): string | undefined =>
+  d && typeof d.slug === 'string' && d.slug ? d.slug : undefined
+
+/** Slugs of these documents (read without the hook's transaction). */
+async function slugsOf(
+  payload: Payload,
+  collection: 'games' | 'tags' | 'authors' | 'companies' | 'platforms',
+  where: Record<string, unknown>,
+): Promise<string[]> {
+  const res = await payload.find({
+    collection,
+    where,
+    limit: 200,
+    depth: 0,
+    pagination: false,
+    select: { slug: true },
+    overrideAccess: true,
+  } as never)
+  return (res.docs as Array<{ slug?: string | null }>).map((d) => d.slug ?? '').filter(Boolean)
+}
+
+/**
+ * The site's cache tags a change drops (same strings as the site's `TAGS`).
+ * Reads the related documents' slugs, so it's async; the hook doesn't wait.
+ */
+export async function tagsFor(
+  payload: Payload,
+  collection: string,
+  doc: Doc,
+  previousDoc?: Doc,
+): Promise<string[]> {
+  const tags = new Set<string>()
+  const own = (prefix: string) => {
+    for (const s of [slugOf(doc), slugOf(previousDoc)]) if (s) tags.add(`${prefix}:${s}`)
+  }
+  switch (collection) {
+    case 'articles': {
+      tags.add('articles')
+      own('article')
+      const gameIds = ids(doc?.game, doc?.relatedGames, previousDoc?.game, previousDoc?.relatedGames)
+      const tagIds = ids(doc?.tags, previousDoc?.tags)
+      const authorIds = ids(doc?.author, previousDoc?.author)
+      const [games, tagSlugs, authors] = await Promise.all([
+        gameIds.length
+          ? payload.find({
+              collection: 'games',
+              where: { id: { in: gameIds } },
+              limit: 200,
+              depth: 0,
+              pagination: false,
+              select: { slug: true, developers: true, publishers: true, platforms: true },
+              overrideAccess: true,
+            } as never)
+          : null,
+        tagIds.length ? slugsOf(payload, 'tags', { id: { in: tagIds } }) : [],
+        authorIds.length ? slugsOf(payload, 'authors', { id: { in: authorIds } }) : [],
+      ])
+      const gameDocs = (games?.docs ?? []) as unknown as Doc[]
+      for (const g of gameDocs) if (slugOf(g)) tags.add(`game:${slugOf(g)}`)
+      for (const s of tagSlugs) tags.add(`tag:${s}`)
+      for (const s of authors) tags.add(`author:${s}`)
+      // Studio and console pages list the articles about their games or tag.
+      const companyIds = ids(...gameDocs.flatMap((g) => [g?.developers, g?.publishers]))
+      const platformIds = ids(...gameDocs.map((g) => g?.platforms))
+      const linked = (col: 'companies' | 'platforms', own: Array<number | string>) => {
+        const or = [
+          ...(own.length ? [{ id: { in: own } }] : []),
+          ...(tagIds.length ? [{ tag: { in: tagIds } }] : []),
+        ]
+        return or.length ? slugsOf(payload, col, { or }) : Promise.resolve([])
+      }
+      const [companies, platforms] = await Promise.all([
+        linked('companies', companyIds),
+        linked('platforms', platformIds),
+      ])
+      for (const s of companies) tags.add(`company:${s}`)
+      for (const s of platforms) tags.add(`platform:${s}`)
+      break
+    }
+    case 'games':
+      tags.add('games')
+      own('game')
+      break
+    case 'tags':
+      own('tag')
+      break
+    case 'authors':
+      own('author')
+      break
+    case 'companies':
+      tags.add('taxonomy')
+      own('company')
+      break
+    case 'platforms':
+      tags.add('taxonomy')
+      own('platform')
+      break
+  }
+  return [...tags]
+}
+
+/**
+ * Ping the site. Without `tags` (or if they can't be worked out), the site
+ * drops all its CMS cache.
+ */
+export function revalidateWeb(payload: Payload, reason: string, tags?: () => Promise<string[]>): void {
   const secret = process.env.REVALIDATE_SECRET
   if (!secret) return
-  void fetch(`${webUrl()}/api/revalidate`, {
-    method: 'POST',
-    headers: { 'x-revalidate-secret': secret, 'content-type': 'application/json' },
-    body: JSON.stringify({ reason }),
-    signal: AbortSignal.timeout(8_000),
-  })
+  void (async () => {
+    let list: string[] | undefined
+    if (tags) {
+      try {
+        list = await tags()
+      } catch (err) {
+        payload.logger.warn({
+          msg: '[revalidate] tags failed, full refresh',
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }
+    return fetch(`${webUrl()}/api/revalidate`, {
+      method: 'POST',
+      headers: { 'x-revalidate-secret': secret, 'content-type': 'application/json' },
+      // Too many (a huge round-up): a full refresh is as cheap.
+      body: JSON.stringify(list?.length && list.length <= MAX_TAGS ? { reason, tags: list } : { reason }),
+      signal: AbortSignal.timeout(8_000),
+    })
+  })()
     .then((res) => {
       if (!res.ok) payload.logger.warn({ msg: '[revalidate] web refused', status: res.status })
     })
@@ -48,12 +187,22 @@ export const revalidateAfterChange: CollectionAfterChangeHook = ({
   req,
   collection,
 }) => {
-  if (isPublicChange(doc, previousDoc)) revalidateWeb(req.payload, `${collection.slug} ${doc.id}`)
+  if (isPublicChange(doc, previousDoc)) {
+    // A draft side (unpublished before, or now) has nothing cached to drop.
+    const prev = isPublicChange(previousDoc) ? previousDoc : undefined
+    revalidateWeb(req.payload, `${collection.slug} ${doc.id}`, () =>
+      tagsFor(req.payload, collection.slug, doc, prev),
+    )
+  }
   return doc
 }
 
 /** afterDelete: refresh the site when a public document goes away. */
 export const revalidateAfterDelete: CollectionAfterDeleteHook = ({ doc, req, collection }) => {
-  if (isPublicChange(doc)) revalidateWeb(req.payload, `${collection.slug} ${doc.id} deleted`)
+  if (isPublicChange(doc)) {
+    revalidateWeb(req.payload, `${collection.slug} ${doc.id} deleted`, () =>
+      tagsFor(req.payload, collection.slug, doc),
+    )
+  }
   return doc
 }
