@@ -167,6 +167,13 @@ Works locally but breaks live? Check the logs:
    (`postgresql://…?sslmode=require`).
 3. Keep it handy; both the CMS host and migrations need it.
 
+**Plan: Launch since 2026-11-19.** The Free plan caps public network transfer
+at 5 GB a month and then suspends the compute (CMS, scout and admin down until
+the next month); the site hit it nine days after launch (the scout queries
+every 5 minutes, every page refresh reads the CMS, Google crawling the
+sitemaps). Launch is pay as you go: 500 GB transfer included. Costs:
+[`COSTS.md`](./COSTS.md).
+
 ---
 
 ## 2. CMS → Railway (or Render)
@@ -1014,7 +1021,7 @@ database every night (03:17 UTC) and uploads a compressed dump to a **private**
 R2 bucket. It can also be run by hand: GitHub → **Actions → Database backup →
 Run workflow** — worth doing before anything risky (a migration, a bulk delete).
 
-Neon's built-in history is short on the free plan; these dumps are what lets you
+Neon's built-in history is short (longer on Launch than Free); these dumps are what lets you
 recover from a mistake noticed days later.
 
 ### One-time setup

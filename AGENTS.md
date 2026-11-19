@@ -184,6 +184,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   from the repo root; `NEXT_OUTPUT=standalone` is set only there (Vercel/Railway
   unchanged). `DEPLOYMENT.md` §10.
 - **Secrets:** rotation runbook and rotation log in `DEPLOYMENT.md` §8.
+- **Costs:** `COSTS.md` lists what the site costs each month (paid, free with
+  limits, coming). Update it whenever a paid service or a plan changes, or a
+  real bill replaces an estimate.
 - **Status / roadmap:** single source of truth is **`PROGRESS.md`**. Deployment
   runbook is **`DEPLOYMENT.md`**.
 - **Media:** uploads go to Cloudflare R2 via `@payloadcms/storage-s3` (the CMS

@@ -566,6 +566,8 @@ this list every time the website gets a reader-facing feature.
 
 ## 8. Infrastructure, CI/CD & deployment
 
+Monthly costs (paid, free with limits, coming): [`COSTS.md`](./COSTS.md). Neon moved to the Launch plan on 2026-11-19 after the Free plan's 5 GB transfer cap.
+
 ### Docker
 
 | Pri | Item                         | Notes                                                                              |

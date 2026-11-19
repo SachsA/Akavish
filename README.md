@@ -354,7 +354,8 @@ major (esbuild, glob, minimatch, deepmerge).
 
 Going to production? Follow **[DEPLOYMENT.md](./DEPLOYMENT.md)** — a step-by-step
 runbook (web → Vercel, CMS → Railway/Render, Postgres → Neon, migrations,
-search, domains, and a post-deploy checklist).
+search, domains, and a post-deploy checklist). What it all costs each month,
+and what will be paid later: **[COSTS.md](./COSTS.md)**.
 
 ## Project status & roadmap
 
