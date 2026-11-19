@@ -545,7 +545,8 @@ games, tags, authors, companies and platforms: when the change is public
 cache tags of what changed, fire-and-forget. `tagsFor` builds them: an article
 drops the lists, its own page, its games, tags, author and the studio and
 console pages of its games or tags; a game drops its page and the games list;
-a studio or console its page and the taxonomy lists. The web route drops only
+a studio or console its page and the taxonomy lists; an edited image (credit,
+alt) the articles and games using it as cover. The web route drops only
 those tags (no tags or over 100 → everything). Since 2026-11-19; before, every
 save flushed the whole site (~15K Vercel ISR writes a day).
 Same secret on both apps; unset → no ping, nothing breaks. `DEPLOYMENT.md` §4e.

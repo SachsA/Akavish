@@ -96,7 +96,7 @@ test('an unknown French page is a French 404', async ({ page }) => {
 test('an article: French on /fr once translated, English with a notice before', async ({ page, request }) => {
   // A throwaway article with a French version written in the CMS (the job
   // that translates with Claude doesn't run in the tests). Deleted at the end.
-  test.setTimeout(90_000) // up to 30 s of CMS cache, see below
+  test.setTimeout(90_000)
   const login = await request.post(`${CMS_URL}/api/users/login`, { data: SEED_ADMIN })
   const auth = { Authorization: `JWT ${(await login.json()).token}` }
   const author = (await (await request.get(`${CMS_URL}/api/authors?limit=1&depth=0`)).json()).docs[0]
@@ -130,7 +130,7 @@ test('an article: French on /fr once translated, English with a notice before', 
     expect(fr.ok()).toBeTruthy()
     expect((await fr.json()).doc.fr.status).toBe('edited')
 
-    // The page reads the CMS through a 30 s cache: wait for the new version.
+    // The CMS pings the site (/api/revalidate), which drops this article's cache.
     await expect(async () => {
       await page.goto(`/fr/article/${slug}`)
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Titre français ${run}`, { timeout: 1000 })

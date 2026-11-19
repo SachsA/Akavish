@@ -45,7 +45,7 @@ test('article page: content, editor alt text, breadcrumbs, read next', async ({ 
 test("the cover's credit shows under it, in each language", async ({ page, request }, testInfo) => {
   // It edits a shared media doc: once is enough, and two projects at once would race.
   test.skip(testInfo.project.name === 'mobile', 'desktop only')
-  test.setTimeout(150_000) // up to 30 s of cache per page
+  test.setTimeout(150_000)
   const login = await request.post(`${CMS_URL}/api/users/login`, { data: SEED_ADMIN })
   const auth = { Authorization: `JWT ${(await login.json()).token}` }
   const article = (
@@ -55,7 +55,7 @@ test("the cover's credit shows under it, in each language", async ({ page, reque
   const credit = `E2E Studio ${Date.now().toString(36)}`
   expect((await request.patch(`${CMS_URL}/api/media/${media}`, { headers: auth, data: { credit } })).ok()).toBeTruthy()
   try {
-    // Each page is cached on its own (CMS fetch cache + ISR): wait for each.
+    // The media edit pings the site, which drops the articles using it.
     for (const [path, text] of [
       ['/article/neon-drift-review', `Photo: ${credit}`],
       ['/fr/article/neon-drift-review', `Photo : ${credit}`],

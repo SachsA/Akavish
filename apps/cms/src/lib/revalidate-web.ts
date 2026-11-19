@@ -47,7 +47,7 @@ const slugOf = (d: Doc): string | undefined =>
 /** Slugs of these documents (read without the hook's transaction). */
 async function slugsOf(
   payload: Payload,
-  collection: 'games' | 'tags' | 'authors' | 'companies' | 'platforms',
+  collection: 'articles' | 'games' | 'tags' | 'authors' | 'companies' | 'platforms',
   where: Record<string, unknown>,
 ): Promise<string[]> {
   const res = await payload.find({
@@ -138,13 +138,27 @@ export async function tagsFor(
       tags.add('taxonomy')
       own('platform')
       break
+    case 'media': {
+      // A cover's credit or alt text: the articles and games showing it.
+      const id = idOf(doc as Ref)
+      if (id == null) break
+      const [articles, games] = await Promise.all([
+        slugsOf(payload, 'articles', { coverImage: { in: [id] } }),
+        slugsOf(payload, 'games', { cover: { in: [id] } }),
+      ])
+      for (const s of articles) tags.add(`article:${s}`)
+      for (const s of games) tags.add(`game:${s}`)
+      if (articles.length) tags.add('articles')
+      if (games.length) tags.add('games')
+      break
+    }
   }
   return [...tags]
 }
 
 /**
  * Ping the site. Without `tags` (or if they can't be worked out), the site
- * drops all its CMS cache.
+ * drops all its CMS cache; with an empty list there's nothing to drop.
  */
 export function revalidateWeb(payload: Payload, reason: string, tags?: () => Promise<string[]>): void {
   const secret = process.env.REVALIDATE_SECRET
@@ -161,6 +175,7 @@ export function revalidateWeb(payload: Payload, reason: string, tags?: () => Pro
         })
       }
     }
+    if (list && !list.length) return null
     return fetch(`${webUrl()}/api/revalidate`, {
       method: 'POST',
       headers: { 'x-revalidate-secret': secret, 'content-type': 'application/json' },
@@ -170,7 +185,7 @@ export function revalidateWeb(payload: Payload, reason: string, tags?: () => Pro
     })
   })()
     .then((res) => {
-      if (!res.ok) payload.logger.warn({ msg: '[revalidate] web refused', status: res.status })
+      if (res && !res.ok) payload.logger.warn({ msg: '[revalidate] web refused', status: res.status })
     })
     .catch((err) =>
       payload.logger.warn({
@@ -196,6 +211,10 @@ export const revalidateAfterChange: CollectionAfterChangeHook = ({
   }
   return doc
 }
+
+/** afterChange for media: a new upload isn't on any page yet, an edit may be. */
+export const revalidateAfterUpdate: CollectionAfterChangeHook = (args) =>
+  args.operation === 'update' ? revalidateAfterChange(args) : args.doc
 
 /** afterDelete: refresh the site when a public document goes away. */
 export const revalidateAfterDelete: CollectionAfterDeleteHook = ({ doc, req, collection }) => {

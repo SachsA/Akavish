@@ -547,7 +547,8 @@ article, game, tag, author, studio, console pages and `/games` 1 h, sitemap
 and RSS 5 min); past them Next serves the old page once while it rebuilds.
 **On-demand revalidation** (since 2026-11-11, targeted since 2026-11-19) makes
 changes show at once: after a public change (article published, edited,
-unpublished or deleted, game, tag, author, studio, console) the CMS posts to
+unpublished or deleted, game, tag, author, studio, console, an image's credit)
+the CMS posts to
 `https://akavish.gg/api/revalidate` with the header `x-revalidate-secret` and
 the cache tags of what changed (`articles`, `article:<slug>`, `game:<slug>`,
 `tag:`, `author:`, `company:`, `platform:`, `games`, `taxonomy`), and the site

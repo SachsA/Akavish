@@ -1,8 +1,11 @@
 import type { CollectionConfig } from 'payload'
 import { editors } from '../access/roles'
+import { revalidateAfterUpdate } from '../lib/revalidate-web'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  // A new credit or alt text shows at once on the pages using the image.
+  hooks: { afterChange: [revalidateAfterUpdate] },
   access: {
     read: () => true,
     delete: editors,

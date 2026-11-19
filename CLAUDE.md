@@ -229,7 +229,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   = hero for an article's top, `mediaUrl(m, 'square')` for avatars), never the
   original. PROGRESS gotchas.
 - **Site refresh:** the CMS pings the web's `POST /api/revalidate` after any
-  public change (articles, games, tags, authors, companies, platforms;
+  public change (articles, games, tags, authors, companies, platforms, media
+  edits;
   `lib/revalidate-web.ts` `tagsFor`) with the cache tags of what changed,
   `REVALIDATE_SECRET` identical on both apps. Every web CMS fetch goes through
   `cmsFetch` (`apps/web/src/lib/payload.ts`, `cms` tag) and picks a tag from

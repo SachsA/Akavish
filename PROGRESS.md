@@ -708,7 +708,8 @@ checklist it walks through.
   `apps/cms/src/lib/revalidate-web.ts`). A new CMS read picks its tag: a list
   of articles → `TAGS.articles` (5 min), one document → its own tag (1 h), an
   entity page's articles → the entity's tag (`fetchArticles({ cacheTags })`).
-  Untagged reads only follow their timer. Renames shown on other pages
+  Untagged reads only follow their timer. CI sets `REVALIDATE_SECRET` so the
+  e2e tests that edit content (French version, cover credit) use the ping. Renames shown on other pages
   (a studio's name on a game page) catch up within the hour.
 - Articles must be **Published** to appear publicly; drafts are editor-only.
 - **CI and Ubuntu's apt mirrors.** GitHub runners sometimes can't resolve the

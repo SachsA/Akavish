@@ -55,7 +55,7 @@ function fakePayload(db: Record<string, Array<Record<string, unknown>>>): Payloa
 describe('tagsFor', () => {
   const payload = fakePayload({
     games: [
-      { id: 1, slug: 'gta-6', developers: [10], publishers: [11], platforms: [20, 21] },
+      { id: 1, slug: 'gta-6', developers: [10], publishers: [11], platforms: [20, 21], cover: 40 },
       { id: 2, slug: 'other-game', developers: [], publishers: [], platforms: [] },
     ],
     tags: [
@@ -63,6 +63,10 @@ describe('tagsFor', () => {
       { id: 6, slug: 'rockstar' },
     ],
     authors: [{ id: 7, slug: 'scout' }],
+    articles: [
+      { id: 30, slug: 'gta-6-date', coverImage: 40 },
+      { id: 31, slug: 'other', coverImage: 41 },
+    ],
     companies: [
       { id: 10, slug: 'rockstar-north', tag: null },
       { id: 11, slug: 'take-two', tag: null },
@@ -115,5 +119,12 @@ describe('tagsFor', () => {
       'company:b',
     ])
     expect(await tagsFor(payload, 'platforms', { slug: 'ps6' })).toEqual(['taxonomy', 'platform:ps6'])
+  })
+
+  it('drops the pages showing an edited image, nothing for an unused one', async () => {
+    expect((await tagsFor(payload, 'media', { id: 40 })).sort()).toEqual(
+      ['article:gta-6-date', 'articles', 'game:gta-6', 'games'].sort(),
+    )
+    expect(await tagsFor(payload, 'media', { id: 99 })).toEqual([])
   })
 })
