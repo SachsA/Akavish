@@ -92,9 +92,6 @@ jobs:
       # apps, as in production; without it the comments section says it's
       # unavailable and the e2e test of it fails.
       READER_API_SECRET: ci_reader_secret_not_used_in_prod
-      # CMS → web refresh ping, as in production: the e2e tests that edit
-      # content wait for it (the pages' own cache lasts up to 1 h).
-      REVALIDATE_SECRET: ci_revalidate_secret_not_used_in_prod
 
     steps:
       - uses: actions/checkout@v7
@@ -143,7 +140,13 @@ jobs:
 
       # `pnpm start` on :3001 (Railway sets PORT itself, so the script doesn't
       # hard-code it). Playwright's webServer finds it already up and reuses it.
+      # REVALIDATE_SECRET (CMS → web refresh ping, as in production) only on
+      # the two running servers: the e2e tests that edit content wait for the
+      # ping (pages are cached up to 1 h), while the integration tests above
+      # count their own fetch calls and must not see it.
       - name: Start the CMS
+        env:
+          REVALIDATE_SECRET: ci_revalidate_secret_not_used_in_prod
         run: |
           PORT=3001 pnpm --filter akavish-cms start > cms.log 2>&1 &
           for i in $(seq 1 60); do
@@ -165,6 +168,8 @@ jobs:
         run: pnpm --filter @akavish/web build
 
       - name: Start the web app
+        env:
+          REVALIDATE_SECRET: ci_revalidate_secret_not_used_in_prod
         run: |
           PORT=3000 pnpm --filter @akavish/web start > web.log 2>&1 &
           for i in $(seq 1 60); do
