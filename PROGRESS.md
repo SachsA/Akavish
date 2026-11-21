@@ -218,8 +218,8 @@ reload instead of after 30 s and a few reloads. Needs `REVALIDATE_SECRET`
 2026-11-19:** the ping carries cache tags (the article, the lists, its games,
 tags, author, studios and consoles) and only those pages rebuild; the timers
 went from 30 s to 5 min (home, sections) and 1 h (everything else). The full
-flush on every scout save cost ~15K Vercel ISR writes a day. **Automatic drafts are on since 2026-11-11** (threshold 60, at most 20 a
-day), a few days ahead of the plan; the weekend review (Nov 14-15) tunes
+flush on every scout save cost ~15K Vercel ISR writes a day. **Automatic drafts are on since 2026-11-11** (threshold 60, at most 25 a
+day since Nov 20), a few days ahead of the plan; the weekend review (Nov 14-15) tunes
 them, so they're ready for GTA VI on Thursday Nov 19.
 
 Everything else waits on something:
@@ -387,9 +387,8 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   Nov 18, 11:00 UTC (midnight in New Zealand, the first unlock; Rockstar:
   "midnight local time … in all regions"), `featured` already ticked so it
   becomes the lead by itself.
-- Nov 18-19: `maxDraftsPerDay` to 40 for launch day (then 20 or 30 from the
-  review). Untick `featured` on "GTA VI: everything we know" (id 5) whenever
-  convenient: the newest featured article already wins.
+- ✅ Nov 18-19: `maxDraftsPerDay` to 40 for launch day, back to **25** on
+  Nov 20. `featured` unticked on "GTA VI: everything we know" (id 5).
 
 **AI transparency:** articles drafted by the scout carry `aiAssisted`, which
 shows a one-line note under the article (web and app): "Researched and drafted
