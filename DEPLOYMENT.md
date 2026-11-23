@@ -565,7 +565,11 @@ the cache tags of what changed (`articles`, `article:<slug>`, `game:<slug>`,
 `tag:`, `author:`, `company:`, `platform:`, `games`, `taxonomy`), and the site
 drops only those (`apps/cms/src/lib/revalidate-web.ts`,
 `apps/web/src/app/api/revalidate`). A ping without tags (or with over 100)
-drops everything. Vercel logs show `revalidated` with the tags. Needs
+drops everything, and so does an image whose files change (replaced, or
+re-made in WebP: its old URLs may be on any page). `article-extras` is the
+"Read next" and previous / next cards, dropped by cover edits only. By hand:
+`POST /api/revalidate-web` on the CMS, logged in as an editor, drops the whole
+site cache. Vercel logs show `revalidated` with the tags. Needs
 **`REVALIDATE_SECRET`, the same value on Railway and Vercel**
 (`openssl rand -hex 32`); unset on either side, nothing breaks, but changes
 wait for the timers (up to 1 h). Check: publish something, the category page shows it on the

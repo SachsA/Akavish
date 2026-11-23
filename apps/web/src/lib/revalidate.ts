@@ -28,6 +28,8 @@ export const TAGS = {
   author: (slug: string) => `author:${slug}`,
   company: (slug: string) => `company:${slug}`,
   platform: (slug: string) => `platform:${slug}`,
+  /** An article's "Read next" and previous / next cards: only an image change drops them. */
+  extras: 'article-extras',
 } as const
 
 /** How long a CMS read stays fresh without a ping, in seconds. */
@@ -52,7 +54,7 @@ export function cleanTags(raw: unknown): string[] {
       raw.filter(
         (t): t is string =>
           typeof t === 'string' &&
-          /^(articles|games|taxonomy|(article|game|tag|author|company|platform):[\w.~%-]{1,200})$/i.test(t),
+          /^(articles|article-extras|games|taxonomy|(article|game|tag|author|company|platform):[\w.~%-]{1,200})$/i.test(t),
       ),
     ),
   ].slice(0, MAX_TAGS)

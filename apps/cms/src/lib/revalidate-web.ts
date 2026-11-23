@@ -12,7 +12,13 @@
 // Renames (a studio, a tag) only refresh their own page; the pages that show
 // the name elsewhere catch up within the hour.
 
-import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, Payload } from 'payload'
+import type {
+  CollectionAfterChangeHook,
+  CollectionAfterDeleteHook,
+  Payload,
+  PayloadHandler,
+} from 'payload'
+import { isEditorUser } from '../access/roles'
 
 /** Same cap as the site's (apps/web/src/lib/revalidate.ts). */
 const MAX_TAGS = 100
@@ -38,7 +44,12 @@ const idOf = (r: Ref): number | string | undefined =>
 const refs = (v: unknown): Ref[] => (Array.isArray(v) ? (v as Ref[]) : v == null ? [] : [v as Ref])
 
 const ids = (...vals: unknown[]): Array<number | string> => [
-  ...new Set(vals.flatMap(refs).map(idOf).filter((x): x is number | string => x != null && x !== '')),
+  ...new Set(
+    vals
+      .flatMap(refs)
+      .map(idOf)
+      .filter((x): x is number | string => x != null && x !== ''),
+  ),
 ]
 
 const slugOf = (d: Doc): string | undefined =>
@@ -62,16 +73,30 @@ async function slugsOf(
   return (res.docs as Array<{ slug?: string | null }>).map((d) => d.slug ?? '').filter(Boolean)
 }
 
+/** The files of an image (original and sizes), to tell a new file from a text edit. */
+const filesOf = (d: Doc): string => {
+  if (!d) return ''
+  const sizes = (d.sizes ?? {}) as Record<string, { filename?: string | null } | null>
+  return [
+    d.filename,
+    ...Object.keys(sizes)
+      .sort()
+      .map((k) => sizes[k]?.filename ?? ''),
+  ].join('|')
+}
+
 /**
  * The site's cache tags a change drops (same strings as the site's `TAGS`).
  * Reads the related documents' slugs, so it's async; the hook doesn't wait.
+ * `null`: drop everything (an image's file changed: its old URLs may be on
+ * any page, a logo, an avatar, a "Read next" card).
  */
 export async function tagsFor(
   payload: Payload,
   collection: string,
   doc: Doc,
   previousDoc?: Doc,
-): Promise<string[]> {
+): Promise<string[] | null> {
   const tags = new Set<string>()
   const own = (prefix: string) => {
     for (const s of [slugOf(doc), slugOf(previousDoc)]) if (s) tags.add(`${prefix}:${s}`)
@@ -80,7 +105,12 @@ export async function tagsFor(
     case 'articles': {
       tags.add('articles')
       own('article')
-      const gameIds = ids(doc?.game, doc?.relatedGames, previousDoc?.game, previousDoc?.relatedGames)
+      const gameIds = ids(
+        doc?.game,
+        doc?.relatedGames,
+        previousDoc?.game,
+        previousDoc?.relatedGames,
+      )
       const tagIds = ids(doc?.tags, previousDoc?.tags)
       const authorIds = ids(doc?.author, previousDoc?.author)
       const [games, tagSlugs, authors] = await Promise.all([
@@ -139,6 +169,11 @@ export async function tagsFor(
       own('platform')
       break
     case 'media': {
+      // A new file (replaced, or its sizes made again): the old ones are
+      // deleted, so every page that may link them must go (2026-11-23: after
+      // the WebP conversion, "Read next" cards, console and studio pages kept
+      // the deleted JPEG sizes for up to an hour).
+      if (previousDoc && filesOf(doc) !== filesOf(previousDoc)) return null
       // A cover's credit or alt text: the articles and games showing it.
       const id = idOf(doc as Ref)
       if (id == null) break
@@ -148,7 +183,7 @@ export async function tagsFor(
       ])
       for (const s of articles) tags.add(`article:${s}`)
       for (const s of games) tags.add(`game:${s}`)
-      if (articles.length) tags.add('articles')
+      if (articles.length) tags.add('articles').add('article-extras')
       if (games.length) tags.add('games')
       break
     }
@@ -160,14 +195,18 @@ export async function tagsFor(
  * Ping the site. Without `tags` (or if they can't be worked out), the site
  * drops all its CMS cache; with an empty list there's nothing to drop.
  */
-export function revalidateWeb(payload: Payload, reason: string, tags?: () => Promise<string[]>): void {
+export function revalidateWeb(
+  payload: Payload,
+  reason: string,
+  tags?: () => Promise<string[] | null>,
+): void {
   const secret = process.env.REVALIDATE_SECRET
   if (!secret) return
   void (async () => {
     let list: string[] | undefined
     if (tags) {
       try {
-        list = await tags()
+        list = (await tags()) ?? undefined
       } catch (err) {
         payload.logger.warn({
           msg: '[revalidate] tags failed, full refresh',
@@ -180,12 +219,15 @@ export function revalidateWeb(payload: Payload, reason: string, tags?: () => Pro
       method: 'POST',
       headers: { 'x-revalidate-secret': secret, 'content-type': 'application/json' },
       // Too many (a huge round-up): a full refresh is as cheap.
-      body: JSON.stringify(list?.length && list.length <= MAX_TAGS ? { reason, tags: list } : { reason }),
+      body: JSON.stringify(
+        list?.length && list.length <= MAX_TAGS ? { reason, tags: list } : { reason },
+      ),
       signal: AbortSignal.timeout(8_000),
     })
   })()
     .then((res) => {
-      if (res && !res.ok) payload.logger.warn({ msg: '[revalidate] web refused', status: res.status })
+      if (res && !res.ok)
+        payload.logger.warn({ msg: '[revalidate] web refused', status: res.status })
     })
     .catch((err) =>
       payload.logger.warn({
@@ -210,6 +252,20 @@ export const revalidateAfterChange: CollectionAfterChangeHook = ({
     )
   }
   return doc
+}
+
+/**
+ * POST /api/revalidate-web (editors): drop the site's whole CMS cache. For a
+ * page showing something stale that no hook covers. Rarely needed.
+ */
+export const revalidateAllHandler: PayloadHandler = async (req) => {
+  if (!req.user || req.user.collection !== 'users')
+    return Response.json({ error: 'unauthorized' }, { status: 401 })
+  if (!isEditorUser(req.user)) return Response.json({ error: 'editors only' }, { status: 403 })
+  if (!process.env.REVALIDATE_SECRET)
+    return Response.json({ error: 'REVALIDATE_SECRET unset' }, { status: 503 })
+  revalidateWeb(req.payload, `manual, ${req.user.email ?? 'editor'}`)
+  return Response.json({ ok: true })
 }
 
 /** afterChange for media: a new upload isn't on any page yet, an edit may be. */

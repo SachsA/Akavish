@@ -595,10 +595,11 @@ export async function fetchGameName(slug: string): Promise<string | null> {
 
 /** Run an articles query and map the results. Shared by the helpers below. */
 async function fetchArticleList(qs: URLSearchParams): Promise<Article[]> {
-  // No article tag: a new article doesn't rebuild every article page for its
-  // "related" and prev / next links; they catch up within the hour.
+  // Not the article lists' tag: a new article doesn't rebuild every article
+  // page for its "Read next" and prev / next links (they catch up within the
+  // hour). Their own tag goes when a cover changes (lib/revalidate-web.ts).
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
-    next: { revalidate: CACHE.details },
+    next: { revalidate: CACHE.details, tags: [TAGS.extras] },
   })
   if (!res.ok) throw new Error(`CMS responded ${res.status}`)
   const json = (await res.json()) as PayloadListResponse<PayloadArticle>

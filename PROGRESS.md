@@ -718,7 +718,11 @@ checklist it walks through.
   `apps/cms/src/lib/revalidate-web.ts`). A new CMS read picks its tag: a list
   of articles → `TAGS.articles` (5 min), one document → its own tag (1 h), an
   entity page's articles → the entity's tag (`fetchArticles({ cacheTags })`).
-  Untagged reads only follow their timer. CI sets `REVALIDATE_SECRET` so the
+  Untagged reads only follow their timer. 2026-11-23: the WebP conversion deleted the old
+  JPEG sizes, and the "Read next" cards (untagged then), console and studio
+  pages showed broken images; now an image with new files drops everything,
+  "Read next" has its own tag (`article-extras`), and `POST /api/revalidate-web`
+  (editors) flushes by hand. CI sets `REVALIDATE_SECRET` so the
   e2e tests that edit content (French version, cover credit) use the ping. Renames shown on other pages
   (a studio's name on a game page) catch up within the hour.
 - **Editors don't see the readers.** Readers, Subscribers, saved articles and

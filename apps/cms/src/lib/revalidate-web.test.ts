@@ -39,14 +39,21 @@ describe('isPublicChange', () => {
 // A tiny stand-in for payload.find over a few documents.
 function fakePayload(db: Record<string, Array<Record<string, unknown>>>): Payload {
   const match = (doc: Record<string, unknown>, where: Record<string, unknown>): boolean => {
-    if (Array.isArray(where.or)) return (where.or as Array<Record<string, unknown>>).some((w) => match(doc, w))
+    if (Array.isArray(where.or))
+      return (where.or as Array<Record<string, unknown>>).some((w) => match(doc, w))
     return Object.entries(where).every(([field, cond]) => {
       const list = (cond as { in: Array<number | string> }).in.map(String)
       return list.includes(String(doc[field]))
     })
   }
   return {
-    find: async ({ collection, where }: { collection: string; where: Record<string, unknown> }) => ({
+    find: async ({
+      collection,
+      where,
+    }: {
+      collection: string
+      where: Record<string, unknown>
+    }) => ({
       docs: (db[collection] ?? []).filter((d) => match(d, where)),
     }),
   } as unknown as Payload
@@ -86,7 +93,7 @@ describe('tagsFor', () => {
       { slug: 'gta-6-date', game: 1, relatedGames: [], tags: [6], author: 7 },
       { slug: 'gta-6-old', game: 1, tags: [5], author: { id: 7 } },
     )
-    expect(tags.sort()).toEqual(
+    expect(tags!.sort()).toEqual(
       [
         'articles',
         'article:gta-6-date',
@@ -105,8 +112,12 @@ describe('tagsFor', () => {
   })
 
   it('reads related documents whether populated or not', async () => {
-    const tags = await tagsFor(payload, 'articles', { slug: 'x', game: { id: 2, slug: 'other-game' }, tags: [] })
-    expect(tags.sort()).toEqual(['article:x', 'articles', 'game:other-game'])
+    const tags = await tagsFor(payload, 'articles', {
+      slug: 'x',
+      game: { id: 2, slug: 'other-game' },
+      tags: [],
+    })
+    expect(tags!.sort()).toEqual(['article:x', 'articles', 'game:other-game'])
   })
 
   it('keeps the other collections to their own page', async () => {
@@ -118,13 +129,24 @@ describe('tagsFor', () => {
       'company:a',
       'company:b',
     ])
-    expect(await tagsFor(payload, 'platforms', { slug: 'ps6' })).toEqual(['taxonomy', 'platform:ps6'])
+    expect(await tagsFor(payload, 'platforms', { slug: 'ps6' })).toEqual([
+      'taxonomy',
+      'platform:ps6',
+    ])
   })
 
   it('drops the pages showing an edited image, nothing for an unused one', async () => {
-    expect((await tagsFor(payload, 'media', { id: 40 })).sort()).toEqual(
-      ['article:gta-6-date', 'articles', 'game:gta-6', 'games'].sort(),
+    expect((await tagsFor(payload, 'media', { id: 40 }))!.sort()).toEqual(
+      ['article:gta-6-date', 'articles', 'article-extras', 'game:gta-6', 'games'].sort(),
     )
     expect(await tagsFor(payload, 'media', { id: 99 })).toEqual([])
+  })
+
+  it('drops everything when an image gets new files (the old ones are deleted)', async () => {
+    const before = { id: 40, filename: 'a.jpg', sizes: { card: { filename: 'a-960x540.jpg' } } }
+    const textEdit = { ...before, credit: 'Studio' }
+    const newFiles = { id: 40, filename: 'a.jpg', sizes: { card: { filename: 'a-960x540.webp' } } }
+    expect(await tagsFor(payload, 'media', textEdit, before)).not.toBeNull()
+    expect(await tagsFor(payload, 'media', newFiles, before)).toBeNull()
   })
 })

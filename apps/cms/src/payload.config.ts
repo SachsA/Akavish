@@ -51,6 +51,7 @@ import {
   commentVoteHandler,
 } from './lib/comments'
 import { mediaWebpHandler } from './lib/media-webp'
+import { revalidateAllHandler } from './lib/revalidate-web'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -122,6 +123,8 @@ export default buildConfig({
     { path: '/translate/backfill', method: 'post', handler: translateBackfillHandler },
     // Re-make the sizes of images uploaded before WebP (lib/media-webp.ts).
     { path: '/media-webp', method: 'post', handler: mediaWebpHandler },
+    // Drop the site's whole cache by hand (lib/revalidate-web.ts).
+    { path: '/revalidate-web', method: 'post', handler: revalidateAllHandler },
     // Which articles are live showcase pages right now (public: ids only).
     { path: '/live-articles', method: 'get', handler: liveArticlesHandler },
     // AI scout, step 2: Discord's "Interactions Endpoint URL" (button clicks).

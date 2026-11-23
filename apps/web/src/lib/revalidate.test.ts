@@ -17,11 +17,12 @@ describe('isValidSecret', () => {
 
 describe('cleanTags', () => {
   it('keeps the known shapes, once each', () => {
-    expect(cleanTags(['articles', 'article:gta-6-trailer', 'game:gta-6', 'articles', 'platform:ps5'])).toEqual([
+    expect(cleanTags(['articles', 'article:gta-6-trailer', 'game:gta-6', 'articles', 'platform:ps5', 'article-extras'])).toEqual([
       'articles',
       'article:gta-6-trailer',
       'game:gta-6',
       'platform:ps5',
+      'article-extras',
     ])
   })
 

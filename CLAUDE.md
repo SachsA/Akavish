@@ -245,7 +245,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `TAGS` (`lib/revalidate.ts`) plus a `CACHE` delay: lists `TAGS.articles`
   (5 min), one document its own tag (1 h), an entity page's articles
   `fetchArticles({ cacheTags })`. A new tag shape goes in both `TAGS`,
-  `cleanTags` and `tagsFor`. Never flush everything on a save.
+  `cleanTags` and `tagsFor`. Never flush everything on a save, except an
+  image whose files change (`tagsFor` returns null): its old URLs are
+  deleted and may be on any page.
 - **Articles from Markdown:** `apps/cms/scripts/publish-articles.mjs` posts
   articles (covers, games, publish now / schedule / draft, optional
   backdated `publishedAt` for archives, `relatedGames`, review `score`, site links
