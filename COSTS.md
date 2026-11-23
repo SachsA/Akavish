@@ -49,7 +49,7 @@ With the X API and the newsletter: plan on ~120-170 $/month.
 
 ## Log
 
-- 2026-11-23: Vercel Hobby → Pro (20 $/month).
+- 2026-11-23: Vercel Hobby → Pro (20 $/month). First day: 0.38 $ of usage, 0.31 $ of it build minutes, so pushes that don't touch the site no longer build it (`DEPLOYMENT.md` §3).
 - 2026-11-19: site cache refresh made targeted, timers 5 min / 1 h (Vercel ISR writes were at 137K of 200K, CPU at 2h23 of 4h): stays on Hobby.
 - 2026-11-19: Neon Free → Launch (5 GB transfer cap reached on day 9 after launch).
 - 2026-11-18: Vercel image optimisation turned off (75 % of the 5,000 free transformations used in a week); images now come straight from R2.

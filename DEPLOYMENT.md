@@ -245,6 +245,16 @@ the same `CMS_URL`), so it shows real published content and never writes to it.
 Previews live on `*.vercel.app` and aren't indexed (Vercel adds
 `X-Robots-Tag: noindex` to them). Nothing to configure.
 
+**Skipped builds** (since 2026-11-23). `apps/web/vercel.json` runs
+`scripts/vercel-ignore.sh` before each build: when nothing under `apps/web`,
+`packages/`, the root `package.json`, `pnpm-lock.yaml` or
+`pnpm-workspace.yaml` changed since the last deployed commit, Vercel marks the
+deployment "Canceled by Ignored Build Step" and the site stays as it is. Docs,
+CMS and mobile pushes don't build the site anymore (build minutes were most of
+the Vercel bill). A **Redeploy** of the same commit from the dashboard (after
+changing an environment variable) always builds, and so does a branch's first
+deployment.
+
 ---
 
 ## 4. Search in production (optional)
