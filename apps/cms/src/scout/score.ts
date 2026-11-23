@@ -47,6 +47,11 @@ export const OUTLET_GROUPS: Record<string, string> = { 'IGN France': 'IGN' }
 export const SCENE_SOURCES = new Set(['HLTV', 'VLR.gg'])
 export const SOURCE_BONUS_MIN_SIGNIFICANCE = 40
 export const ESPORT_THRESHOLD_OFFSET = 10
+/**
+ * Esport never drafts below this, whatever the threshold (2026-11-23: with the
+ * threshold at 50, Alex wanted esport to stay at 50, not drop to 40).
+ */
+export const ESPORT_MIN_THRESHOLD = 50
 
 export interface ScoreInput {
   /** The model's estimate, 0–100. */
@@ -115,7 +120,8 @@ export function storyScore(input: {
   })
 }
 
-/** The score a story needs for an automatic draft: esport from 10 points lower. */
+/** The score a story needs for an automatic draft: esport from 10 points lower, never under 50. */
 export function thresholdFor(category: string | null | undefined, threshold: number): number {
-  return category === 'esport' ? threshold - ESPORT_THRESHOLD_OFFSET : threshold
+  if (category !== 'esport') return threshold
+  return Math.min(threshold, Math.max(ESPORT_MIN_THRESHOLD, threshold - ESPORT_THRESHOLD_OFFSET))
 }

@@ -77,6 +77,12 @@ describe('scoreStory', () => {
     expect(tenz).toBe(58)
     expect(tenz).toBeGreaterThanOrEqual(thresholdFor('esport', 60))
     expect(tenz).toBeLessThan(thresholdFor('news', 60))
+    // Esport: 10 lower, but never under 50 (and never above the threshold).
+    expect(thresholdFor('esport', 60)).toBe(50)
+    expect(thresholdFor('esport', 70)).toBe(60)
+    expect(thresholdFor('esport', 50)).toBe(50)
+    expect(thresholdFor('esport', 45)).toBe(45)
+    expect(thresholdFor('news', 50)).toBe(50)
     // The same feed twice is one source.
     expect(
       storyScore({

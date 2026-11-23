@@ -388,7 +388,8 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 - ✅ Nov 11: `draftsEnabled` ticked (threshold 60, `maxDraftsPerDay` 20).
 - Nov 23: threshold 60 → **50**, Alex's call for more news (the week's report:
   ~8.7 stories a day at 60, ~13.7 at 50; 87 % of drafts published). Esport
-  drafts from 40. Raise it again if the rejections climb.
+  stays at 50 (Alex): 10 under the threshold but never below 50
+  (`ESPORT_MIN_THRESHOLD`). Raise it again if the rejections climb.
 - Nov 11-18: running-in with automatic drafts.
 - ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for
   Nov 18, 11:00 UTC (midnight in New Zealand, the first unlock; Rockstar:
