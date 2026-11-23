@@ -611,7 +611,7 @@ checklist it walks through.
 | ✅  | Rate limiting      | Done (2026-11-07) — per-IP limits on `/api/search` (30/min, 60 since 2026-11-13) and `/api/articles*` (120/min), 429 + Retry-After; in-memory, so approximate on Vercel; a Vercel Firewall rule (30/min on `/api/search`, 429) counts across instances since 2026-11-09 (`DEPLOYMENT.md` §4e) |
 | ✅  | Uptime monitoring  | UptimeRobot probes on web + CMS/DB, email alerts (`DEPLOYMENT.md` §4d) |
 | ✅  | Legal pages        | Done — `/privacy`, `/terms`, `/legal` in EN + FR (roadmap #8)          |
-| ⏳  | Photo permissions (BLAST, ESL, Riot) | Requests sent 2026-11-16, waiting for answers. Until then the four photos already used (articles 174, 178, 183, 184) stay, credited; taken down if one says no. No answer by mid-December: follow up, or swap them for official press kits |
+| P1  | Photo permissions (BLAST, ESL, Riot) | **Alex: send the requests** (not sent yet, 2026-11-23). Until they answer, the four photos already used (articles 174, 178, 183, 184) stay, credited; taken down if one says no. No answer within a few weeks: swap them for official press kit images |
 | ✅  | Cookie consent     | Not needed: cookieless analytics, only strictly necessary Clerk cookies — explained in `/privacy` |
 | ✅  | Logging            | Done (2026-11-07) — JSON logs on web (`lib/log.ts`) and CMS (Payload logger in production), searchable in Vercel and Railway; no IPs or search terms (`DEPLOYMENT.md` §4e) |
 
@@ -654,9 +654,9 @@ checklist it walks through.
   ESL, Riot…) allowed Liquipedia, not us, and BLAST's Flickr is "All rights
   reserved". So never take a photo from Liquipedia or an organiser's gallery
   without a written OK from the organiser; once given, fill the media's
-  **Credit**. Permission requests went to BLAST, ESL and Riot on 2026-11-16;
-  the four photos already used (articles 174, 178, 183, 184) stay until they
-  answer and are taken down on request.
+  **Credit**. Permission requests to BLAST, ESL and Riot: not sent yet
+  (to-do, §9); the four photos already used (articles 174, 178, 183, 184)
+  stay, credited, and are taken down on request.
 - **Keep the pages cacheable (ISR).** Until 2026-11-16 every page was
   rendered per request (`private, no-store`): Clerk's server `<SignedIn>` /
   `<SignedOut>` in the header read the session, and the list pages read
