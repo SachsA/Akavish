@@ -354,7 +354,7 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
    and Major invites from HLTV as news). Esport stories draft from the threshold − 10 (`thresholdFor`), in
    the digest colours and the weekly report too. Each run scores the stories of the last 24 hours again
    from what's stored (`rescoreRecent`: weights and freshness apply at once;
-   a listed story crossing the threshold goes back to "new"). Threshold 60 by default (*Scout settings*). Retuned on
+   a listed story crossing the threshold goes back to "new"). Threshold 60 by default (*Scout settings*), set to 50 in production since 2026-11-23. Retuned on
    2026-11-12 so good single-source news (an official post about a focus
    game, a big story from one outlet) can reach 60 on its own, while a lone
    leaker can't; the significance guide in `triage-prompt.ts` ranks the

@@ -1411,7 +1411,7 @@ Automatic drafts (`draftsEnabled`): at most 3 per run and `maxDraftsPerDay`
 yet. Measured in production (Nov 11): about 0.02 $ per draft or revision
 with Sonnet, and the Haiku triage about 0.03-0.06 $ a day. At 25 drafts a day
 that's at most ~0.50 $/day (~15 $/month); a normal day at threshold 60 gave 3
-to 16 stories. The digests and their "Rédiger…" menu keep coming either way.
+to 16 stories; the threshold is 50 since 2026-11-23 (about 5 more a day). The digests and their "Rédiger…" menu keep coming either way.
 
 **Day to day:** pause or resume with *Scout settings → paused* in `/admin`
 (the scout ticks it itself when the monthly budget is spent); move the draft

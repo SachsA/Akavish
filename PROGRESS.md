@@ -218,8 +218,8 @@ reload instead of after 30 s and a few reloads. Needs `REVALIDATE_SECRET`
 2026-11-19:** the ping carries cache tags (the article, the lists, its games,
 tags, author, studios and consoles) and only those pages rebuild; the timers
 went from 30 s to 5 min (home, sections) and 1 h (everything else). The full
-flush on every scout save cost ~15K Vercel ISR writes a day. **Automatic drafts are on since 2026-11-11** (threshold 60, at most 25 a
-day since Nov 20), a few days ahead of the plan; the weekend review (Nov 14-15) tunes
+flush on every scout save cost ~15K Vercel ISR writes a day. **Automatic drafts are on since 2026-11-11** (threshold **50** since Nov 23,
+60 before; at most 25 a day since Nov 20), a few days ahead of the plan; the weekend review (Nov 14-15) tunes
 them, so they're ready for GTA VI on Thursday Nov 19.
 
 Everything else waits on something:
@@ -386,6 +386,9 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   turns a leading `**Name**` of a list item into bold. Dates stay in English
   formats until the French version (i18n).
 - ✅ Nov 11: `draftsEnabled` ticked (threshold 60, `maxDraftsPerDay` 20).
+- Nov 23: threshold 60 → **50**, Alex's call for more news (the week's report:
+  ~8.7 stories a day at 60, ~13.7 at 50; 87 % of drafts published). Esport
+  drafts from 40. Raise it again if the rejections climb.
 - Nov 11-18: running-in with automatic drafts.
 - ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for
   Nov 18, 11:00 UTC (midnight in New Zealand, the first unlock; Rockstar:
