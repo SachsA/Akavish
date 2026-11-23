@@ -476,7 +476,7 @@ Core SEO is done (see the [Done → SEO](#seo) section). Remaining:
 | Pri | Item                          | Notes                                                                   |
 | --- | ----------------------------- | ----------------------------------------------------------------------- |
 | ✅  | Cloudflare R2 storage adapter | Done — `@payloadcms/storage-s3` wired to R2, live in prod |
-| ✅  | Image sizes / focal point     | Done — `imageSizes` (thumbnail/card/hero/square) + focal point on the `media` collection; web requests the right variant |
+| ✅  | Image sizes / focal point     | Done — `imageSizes` (thumbnail/card/hero/square) + focal point on the `media` collection; web requests the right variant. WebP since 2026-11-23, old images converted with `scripts/media-webp.mjs` |
 | ✅  | Alt text required on media    | Already the case — `alt` is `required: true` in `Media.ts`              |
 | ✅  | Photo credit                  | 2026-11-16, 🟠 migration `20261116_165443_media_credit` (additive): `credit` on Media ("BLAST / Luc Bouchon"), shown under the article's cover as "Photo: …" / "Photo : …". The scout's *Modifier* form takes it with the image URL; esport drafts say which photo to find (`photo_hint`: the player for a transfer, the team lifting the trophy for a win) |
 
@@ -680,8 +680,11 @@ checklist it walks through.
   already made, from `mediaUrl(…, 'card' | 'hero' | 'square')`: cards, search
   and saved articles use `coverImageCard`, the article top and the home lead
   `coverImage` (hero). A new `<Image>` must pick the smallest size that fits.
-  Possible later: WebP for every size (`formatOptions` on the Media sizes; some
-  PNG cards weigh 500 KB). `DEPLOYMENT.md` §4b.
+  Every size is WebP since 2026-11-23 (`formatOptions` in `Media.ts`, 30-40 %
+  lighter than JPEG, ~70 % on PNG screenshots), and exists for every image
+  (`withoutEnlargement: true`: before, 306 of 417 images had no `hero` and the
+  article top served the original). Old images: `scripts/media-webp.mjs`.
+  `DEPLOYMENT.md` §4b.
 - **List pagination uses plain `<a>` links, not `LocaleLink`** (fixed
   2026-11-18). List pages read their page from the path the proxy rewrites
   `?page=N` to (`/news/page/2`), so on French pages the client router took

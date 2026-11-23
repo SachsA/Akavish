@@ -357,7 +357,8 @@ Redeploy both. New uploads now land in R2 and survive redeploys.
 > in its first week (past 100 % new ones fail and images break). `next.config.ts`
 > sets `images.unoptimized: true`: images load straight from `media.akavish.gg`
 > (R2 behind Cloudflare, free), in the sizes Payload makes at upload (`thumbnail`
-> 480, `card` 960, `hero` 1920, `square` 256). Cards and search use `card`, an
+> 480, `card` 960, `hero` 1920, `square` 256), all WebP since 2026-11-23
+> (`apps/cms/README.md` → media). Cards and search use `card`, an
 > article's top uses `hero`; `mediaUrl` (`packages/api-client`) falls back to
 > the original when a size is missing, or to the next size down when the
 > original weighs over 600 KB. To change an image, upload a new one rather

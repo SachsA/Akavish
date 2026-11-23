@@ -293,3 +293,38 @@ describe('schedule publish endpoint', () => {
     expect(await pending()).toHaveLength(0)
   })
 })
+
+describe('media sizes in WebP', () => {
+  it('makes every size in WebP, a small picture included, and re-makes old ones', async () => {
+    const sharp = (await import('sharp')).default
+    // 1280 px wide: narrower than `hero` (1920), which used to be skipped.
+    const jpeg = await sharp({
+      create: { width: 1280, height: 720, channels: 3, background: { r: 30, g: 120, b: 200 } },
+    })
+      .jpeg()
+      .toBuffer()
+    const media = (await payload.create({
+      collection: 'media',
+      data: { alt: `${RUN} webp`, credit: 'Studio' },
+      file: { data: jpeg, mimetype: 'image/jpeg', name: `${RUN}-webp.jpg`, size: jpeg.length },
+      overrideAccess: true,
+    })) as unknown as {
+      id: number
+      filename: string
+      mimeType: string
+      sizes: Record<string, { mimeType: string; width: number }>
+    }
+    try {
+      expect(media.mimeType).toBe('image/jpeg') // the original stays as uploaded
+      for (const name of ['thumbnail', 'card', 'hero', 'square']) {
+        expect(media.sizes[name]?.mimeType, name).toBe('image/webp')
+      }
+      expect(media.sizes.hero.width).toBe(1280) // never upscaled
+      const { hasWebpSizes, convertMedia } = await import('@/lib/media-webp')
+      expect(hasWebpSizes(media as never)).toBe(true)
+      expect((await convertMedia(payload, media as never)).status).toBe('skipped')
+    } finally {
+      await payload.delete({ collection: 'media', id: media.id, overrideAccess: true })
+    }
+  })
+})

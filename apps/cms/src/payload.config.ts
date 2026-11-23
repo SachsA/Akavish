@@ -50,6 +50,7 @@ import {
   commentsHandler,
   commentVoteHandler,
 } from './lib/comments'
+import { mediaWebpHandler } from './lib/media-webp'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -119,6 +120,8 @@ export default buildConfig({
     { path: '/articles-schedule', method: 'post', handler: schedulePublishHandler },
     // French version: translate every article not translated yet (lib/translate.ts).
     { path: '/translate/backfill', method: 'post', handler: translateBackfillHandler },
+    // Re-make the sizes of images uploaded before WebP (lib/media-webp.ts).
+    { path: '/media-webp', method: 'post', handler: mediaWebpHandler },
     // Which articles are live showcase pages right now (public: ids only).
     { path: '/live-articles', method: 'get', handler: liveArticlesHandler },
     // AI scout, step 2: Discord's "Interactions Endpoint URL" (button clicks).

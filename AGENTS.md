@@ -228,6 +228,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   pass the Payload size that fits (`coverImageCard` for cards, `coverImage`
   = hero for an article's top, `mediaUrl(m, 'square')` for avatars), never the
   original. PROGRESS gotchas.
+- **Media sizes are WebP** (`Media.ts`, `MEDIA_SIZE_FORMAT`); the original
+  stays as uploaded and the site never shows it. A new size gets
+  `withoutEnlargement: true` and `formatOptions: MEDIA_SIZE_FORMAT`, then
+  `scripts/media-webp.mjs` makes it for the existing images.
 - **Vercel builds only for the site:** `apps/web/vercel.json` →
   `scripts/vercel-ignore.sh` skips a push that touches nothing under
   `apps/web`, `packages/` or the root package/lock files. A new path the web

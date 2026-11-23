@@ -163,14 +163,19 @@ files disappear on every redeploy.
 - Enabled only when `R2_BUCKET` is set — otherwise Payload falls back to local
   disk, so a fresh clone works with no cloud setup.
 - On upload, Sharp generates resized variants (`thumbnail` 480w, `card` 960w,
-  `hero` 1920w, `square` 256×256) alongside the original. The web app requests
-  the right variant per context, so a 4 MB original is never used as the source
-  for a 400px card. **Existing files keep working** (the mapper falls back to the
-  original) but only get variants if you re-upload them.
-- Sharp never upscales: a variant wider than the source image comes back `null`
-  (a 480px-wide upload has no `card`/`hero`). That's expected — the web falls
-  back to the original, which is small anyway. **Upload covers around
-  1920–2560px wide** to get every variant without storing needless bulk.
+  `hero` 1920w, `square` 256×256) alongside the original, **in WebP** (quality
+  80) since 2026-11-23; the original stays as uploaded and the site never shows
+  it. The web app requests the right variant per context, so a 4 MB original
+  is never used as the source for a 400px card.
+- Sharp never upscales: a picture narrower than a variant gets it at its own
+  width (`withoutEnlargement: true`), so every image has all four. **Upload
+  covers around 1920–2560px wide** for a sharp article top.
+- **Images uploaded before WebP**: `node apps/cms/scripts/media-webp.mjs`
+  (`--dry` to list, `--max N` to try a few) calls `POST /api/media-webp`
+  (`src/lib/media-webp.ts`, editors only), which re-saves each original so its
+  sizes are made again in WebP, same original filename, old sizes deleted from
+  R2, alt/credit/focal point kept. Skips what's already done, so it can be
+  stopped and run again.
 - Files are served straight from `R2_PUBLIC_URL` (Payload's file proxy is
   bypassed via `disablePayloadAccessControl`, fine since media is public).
 - `R2_ENDPOINT` is the S3 API endpoint — used for **uploads only**, never to
