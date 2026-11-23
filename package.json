@@ -13,7 +13,7 @@
     "seed": "pnpm --filter akavish-cms seed"
   },
   "devDependencies": {
-    "turbo": "^2.11.11",
+    "turbo": "^2.11.13",
     "typescript": "^5.4.0",
     "prettier": "^3.10.1"
   },
