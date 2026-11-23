@@ -611,6 +611,7 @@ checklist it walks through.
 | ✅  | Rate limiting      | Done (2026-11-07) — per-IP limits on `/api/search` (30/min, 60 since 2026-11-13) and `/api/articles*` (120/min), 429 + Retry-After; in-memory, so approximate on Vercel; a Vercel Firewall rule (30/min on `/api/search`, 429) counts across instances since 2026-11-09 (`DEPLOYMENT.md` §4e) |
 | ✅  | Uptime monitoring  | UptimeRobot probes on web + CMS/DB, email alerts (`DEPLOYMENT.md` §4d) |
 | ✅  | Legal pages        | Done — `/privacy`, `/terms`, `/legal` in EN + FR (roadmap #8)          |
+| ⏳  | Photo permissions (BLAST, ESL, Riot) | Requests sent 2026-11-16, waiting for answers. Until then the four photos already used (articles 174, 178, 183, 184) stay, credited; taken down if one says no. No answer by mid-December: follow up, or swap them for official press kits |
 | ✅  | Cookie consent     | Not needed: cookieless analytics, only strictly necessary Clerk cookies — explained in `/privacy` |
 | ✅  | Logging            | Done (2026-11-07) — JSON logs on web (`lib/log.ts`) and CMS (Payload logger in production), searchable in Vercel and Railway; no IPs or search terms (`DEPLOYMENT.md` §4e) |
 

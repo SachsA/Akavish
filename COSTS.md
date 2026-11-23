@@ -9,24 +9,27 @@ Last updated: 2026-11-23.
 
 ## Paying now
 
-| Service | What it does | Plan | Per month | Notes |
-| --- | --- | --- | --- | --- |
-| Domain `akavish.gg` | The site's address | yearly renewal | ~4-5 *est.* | .gg renews at about 50-65 $/year depending on the registrar |
-| Railway | CMS + AI scout (`cms.akavish.gg`) | Hobby | ~10-15 *est.* | 5 $ subscription with 5 $ of usage included, then usage (RAM 10 $/GB, CPU 20 $/vCPU). The CMS runs 24/7 |
-| Neon | Postgres | **Launch** since 2026-11-19 | ~20 *est.* | Pay as you go, no minimum: 0.106 $/CU-hour, 0.35 $/GB-month, 500 GB transfer included then 0.10 $/GB. Moved off Free after the 5 GB transfer cap was hit (`DEPLOYMENT.md`). The scout queries every 5 min, so the compute never sleeps |
-| Vercel | The website (`akavish.gg`) | **Pro** since 2026-11-23 | 20 | One seat. Off Hobby, which is for non-commercial sites, with higher limits (ISR writes, CPU, analytics events). Image optimisation stays off (`DEPLOYMENT.md` §4b) |
-| Anthropic API | Scout (triage, drafts, live, recaps), French translations | pay per use | ~15-30 *est.* | Measured 0.5-1 $/day outside big imports. Capped in code: `SCOUT_MONTHLY_BUDGET_USD` (50) + `TRANSLATE_MONTHLY_BUDGET_USD` (30) = 80 $ at most |
-| **Total** | | | **~70-90** | |
+Real bills checked with Alex on 2026-11-23. French VAT (20 %) is added where
+the provider charges it, so a "25 $" plan shows up as 30 $ on the card.
 
-Not counted above: Alex's own Claude subscription (Pro 20 $, Max 100 $ or
-200 $), used to build the site.
+| Service | What it does | How it's billed | Per month | Notes |
+| --- | --- | --- | --- | --- |
+| Domain `akavish.gg` | The site's address | **yearly** (Porkbun) | ~4.2 | 50.80 $ paid on 2026-08-17, renews each August |
+| Vercel | The website (`akavish.gg`) | **Pro since 2026-11-23**: 20 $ every month (on the 23rd) | 20 | The 20 $ include 20 $ of usage credit; only usage beyond it is billed on top. First day: 0.44 $ used. Image optimisation stays off (`DEPLOYMENT.md` §4b), pushes that don't touch the site don't build (§3) |
+| Clerk | Reader accounts | **monthly** (on the 10th) | 30 | 30 $ paid on 2026-11-10 (looks like Pro, 25 $ + VAT). Check the plan in Clerk → Billing: the free tier may cover the site for now |
+| Railway | CMS + AI scout (`cms.akavish.gg`) | Hobby: 5 $ minimum a month with 5 $ of usage included, then usage (on the 25th) | ~6 | Invoices: 6 $ (Aug), 1 $ (Sep), 6 $ (Oct). November's (Nov 25) is the first with the scout on all month |
+| Neon | Postgres | **Launch since 2026-11-19**: usage only, no fixed fee (on the 1st) | ~0-5 | 0.01 $ for Nov 19-23 (24.7 compute hours). Moved off Free after the 5 GB transfer cap was hit (`DEPLOYMENT.md`) |
+| Anthropic API | Scout (triage, drafts, live, recaps), French translations | **prepaid credit**, auto top-up when the balance runs low | ~10-20 | 9.58 $ spent Nov 1-23, launch week and live rehearsal included. The 24 $ of Nov 10 was credit bought (20 $ + VAT), not a monthly fee. Capped in code: `SCOUT_MONTHLY_BUDGET_USD` (50) + `TRANSLATE_MONTHLY_BUDGET_USD` (30), and 50 $/month in the console |
+| **Total** | | | **~70-85** | |
+
+Not counted above: Alex's own Claude subscription (Pro, 21.60 € a month with
+VAT, on the 29th), used to build the site.
 
 ## Free for now
 
 | Service | What it does | Free limit to watch |
 | --- | --- | --- |
 | Cloudflare | DNS, R2 media (`media.akavish.gg`) + backups, email routing | R2: 10 GB storage free, no egress fees |
-| Clerk | Reader accounts | Free tier's monthly active users |
 | Resend | Newsletter confirmation emails | 100 emails/day |
 | Sentry | Error tracking | Free tier's events/month |
 | UptimeRobot | Uptime checks (web + CMS) | Free plan |
@@ -45,10 +48,11 @@ Not counted above: Alex's own Claude subscription (Pro 20 $, Max 100 $ or
 | Mobile app stores | Publishing the app | Apple 99 $/year, Google Play 25 $ once |
 | Legal review | Legal pages checked by a lawyer | One-off |
 
-With the X API and the newsletter: plan on ~120-170 $/month.
+With the X API and the newsletter: plan on ~120-170 $/month (less if Clerk goes back to free).
 
 ## Log
 
+- 2026-11-23: real bills in: Railway ~6 $ (not 10-15), Neon ~0 so far (not ~20), Anthropic ~10-20 $, domain 50.80 $/year, and Clerk 30 $/month since 2026-11-10 (was listed as free).
 - 2026-11-23: Vercel Hobby → Pro (20 $/month). First day: 0.38 $ of usage, 0.31 $ of it build minutes, so pushes that don't touch the site no longer build it (`DEPLOYMENT.md` §3).
 - 2026-11-19: site cache refresh made targeted, timers 5 min / 1 h (Vercel ISR writes were at 137K of 200K, CPU at 2h23 of 4h): stays on Hobby.
 - 2026-11-19: Neon Free → Launch (5 GB transfer cap reached on day 9 after launch).
