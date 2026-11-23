@@ -49,10 +49,16 @@ describe('scoreStory', () => {
 
   it('gives the outlet bonus only to news that matters (V3, 2026-11-14)', () => {
     // Minor news widely relayed (a CEO's private life, Steam Deck graphs): no bonus.
-    expect(scoreStory({ significance: 35, sourceCount: 5, bestReliability: 'high', ageHours: 1 })).toBe(36)
+    expect(
+      scoreStory({ significance: 35, sourceCount: 5, bestReliability: 'high', ageHours: 1 }),
+    ).toBe(36)
     // Liked drafts of Nov 14 still pass: Game Awards nominees date, Dawnwalker update.
-    expect(scoreStory({ significance: 45, sourceCount: 4, bestReliability: 'high', ageHours: 1 })).toBe(66)
-    expect(scoreStory({ significance: 40, sourceCount: 4, bestReliability: 'high', ageHours: 1 })).toBe(63)
+    expect(
+      scoreStory({ significance: 45, sourceCount: 4, bestReliability: 'high', ageHours: 1 }),
+    ).toBe(66)
+    expect(
+      scoreStory({ significance: 40, sourceCount: 4, bestReliability: 'high', ageHours: 1 }),
+    ).toBe(63)
   })
 
   it('counts outlets, not feeds, and treats a scene site as official for esport', () => {
@@ -125,7 +131,9 @@ describe('scoreStory', () => {
 describe('triage guide', () => {
   it('ranks industry stories about the big companies as games news (Nvidia CEO, Nov 2026)', async () => {
     const { TRIAGE_SYSTEM } = await import('./triage-prompt')
-    expect(TRIAGE_SYSTEM).toMatch(/60-75 a high-profile story about the leaders or the big companies/)
+    expect(TRIAGE_SYSTEM).toMatch(
+      /60-75 a high-profile story about the leaders or the big companies/,
+    )
     expect(TRIAGE_SYSTEM).toContain('Nvidia')
     expect(TRIAGE_SYSTEM).toMatch(/games news even when they aren't about a game/)
   })
@@ -228,6 +236,57 @@ describe('triage answer handling', () => {
     expect(d.get(1)).toEqual({ kind: 'skip' })
     expect(d.get(3)).toEqual({ kind: 'skip' }) // forgotten by the model
     expect(decide({} as never, items, []).get(0)).toEqual({ kind: 'skip' })
+  })
+
+  it('files a news story only HLTV or VLR.gg carry as esport', () => {
+    const scene: TriageItem[] = [
+      { index: 0, title: 'Virtus.pro sign Patsi', summary: '', source: 'HLTV' },
+      { index: 1, title: 'Ubisoft lays off 166', summary: '', source: 'HLTV' },
+      { index: 2, title: 'Ubisoft layoffs in Quebec', summary: '', source: 'IGN' },
+      { index: 3, title: 'CS2 update notes', summary: '', source: 'HLTV' },
+    ]
+    const d = decide(
+      {
+        new_stories: [
+          {
+            key: 'N1',
+            title: 'Virtus.pro sign Patsi',
+            game: 'Counter-Strike 2',
+            category: 'news',
+            significance: 35,
+          },
+          {
+            key: 'N2',
+            title: 'Ubisoft lays off 166 staff',
+            game: null,
+            category: 'news',
+            significance: 62,
+          },
+          {
+            key: 'N3',
+            title: 'CS2 update',
+            game: 'Counter-Strike 2',
+            category: 'leak',
+            significance: 30,
+          },
+        ],
+        assignments: [
+          { item: 0, story: 'N1' },
+          { item: 1, story: 'N2' },
+          { item: 2, story: 'N2' },
+          { item: 3, story: 'N3' },
+        ],
+      },
+      scene,
+      [],
+    )
+    const cat = (i: number) => {
+      const x = d.get(i)
+      return x?.kind === 'new' ? x.story.category : null
+    }
+    expect(cat(0)).toBe('esport') // HLTV only
+    expect(cat(1)).toBe('news') // also IGN: general news
+    expect(cat(3)).toBe('leak') // only "news" is corrected
   })
 
   it('dry run makes one story per item', () => {

@@ -2,6 +2,8 @@
 // What the model reads to group new items into stories. Pure: builds the
 // text and validates the answer, so both are unit-tested without an API call.
 
+import { SCENE_SOURCES } from './score'
+
 export const CATEGORIES = ['news', 'leak', 'review', 'preview', 'conference', 'esport'] as const
 export type Category = (typeof CATEGORIES)[number]
 
@@ -50,7 +52,7 @@ Before creating a new story, check the open stories carefully, including their g
 
 For each new story give: a short neutral English headline (no clickbait), the main game (or null), a category (news, leak, review, preview, conference, esport; review and preview are Akavish's own: other outlets' reviews, scores or Metacritic are news), and its significance from 0 to 100: how big this news is for gamers on its own, regardless of how many outlets carry it.
 Significance guide: 90+ reveal or release date of a huge game (GTA, a new Zelda, a new console), major studio acquisition or closure; 70-89 notable announcement or credible leak about a big franchise, any news about a hugely anticipated game (GTA VI, The Elder Scrolls VI, Intergalactic, a new Zelda), the fate of a known game (cancelled or not, delayed), sales records and market data on big games (Sensor Tower, Circana), a star player's transfer or a major esport final; 60-75 an official update, patch or event from the publisher of a game Akavish follows closely (Counter-Strike 2, League of Legends, Valorant, Rocket League, Rainbow Six Siege, GTA VI); 60-75 the playoffs or final days of a big esport event (CS2 Major, BLAST, IEM, ESL Pro League, Worlds, MSI, VCT Masters or Champions, RLCS Major or Worlds, Six Invitational) when a top team is involved (an upset, an elimination, a title), a star player's or coach's statement or controversy, a roster change at a top team; 60-75 a high-profile story about the leaders or the big companies of games and gaming hardware (Nvidia, AMD, Intel, Microsoft, Sony, Nintendo, Valve, Epic, Take-Two, EA, Ubisoft, Tencent): a scandal or investigation of a CEO, a lawsuit, a regulator, a boss leaving, console or graphics card prices; such stories are games news even when they aren't about a game; 40-69 regular news about a known game (update, trailer, DLC, a review of a mid-size game); below 40 small patches of other games, small indie news, routine esport matches (group stages, minor leagues and regional cups, live match coverage).
-Leaks and rumours are category "leak". Esport results, transfers and tournaments are "esport".`
+Leaks and rumours are category "leak". Esport results, transfers and tournaments are "esport", and so is almost everything from HLTV (Counter-Strike) and VLR.gg (Valorant): teams, players, rosters, invites, Majors, awards.`
 
 /** The user turn: Akavish's articles, open stories, then the new items. */
 export function triagePrompt(
@@ -159,6 +161,22 @@ export function decide(
     } else {
       out.set(item.index, { kind: 'skip' })
     }
+  }
+  // A new story only HLTV or VLR.gg carry is esport, whatever the model said:
+  // it filed CS2 roster moves, Major invites and awards from HLTV as "news",
+  // which lost them the esport scoring (2026-11-23: 10 of HLTV's 58 stories
+  // that week, against 1 of VLR.gg's 54).
+  const sources = new Map<NewStory, Set<string>>()
+  for (const item of items) {
+    const d = out.get(item.index)
+    if (d?.kind !== 'new') continue
+    const set = sources.get(d.story) ?? new Set<string>()
+    set.add(item.source)
+    sources.set(d.story, set)
+  }
+  for (const [story, names] of sources) {
+    if (story.category === 'news' && [...names].every((n) => SCENE_SOURCES.has(n)))
+      story.category = 'esport'
   }
   return out
 }

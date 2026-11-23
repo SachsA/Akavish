@@ -349,7 +349,9 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
    (0-24; outlets, not feeds: IGN France counts with IGN; only when the
    significance is 40+) + best reliability (official 25, established outlet
    15, leaker 0; HLTV and VLR.gg are official for an esport story) − age, out
-   of 100. Esport stories draft from the threshold − 10 (`thresholdFor`), in
+   of 100. A new story only HLTV or VLR.gg carry is esport even when the
+   model says "news" (`decide`, since 2026-11-23: it filed CS2 roster moves
+   and Major invites from HLTV as news). Esport stories draft from the threshold − 10 (`thresholdFor`), in
    the digest colours and the weekly report too. Each run scores the stories of the last 24 hours again
    from what's stored (`rescoreRecent`: weights and freshness apply at once;
    a listed story crossing the threshold goes back to "new"). Threshold 60 by default (*Scout settings*). Retuned on

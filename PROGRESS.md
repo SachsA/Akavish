@@ -353,7 +353,11 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
   stories against Alex's decisions: 40 drafts, 31 published, 9 rejected, 1.49 $
   for the week). "V3": outlets not feeds (IGN France = IGN), outlet bonus
   only from significance 40 (blocks widely relayed minor news), HLTV and
-  VLR.gg official for esport, esport drafts from 50. Halving platform sites
+  VLR.gg official for esport, esport drafts from 50. Nov 23, from Alex ("HLTV
+  news weigh less than VLR's"): the model had filed 10 of HLTV's 58 stories as
+  "news" (VP sign Patsi, PGL invites, the 2028 Major), against 1 of VLR's 54,
+  so they missed the esport scoring; a story only HLTV or VLR carry is now
+  esport (`decide` in `triage-prompt.ts`), and the prompt says so. Halving platform sites
   (Push Square, Pure Xbox, Nintendo Life) was tried and dropped: it cost two
   drafts Alex liked. The 6 "Doublon" rejections were all drafted on Nov 11
   before the duplicate check went live (17:32 UTC); none since, and it set 3
