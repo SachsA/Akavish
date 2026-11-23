@@ -18,9 +18,9 @@ export interface RoleBadgeStyle {
 /** Badge colours; the words (label, title) are in lib/i18n/messages (`roles`). */
 export const ROLE_BADGES: Record<Exclude<ReaderRole, 'reader'>, { className: string }> = {
   owner: { className: 'bg-amber-400 text-[#1c1917]' },
-  admin: { className: 'bg-rose-700 text-[#ffffff]' },
-  moderator: { className: 'bg-sky-700 text-[#ffffff]' },
-  author: { className: 'bg-emerald-700 text-[#ffffff]' },
+  admin: { className: 'bg-rose-700 text-on-accent' },
+  moderator: { className: 'bg-sky-700 text-on-accent' },
+  author: { className: 'bg-emerald-700 text-on-accent' },
 }
 
 export function roleBadge(role: string | null | undefined, locale: Locale = 'en'): RoleBadgeStyle | null {

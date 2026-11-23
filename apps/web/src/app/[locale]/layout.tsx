@@ -92,14 +92,14 @@ export default async function RootLayout({
               focused. Saves tabbing through the whole header on every page. */}
           <a
             href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-md focus:bg-white focus:text-zinc-950 focus:font-semibold"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-60 focus:px-4 focus:py-2 focus:rounded-md focus:bg-white focus:text-zinc-950 focus:font-semibold"
           >
             {t.header.skip}
           </a>
           <div className="min-h-screen flex flex-col">
             <Header />
             {/* tabIndex -1 so the skip link actually moves focus here (Safari). */}
-            <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+            <main id="main" tabIndex={-1} className="flex-1 focus:outline-hidden">
               {children}
             </main>
             <Footer />
@@ -122,7 +122,7 @@ function Header() {
     return c ? t.categories[c.value].label : slug
   }
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-xs">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2" aria-label={t.header.home}>
           <Wordmark className="text-xl" />
@@ -150,7 +150,7 @@ function Header() {
           so below that every section gets a swipeable strip instead. Without
           it the only way to another section from an article was the footer. */}
       <nav aria-label={t.header.allSections} className="lg:hidden border-t border-zinc-900">
-        <ul className="flex gap-1 overflow-x-auto px-2 py-1.5 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex gap-1 overflow-x-auto px-2 py-1.5 text-sm scrollbar-none [&::-webkit-scrollbar]:hidden">
           {NAV_CATEGORIES.map((c) => (
             <li key={c.slug} className="shrink-0">
               <Link

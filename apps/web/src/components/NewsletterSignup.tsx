@@ -93,7 +93,7 @@ export function NewsletterSignup({
                 autoComplete="email"
                 required
                 placeholder={t.newsletter.emailPlaceholder}
-                className="flex-1 min-w-0 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400"
+                className="flex-1 min-w-0 bg-zinc-950 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-hidden focus:border-zinc-400"
               />
               <button
                 type="submit"
@@ -105,7 +105,7 @@ export function NewsletterSignup({
             </div>
 
             {/* Honeypot: hidden from people and screen readers, filled by bots. */}
-            <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+            <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
               <label htmlFor={`${id}-website`}>{t.newsletter.website}</label>
               <input
                 id={`${id}-website`}

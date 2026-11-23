@@ -35,7 +35,7 @@ const STEP = 60
 const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 
 const field =
-  'h-9 rounded-md border border-zinc-800 bg-zinc-900 px-2 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-none'
+  'h-9 rounded-md border border-zinc-800 bg-zinc-900 px-2 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-hidden'
 
 export function GamesLibrary({
   games,
@@ -242,7 +242,7 @@ export function GamesLibrary({
               type="button"
               aria-pressed={filters.status === value}
               onClick={() => set({ status: value })}
-              className={`px-3 h-8 rounded text-sm transition-colors ${
+              className={`px-3 h-8 rounded-sm text-sm transition-colors ${
                 filters.status === value ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
               }`}
             >

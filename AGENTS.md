@@ -277,4 +277,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   dark background is `text-zinc-400` or lighter (never `zinc-500/600`), card
   images get `alt=""`, French pages pass `lang="fr"` to `ContentPage`. Light
   theme: keep writing the dark Tailwind classes (they're CSS variables that
-  flip), never raw hex; green-button text is `text-on-accent`.
+  flip), never raw hex; green-button text is `text-on-accent`. Tailwind 4
+  (since 2026-11-23): no `tailwind.config.ts`, the theme is the `@theme inline`
+  block in `apps/web/src/app/globals.css`; v4 names (`shadow-xs`,
+  `rounded-sm`, `outline-hidden`…) and `space-y-*` puts its margin under each
+  child, so a child's own `mt-*` now counts.

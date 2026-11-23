@@ -126,7 +126,7 @@ export function LanguageMenu() {
           id={menuId}
           role="menu"
           aria-label={t.language.menu}
-          className="absolute right-0 top-full mt-2 z-50 min-w-[6.5rem] rounded-lg border border-zinc-800 bg-zinc-950 py-1 shadow-xl shadow-black/40"
+          className="absolute right-0 top-full mt-2 z-50 min-w-26 rounded-lg border border-zinc-800 bg-zinc-950 py-1 shadow-xl shadow-black/40"
         >
           {CHOICES.map((choice) => (
             <li key={choice.id} role="none">

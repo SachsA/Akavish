@@ -6,7 +6,7 @@ export function Highlight({ text, query }: { text: string; query: string }) {
     <>
       {highlight(text, query).map((segment, i) =>
         segment.match ? (
-          <mark key={i} className="bg-emerald-500/25 text-inherit rounded-sm px-0.5 -mx-0.5">
+          <mark key={i} className="bg-emerald-500/25 text-inherit rounded-xs px-0.5 -mx-0.5">
             {segment.text}
           </mark>
         ) : (

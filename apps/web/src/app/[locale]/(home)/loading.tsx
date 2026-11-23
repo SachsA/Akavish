@@ -3,7 +3,7 @@
 // Keep the two in step when the home layout changes.
 
 function Bar({ className }: { className: string }) {
-  return <div className={`bg-zinc-800 rounded animate-pulse ${className}`} />
+  return <div className={`bg-zinc-800 rounded-sm animate-pulse ${className}`} />
 }
 
 export default function Loading() {
