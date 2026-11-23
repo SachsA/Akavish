@@ -223,7 +223,7 @@ function CommentForm({
         rows={replyTo ? 2 : 3}
         maxLength={MAX}
         placeholder={replyTo ? t.comments.writeReply : t.comments.writeComment}
-        className="w-full bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400"
+        className="w-full bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-hidden focus:border-zinc-400"
       />
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <button
@@ -333,7 +333,7 @@ function Comment({
         <p className="mt-1 text-sm italic text-zinc-400">{placeholder}</p>
       ) : (
         // Plain text: links and HTML are shown as typed, never turned into anything.
-        <p className="mt-1 text-sm text-zinc-200 whitespace-pre-wrap break-words">{c.body}</p>
+        <p className="mt-1 text-sm text-zinc-200 whitespace-pre-wrap wrap-break-word">{c.body}</p>
       )}
 
       {c.status !== 'deleted' && (
@@ -456,7 +456,7 @@ function ReportForm({
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, 500))}
           rows={2}
-          className="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-zinc-100 focus:outline-none focus:border-zinc-400"
+          className="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-zinc-100 focus:outline-hidden focus:border-zinc-400"
         />
       </label>
       <p className="mt-2 text-xs text-zinc-400">

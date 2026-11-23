@@ -8,7 +8,7 @@
 
 | Layer    | Tech                                                                |
 | -------- | ------------------------------------------------------------------- |
-| Web      | Next.js 16 (App Router) + TypeScript + Tailwind — runs on **:3000** |
+| Web      | Next.js 16 (App Router) + TypeScript + Tailwind 4 — runs on **:3000** |
 | CMS      | Payload 3 (standalone Next.js app) — runs on **:3001**              |
 | Mobile   | React Native + Expo + expo-router                                   |
 | Database | PostgreSQL (Neon/Supabase)                                          |

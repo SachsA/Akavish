@@ -7,7 +7,7 @@ export function ScoreBadge({ score, size = 'sm' }: { score: number; size?: 'sm' 
   const c = scoreColors(score)
   return (
     <span
-      className={`inline-flex items-center rounded-full font-bold tabular-nums leading-none shadow-sm ${
+      className={`inline-flex items-center rounded-full font-bold tabular-nums leading-none shadow-xs ${
         size === 'lg' ? 'px-3 py-1.5 text-sm' : 'px-2 py-1 text-xs'
       }`}
       style={{

@@ -172,11 +172,11 @@ export function SearchBar() {
           setOpen(true)
         }}
         onKeyDown={onKeyDown}
-        className="w-16 min-[360px]:w-[5.5rem] sm:w-44 bg-zinc-900 border border-zinc-800 rounded-md pl-3 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 sm:focus:w-56 transition-all"
+        className="w-16 min-[360px]:w-22 sm:w-44 bg-zinc-900 border border-zinc-800 rounded-md pl-3 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-hidden focus:border-zinc-400 sm:focus:w-56 transition-all"
       />
       <div
         hidden={!expanded}
-        className="fixed inset-x-4 top-14 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[26rem] z-50 rounded-lg border border-zinc-800 bg-zinc-950 shadow-xl shadow-black/40 overflow-hidden"
+        className="fixed inset-x-4 top-14 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-104 z-50 rounded-lg border border-zinc-800 bg-zinc-950 shadow-xl shadow-black/40 overflow-hidden"
       >
         <ul id={listId} role="listbox" aria-label={t.search.suggestions} className="max-h-[70vh] overflow-y-auto py-1">
           {options.map((option, i) => (
@@ -215,7 +215,7 @@ export function SearchBar() {
 
 function Thumb({ src }: { src?: string }) {
   return (
-    <span className="relative shrink-0 w-14 aspect-video rounded overflow-hidden bg-zinc-800">
+    <span className="relative shrink-0 w-14 aspect-video rounded-sm overflow-hidden bg-zinc-800">
       {src && <Image src={src} alt="" fill sizes="56px" className="object-cover" />}
     </span>
   )
@@ -227,7 +227,7 @@ function EntityRow({ entity, q }: { entity: EntityHit; q: string }) {
     <>
       <span
         aria-hidden="true"
-        className="shrink-0 w-14 aspect-video rounded bg-zinc-800 flex items-center justify-center text-base"
+        className="shrink-0 w-14 aspect-video rounded-sm bg-zinc-800 flex items-center justify-center text-base"
       >
         {entity.kind === 'platform' ? '🎮' : '🏢'}
       </span>

@@ -27,7 +27,7 @@ function renderText(node: LexicalNode, key: React.Key): React.ReactNode {
   const format = typeof node.format === 'number' ? node.format : 0
 
   if (format & IS_CODE)
-    el = <code className="bg-zinc-800 px-1 py-0.5 rounded text-sm">{el}</code>
+    el = <code className="bg-zinc-800 px-1 py-0.5 rounded-sm text-sm">{el}</code>
   if (format & IS_BOLD) el = <strong>{el}</strong>
   if (format & IS_ITALIC) el = <em>{el}</em>
   if (format & IS_UNDERLINE) el = <u>{el}</u>
