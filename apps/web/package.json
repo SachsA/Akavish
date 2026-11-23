@@ -15,7 +15,7 @@
     "@akavish/api-client": "workspace:*",
     "@akavish/types": "workspace:*",
     "@akavish/ui": "workspace:*",
-    "@clerk/localizations": "3.37.10",
+    "@clerk/localizations": "4.26.1",
     "@clerk/nextjs": "^6.0.0",
     "@sentry/nextjs": "^11.15.0",
     "@vercel/analytics": "^2.0.1",
