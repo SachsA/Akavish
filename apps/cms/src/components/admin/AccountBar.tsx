@@ -22,6 +22,7 @@ export function AccountBar() {
       </span>
       <a
         href={logoutHref}
+        className="akv-account-logout"
         style={{
           fontSize: 13,
           padding: '6px 12px',

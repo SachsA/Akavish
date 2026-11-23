@@ -49,7 +49,8 @@ test.describe('Admin Panel', () => {
   test('the header shows who is logged in and logs out', async () => {
     await page.goto('http://localhost:3001/admin')
     await expect(page.getByText(testUser.email, { exact: false }).first()).toBeVisible()
-    await page.getByRole('link', { name: 'Log out' }).click()
+    // Ours, not the side menu's (also "Log out" when the menu is open).
+    await page.locator('a.akv-account-logout').click()
     await page.waitForURL(/\/admin\/login/)
     await expect(page.locator('#field-email')).toBeVisible()
   })
