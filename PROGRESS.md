@@ -710,6 +710,12 @@ checklist it walks through.
   Untagged reads only follow their timer. CI sets `REVALIDATE_SECRET` so the
   e2e tests that edit content (French version, cover credit) use the ping. Renames shown on other pages
   (a studio's name on a game page) catch up within the hour.
+- **Editors don't see the readers.** Readers, Subscribers, saved articles and
+  followed games are admins-only (personal data), so Payload hides the whole
+  Readers group from an editor account, such as the scout's
+  (`scout@akavish.gg`). Logged in with it by mistake (2026-11-23), the admin
+  looked like it had lost them. The header now shows the logged-in email and
+  role, with a visible Log out (`src/components/admin/AccountBar.tsx`).
 - Articles must be **Published** to appear publicly; drafts are editor-only.
 - **CI and Ubuntu's apt mirrors.** GitHub runners sometimes can't resolve the
   Ubuntu mirrors; `playwright install --with-deps` then hung 25 min and failed

@@ -44,4 +44,13 @@ test.describe('Admin Panel', () => {
     const editViewArtifact = page.locator('input[name="email"]')
     await expect(editViewArtifact).toBeVisible()
   })
+
+  // Last: it ends the session the tests above share.
+  test('the header shows who is logged in and logs out', async () => {
+    await page.goto('http://localhost:3001/admin')
+    await expect(page.getByText(testUser.email, { exact: false }).first()).toBeVisible()
+    await page.getByRole('link', { name: 'Log out' }).click()
+    await page.waitForURL(/\/admin\/login/)
+    await expect(page.locator('#field-email')).toBeVisible()
+  })
 })

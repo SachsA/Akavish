@@ -535,6 +535,15 @@ description, status, date), Media has `altFr`, Tags `nameFr`, Authors `bioFr`
   `TRANSLATE_MONTHLY_BUDGET_USD` (30 $). No key → nothing is translated.
 - Tests: `src/lib/translate.test.ts` (markup round trip), `tests/int/translate.int.spec.ts`.
 
+## Admin header
+
+`src/components/admin/AccountBar.tsx` (`admin.components.actions` in
+`payload.config.ts`): the logged-in email and role next to the avatar, and a
+visible **Log out** button (Payload's own sits at the bottom of the side menu).
+Added 2026-11-23, after the scout's editor account stayed logged in and the
+admins-only Readers group looked gone. A new admin component means
+`pnpm generate:importmap` (below).
+
 ## Site refresh (on-demand revalidation)
 
 The site caches its CMS reads (5 min for lists, 1 h for the rest).

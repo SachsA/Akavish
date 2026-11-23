@@ -573,7 +573,7 @@ project → **Logs** (filter on `level:error` or the message). CMS: Payload's
 logger switches to JSON in production (`logger` in `payload.config.ts`), which
 Railway parses: service → **Logs**, filter `@level:error`. Visitor IPs and
 search terms are deliberately never logged. Retention is the platforms' own
-(about a day on Vercel Hobby): enough to investigate an incident the same
+(Vercel on Pro since 2026-11-23, see its plan's log retention): enough to investigate an incident the same
 day; ship them to an external store (e.g. Axiom's Vercel integration) if
 longer history is ever needed.
 

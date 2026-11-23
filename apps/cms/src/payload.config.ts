@@ -78,6 +78,10 @@ export default buildConfig({
     meta: {
       titleSuffix: '— Akavish CMS',
     },
+    components: {
+      // Header: the logged-in account and a visible "Log out" button.
+      actions: ['/components/admin/AccountBar#AccountBar'],
+    },
   },
   collections: [
     Users,

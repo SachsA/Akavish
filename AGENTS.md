@@ -263,7 +263,7 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   matcher and `robots.ts`); the CMS is server-side only. UptimeRobot probes
   `akavish.gg` and the CMS API (Keyword monitor: Payload 404s on `HEAD`).
   `DEPLOYMENT.md` §4d.
-- **Adding/removing a Payload plugin:** always run `pnpm generate:importmap` in
+- **Adding/removing a Payload plugin or an admin component** (`src/components/admin/`): always run `pnpm generate:importmap` in
   `apps/cms` and commit the result — a stale `importMap.js` makes the admin panel
   render a blank page.
 - **Known gotchas** (details in `PROGRESS.md` → gotchas):
