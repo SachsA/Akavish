@@ -389,7 +389,11 @@ it is (no browser User-Agent, a feed that refuses it gets unticked).
 - Nov 23: threshold 60 → **50**, Alex's call for more news (the week's report:
   ~8.7 stories a day at 60, ~13.7 at 50; 87 % of drafts published). Esport
   stays at 50 (Alex): 10 under the threshold but never below 50
-  (`ESPORT_MIN_THRESHOLD`). Raise it again if the rejections climb.
+  (`ESPORT_MIN_THRESHOLD`). Raise it again if the rejections climb. Same day:
+  the PGL Major Singapore guide (format, dates, teams) scored 46 and Alex
+  wanted it, a small cup final (Tipsport RUSH Brno, 40) not: the triage guide
+  now rates a big event's format and schedule 60-70; small results wait for
+  step 4's daily recaps.
 - Nov 11-18: running-in with automatic drafts.
 - ✅ Launch article ready (Nov 11): "GTA VI is out" (id 20), scheduled for
   Nov 18, 11:00 UTC (midnight in New Zealand, the first unlock; Rockstar:
