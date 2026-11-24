@@ -2,7 +2,6 @@
 // n). The public URL stays `?page=N`: the proxy rewrites it to /page/N, so
 // the page reads a path param instead of searchParams and can be cached.
 import { notFound } from 'next/navigation'
-import { DateText } from '@/components/DateText'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
 import type { Metadata } from 'next'
@@ -11,14 +10,12 @@ import { fetchArticles } from '@/lib/payload'
 import { categoryBySlug } from '@/lib/categories'
 import { breadcrumbList } from '@/lib/structured-data'
 import { JsonLd } from '@/components/JsonLd'
-import { ArticleCard } from '@/components/ArticleCard'
 import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
 import { Pagination } from '@/components/Pagination'
 import { ContentUnavailable, NothingYet } from '@/components/StatusMessage'
-import { autoUnit, groupByDate } from '@/lib/date-groups'
+import { autoUnit } from '@/lib/date-groups'
+import { ArticlesByDate } from '@/components/ArticlesByDate'
 import { EsportNav } from '@/components/EsportNav'
-
-
 
 /**
  * Conferences by year; esport always by day (match days, Alex 2026-11-17);
@@ -47,7 +44,11 @@ export async function listMetadata({
     title: pagedTitle(label, page),
     description: blurb,
     alternates: alternates(locale, path),
-    openGraph: { title: label, description: blurb, url: alternates(locale, path).canonical as string },
+    openGraph: {
+      title: label,
+      description: blurb,
+      url: alternates(locale, path).canonical as string,
+    },
   }
 }
 
@@ -78,8 +79,6 @@ export async function ListPage({
   // Past the last page (or a later page of an empty list): no such URL.
   if (page > 1 && page > totalPages) notFound()
   const { label, blurb } = t.categories[conf.value]
-  const now = new Date()
-  const latest = page === 1 ? articles.slice(0, 4) : []
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -98,47 +97,15 @@ export async function ListPage({
         <>
           {/* Page 1 opens on the 4 newest, whatever their date, in one row,
               so a quiet section never starts on one lonely card. Under it,
-              the full list by date (those 4 included): a heading per day
-              while the section is busy, per month when it isn't
-              (lib/date-groups.ts), always per day for esport, per year for
-              conferences. Cards use <h3>:
-              h1 → h2 → h3. */}
-          {latest.length > 0 && (
-            <section aria-labelledby="latest" className="mb-12">
-              <h2
-                id="latest"
-                className="mb-4 pb-2 border-b border-zinc-800 text-sm font-semibold uppercase tracking-wider text-zinc-400"
-              >
-                {t.section.latest}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {latest.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
-            </section>
-          )}
-          <div className="space-y-10">
-            {groupByDate(articles, dateUnit(conf.value, articles), now, locale).map((group) => (
-              <section key={group.key} aria-labelledby={`day-${group.key}`}>
-                <h2
-                  id={`day-${group.key}`}
-                  className="mb-4 pb-2 border-b border-zinc-800 text-sm font-semibold uppercase tracking-wider text-zinc-400"
-                >
-                  {group.date ? (
-                    <DateText iso={group.date} style="day" now={now.toISOString()} />
-                  ) : (
-                    group.label
-                  )}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {group.items.map((article) => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+              the full list by date: a heading per day while the section is
+              busy, per month when it isn't (lib/date-groups.ts), always per
+              day for esport, per year for conferences. */}
+          <ArticlesByDate
+            articles={articles}
+            unit={dateUnit(conf.value, articles)}
+            locale={locale}
+            latest={page === 1}
+          />
           <Pagination basePath={`/${conf.slug}`} page={page} totalPages={totalPages} />
         </>
       )}

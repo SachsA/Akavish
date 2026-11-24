@@ -3,7 +3,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import type { Article } from '@akavish/types'
-import { ArticleCard } from '@/components/ArticleCard'
+import { ArticlesByDate } from '@/components/ArticlesByDate'
 import { EsportNav } from '@/components/EsportNav'
 import { JsonLd } from '@/components/JsonLd'
 import { ContentUnavailable } from '@/components/StatusMessage'
@@ -48,7 +48,9 @@ export default async function TransfersPage({ params }: Params) {
   try {
     const tag = await fetchTagBySlug(TRANSFERS_TAG)
     if (tag) {
-      articles = (await fetchArticles({ tagId: tag.id, limit: 30, cacheTags: [TAGS.tag(TRANSFERS_TAG)] })).data
+      articles = (
+        await fetchArticles({ tagId: tag.id, limit: 30, cacheTags: [TAGS.tag(TRANSFERS_TAG)] })
+      ).data
     }
   } catch {
     articles = null
@@ -74,11 +76,8 @@ export default async function TransfersPage({ params }: Params) {
       ) : articles.length === 0 ? (
         <p className="text-zinc-400">{t.status.nothingBody(t.esport.transfers.toLowerCase())}</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {articles.map((a) => (
-            <ArticleCard key={a.id} article={a} />
-          ))}
-        </div>
+        // Like the other sections: the 4 newest, then by day (esport).
+        <ArticlesByDate articles={articles} unit="day" locale={locale} />
       )}
     </div>
   )
