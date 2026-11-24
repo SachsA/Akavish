@@ -30,6 +30,8 @@ export const TAGS = {
   platform: (slug: string) => `platform:${slug}`,
   /** An article's "Read next" and previous / next cards: only an image change drops them. */
   extras: 'article-extras',
+  /** Esport matches (PandaScore sync every 10 min, no ping: the 5 min timer). */
+  esport: 'esport',
 } as const
 
 /** How long a CMS read stays fresh without a ping, in seconds. */

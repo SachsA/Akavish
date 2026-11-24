@@ -231,7 +231,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Esport data** comes from PandaScore (`apps/cms/src/esport/`, free plan,
   `PANDASCORE_TOKEN`), never from Liquipedia pages (its terms forbid
   automated reads). `pandascore.ts` maps the API (pure, unit-tested),
-  `sync.ts` saves `esport-matches` / `esport-tournaments` every 10 min.
+  `sync.ts` saves `esport-matches` / `esport-tournaments` every 10 min. The
+  site's `/esport/results`, `/esport/calendar`, `/esport/transfers` live in
+  `app/[locale]/[category]/` (404 for any other section, `generateStaticParams`
+  lists only esport so they stay cached); filters in `lib/esport.ts`.
 - **Media sizes are WebP** (`Media.ts`, `MEDIA_SIZE_FORMAT`); the original
   stays as uploaded and the site never shows it. A new size gets
   `withoutEnlargement: true` and `formatOptions: MEDIA_SIZE_FORMAT`, then

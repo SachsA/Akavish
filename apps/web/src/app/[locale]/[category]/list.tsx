@@ -16,6 +16,7 @@ import { PAGE_SIZE, pagedTitle, pageHref, parsePage } from '@/lib/pagination'
 import { Pagination } from '@/components/Pagination'
 import { ContentUnavailable, NothingYet } from '@/components/StatusMessage'
 import { autoUnit, groupByDate } from '@/lib/date-groups'
+import { EsportNav } from '@/components/EsportNav'
 
 
 
@@ -87,6 +88,7 @@ export async function ListPage({
         <h1 className="text-4xl font-black tracking-tight text-white">{label}</h1>
         <p className="text-zinc-400 mt-2">{blurb}</p>
       </header>
+      {conf.value === 'esport' && <EsportNav active="news" />}
 
       {cmsError ? (
         <ContentUnavailable />

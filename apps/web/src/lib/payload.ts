@@ -22,6 +22,7 @@ import type { LibraryCompany, LibraryGame, Release } from './game-library'
 import { matchEntities } from './entity-match'
 import { PLATFORM_FAMILIES, sortPlatforms, type PlatformFamily, type PlatformInfo } from './platforms'
 import { CACHE, CMS_TAG, TAGS } from './revalidate'
+import { rowOf, type EsportRow } from './esport'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
@@ -933,4 +934,44 @@ export async function fetchUsedTaxonomyIds(): Promise<{
     for (const t of doc.tags ?? []) used.tags.add(String(t))
   }
   return used
+}
+
+// ─── Esport matches (PandaScore, synced by the CMS) ──────────────────────────
+
+const ESPORT_FIELDS = [
+  'pandaId', 'game', 'status', 'name', 'scheduledAt', 'beginAt', 'endAt', 'bestOf',
+  'team1', 'team2', 'score1', 'score2', 'winner', 'forfeit', 'streamUrl', 'tournament',
+]
+
+/**
+ * The results (finished in the last 3 days) or the calendar (on now and the
+ * next 7 days). The window moves once a day (midnight UTC), so the URL, and
+ * the cache with it, holds all day; the sync's new rows show within 5 min.
+ */
+export async function fetchEsportMatches(kind: 'results' | 'calendar'): Promise<EsportRow[]> {
+  const DAY = 24 * 3600 * 1000
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const t0 = today.getTime()
+  const qs = new URLSearchParams()
+  if (kind === 'results') {
+    qs.set('where[status][equals]', 'finished')
+    qs.set('where[endAt][greater_than_equal]', new Date(t0 - 3 * DAY).toISOString())
+    qs.set('sort', '-endAt')
+  } else {
+    qs.set('where[status][in]', 'not_started,running')
+    qs.set('where[beginAt][greater_than_equal]', new Date(t0 - DAY).toISOString())
+    qs.set('where[beginAt][less_than]', new Date(t0 + 8 * DAY).toISOString())
+    qs.set('sort', 'beginAt')
+  }
+  qs.set('limit', '1000')
+  qs.set('depth', '1')
+  for (const f of ESPORT_FIELDS) qs.set(`select[${f}]`, 'true')
+  for (const f of ['pandaId', 'name', 'league', 'serie', 'tier']) qs.set(`populate[esport-tournaments][${f}]`, 'true')
+  const res = await cmsFetch(`${CMS_URL}/api/esport-matches?${qs.toString()}`, {
+    next: { revalidate: CACHE.lists, tags: [TAGS.esport] },
+  })
+  if (!res.ok) throw new Error(`CMS esport matches: ${res.status}`)
+  const json = (await res.json()) as { docs?: Array<Record<string, unknown>> }
+  return (json.docs ?? []).map(rowOf).filter((r): r is EsportRow => r !== null)
 }

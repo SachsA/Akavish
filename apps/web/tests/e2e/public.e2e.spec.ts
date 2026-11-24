@@ -324,3 +324,18 @@ test('games library: console + year in the URL, upcoming, game and company pages
   await page.goto('/platform/ps9')
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('PlayStation 9')
 })
+
+test('esport: tabs for news, results, transfers and calendar; only under /esport', async ({ page }) => {
+  await page.goto('/esport')
+  const tabs = page.getByRole('navigation', { name: 'Esport sections' })
+  await expect(tabs.getByRole('link', { name: 'News' })).toHaveAttribute('aria-current', 'page')
+  await tabs.getByRole('link', { name: 'Results' }).click()
+  await expect(page).toHaveURL(/\/esport\/results$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esport results')
+  await expect(page.getByText('Match data: PandaScore.').or(page.getByText('No matches to show right now.'))).toBeVisible()
+  await page.goto('/fr/esport/calendar')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Calendrier esport')
+  await page.goto('/fr/esport/transfers')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mercato esport')
+  expect((await page.goto('/news/results'))?.status()).toBe(404)
+})

@@ -30,6 +30,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       bothLanguages(`/${c.slug}`, { lastModified: now, changeFrequency: 'daily', priority: 0.7 }),
     ),
     ...bothLanguages('/games', { lastModified: now, changeFrequency: 'daily', priority: 0.6 }),
+    ...['/esport/results', '/esport/calendar', '/esport/transfers'].flatMap((p) =>
+      bothLanguages(p, { lastModified: now, changeFrequency: 'hourly', priority: 0.6 }),
+    ),
     ...['/about', '/contact', '/privacy', '/terms', '/legal'].flatMap((p) =>
       bothLanguages(p, { lastModified: now, changeFrequency: 'yearly', priority: 0.3 }),
     ),

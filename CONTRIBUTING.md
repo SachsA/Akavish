@@ -123,7 +123,7 @@ exists in English (bare path) and French (`/fr/…`).
 
 | Where | What | Command |
 | --- | --- | --- |
-| `apps/web/src/**/*.test.ts` | Pure logic: homepage lead and category sections, JSON-LD, pagination, rate limiting, revalidation secret and cache tags, search queries and highlighting, the reader API client and role badges; the `/api/bookmarks` route (Clerk and the CMS mocked) | `pnpm test` |
+| `apps/web/src/**/*.test.ts` | Pure logic: homepage lead and category sections, esport results filters and grouping, JSON-LD, pagination, rate limiting, revalidation secret and cache tags, search queries and highlighting, the reader API client and role badges; the `/api/bookmarks` route (Clerk and the CMS mocked) | `pnpm test` |
 | `packages/api-client/src/*.test.ts` | The Payload → `Article` mapper, categories (vs the CMS), reading time | `pnpm test` |
 | `apps/mobile/src/lib/*.test.ts` | App helpers: dates, feed paging, Lexical parsing, links | `pnpm test` |
 | `apps/cms/src/**/*.test.ts`, `apps/cms/scripts/**/*.test.mjs` | CMS pure logic: the AI scout's feeds parsing, score, clock, triage answers, digests, drafts (Watch videos, share image and its alt, YouTube ids, tag and game matching and creation, duplicate check, score weights, triage of already-covered items, live page: links, merges, completions, rendering, slash command parsing), Discord signatures and buttons, weekly report, which saves refresh the site and which cache tags they drop, which images still need WebP sizes, how PandaScore matches and tournaments are read; the Markdown → Lexical article importer | `pnpm test` |
