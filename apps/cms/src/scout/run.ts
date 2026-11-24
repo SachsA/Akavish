@@ -15,6 +15,7 @@ import { postToDiscord, type DiscordMessage } from './discord'
 import { sendBotMessage } from './discord-bot'
 import { purgeOld } from './retention'
 import { rescoreRecent, triage } from './triage'
+import { maybeEsportRecap } from '../esport/recap'
 
 export interface RunOptions {
   config?: ScoutConfig
@@ -42,6 +43,8 @@ export interface RunReport {
   /** Stories whose score moved without a new item (clock, weights). */
   rescored?: number
   drafted?: number
+  /** The morning esport recap's story, when one was drafted this run. */
+  esportRecap?: number | null
   /** 1 when the running event's page changed. */
   live?: number
   digest?: string | null
@@ -95,6 +98,8 @@ export async function runScout(payload: Payload, opts: RunOptions = {}): Promise
   report.triaged = await step('triage', () => triage(ctx, settings))
   report.rescored = await step('rescore', () => rescoreRecent(ctx, settings.threshold ?? 60))
   report.drafted = await step('drafts', () => autoDraft(ctx, settings))
+  // The morning esport results recap, once a day from 8 am Paris.
+  report.esportRecap = (await step('esport recap', () => maybeEsportRecap(ctx, settings))) ?? null
   report.live = await step('live', () => runLive(ctx, settings))
   report.digest = (await step('digest', () => maybeSendDigest(ctx, settings, opts.digest))) ?? null
   await step('retention', () => purgeOld(ctx))

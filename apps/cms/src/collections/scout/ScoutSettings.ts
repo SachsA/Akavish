@@ -59,6 +59,34 @@ export const ScoutSettings: GlobalConfig = {
       },
     },
     {
+      name: 'esportRecap',
+      type: 'checkbox',
+      label: 'Morning esport recap',
+      defaultValue: true,
+      admin: {
+        description:
+          'Every morning from 8 am Paris: a draft with yesterday’s esport results (src/esport/recap.ts), from the PandaScore data. Nothing on a day without a match in the tiers below.',
+      },
+    },
+    {
+      name: 'esportRecapTiers',
+      type: 'select',
+      label: 'Esport recap: tournament tiers',
+      hasMany: true,
+      defaultValue: ['s', 'a'],
+      options: [
+        { label: 'S (Majors, Worlds…)', value: 's' },
+        { label: 'A', value: 'a' },
+        { label: 'B', value: 'b' },
+        { label: 'C', value: 'c' },
+        { label: 'D', value: 'd' },
+      ],
+      admin: {
+        description:
+          'Which tournaments the recap covers. The Results page on the site shows them all.',
+      },
+    },
+    {
       type: 'collapsible',
       label: 'Internal state',
       admin: { initCollapsed: true },
@@ -75,6 +103,14 @@ export const ScoutSettings: GlobalConfig = {
           name: 'lastEveningDigest',
           type: 'text',
           admin: { readOnly: true, description: 'Paris date of the last 8 pm digest.' },
+        },
+        {
+          name: 'lastEsportRecap',
+          type: 'text',
+          admin: {
+            readOnly: true,
+            description: 'Paris date of the matches of the last esport recap.',
+          },
         },
         {
           name: 'lastBudgetAlert',

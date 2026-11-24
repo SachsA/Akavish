@@ -234,7 +234,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `sync.ts` saves `esport-matches` / `esport-tournaments` every 10 min. The
   site's `/esport/results`, `/esport/calendar`, `/esport/transfers` live in
   `app/[locale]/[category]/` (404 for any other section, `generateStaticParams`
-  lists only esport so they stay cached); filters in `lib/esport.ts`.
+  lists only esport so they stay cached); filters in `lib/esport.ts`. The
+  morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris).
 - **Media sizes are WebP** (`Media.ts`, `MEDIA_SIZE_FORMAT`); the original
   stays as uploaded and the site never shows it. A new size gets
   `withoutEnlargement: true` and `formatOptions: MEDIA_SIZE_FORMAT`, then

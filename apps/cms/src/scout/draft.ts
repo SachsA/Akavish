@@ -80,7 +80,9 @@ async function sourcesFor(ctx: ScoutContext, storyId: number, read = true): Prom
   const empty: PageRead = { text: '', image: null, imageAlt: null, videos: [] }
   const pages = await Promise.all(
     chosen.map(({ item }, i) =>
-      read && i < PAGES_TO_READ && !ctx.config.dryRun
+      // Our own pages (the esport recap's results page) aren't read: the
+      // item's text is the source (src/esport/recap.ts).
+      read && i < PAGES_TO_READ && !ctx.config.dryRun && !/^https:\/\/akavish\.gg\//.test(item.url)
         ? fetchPage(item.url, ctx.fetch)
         : Promise.resolve(empty),
     ),
@@ -293,12 +295,17 @@ export async function draftStory(
   let gameName = gameList.find((g) => g.id === gameId)?.name
   let newGameId: number | null = null
   const sameGame = (name: string) =>
-    name.toLowerCase().replace(/[^a-z0-9]+/g, '') === clean.game?.toLowerCase().replace(/[^a-z0-9]+/g, '')
+    name.toLowerCase().replace(/[^a-z0-9]+/g, '') ===
+    clean.game?.toLowerCase().replace(/[^a-z0-9]+/g, '')
   let gameFacts = clean.game_facts
   if (!gameId && clean.game && clean.game_is_new && !ctx.config.dryRun) {
     // The article links its game: a new one is created now, with what the
     // sources say about it (deleted again if the draft is rejected).
-    newGameId = gameId = await createGame(ctx, clean.game, gameFacts.find((f) => sameGame(f.game)))
+    newGameId = gameId = await createGame(
+      ctx,
+      clean.game,
+      gameFacts.find((f) => sameGame(f.game)),
+    )
     gameName = clean.game
     gameFacts = gameFacts.filter((f) => !sameGame(f.game))
   }
@@ -670,7 +677,11 @@ export async function publishStory(ctx: ScoutContext, storyId: number): Promise<
   const article = await ctx.payload.update({
     collection: 'articles',
     id: articleRef,
-    data: { _status: 'published', status: 'published', relatedGames: related.slice(0, 12) } as never,
+    data: {
+      _status: 'published',
+      status: 'published',
+      relatedGames: related.slice(0, 12),
+    } as never,
     overrideAccess: true,
   })
   await ctx.payload.update({

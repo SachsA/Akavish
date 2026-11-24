@@ -565,6 +565,15 @@ real API: `GET /api/esport/raw?game=cs2&list=past` logged in as an editor
 (the raw first match and how it's read). Both collections are public (the
 site reads them) and read-only in practice: the next sync overwrites edits.
 
+**Morning recap** (`src/esport/recap.ts`, called by the scout's run): from
+8 am Paris, once a day (`lastEsportRecap`), yesterday's finished matches in
+*Scout settings → Esport recap: tournament tiers* (S and A by default)
+become a story with one item (source "Esport results (PandaScore)", never
+collected) whose text lists every match with its exact score, then a draft
+through the normal pipeline (Discord card, Publish / Edit / Reject, French
+after publish). A day without a match in those tiers: no recap. Off: untick
+*Morning esport recap*.
+
 ## Site refresh (on-demand revalidation)
 
 The site caches its CMS reads (5 min for lists, 1 h for the rest).
