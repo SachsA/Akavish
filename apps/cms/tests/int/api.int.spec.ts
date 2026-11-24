@@ -328,3 +328,69 @@ describe('media sizes in WebP', () => {
     }
   })
 })
+
+describe('esport sync (PandaScore)', () => {
+  it('saves matches and tournaments once, updates a changed match', async () => {
+    const { saveGame } = await import('@/esport/sync')
+    const base = 900_000_000 + Math.floor(Math.random() * 1_000_000)
+    const raw = {
+      id: base,
+      name: 'Final',
+      status: 'running',
+      begin_at: '2026-11-24T10:00:00Z',
+      modified_at: '2026-11-24T10:00:00Z',
+      number_of_games: 3,
+      opponents: [
+        { type: 'Team', opponent: { id: base + 1, name: 'A' } },
+        { type: 'Team', opponent: { id: base + 2, name: 'B' } },
+      ],
+      results: [
+        { team_id: base + 1, score: 1 },
+        { team_id: base + 2, score: 0 },
+      ],
+      league: { name: 'IEM' },
+      serie: { full_name: 'Test 2026' },
+      tournament: { id: base, name: 'Playoffs', tier: 'a' },
+    }
+    try {
+      expect(await saveGame(payload, 'cs2', [raw])).toMatchObject({ created: 1, updated: 0 })
+      expect(await saveGame(payload, 'cs2', [raw])).toMatchObject({ created: 0, updated: 0 })
+      const done = {
+        ...raw,
+        status: 'finished',
+        winner_id: base + 1,
+        modified_at: '2026-11-24T12:00:00Z',
+        results: [
+          { team_id: base + 1, score: 2 },
+          { team_id: base + 2, score: 0 },
+        ],
+      }
+      expect(await saveGame(payload, 'cs2', [done])).toMatchObject({ created: 0, updated: 1 })
+      const { docs } = await payload.find({
+        collection: 'esport-matches',
+        where: { pandaId: { equals: base } },
+        depth: 1,
+        overrideAccess: true,
+      })
+      const m = docs[0] as unknown as {
+        status: string
+        score1: number
+        winner: number
+        tournament: { tier: string; league: string }
+      }
+      expect([m.status, m.score1, m.winner]).toEqual(['finished', 2, 1])
+      expect(m.tournament).toMatchObject({ tier: 'a', league: 'IEM' })
+    } finally {
+      await payload.delete({
+        collection: 'esport-matches',
+        where: { pandaId: { equals: base } },
+        overrideAccess: true,
+      })
+      await payload.delete({
+        collection: 'esport-tournaments',
+        where: { pandaId: { equals: base } },
+        overrideAccess: true,
+      })
+    }
+  })
+})

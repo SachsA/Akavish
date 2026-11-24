@@ -22,6 +22,7 @@ import * as migration_20261117_104444_drop_old_game_fields from './20261117_1044
 import * as migration_20261118_085243_game_follows from './20261118_085243_game_follows';
 import * as migration_20261118_125206_live_rehearsal from './20261118_125206_live_rehearsal';
 import * as migration_20261118_154700_platforms_collection from './20261118_154700_platforms_collection';
+import * as migration_20261124_133651_esport_data from './20261124_133651_esport_data';
 
 export const migrations = [
   {
@@ -143,5 +144,10 @@ export const migrations = [
     up: migration_20261118_154700_platforms_collection.up,
     down: migration_20261118_154700_platforms_collection.down,
     name: '20261118_154700_platforms_collection'
+  },
+  {
+    up: migration_20261124_133651_esport_data.up,
+    down: migration_20261124_133651_esport_data.down,
+    name: '20261124_133651_esport_data'
   },
 ];

@@ -1605,6 +1605,7 @@ The site is in English and French (`/fr`). Interface text lives in the web
 | `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |
 | `SCOUT_DISCORD_LIVE_CHANNEL_ID` / `_BUDGET_` / `_REPORT_` | `…` (optional) | Channels of their own for `/live`, the budget alerts and the weekly report; unset = the scout channel (§11) |
 | `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
+| `PANDASCORE_TOKEN`    | PandaScore dashboard (free plan) | **Secret**, esport matches and tournaments every 10 min (`apps/cms/README.md` → Esport); unset = no esport data |
 | `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
 | `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |
 | `MODERATION_DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/…` | **Secret**, comment reports (§6.5c) |

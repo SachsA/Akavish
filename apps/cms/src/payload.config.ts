@@ -24,6 +24,9 @@ import { ScoutSources } from './collections/scout/ScoutSources'
 import { ScoutStories } from './collections/scout/ScoutStories'
 import { ScoutEvents } from './collections/scout/ScoutEvents'
 import { ScoutUsage } from './collections/scout/ScoutUsage'
+import { EsportMatches } from './collections/esport/EsportMatches'
+import { EsportTournaments } from './collections/esport/EsportTournaments'
+import { esportRawHandler, runEsportSync } from './esport/sync'
 import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
 import { scoutConfig } from './scout/config'
 import { registerCommands } from './scout/discord-commands'
@@ -109,6 +112,9 @@ export default buildConfig({
     ScoutStories,
     ScoutUsage,
     ScoutEvents,
+    // Esport schedules and results from PandaScore (src/esport/).
+    EsportTournaments,
+    EsportMatches,
   ],
   globals: [ScoutSettings, CommunitySettings],
   // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).
@@ -123,6 +129,8 @@ export default buildConfig({
     { path: '/translate/backfill', method: 'post', handler: translateBackfillHandler },
     // Re-make the sizes of images uploaded before WebP (lib/media-webp.ts).
     { path: '/media-webp', method: 'post', handler: mediaWebpHandler },
+    // One raw PandaScore match, to check the mapping (src/esport/sync.ts).
+    { path: '/esport/raw', method: 'get', handler: esportRawHandler },
     // Drop the site's whole cache by hand (lib/revalidate-web.ts).
     { path: '/revalidate-web', method: 'post', handler: revalidateAllHandler },
     // Which articles are live showcase pages right now (public: ids only).
@@ -170,6 +178,8 @@ export default buildConfig({
       // French translations (lib/translate.ts): long Claude calls, on their
       // own queue so they never hold up a scheduled publish.
       { cron: '* * * * *', queue: 'translate', limit: 5 },
+      // Esport results and schedules (src/esport/sync.ts).
+      { cron: '* * * * *', queue: 'esport' },
     ],
     tasks: [
       {
@@ -256,6 +266,18 @@ export default buildConfig({
         handler: async ({ req }) => {
           await runScout(req.payload)
           return { output: {} }
+        },
+      },
+      {
+        // Every 10 minutes: matches and tournaments from PandaScore. Does
+        // nothing without PANDASCORE_TOKEN; declared either way so the schema
+        // doesn't depend on an env var.
+        slug: 'esportSync',
+        schedule: [{ cron: '0 */10 * * * *', queue: 'esport' }],
+        retries: 0,
+        handler: async ({ req }) => {
+          const results = await runEsportSync(req.payload)
+          return { output: { results } }
         },
       },
       {

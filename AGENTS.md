@@ -228,6 +228,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   pass the Payload size that fits (`coverImageCard` for cards, `coverImage`
   = hero for an article's top, `mediaUrl(m, 'square')` for avatars), never the
   original. PROGRESS gotchas.
+- **Esport data** comes from PandaScore (`apps/cms/src/esport/`, free plan,
+  `PANDASCORE_TOKEN`), never from Liquipedia pages (its terms forbid
+  automated reads). `pandascore.ts` maps the API (pure, unit-tested),
+  `sync.ts` saves `esport-matches` / `esport-tournaments` every 10 min.
 - **Media sizes are WebP** (`Media.ts`, `MEDIA_SIZE_FORMAT`); the original
   stays as uploaded and the site never shows it. A new size gets
   `withoutEnlargement: true` and `formatOptions: MEDIA_SIZE_FORMAT`, then

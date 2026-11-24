@@ -551,6 +551,20 @@ Added 2026-11-23, after the scout's editor account stayed logged in and the
 admins-only Readers group looked gone. A new admin component means
 `pnpm generate:importmap` (below).
 
+## Esport data (PandaScore)
+
+`src/esport/`: every 10 minutes the `esportSync` task (queue `esport`) reads
+PandaScore's REST API for CS2 (`csgo`), Valorant, LoL, R6 (`r6siege`) and
+Rocket League (`rl`): the running matches, the next 7 days and the last 3
+days, and saves them in **Esport matches** / **Esport tournaments** (by
+PandaScore id; a match is rewritten only when its `modified_at` changes).
+Free plan (1,000 requests an hour, we use ~150): schedules, scores, winner,
+tournaments with their tier (S > A > B > C > D), team names and logos, no
+per-map stats. Off without `PANDASCORE_TOKEN`. To check the mapping on the
+real API: `GET /api/esport/raw?game=cs2&list=past` logged in as an editor
+(the raw first match and how it's read). Both collections are public (the
+site reads them) and read-only in practice: the next sync overwrites edits.
+
 ## Site refresh (on-demand revalidation)
 
 The site caches its CMS reads (5 min for lists, 1 h for the rest).

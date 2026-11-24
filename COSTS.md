@@ -31,6 +31,7 @@ VAT, on the 29th), used to build the site.
 | --- | --- | --- |
 | Cloudflare | DNS, R2 media (`media.akavish.gg`) + backups, email routing | R2: 10 GB storage free, no egress fees |
 | Resend | Newsletter confirmation emails | 100 emails/day |
+| PandaScore | Esport schedules, results, tournaments (scout step 4, since 2026-11-24) | Free plan: 1,000 requests an hour (we use ~150), no detailed stats. Paid plans start at 400 €/month per game: not needed. Liquipedia's data API (49 $/month per data type and game) was ruled out |
 | Sentry | Error tracking | Free tier's events/month |
 | UptimeRobot | Uptime checks (web + CMS) | Free plan |
 | GitHub | Code, CI, backup workflow | Free for this repo |
@@ -43,7 +44,6 @@ VAT, on the 29th), used to build the site.
 | X API | Scout step 3 (leakers), "Sign in with X" | Pay per use, ~0.005 $ per post read: ~20-90 $/month for about 30 accounts |
 | Meilisearch Cloud | Faster, typo-tolerant search (+ French index) | Usage based, probably ~30 $/month and up (exact price in their console) |
 | Resend paid | Sending the newsletter past ~100 emails/day | ~20 $/month |
-| Esport data | Scout step 4 (results, schedules) | Liquipedia free, PandaScore paid: compare first |
 | Staging | A copy of the site to test on | ~5-10 $/month (Railway service + Neon branch) |
 | Mobile app stores | Publishing the app | Apple 99 $/year, Google Play 25 $ once |
 | Legal review | Legal pages checked by a lawyer | One-off |
@@ -52,6 +52,7 @@ With the X API and the newsletter: plan on ~120-170 $/month.
 
 ## Log
 
+- 2026-11-24: esport data from PandaScore's free plan (Liquipedia's API would have been ~500 $/month for results + transfers on 5 games).
 - 2026-11-23: real bills in: Railway ~6 $ (not 10-15), Neon ~0 so far (not ~20), Anthropic ~10-20 $, domain 50.80 $/year, and Clerk Pro 30 $/month since 2026-11-10 (was listed as free; needed for OAuth in production).
 - 2026-11-23: Vercel Hobby → Pro (20 $/month). First day: 0.38 $ of usage, 0.31 $ of it build minutes, so pushes that don't touch the site no longer build it (`DEPLOYMENT.md` §3).
 - 2026-11-19: site cache refresh made targeted, timers 5 min / 1 h (Vercel ISR writes were at 137K of 200K, CPU at 2h23 of 4h): stays on Hobby.
