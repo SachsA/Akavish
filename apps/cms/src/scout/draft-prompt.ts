@@ -614,6 +614,20 @@ export function describeRelease(r: Release, label: (p: PlatformRef) => string = 
 }
 
 
+/** Names the model may not create: roster news goes under Transfers (Mercato). */
+export const ROSTER_TAG_WORDS = [
+  'roster',
+  'rosters',
+  'roster moves',
+  'roster move',
+  'roster changes',
+  'roster change',
+  'transfer',
+  'transfers',
+  'mercato',
+  'player transfers',
+]
+
 /**
  * The tags to create for a draft: at most `room` (2 at most), each 2 to 30
  * characters, not already a tag (any case), not the game, the category or a
@@ -635,6 +649,9 @@ export function cleanNewTags(
       'news',
       'video games',
       'games',
+      // Roster news has one tag, Transfers (FR Mercato), added from the story's
+      // esport kind (draft.ts). "Roster Moves" was merged into it on 2026-11-24.
+      ...ROSTER_TAG_WORDS,
     ].map(norm),
   )
   const out: string[] = []

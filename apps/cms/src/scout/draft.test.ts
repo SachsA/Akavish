@@ -280,7 +280,10 @@ describe('Discord bot', () => {
   })
 
   it('photo_hint is kept for esport only', () => {
-    const esport = cleanDraft(answer({ category: 'esport', photo_hint: ' FURIA lifting the trophy ' } as never), 'esport')
+    const esport = cleanDraft(
+      answer({ category: 'esport', photo_hint: ' FURIA lifting the trophy ' } as never),
+      'esport',
+    )
     expect(esport.photo_hint).toBe('FURIA lifting the trophy')
     const news = cleanDraft(answer({ category: 'news', photo_hint: 'x' } as never), 'news')
     expect(news.photo_hint).toBe('')
@@ -375,10 +378,16 @@ describe('game facts', () => {
         { platforms: [], date: null, precision: 'tba' },
       ],
     })
-    expect(cleanGameFacts(undefined)).toEqual({ developers: [], publishers: [], genres: [], releases: [] })
+    expect(cleanGameFacts(undefined)).toEqual({
+      developers: [],
+      publishers: [],
+      genres: [],
+      releases: [],
+    })
     // A console the site doesn't have yet keeps its official name (created on Publish).
     expect(
-      cleanGameFacts({ releases: [{ platforms: ['pc', ' PlayStation  6 ', 7], date: '2028' }] }).releases,
+      cleanGameFacts({ releases: [{ platforms: ['pc', ' PlayStation  6 ', 7], date: '2028' }] })
+        .releases,
     ).toEqual([{ platforms: ['pc', 'PlayStation 6'], date: '2028-01-01', precision: 'year' }])
   })
 
@@ -386,7 +395,10 @@ describe('game facts', () => {
     const facts = cleanDraft(
       answer({
         game_facts: [
-          { game: ' Metro 2039 ', releases: [{ platforms: ['pc', 'ps5', 'xbox-series'], date: '2027-02-04' }] },
+          {
+            game: ' Metro 2039 ',
+            releases: [{ platforms: ['pc', 'ps5', 'xbox-series'], date: '2027-02-04' }],
+          },
           { game: 'metro 2039', releases: [{ date: '2028' }] },
           { game: 'Nothing Said', genres: ['RPG'] },
           { game: 'New Game', is_new: true, publishers: ['Sega'] },
@@ -398,14 +410,20 @@ describe('game facts', () => {
       ['Metro 2039', false],
       ['New Game', true],
     ])
-    expect(facts[0].releases[0]).toEqual({ platforms: ['pc', 'ps5', 'xbox-series'], date: '2027-02-04', precision: 'day' })
+    expect(facts[0].releases[0]).toEqual({
+      platforms: ['pc', 'ps5', 'xbox-series'],
+      date: '2027-02-04',
+      precision: 'day',
+    })
   })
 
   it('describes a release for Discord', () => {
-    expect(describeRelease({ platforms: ['ps5', 'xbox-series'], date: '2026-11-19', precision: 'day' })).toBe(
-      'PlayStation 5, Xbox Series X|S · Nov 19, 2026',
+    expect(
+      describeRelease({ platforms: ['ps5', 'xbox-series'], date: '2026-11-19', precision: 'day' }),
+    ).toBe('PlayStation 5, Xbox Series X|S · Nov 19, 2026')
+    expect(describeRelease({ platforms: [], date: '2027-07-01', precision: 'quarter' })).toBe(
+      'Q3 2027',
     )
-    expect(describeRelease({ platforms: [], date: '2027-07-01', precision: 'quarter' })).toBe('Q3 2027')
     expect(describeRelease({ platforms: ['pc'], date: null, precision: 'tba' })).toBe('PC · TBA')
   })
 })
@@ -421,6 +439,12 @@ describe('cleanNewTags', () => {
         ['The Outer Worlds 2'],
       ),
     ).toEqual(['Nintendo', 'Studio closures'])
+  })
+
+  it('never creates a second roster tag next to Transfers (Mercato)', () => {
+    expect(
+      cleanNewTags(['Roster Moves', 'Mercato', 'roster changes', 'Sentinels'], existing),
+    ).toEqual(['Sentinels'])
   })
 
   it('respects the room left under 5 tags and the length limits', () => {

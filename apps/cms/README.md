@@ -363,7 +363,9 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
    `other`; null on any other category, `other` when the model gives none.
    A `result` is never auto-drafted (the morning recap below covers it); a
    `transfer` draft gets the tag `transfers` (FR "Mercato", created on first
-   use), which fills `/esport/transfers`. Esport stories draft from the threshold − 10, never under 50 (`thresholdFor`), in
+   use), which fills `/esport/transfers`. It is the only roster tag: the
+   older "Roster Moves" was merged into it on 2026-11-24 and the draft model
+   can't create another (`ROSTER_TAG_WORDS`, `draft-prompt.ts`). Esport stories draft from the threshold − 10, never under 50 (`thresholdFor`), in
    the digest colours and the weekly report too. Each run scores the stories of the last 24 hours again
    from what's stored (`rescoreRecent`: weights and freshness apply at once;
    a listed story crossing the threshold goes back to "new"). Threshold 60 by default (*Scout settings*), set to 50 in production since 2026-11-23. Retuned on

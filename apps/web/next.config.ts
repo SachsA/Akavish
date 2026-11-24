@@ -42,6 +42,9 @@ const nextConfig: NextConfig = {
       { source: '/fr/confidentialite', destination: '/fr/privacy', permanent: true },
       { source: '/fr/conditions', destination: '/fr/terms', permanent: true },
       { source: '/fr/mentions-legales', destination: '/fr/legal', permanent: true },
+      // The "Roster Moves" tag was merged into Transfers (Mercato) on 2026-11-24.
+      { source: '/tag/roster-moves', destination: '/tag/transfers', permanent: true },
+      { source: '/fr/tag/roster-moves', destination: '/fr/tag/transfers', permanent: true },
     ]
   },
   transpilePackages: ['@akavish/ui', '@akavish/types', '@akavish/api-client'],
