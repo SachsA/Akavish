@@ -320,6 +320,7 @@ export async function triage(ctx: ScoutContext, settings: SettingsDoc): Promise<
             game: d.story.game,
             category: d.story.category,
             significance: d.story.significance,
+            esportKind: d.story.esportKind ?? null,
             status: 'new',
             score: 0,
             firstSeenAt: (item.publishedAt ?? item.createdAt) as string,

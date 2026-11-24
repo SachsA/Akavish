@@ -7,6 +7,10 @@ import { SCENE_SOURCES } from './score'
 export const CATEGORIES = ['news', 'leak', 'review', 'preview', 'conference', 'esport'] as const
 export type Category = (typeof CATEGORIES)[number]
 
+/** What an esport story is about (step 4): transfers go to the Mercato, plain results to the morning recap. */
+export const ESPORT_KINDS = ['transfer', 'final', 'result', 'tournament', 'other'] as const
+export type EsportKind = (typeof ESPORT_KINDS)[number]
+
 export interface TriageItem {
   /** Position in the batch, used as the item's id in the prompt. */
   index: number
@@ -33,6 +37,8 @@ export interface NewStory {
   game: string | null
   category: Category
   significance: number
+  /** Esport stories only. */
+  esportKind?: EsportKind | null
 }
 
 export interface TriageAnswer {
@@ -52,7 +58,13 @@ Before creating a new story, check the open stories carefully, including their g
 
 For each new story give: a short neutral English headline (no clickbait), the main game (or null), a category (news, leak, review, preview, conference, esport; review and preview are Akavish's own: other outlets' reviews, scores or Metacritic are news), and its significance from 0 to 100: how big this news is for gamers on its own, regardless of how many outlets carry it.
 Significance guide: 90+ reveal or release date of a huge game (GTA, a new Zelda, a new console), major studio acquisition or closure; 70-89 notable announcement or credible leak about a big franchise, any news about a hugely anticipated game (GTA VI, The Elder Scrolls VI, Intergalactic, a new Zelda), the fate of a known game (cancelled or not, delayed), sales records and market data on big games (Sensor Tower, Circana), a star player's transfer or a major esport final; 60-75 an official update, patch or event from the publisher of a game Akavish follows closely (Counter-Strike 2, League of Legends, Valorant, Rocket League, Rainbow Six Siege, GTA VI); 60-75 the playoffs or final days of a big esport event (CS2 Major, BLAST, IEM, ESL Pro League, Worlds, MSI, VCT Masters or Champions, RLCS Major or Worlds, Six Invitational) when a top team is involved (an upset, an elimination, a title), a star player's or coach's statement or controversy, a roster change at a top team; 60-70 the format, schedule, teams or invites of one of those big events, as it starts (a CS2 Major's stages and dates); 60-75 a high-profile story about the leaders or the big companies of games and gaming hardware (Nvidia, AMD, Intel, Microsoft, Sony, Nintendo, Valve, Epic, Take-Two, EA, Ubisoft, Tencent): a scandal or investigation of a CEO, a lawsuit, a regulator, a boss leaving, console or graphics card prices; such stories are games news even when they aren't about a game; 40-69 regular news about a known game (update, trailer, DLC, a review of a mid-size game); below 40 small patches of other games, small indie news, routine esport matches (group stages, minor leagues and regional cups, live match coverage).
-Leaks and rumours are category "leak". Esport results, transfers and tournaments are "esport", and so is almost everything from HLTV (Counter-Strike) and VLR.gg (Valorant): teams, players, rosters, invites, Majors, awards.`
+Leaks and rumours are category "leak". Esport results, transfers and tournaments are "esport", and so is almost everything from HLTV (Counter-Strike) and VLR.gg (Valorant): teams, players, rosters, invites, Majors, awards.
+For an esport story, also give esport_kind (null for any other category):
+- "transfer": a signing, a departure, a benching, a player or coach leaving, a team "allowing a player to explore options", a roster announced or completed, a team entering or leaving a game;
+- "final": a title won or the grand final of a notable tournament (a CS2 Major, BLAST, IEM, ESL Pro League, PGL, Worlds, MSI, LEC/LCK/LPL/LTA finals, VCT Masters or Champions, an RLCS Major or Worlds, the Six Invitational or a Six Major, the Esports World Cup…);
+- "result": any other match or series result, a team going through or out of a group or a stage, standings, a qualifier result, live coverage of matches;
+- "tournament": a tournament's announcement, format, dates, venue, invites, teams, prize pool, a league's changes;
+- "other": anything else (a player's statement, an award, a controversy, a ban).`
 
 /** The user turn: Akavish's articles, open stories, then the new items. */
 export function triagePrompt(
@@ -89,6 +101,11 @@ export const TRIAGE_TOOL = {
             game: { type: ['string', 'null'] },
             category: { type: 'string', enum: [...CATEGORIES] },
             significance: { type: 'integer', minimum: 0, maximum: 100 },
+            esport_kind: {
+              type: ['string', 'null'],
+              enum: [...ESPORT_KINDS, null],
+              description: 'Esport stories only, null otherwise.',
+            },
           },
           required: ['key', 'title', 'game', 'category', 'significance'],
         },
@@ -115,6 +132,11 @@ export type Decision =
   | { kind: 'covered'; articleId: number }
   | { kind: 'skip' }
 
+const esportKindOf = (v: unknown): EsportKind | null =>
+  typeof v === 'string' && (ESPORT_KINDS as readonly string[]).includes(v)
+    ? (v as EsportKind)
+    : null
+
 /**
  * Turn the model's answer into one decision per item. Defensive: an item the
  * model forgot, a story id that isn't open, or a new-story key it never
@@ -138,6 +160,7 @@ export function decide(
       game: typeof s.game === 'string' && s.game.trim() ? s.game.trim().slice(0, 100) : null,
       category: (CATEGORIES as readonly string[]).includes(s.category) ? s.category : 'news',
       significance: Math.max(0, Math.min(100, Math.round(Number(s.significance) || 0))),
+      esportKind: esportKindOf((s as unknown as { esport_kind?: unknown }).esport_kind),
     })
   }
 
@@ -177,6 +200,11 @@ export function decide(
   for (const [story, names] of sources) {
     if (story.category === 'news' && [...names].every((n) => SCENE_SOURCES.has(n)))
       story.category = 'esport'
+  }
+  // The esport kind only means something on an esport story.
+  for (const s of newStories.values()) {
+    if (s.category !== 'esport') s.esportKind = null
+    else if (!s.esportKind) s.esportKind = 'other'
   }
   return out
 }

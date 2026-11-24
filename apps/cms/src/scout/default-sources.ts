@@ -301,6 +301,37 @@ export const DEFAULT_SOURCES: DefaultSource[] = [
     cadence: 'normal',
     language: 'en',
   },
+  // Step 4 (2026-11-24): LoL, R6 and Rocket League beyond CS2 / Valorant.
+  // Sheep Esports, Dot Esports and esports.gg's per-game feeds answer 403 to
+  // the scout: not used. Dexerto's per-game feeds count as Dexerto (score.ts).
+  {
+    name: 'Dexerto LoL',
+    url: 'https://www.dexerto.com/league-of-legends/feed/',
+    reliability: 'high',
+    cadence: 'normal',
+    language: 'en',
+  },
+  {
+    name: 'Dexerto Rainbow Six',
+    url: 'https://www.dexerto.com/rainbow-six/feed/',
+    reliability: 'high',
+    cadence: 'normal',
+    language: 'en',
+  },
+  {
+    name: 'Dexerto Rocket League',
+    url: 'https://www.dexerto.com/rocket-league/feed/',
+    reliability: 'high',
+    cadence: 'normal',
+    language: 'en',
+  },
+  {
+    name: 'esports.gg',
+    url: 'https://esports.gg/feed/',
+    reliability: 'high',
+    cadence: 'normal',
+    language: 'en',
+  },
   {
     name: 'Dexerto',
     url: 'https://www.dexerto.com/feed/',

@@ -24,6 +24,7 @@ import * as migration_20261118_125206_live_rehearsal from './20261118_125206_liv
 import * as migration_20261118_154700_platforms_collection from './20261118_154700_platforms_collection';
 import * as migration_20261124_133651_esport_data from './20261124_133651_esport_data';
 import * as migration_20261124_153105_esport_recap from './20261124_153105_esport_recap';
+import * as migration_20261124_160303_esport_kind from './20261124_160303_esport_kind';
 
 export const migrations = [
   {
@@ -155,5 +156,10 @@ export const migrations = [
     up: migration_20261124_153105_esport_recap.up,
     down: migration_20261124_153105_esport_recap.down,
     name: '20261124_153105_esport_recap'
+  },
+  {
+    up: migration_20261124_160303_esport_kind.up,
+    down: migration_20261124_160303_esport_kind.down,
+    name: '20261124_160303_esport_kind'
   },
 ];

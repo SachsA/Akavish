@@ -43,7 +43,12 @@ import type { Reliability } from './default-sources'
 //    (ESPORT_THRESHOLD_OFFSET): the week's best esport news (TenZ back with
 //    T1, Fluxo pausing its CS team, MOUZ world No. 1) all sat at 45-48.
 
-export const OUTLET_GROUPS: Record<string, string> = { 'IGN France': 'IGN' }
+export const OUTLET_GROUPS: Record<string, string> = {
+  'IGN France': 'IGN',
+  'Dexerto LoL': 'Dexerto',
+  'Dexerto Rainbow Six': 'Dexerto',
+  'Dexerto Rocket League': 'Dexerto',
+}
 export const SCENE_SOURCES = new Set(['HLTV', 'VLR.gg'])
 export const SOURCE_BONUS_MIN_SIGNIFICANCE = 40
 export const ESPORT_THRESHOLD_OFFSET = 10
@@ -99,7 +104,10 @@ export interface SourceRef {
 }
 
 /** The reliability that counts: a scene's own site is official for its esport news. */
-export function effectiveReliability(category: string | null | undefined, sources: SourceRef[]): Reliability {
+export function effectiveReliability(
+  category: string | null | undefined,
+  sources: SourceRef[],
+): Reliability {
   if (category === 'esport' && sources.some((s) => SCENE_SOURCES.has(s.name))) return 'official'
   return bestOf(sources.map((s) => s.reliability))
 }

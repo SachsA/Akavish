@@ -1268,7 +1268,7 @@ Automatic drafts are **off** until you tick *Scout settings → draftsEnabled*.
    post to that channel; if it ever leaks, delete the webhook and create a new one.
 3. **Railway → CMS service → Variables:** `ANTHROPIC_API_KEY`,
    `SCOUT_DISCORD_WEBHOOK_URL`, `SCOUT_ENABLED=true`. Redeploy.
-4. Within 5 minutes, `/admin` → **Scout** → *Scout sources* fills with the 38
+4. Within 5 minutes, `/admin` → **Scout** → *Scout sources* fills with the 42
    default feeds and their status (`ok, 12 new`, `HTTP 403`…). The first digest
    comes at the next 8 am or 8 pm.
 

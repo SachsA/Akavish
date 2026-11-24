@@ -69,6 +69,23 @@ export const ScoutStories: CollectionConfig = {
       ],
     },
     {
+      // Esport stories only (step 4): transfers get the Mercato tag, plain
+      // match results are left to the morning recap (src/esport/recap.ts).
+      name: 'esportKind',
+      type: 'select',
+      options: [
+        { label: 'Transfer / roster', value: 'transfer' },
+        { label: 'Final / title', value: 'final' },
+        { label: 'Match result', value: 'result' },
+        { label: 'Tournament news', value: 'tournament' },
+        { label: 'Other', value: 'other' },
+      ],
+      admin: {
+        description:
+          'Esport only. "Match result" is never drafted automatically: the morning recap covers it.',
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       required: true,

@@ -56,6 +56,24 @@ type StoryWithDraft = StoryDoc & {
 
 const RANK = { official: 0, high: 1, variable: 2 } as const
 
+/** The Mercato tag (slug `transfers`, French "Mercato"), created on first use. */
+export async function transfersTagId(ctx: ScoutContext): Promise<number> {
+  const { docs } = await ctx.payload.find({
+    collection: 'tags',
+    where: { slug: { equals: 'transfers' } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  if (docs[0]) return Number(docs[0].id)
+  const created = await ctx.payload.create({
+    collection: 'tags',
+    data: { name: 'Transfers', nameFr: 'Mercato', slug: 'transfers' } as never,
+    overrideAccess: true,
+  })
+  return Number(created.id)
+}
+
 /** The story's best sources: one item per outlet, official first, oldest first. */
 async function sourcesFor(ctx: ScoutContext, storyId: number, read = true): Promise<DraftSource[]> {
   const { docs } = await ctx.payload.find({
@@ -310,7 +328,13 @@ export async function draftStory(
     gameFacts = gameFacts.filter((f) => !sameGame(f.game))
   }
   const tagIds = matchTags(clean.tags, tagList, [story.game, gameName, clean.category])
+  // A transfer goes to the Esport > Transfers page (Mercato) through its tag.
+  if ((story as { esportKind?: string | null }).esportKind === 'transfer' && !ctx.config.dryRun) {
+    const id = await transfersTagId(ctx)
+    if (!tagIds.includes(id)) tagIds.push(id)
+  }
   const tagNames = tagList.filter((t) => tagIds.includes(t.id)).map((t) => t.name)
+  if (tagIds.length > tagNames.length && !tagNames.includes('Transfers')) tagNames.push('Transfers')
   if (!ctx.config.dryRun) {
     for (const name of cleanNewTags(
       clean.new_tags,
@@ -598,6 +622,9 @@ export async function autoDraft(ctx: ScoutContext, settings: SettingsDoc): Promi
         },
         { status: { in: ['new', 'listed'] } },
         { article: { exists: false } },
+        // A plain match result is the morning recap's job (src/esport/recap.ts).
+        // (Null for every non-esport story: `not_equals` alone would drop them.)
+        { or: [{ esportKind: { exists: false } }, { esportKind: { not_equals: 'result' } }] },
         // Stale stories don't get a draft just because the switch was turned on.
         {
           lastItemAt: { greater_than: new Date(ctx.now.getTime() - 24 * 3_600_000).toISOString() },

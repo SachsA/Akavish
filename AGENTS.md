@@ -236,6 +236,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `app/[locale]/[category]/` (404 for any other section, `generateStaticParams`
   lists only esport so they stay cached); filters in `lib/esport.ts`. The
   morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris).
+  Scout stories carry an *Esport kind*: `result` is never auto-drafted (the
+  recap covers it), a `transfer` draft gets the `transfers` tag (Mercato).
 - **Media sizes are WebP** (`Media.ts`, `MEDIA_SIZE_FORMAT`); the original
   stays as uploaded and the site never shows it. A new size gets
   `withoutEnlargement: true` and `formatOptions: MEDIA_SIZE_FORMAT`, then

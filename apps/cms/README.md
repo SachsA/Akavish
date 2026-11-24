@@ -332,6 +332,11 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
 
 1. **Sources** (`default-sources.ts`): loaded into `scout-sources` the first
    time, then edited in the admin. Official feeds every 5 min, the rest every 15.
+   A feed added to the file later is not loaded by itself: create it in the
+   admin (or `POST /api/scout-sources`). Esport feeds since 2026-11-24:
+   HLTV, VLR.gg, Dexerto LoL / Rainbow Six / Rocket League (grouped with
+   Dexerto in `OUTLET_GROUPS`), esports.gg. Refused (403) and not used:
+   Sheep Esports, Dot Esports, esports.gg's per-game feeds.
 2. **Collect** (`collect.ts`, `feeds.ts`): conditional GET, RSS/Atom parsed,
    URLs normalised, items older than 48 h or already seen skipped, general
    outlets filtered to games stories. Stored as `scout-items` (kept 30 days).
@@ -351,7 +356,14 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
    15, leaker 0; HLTV and VLR.gg are official for an esport story) − age, out
    of 100. A new story only HLTV or VLR.gg carry is esport even when the
    model says "news" (`decide`, since 2026-11-23: it filed CS2 roster moves
-   and Major invites from HLTV as news). Esport stories draft from the threshold − 10, never under 50 (`thresholdFor`), in
+   and Major invites from HLTV as news). An esport story also gets an
+   *Esport kind* (since 2026-11-24): `transfer` (signing, departure, bench,
+   roster), `final` (title, grand final of a notable event), `result` (any
+   other match or stage result), `tournament` (format, dates, invites),
+   `other`; null on any other category, `other` when the model gives none.
+   A `result` is never auto-drafted (the morning recap below covers it); a
+   `transfer` draft gets the tag `transfers` (FR "Mercato", created on first
+   use), which fills `/esport/transfers`. Esport stories draft from the threshold − 10, never under 50 (`thresholdFor`), in
    the digest colours and the weekly report too. Each run scores the stories of the last 24 hours again
    from what's stored (`rescoreRecent`: weights and freshness apply at once;
    a listed story crossing the threshold goes back to "new"). Threshold 60 by default (*Scout settings*), set to 50 in production since 2026-11-23. Retuned on

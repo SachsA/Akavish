@@ -217,6 +217,7 @@ describe('triage answer handling', () => {
         game: 'GTA 6',
         category: 'news',
         significance: 100,
+        esportKind: null,
       },
     })
     expect(d.get(1)?.kind).toBe('new')
@@ -293,6 +294,64 @@ describe('triage answer handling', () => {
     expect(cat(0)).toBe('esport') // HLTV only
     expect(cat(1)).toBe('news') // also IGN: general news
     expect(cat(3)).toBe('leak') // only "news" is corrected
+  })
+
+  it('keeps the esport kind of esport stories only (transfers, finals, results…)', () => {
+    const items: TriageItem[] = [
+      { index: 0, title: 'Zekken leaves MIBR', summary: '', source: 'VLR.gg' },
+      { index: 1, title: 'G2 beat Fnatic in week 2', summary: '', source: 'Dexerto LoL' },
+      { index: 2, title: 'GTA 6 patch notes', summary: '', source: 'IGN' },
+      { index: 3, title: 'Odd answer', summary: '', source: 'HLTV' },
+    ]
+    const d = decide(
+      {
+        new_stories: [
+          {
+            key: 'N1',
+            title: 'Zekken leaves MIBR',
+            game: 'Valorant',
+            category: 'esport',
+            significance: 55,
+            esport_kind: 'transfer',
+          },
+          {
+            key: 'N2',
+            title: 'G2 beat Fnatic',
+            game: 'League of Legends',
+            category: 'esport',
+            significance: 30,
+            esport_kind: 'result',
+          },
+          {
+            key: 'N3',
+            title: 'GTA 6 patch',
+            game: 'GTA 6',
+            category: 'news',
+            significance: 50,
+            esport_kind: 'result',
+          },
+          {
+            key: 'N4',
+            title: 'Odd',
+            game: null,
+            category: 'esport',
+            significance: 30,
+            esport_kind: 'nonsense',
+          },
+        ] as never,
+        assignments: [0, 1, 2, 3].map((i) => ({ item: i, story: `N${i + 1}` })),
+      },
+      items,
+      [],
+    )
+    const kind = (i: number) => {
+      const x = d.get(i)
+      return x?.kind === 'new' ? x.story.esportKind : undefined
+    }
+    expect(kind(0)).toBe('transfer')
+    expect(kind(1)).toBe('result')
+    expect(kind(2)).toBeNull() // not esport
+    expect(kind(3)).toBe('other') // unknown value
   })
 
   it('dry run makes one story per item', () => {
