@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { fetchNotifications, markNotificationsRead, type ReaderNotification } from '@/lib/readers'
+import { fetchNotifications, markNotificationsRead, removeNotifications, type ReaderNotification } from '@/lib/readers'
 import { asReader, refuse, reply } from '@/lib/reader-route'
 
 // The bell (components/NotificationBell.tsx): the signed-in reader's
@@ -8,6 +8,7 @@ import { asReader, refuse, reply } from '@/lib/reader-route'
 //   GET  /api/notifications?limit=20&locale=fr → { docs, unread }  (limit=0: just the count)
 //        On /fr an article notification carries the article's French title.
 //   POST /api/notifications { read: 'all' | ids } → { unread }
+//   POST /api/notifications { remove: 'all' | ids } → { unread }  (the × and "Clear all")
 
 export async function GET(req: NextRequest) {
   return asReader(req, { bucket: 'notifications', limit: 60, needProfile: false }, async ({ clerkId }) => {
@@ -19,14 +20,20 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => ({}))) as { read?: unknown }
+  const body = (await req.json().catch(() => ({}))) as { read?: unknown; remove?: unknown }
+  const ids = (v: unknown) =>
+    v === 'all'
+      ? ('all' as const)
+      : Array.isArray(v)
+        ? v.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 100)
+        : []
   return asReader(req, { bucket: 'notifications', limit: 60, needProfile: false }, async ({ clerkId }) => {
-    const read =
-      body.read === 'all'
-        ? ('all' as const)
-        : Array.isArray(body.read)
-          ? body.read.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 100)
-          : []
+    if (body.remove !== undefined) {
+      const remove = ids(body.remove)
+      if (remove !== 'all' && remove.length === 0) return refuse('not-found', 400)
+      return reply(await removeNotifications(clerkId, remove))
+    }
+    const read = ids(body.read)
     if (read !== 'all' && read.length === 0) return refuse('not-found', 400)
     return reply(await markNotificationsRead(clerkId, read))
   })

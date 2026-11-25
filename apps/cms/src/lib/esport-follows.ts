@@ -491,10 +491,21 @@ export const esportFollowsHandler: PayloadHandler = async (req) => {
   return json({ following: true })
 }
 
+/** Notification ids from a request (at most 100), null for anything but a list. */
+function notificationIds(v: unknown): number[] | null {
+  return Array.isArray(v)
+    ? v
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n > 0)
+        .slice(0, 100)
+    : null
+}
+
 /**
  * /reader-api/notifications
  *   GET  ?clerkId&limit   → { docs, unread }
  *   POST { clerkId, read: 'all' | number[] } → { unread: 0 | n }
+ *   POST { clerkId, remove: 'all' | number[] } → { unread }   (deleted)
  */
 export const notificationsHandler: PayloadHandler = async (req) => {
   const denied = checkSecret(req.headers)
@@ -541,6 +552,17 @@ export const notificationsHandler: PayloadHandler = async (req) => {
   if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
   const reader = await findReader(req.payload, body.clerkId)
   if (!reader) return json({ unread: 0 })
+  if (body.remove !== undefined) {
+    // The bell's × (one) and "Clear all": the reader's own notifications only.
+    const gone = notificationIds(body.remove)
+    if (body.remove !== 'all' && !gone?.length) return json({ error: 'invalid remove' }, 400)
+    await req.payload.delete({
+      collection: 'reader-notifications' as never,
+      where: { and: [{ reader: { equals: reader.id } }, ...(gone ? [{ id: { in: gone } }] : [])] },
+      overrideAccess: true,
+    })
+    return json({ unread: await unreadOf(reader.id) })
+  }
   const ids = Array.isArray(body.read)
     ? body.read
         .map(Number)

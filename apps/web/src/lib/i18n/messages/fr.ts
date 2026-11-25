@@ -322,6 +322,8 @@ export const fr: Messages = {
     empty: 'Rien pour l’instant. Suivez une équipe, un tournoi ou un match pour être prévenu.',
     markAll: 'Tout marquer comme lu',
     seeFollows: 'Ce que je suis',
+    remove: 'Supprimer cette notification',
+    clearAll: 'Tout effacer',
     started: (a: string, b: string) => `${a} contre ${b} a commencé`,
     ended: (a: string, b: string) => `${a} contre ${b} est terminé`,
     scoreHidden: 'score masqué',

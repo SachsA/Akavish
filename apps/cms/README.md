@@ -595,7 +595,7 @@ synced match (`withMatchDetails`). Match notifications link to
 notification stores facts (`data`: teams, score, event, article), the site
 words them. Website calls, with `READER_API_SECRET`:
 `/api/reader-api/esport-follows` (GET / POST / DELETE),
-`/api/reader-api/notifications` (GET, POST `read`),
+`/api/reader-api/notifications` (GET, POST `read` or `remove`: deleted, the reader's own only),
 `/api/reader-api/notify-settings` (GET / POST, only the booleans sent change),
 `/api/reader-api/push` (GET count / POST subscription / DELETE). **Web push**
 (`src/lib/web-push.ts`, since 2026-11-25): each notification is also pushed

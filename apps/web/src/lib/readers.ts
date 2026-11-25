@@ -264,6 +264,11 @@ export async function markNotificationsRead(clerkId: string, read: 'all' | numbe
   return call('notifications', { method: 'POST', body: { clerkId, read } })
 }
 
+/** The bell's × (some) and "Clear all" (all): deleted for good. */
+export async function removeNotifications(clerkId: string, remove: 'all' | number[]): Promise<{ unread: number }> {
+  return call('notifications', { method: 'POST', body: { clerkId, remove } })
+}
+
 export interface NotifySettings {
   matchStart: boolean
   results: boolean

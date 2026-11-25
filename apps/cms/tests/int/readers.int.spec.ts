@@ -360,7 +360,7 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     expect((await ghost.json()).docs).toEqual([])
   })
 
-  it('follows esport teams, notifies their matches, lists and marks the notifications read', async () => {
+  it('follows esport teams, notifies their matches, lists, marks read and deletes the notifications', async () => {
     const id = clerk('es')
     const profile = { clerkId: id, emailVerified: true }
     const follow = { kind: 'team', pandaId: 987_001, label: 'Team Vitality', acronym: 'VIT', game: 'cs2' }
@@ -400,6 +400,25 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     expect(got.unread).toBe(1)
     expect(got.docs).toMatchObject([{ kind: 'match_end', url: '/esport/results', data: { s1: 2, s2: 1 } }])
     expect(await (await notificationsHandler(req({ body: { clerkId: id, read: 'all' } }))).json()).toEqual({ unread: 0 })
+
+    // The bell's × and "Clear all": only this reader's notifications go.
+    const other = clerk('es2')
+    await esportFollowsHandler(req({ body: { profile: { clerkId: other, emailVerified: true }, follow } }))
+    expect(await notifyMatchEvents(payload, [{ ...ev('end'), matchId: 987_101 }])).toBe(2)
+    const list10 = async (who: string) =>
+      (await (await notificationsHandler(req({ method: 'GET', query: `clerkId=${who}&limit=10` }))).json()).docs
+    const mine = await list10(id)
+    expect(mine).toHaveLength(2)
+    const theirs = await list10(other)
+    expect((await notificationsHandler(req({ body: { clerkId: id, remove: [] } }))).status).toBe(400)
+    // Someone else's id is left alone.
+    await notificationsHandler(req({ body: { clerkId: id, remove: [theirs[0].id] } }))
+    expect(await list10(other)).toHaveLength(1)
+    expect(await (await notificationsHandler(req({ body: { clerkId: id, remove: [mine[0].id] } }))).json()).toEqual({ unread: 0 })
+    expect(await list10(id)).toMatchObject([{ id: mine[1].id }])
+    await notificationsHandler(req({ body: { clerkId: id, remove: 'all' } }))
+    expect(await list10(id)).toEqual([])
+    expect(await list10(other)).toHaveLength(1)
 
     const off = await esportFollowsHandler(req({ method: 'DELETE', body: { clerkId: id, kind: 'team', pandaId: 987_001 } }))
     expect(await off.json()).toEqual({ following: false })

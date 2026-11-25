@@ -324,6 +324,8 @@ export const en = {
     empty: 'Nothing yet. Follow a team, a tournament or a match to be told what happens.',
     markAll: 'Mark all as read',
     seeFollows: 'What I follow',
+    remove: 'Delete this notification',
+    clearAll: 'Clear all',
     started: (a: string, b: string) => `${a} vs ${b} has started`,
     ended: (a: string, b: string) => `${a} vs ${b} is over`,
     scoreHidden: 'score hidden',
