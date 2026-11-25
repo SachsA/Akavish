@@ -1025,7 +1025,8 @@ export async function fetchEsportStages(): Promise<EsportStage[]> {
 export async function fetchEsportStage(slug: string): Promise<{ stage: EsportStage; siblings: EsportStage[] } | null> {
   const one = new URLSearchParams({ 'where[slug][equals]': slug, limit: '1', depth: '0' })
   const res = await cmsFetch(`${CMS_URL}/api/esport-tournaments?${one.toString()}`, {
-    next: { revalidate: CACHE.lists, tags: [TAGS.esport] },
+    // Its own tag too: the CMS pings it when the bracket changes (sync.ts).
+    next: { revalidate: CACHE.lists, tags: [TAGS.esport, TAGS.esportStage(slug)] },
   })
   if (!res.ok) throw new Error(`CMS esport tournament: ${res.status}`)
   const doc = ((await res.json()) as { docs?: Array<Record<string, unknown>> }).docs?.[0]

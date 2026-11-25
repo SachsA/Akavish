@@ -626,7 +626,10 @@ tournaments with a new or changed match first, then those never read, bigger
 tiers first, 12 a run at most (`refreshStructures`, `structureQueue`; ~150
 requests an hour more). Stored on the tournament: `structure` (JSON),
 `structureAt`, plus `slug` (the site's `/esport/tournaments/<slug>`),
-`serieId` (the event's stages share it) and `hasBracket`. To look at the raw
+`serieId` (the event's stages share it) and `hasBracket`. Brackets are read
+before the notifications of the same sync (a match notification opens a page
+that has the match), and each refreshed stage's page is pinged at once
+(cache tag `esport-stage:<slug>`, not its 5-minute timer). To look at the raw
 answer: `GET /api/esport/raw?tournament=<PandaScore id>&kind=brackets`
 (or `standings`, `tournament`), as an editor.
 

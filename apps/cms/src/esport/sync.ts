@@ -23,6 +23,7 @@ import {
   type TournamentData,
   type TournamentStructure,
 } from './pandascore'
+import { revalidateWeb } from '../lib/revalidate-web'
 import {
   notifyMatchEvents,
   pruneNotifications,
@@ -249,6 +250,7 @@ export const MAX_STRUCTURES = 12
 type TournamentRow = {
   id: number | string
   pandaId: number
+  slug?: string | null
   game: EsportGame
   tier?: Tier | null
   hasBracket?: boolean | null
@@ -331,9 +333,11 @@ export async function refreshStructures(
       beginAt: true,
       endAt: true,
       structureAt: true,
+      slug: true,
     },
   } as never)
   let done = 0
+  const refreshed: string[] = []
   for (const t of structureQueue(
     docs as unknown as TournamentRow[],
     touched,
@@ -356,6 +360,7 @@ export async function refreshStructures(
         depth: 0,
       })
       done++
+      if (t.slug) refreshed.push(t.slug)
     } catch (err) {
       payload.logger.warn({
         msg: '[esport] bracket failed',
@@ -363,6 +368,10 @@ export async function refreshStructures(
         error: err instanceof Error ? err.message : String(err),
       })
     }
+  }
+  // Their pages show the new bracket now, not at their 5-minute timer.
+  if (refreshed.length) {
+    revalidateWeb(payload, 'esport brackets', async () => refreshed.map((s) => `esport-stage:${s}`))
   }
   return done
 }
@@ -381,7 +390,14 @@ export async function runEsportSync(payload: Payload, now = new Date()): Promise
       results.push({ game, matches: 0, created: 0, updated: 0, error })
     }
   }
-  // Followers of a match that started or ended (the bell), then old ones out.
+  // The brackets of the tournaments that moved (and the never-fetched) first,
+  // so a notification's link opens a page that has the match.
+  const touched = new Set(results.flatMap((r) => r.touched ?? []))
+  const brackets = await refreshStructures(payload, token, touched, now).catch((err) => {
+    payload.logger.warn({ msg: '[esport] brackets failed', error: String(err) })
+    return 0
+  })
+  // Then the followers of a match that started or ended (the bell), and old ones out.
   const notified = await notifyMatchEvents(
     payload,
     results.flatMap((r) => r.events ?? []),
@@ -390,12 +406,6 @@ export async function runEsportSync(payload: Payload, now = new Date()): Promise
     return 0
   })
   await pruneNotifications(payload, now).catch(() => undefined)
-  // Then the brackets of the tournaments that moved (and the never-fetched).
-  const touched = new Set(results.flatMap((r) => r.touched ?? []))
-  const brackets = await refreshStructures(payload, token, touched, now).catch((err) => {
-    payload.logger.warn({ msg: '[esport] brackets failed', error: String(err) })
-    return 0
-  })
   payload.logger.info({
     msg: '[esport] synced',
     brackets,

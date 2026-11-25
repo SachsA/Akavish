@@ -26,6 +26,12 @@ describe('cleanTags', () => {
     ])
   })
 
+  it('keeps a tournament page tag (its bracket was read again)', () => {
+    expect(cleanTags([TAGS.esportStage('cs-go-cct-europe-2026-group-stage'), 'esport'])).toEqual([
+      'esport-stage:cs-go-cct-europe-2026-group-stage',
+    ])
+  })
+
   it('drops anything else', () => {
     expect(cleanTags(['cms', 'foo:bar', 'game:', 'game:a b', 42, null])).toEqual([])
     expect(cleanTags('articles')).toEqual([])
