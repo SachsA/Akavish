@@ -790,6 +790,23 @@ export async function fetchGameBySlug(slug: string): Promise<GameEntity | null> 
   }
 }
 
+/** The ids of the games with these slugs (missing ones skipped), cached with the games. */
+export async function fetchGameIdsBySlugs(slugs: string[]): Promise<string[]> {
+  if (!slugs.length) return []
+  const qs = new URLSearchParams({
+    'where[slug][in]': slugs.join(','),
+    depth: '0',
+    limit: String(slugs.length),
+    'select[slug]': 'true',
+  })
+  const res = await cmsFetch(`${CMS_URL}/api/games?${qs.toString()}`, {
+    next: { revalidate: CACHE.details, tags: [TAGS.games] },
+  })
+  if (!res.ok) throw new Error(`CMS responded ${res.status}`)
+  const json = (await res.json()) as PayloadListResponse<{ id: string | number }>
+  return json.docs.map((d) => String(d.id))
+}
+
 export async function fetchTagBySlug(slug: string): Promise<TagEntity | null> {
   const doc = await fetchOneBySlug<{ id: string | number; slug: string; name: string; nameFr?: string | null }>(
     'tags',

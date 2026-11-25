@@ -1,15 +1,18 @@
 // /esport/transfers: the esport articles tagged "transfers" (Mercato in
 // French): signings, departures, roster moves. Only under /esport.
+// transfers/[game] (/esport/transfers/cs2) is the same page for one game.
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import type { Article } from '@akavish/types'
 import { ArticlesByDate } from '@/components/ArticlesByDate'
 import { EsportNav } from '@/components/EsportNav'
+import { EsportGameFilter } from '@/components/EsportGameFilter'
+import { ESPORT_GAME_LABEL, ESPORT_GAME_SLUGS, isEsportGame, type EsportGame } from '@/lib/esport'
 import { JsonLd } from '@/components/JsonLd'
 import { ContentUnavailable } from '@/components/StatusMessage'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
-import { fetchArticles, fetchTagBySlug } from '@/lib/payload'
+import { fetchArticles, fetchGameIdsBySlugs, fetchTagBySlug } from '@/lib/payload'
 import { TAGS } from '@/lib/revalidate'
 import { breadcrumbList } from '@/lib/structured-data'
 import { LOCALES } from '@/lib/i18n/config'
@@ -25,31 +28,48 @@ export function generateStaticParams() {
 /** The tag the scout puts on roster news. */
 export const TRANSFERS_TAG = 'transfers'
 
-type Params = { params: Promise<{ locale: string; category: string }> }
+type Params = { params: Promise<{ locale: string; category: string; game?: string }> }
+
+/** The game of /esport/transfers/<game>: null without one, false for a wrong one. */
+const gameOf = (category: string, game?: string): EsportGame | null | false =>
+  category !== 'esport' ? false : game === undefined ? null : isEsportGame(game) ? game : false
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { locale: raw, category } = await params
+  const { locale: raw, category, game: rawGame } = await params
   const locale = setRequestLocale(raw)
   const t = getMessages()
-  if (category !== 'esport') return { title: t.meta.notFound }
+  const game = gameOf(category, rawGame)
+  if (game === false) return { title: t.meta.notFound }
   return {
-    title: t.esport.transfersTitle,
+    title: game
+      ? t.esport.withGame(t.esport.transfersTitle, ESPORT_GAME_LABEL[game])
+      : t.esport.transfersTitle,
     description: t.esport.transfersBlurb,
-    alternates: alternates(locale, '/esport/transfers'),
+    alternates: alternates(locale, game ? `/esport/transfers/${game}` : '/esport/transfers'),
   }
 }
 
 export default async function TransfersPage({ params }: Params) {
-  const { locale: raw, category } = await params
+  const { locale: raw, category, game: rawGame } = await params
   const locale = setRequestLocale(raw)
-  if (category !== 'esport') notFound()
+  const game = gameOf(category, rawGame)
+  if (game === false) notFound()
   const t = getMessages()
+  const title = game
+    ? t.esport.withGame(t.esport.transfersTitle, ESPORT_GAME_LABEL[game])
+    : t.esport.transfersTitle
   let articles: Article[] | null = []
   try {
     const tag = await fetchTagBySlug(TRANSFERS_TAG)
     if (tag) {
+      const gameIds = game ? await fetchGameIdsBySlugs(ESPORT_GAME_SLUGS[game]) : undefined
       articles = (
-        await fetchArticles({ tagId: tag.id, limit: 30, cacheTags: [TAGS.tag(TRANSFERS_TAG)] })
+        await fetchArticles({
+          tagId: tag.id,
+          gameIds,
+          limit: 30,
+          cacheTags: [TAGS.tag(TRANSFERS_TAG), TAGS.games],
+        })
       ).data
     }
   } catch {
@@ -62,19 +82,25 @@ export default async function TransfersPage({ params }: Params) {
           [
             { name: t.categories.esport.label, path: '/esport' },
             { name: t.esport.transfersTitle, path: '/esport/transfers' },
+            ...(game ? [{ name: ESPORT_GAME_LABEL[game], path: `/esport/transfers/${game}` }] : []),
           ],
           locale,
         )}
       />
       <header className="mb-10">
-        <h1 className="text-4xl font-black tracking-tight text-white">{t.esport.transfersTitle}</h1>
+        <h1 className="text-4xl font-black tracking-tight text-white">{title}</h1>
         <p className="text-zinc-400 mt-2">{t.esport.transfersBlurb}</p>
       </header>
-      <EsportNav active="transfers" />
+      <EsportNav active="transfers" game={game} />
+      <EsportGameFilter base="/esport/transfers" active={game} />
       {articles === null ? (
         <ContentUnavailable />
       ) : articles.length === 0 ? (
-        <p className="text-zinc-400">{t.status.nothingBody(t.esport.transfers.toLowerCase())}</p>
+        <p className="text-zinc-400">
+          {game
+            ? t.status.nothingBody(t.status.articles)
+            : t.status.nothingBody(t.esport.transfers.toLowerCase())}
+        </p>
       ) : (
         // Like the other sections: the 4 newest, then by day (esport).
         <ArticlesByDate articles={articles} unit="day" locale={locale} />

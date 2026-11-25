@@ -1,10 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { absoluteUrl } from '@/lib/site'
-import {
-  fetchAllArticleSlugs,
-  fetchAllEntitySlugs,
-  fetchUsedTaxonomyIds,
-} from '@/lib/payload'
+import { fetchAllArticleSlugs, fetchAllEntitySlugs, fetchUsedTaxonomyIds } from '@/lib/payload'
+import { ESPORT_GAMES } from '@/lib/esport'
 import { CATEGORIES } from '@/lib/categories'
 import { LOCALES, localizePath } from '@/lib/i18n/config'
 
@@ -16,9 +13,16 @@ type Entry = MetadataRoute.Sitemap[number]
  * One entry per language for a page (English at the bare path, French under
  * /fr), each listing both versions, which is how search engines pair them.
  */
-function bothLanguages(path: string, entry: Omit<Entry, 'url' | 'alternates'>): MetadataRoute.Sitemap {
+function bothLanguages(
+  path: string,
+  entry: Omit<Entry, 'url' | 'alternates'>,
+): MetadataRoute.Sitemap {
   const languages = Object.fromEntries(LOCALES.map((l) => [l, absoluteUrl(localizePath(l, path))]))
-  return LOCALES.map((l) => ({ ...entry, url: absoluteUrl(localizePath(l, path)), alternates: { languages } }))
+  return LOCALES.map((l) => ({
+    ...entry,
+    url: absoluteUrl(localizePath(l, path)),
+    alternates: { languages },
+  }))
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -32,6 +36,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bothLanguages('/games', { lastModified: now, changeFrequency: 'daily', priority: 0.6 }),
     ...['/esport/results', '/esport/calendar', '/esport/transfers'].flatMap((p) =>
       bothLanguages(p, { lastModified: now, changeFrequency: 'hourly', priority: 0.6 }),
+    ),
+    // One game's esport news and Mercato (/esport/cs2, /esport/transfers/cs2).
+    ...ESPORT_GAMES.flatMap((g) => [`/esport/${g}`, `/esport/transfers/${g}`]).flatMap((p) =>
+      bothLanguages(p, { lastModified: now, changeFrequency: 'daily', priority: 0.5 }),
     ),
     ...['/about', '/contact', '/privacy', '/terms', '/legal'].flatMap((p) =>
       bothLanguages(p, { lastModified: now, changeFrequency: 'yearly', priority: 0.3 }),
@@ -76,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entityEntries = (
     items: { slug: string; updatedAt?: string }[],
     prefix: string,
-    priority: number
+    priority: number,
   ): MetadataRoute.Sitemap =>
     items.flatMap((it) =>
       bothLanguages(`/${prefix}/${it.slug}`, {

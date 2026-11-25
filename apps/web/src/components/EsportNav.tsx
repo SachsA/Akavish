@@ -1,8 +1,10 @@
 // The Esport section's tabs: News (the articles), Results, Transfers,
-// Calendar. Above every Esport page.
+// Calendar. Above every Esport page. With a game picked (/esport/cs2), the
+// tabs keep it: Mercato → /esport/transfers/cs2, Results → ?game=cs2.
 
 import Link from './LocaleLink'
 import { getMessages } from '@/lib/i18n/server'
+import type { EsportGame } from '@/lib/esport'
 
 export type EsportTab = 'news' | 'results' | 'transfers' | 'calendar'
 
@@ -13,7 +15,16 @@ const TABS: Array<{ key: EsportTab; href: string }> = [
   { key: 'calendar', href: '/esport/calendar' },
 ]
 
-export function EsportNav({ active }: { active: EsportTab }) {
+const withGame = (tab: EsportTab, href: string, game: EsportGame | null) =>
+  !game ? href : tab === 'news' || tab === 'transfers' ? `${href}/${game}` : `${href}?game=${game}`
+
+export function EsportNav({
+  active,
+  game = null,
+}: {
+  active: EsportTab
+  game?: EsportGame | null
+}) {
   const t = getMessages()
   return (
     <nav aria-label={t.esport.sections} className="mb-8 -mt-4 border-b border-zinc-800">
@@ -23,10 +34,12 @@ export function EsportNav({ active }: { active: EsportTab }) {
           return (
             <li key={tab.key}>
               <Link
-                href={tab.href}
+                href={withGame(tab.key, tab.href, game)}
                 aria-current={on ? 'page' : undefined}
                 className={`inline-block px-3 py-2 -mb-px border-b-2 whitespace-nowrap font-semibold transition-colors ${
-                  on ? 'border-emerald-400 text-white' : 'border-transparent text-zinc-400 hover:text-white'
+                  on
+                    ? 'border-emerald-400 text-white'
+                    : 'border-transparent text-zinc-400 hover:text-white'
                 }`}
               >
                 {t.esport[tab.key]}

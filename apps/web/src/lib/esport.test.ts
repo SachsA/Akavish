@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { choicesOf, filterRows, filtersToQuery, groupRows, parseFilters, rowOf, type EsportRow } from './esport'
+import {
+  ESPORT_GAMES,
+  ESPORT_GAME_SLUGS,
+  choicesOf,
+  filterRows,
+  filtersToQuery,
+  groupRows,
+  isEsportGame,
+  parseFilters,
+  rowOf,
+  type EsportRow,
+} from './esport'
 
 const doc = (over: Record<string, unknown> = {}) => ({
   pandaId: 1,
@@ -14,7 +25,13 @@ const doc = (over: Record<string, unknown> = {}) => ({
   score1: 2,
   score2: 1,
   winner: 1,
-  tournament: { pandaId: 9, league: 'PGL Major', serie: 'Singapore 2026', name: 'Stage 1', tier: 's' },
+  tournament: {
+    pandaId: 9,
+    league: 'PGL Major',
+    serie: 'Singapore 2026',
+    name: 'Stage 1',
+    tier: 's',
+  },
   ...over,
 })
 
@@ -30,7 +47,9 @@ describe('rowOf', () => {
   })
 
   it("doesn't repeat the league when the season already names it", () => {
-    expect(rowOf(doc({ tournament: { league: 'IEM', serie: 'IEM Katowice 2027', tier: 'a' } }))!.event).toBe('IEM Katowice 2027')
+    expect(
+      rowOf(doc({ tournament: { league: 'IEM', serie: 'IEM Katowice 2027', tier: 'a' } }))!.event,
+    ).toBe('IEM Katowice 2027')
   })
 
   it('skips an unknown game or a match without a date', () => {
@@ -42,30 +61,58 @@ describe('rowOf', () => {
 describe('filters', () => {
   const rows = [
     rowOf(doc())!,
-    rowOf(doc({ pandaId: 2, game: 'valorant', tournament: { league: 'VCT', serie: 'Ascension 2026', tier: 'c' } }))!,
+    rowOf(
+      doc({
+        pandaId: 2,
+        game: 'valorant',
+        tournament: { league: 'VCT', serie: 'Ascension 2026', tier: 'c' },
+      }),
+    )!,
   ] as EsportRow[]
 
   it('round-trip through the URL, ignoring junk', () => {
-    const f = parseFilters('?game=cs2&tier=s,a,zz&event=PGL%20Major%20Singapore%202026&day=2026-11-24')
-    expect(f).toEqual({ game: 'cs2', tiers: ['s', 'a'], event: 'PGL Major Singapore 2026', day: '2026-11-24' })
+    const f = parseFilters(
+      '?game=cs2&tier=s,a,zz&event=PGL%20Major%20Singapore%202026&day=2026-11-24',
+    )
+    expect(f).toEqual({
+      game: 'cs2',
+      tiers: ['s', 'a'],
+      event: 'PGL Major Singapore 2026',
+      day: '2026-11-24',
+    })
     expect(parseFilters(filtersToQuery(f))).toEqual(f)
-    expect(parseFilters('?game=dota2&day=yesterday')).toEqual({ game: '', tiers: [], event: '', day: '' })
+    expect(parseFilters('?game=dota2&day=yesterday')).toEqual({
+      game: '',
+      tiers: [],
+      event: '',
+      day: '',
+    })
     expect(filtersToQuery({ game: '', tiers: [], event: '', day: '' })).toBe('')
   })
 
   it('filter by game, tier and the day in the reader’s time zone', () => {
-    expect(filterRows(rows, { game: 'valorant', tiers: [], event: '', day: '' }, 'UTC').map((r) => r.id)).toEqual([2])
-    expect(filterRows(rows, { game: '', tiers: ['s'], event: '', day: '' }, 'UTC').map((r) => r.id)).toEqual([1])
+    expect(
+      filterRows(rows, { game: 'valorant', tiers: [], event: '', day: '' }, 'UTC').map((r) => r.id),
+    ).toEqual([2])
+    expect(
+      filterRows(rows, { game: '', tiers: ['s'], event: '', day: '' }, 'UTC').map((r) => r.id),
+    ).toEqual([1])
     // 23:30 UTC on the 24th is the 25th in Paris (UTC+1).
-    expect(filterRows(rows, { game: 'cs2', tiers: [], event: '', day: '2026-11-25' }, 'Europe/Paris')).toHaveLength(1)
-    expect(filterRows(rows, { game: 'cs2', tiers: [], event: '', day: '2026-11-25' }, 'UTC')).toHaveLength(0)
+    expect(
+      filterRows(rows, { game: 'cs2', tiers: [], event: '', day: '2026-11-25' }, 'Europe/Paris'),
+    ).toHaveLength(1)
+    expect(
+      filterRows(rows, { game: 'cs2', tiers: [], event: '', day: '2026-11-25' }, 'UTC'),
+    ).toHaveLength(0)
   })
 
   it('offer only the events and games present', () => {
     const c = choicesOf(rows, { game: '', tiers: [], event: '', day: '' }, 'UTC')
     expect(c.events).toEqual(['PGL Major Singapore 2026', 'VCT Ascension 2026']) // tier S first
     expect(c.games).toEqual(['cs2', 'valorant'])
-    expect(choicesOf(rows, { game: 'valorant', tiers: [], event: '', day: '' }, 'UTC').events).toEqual(['VCT Ascension 2026'])
+    expect(
+      choicesOf(rows, { game: 'valorant', tiers: [], event: '', day: '' }, 'UTC').events,
+    ).toEqual(['VCT Ascension 2026'])
   })
 })
 
@@ -73,7 +120,13 @@ describe('groupRows', () => {
   it('groups by day, then event, biggest tier first, matches in time order', () => {
     const rows = [
       rowOf(doc({ pandaId: 1, beginAt: '2026-11-24T10:00:00Z' }))!,
-      rowOf(doc({ pandaId: 2, beginAt: '2026-11-24T08:00:00Z', tournament: { league: 'CCT', serie: 'S2', tier: 'd' } }))!,
+      rowOf(
+        doc({
+          pandaId: 2,
+          beginAt: '2026-11-24T08:00:00Z',
+          tournament: { league: 'CCT', serie: 'S2', tier: 'd' },
+        }),
+      )!,
       rowOf(doc({ pandaId: 3, beginAt: '2026-11-24T12:00:00Z' }))!,
       rowOf(doc({ pandaId: 4, beginAt: '2026-11-23T12:00:00Z' }))!,
     ]
@@ -82,5 +135,15 @@ describe('groupRows', () => {
     expect(soonest[1].events.map((e) => e.event)).toEqual(['PGL Major Singapore 2026', 'CCT S2'])
     expect(soonest[1].events[0].rows.map((r) => r.id)).toEqual([1, 3])
     expect(groupRows(rows, 'UTC', 'newest')[0].day).toBe('2026-11-24')
+  })
+})
+
+describe('esport games', () => {
+  it('knows the five games of /esport/<game>, and their CMS games', () => {
+    expect(ESPORT_GAMES.filter(isEsportGame)).toHaveLength(5)
+    expect(isEsportGame('fifa')).toBe(false)
+    expect(isEsportGame('page')).toBe(false)
+    for (const g of ESPORT_GAMES) expect(ESPORT_GAME_SLUGS[g].length).toBeGreaterThan(0)
+    expect(ESPORT_GAME_SLUGS.cs2).toEqual(['counter-strike-2'])
   })
 })

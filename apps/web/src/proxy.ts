@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse, type NextRequest } from 'next/server'
 import { CATEGORIES } from '@/lib/categories'
+import { ESPORT_GAMES } from '@/lib/esport'
 import {
   COOKIE_MAX_AGE,
   DEFAULT_LOCALE,
@@ -36,7 +37,7 @@ const isProtectedRoute = createRouteMatcher(['/account(.*)', '/fr/account(.*)'])
  * - The English date style (🇬🇧 / 🇺🇸) is guessed once from the same header.
  */
 const LIST_PATH = new RegExp(
-  `^(?:/(?:${LOCALES.join('|')}))?/(?:${CATEGORIES.map((c) => c.slug).join('|')}|(?:tag|author|game|company|platform)/[^/]+)$`,
+  `^(?:/(?:${LOCALES.join('|')}))?/(?:${CATEGORIES.map((c) => c.slug).join('|')}|esport/(?:${ESPORT_GAMES.join('|')})|(?:tag|author|game|company|platform)/[^/]+)$`,
 )
 
 /**
@@ -72,7 +73,11 @@ function localeRouting(req: NextRequest): NextResponse | null {
   const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value
   const remember = (res: NextResponse) => {
     if (!isRegion(req.cookies.get(REGION_COOKIE)?.value) && fromHeader) {
-      res.cookies.set(REGION_COOKIE, fromHeader.region, { path: '/', maxAge: COOKIE_MAX_AGE, sameSite: 'lax' })
+      res.cookies.set(REGION_COOKIE, fromHeader.region, {
+        path: '/',
+        maxAge: COOKIE_MAX_AGE,
+        sameSite: 'lax',
+      })
     }
     return res
   }

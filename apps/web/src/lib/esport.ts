@@ -15,6 +15,27 @@ export const ESPORT_GAME_LABEL: Record<EsportGame, string> = {
   rl: 'Rocket League',
 }
 
+/**
+ * The CMS games behind each esport game, for the News and Transfers pages
+ * filtered by game (/esport/cs2, /esport/transfers/valorant). Several slugs
+ * when the scout may name the game differently; a slug with no game is skipped.
+ */
+export const ESPORT_GAME_SLUGS: Record<EsportGame, string[]> = {
+  cs2: ['counter-strike-2'],
+  valorant: ['valorant'],
+  lol: ['league-of-legends'],
+  r6: [
+    'rainbow-six-siege',
+    'rainbow-six-siege-x',
+    'tom-clancy-s-rainbow-six-siege',
+    'tom-clancy-s-rainbow-six-siege-x',
+  ],
+  rl: ['rocket-league'],
+}
+
+export const isEsportGame = (v: unknown): v is EsportGame =>
+  typeof v === 'string' && (ESPORT_GAMES as readonly string[]).includes(v)
+
 export const TIER_ORDER = ['s', 'a', 'b', 'c', 'd', 'unranked'] as const
 export type Tier = (typeof TIER_ORDER)[number]
 
@@ -53,7 +74,10 @@ export function rowOf(doc: Record<string, unknown>): EsportRow | null {
   if (!ESPORT_GAMES.includes(game)) return null
   const at = (doc.beginAt as string) || (doc.scheduledAt as string)
   if (!at) return null
-  const t = (doc.tournament && typeof doc.tournament === 'object' ? doc.tournament : {}) as Record<string, unknown>
+  const t = (doc.tournament && typeof doc.tournament === 'object' ? doc.tournament : {}) as Record<
+    string,
+    unknown
+  >
   const team = (key: 'team1' | 'team2'): EsportTeam => {
     const g = (doc[key] ?? {}) as Record<string, unknown>
     return {
@@ -64,7 +88,9 @@ export function rowOf(doc: Record<string, unknown>): EsportRow | null {
   }
   const league = ((t.league as string) || '').trim()
   const serie = ((t.serie as string) || '').trim()
-  const tier = (TIER_ORDER as readonly string[]).includes(t.tier as string) ? (t.tier as Tier) : 'unranked'
+  const tier = (TIER_ORDER as readonly string[]).includes(t.tier as string)
+    ? (t.tier as Tier)
+    : 'unranked'
   const num = (v: unknown) => (typeof v === 'number' ? v : null)
   return {
     id: Number(doc.pandaId ?? doc.id),
@@ -82,7 +108,10 @@ export function rowOf(doc: Record<string, unknown>): EsportRow | null {
     forfeit: doc.forfeit === true,
     stream: (doc.streamUrl as string) || null,
     // "IEM Katowice 2027": the season often repeats the league ("IEM" + "IEM Katowice 2027").
-    event: serie && league && !serie.toLowerCase().startsWith(league.toLowerCase()) ? `${league} ${serie}` : serie || league,
+    event:
+      serie && league && !serie.toLowerCase().startsWith(league.toLowerCase())
+        ? `${league} ${serie}`
+        : serie || league,
     stage: (t.name as string) || '',
     tier,
     tournamentId: num(t.pandaId),
@@ -157,7 +186,11 @@ const tierRank = (t: Tier) => TIER_ORDER.indexOf(t)
  * By day (newest first for results, soonest first for the calendar), then by
  * event, the biggest tier first; matches in time order inside an event.
  */
-export function groupRows(rows: EsportRow[], timeZone: string, order: 'newest' | 'soonest'): DayGroup[] {
+export function groupRows(
+  rows: EsportRow[],
+  timeZone: string,
+  order: 'newest' | 'soonest',
+): DayGroup[] {
   const sign = order === 'newest' ? -1 : 1
   const days = new Map<string, Map<string, EventGroup>>()
   for (const r of [...rows].sort((a, b) => sign * (Date.parse(a.at) - Date.parse(b.at)))) {
@@ -180,7 +213,9 @@ export function groupRows(rows: EsportRow[], timeZone: string, order: 'newest' |
 
 /** The filter's choices: the events and days present, with the current game/tier applied. */
 export function choicesOf(rows: EsportRow[], f: EsportFilters, timeZone: string) {
-  const scoped = rows.filter((r) => (!f.game || r.game === f.game) && (!f.tiers.length || f.tiers.includes(r.tier)))
+  const scoped = rows.filter(
+    (r) => (!f.game || r.game === f.game) && (!f.tiers.length || f.tiers.includes(r.tier)),
+  )
   const events = new Map<string, Tier>()
   for (const r of scoped) {
     const t = events.get(r.event)

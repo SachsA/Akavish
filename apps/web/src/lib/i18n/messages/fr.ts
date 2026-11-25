@@ -209,6 +209,8 @@ export const fr: Messages = {
     filters: 'Filtrer les matchs',
     game: 'Jeu',
     allGames: 'Tous les jeux',
+    byGame: 'Filtrer par jeu',
+    withGame: (title: string, game: string) => `${title} : ${game}`,
     tier: 'Niveau',
     allTiers: 'Tous les niveaux',
     bigTiers: 'Grands tournois (S et A)',

@@ -211,6 +211,8 @@ export const en = {
     filters: 'Filter the matches',
     game: 'Game',
     allGames: 'All games',
+    byGame: 'Filter by game',
+    withGame: (title: string, game: string) => `${title}: ${game}`,
     tier: 'Level',
     allTiers: 'All levels',
     bigTiers: 'Big tournaments (S and A)',
