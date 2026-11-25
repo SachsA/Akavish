@@ -207,6 +207,8 @@ export async function runEsportSync(payload: Payload, now = new Date()): Promise
  * GET /api/esport/raw?game=cs2&list=past (editors): the first match of one
  * PandaScore list as PandaScore sends it, and how we read it. To check the
  * mapping against the real API; the token never leaves the server.
+ * `?tournament=<PandaScore id>&kind=brackets|standings|tournament` returns
+ * that tournament endpoint as sent (brackets view, 2026-11-25).
  */
 export const esportRawHandler = async (
   req: import('payload').PayloadRequest,
@@ -216,6 +218,22 @@ export const esportRawHandler = async (
   const token = esportToken()
   if (!token) return Response.json({ error: 'PANDASCORE_TOKEN unset' }, { status: 503 })
   const url = new URL(req.url ?? 'http://x')
+  const tournament = url.searchParams.get('tournament')
+  if (tournament) {
+    if (!/^\d+$/.test(tournament)) return Response.json({ error: 'bad tournament' }, { status: 400 })
+    const kind = url.searchParams.get('kind') ?? 'brackets'
+    const path = { brackets: '/brackets', standings: '/standings', tournament: '' }[kind]
+    if (path === undefined) return Response.json({ error: 'unknown kind' }, { status: 400 })
+    const res = await fetch(`https://api.pandascore.co/tournaments/${tournament}${path}?per_page=100`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'User-Agent': UA },
+      signal: AbortSignal.timeout(20_000),
+    })
+    return Response.json({
+      status: res.status,
+      remaining: res.headers.get('x-rate-limit-remaining'),
+      raw: await res.json().catch(() => null),
+    })
+  }
   const game = (url.searchParams.get('game') ?? 'cs2') as EsportGame
   const list = url.searchParams.get('list') ?? 'past'
   if (!ESPORT_GAMES.includes(game)) return Response.json({ error: 'unknown game' }, { status: 400 })
