@@ -3,50 +3,56 @@
 // Lights up the match a link points at (`#match-<id>`) on a tournament page,
 // and brings it to the middle of the screen (the bracket also scrolls
 // sideways). CSS `:target` alone isn't enough: Next's links change the URL
-// with history.pushState, which neither updates `:target` nor fires
-// `hashchange`, so a click from the bell or a Results row showed nothing.
+// without a real fragment navigation, so `:target` and `hashchange` stay
+// silent, and on the same page (a notification about this tournament,
+// clicked here) nothing at all happens. So: on arrival, and on any click on a
+// link to a match, look at the URL a moment later and light the match up.
+// Twice, the second time after Next's own scroll has settled.
 
 import { useEffect } from 'react'
 
 const CLASS = 'akv-hl'
 
 function apply() {
-  document.querySelectorAll(`.${CLASS}`).forEach((el) => el.classList.remove(CLASS))
   const id = decodeURIComponent(window.location.hash.slice(1))
-  if (!id.startsWith('match-')) return
-  const el = document.getElementById(id)
+  const el = id.startsWith('match-') ? document.getElementById(id) : null
+  document.querySelectorAll(`.${CLASS}`).forEach((x) => {
+    if (x !== el) x.classList.remove(CLASS)
+  })
   if (!el) return
-  // Restart the animation even when it's the same match again.
-  void el.offsetWidth
-  el.classList.add(CLASS)
+  if (!el.classList.contains(CLASS)) {
+    // Restart the animation for a new arrival.
+    void el.offsetWidth
+    el.classList.add(CLASS)
+  }
   const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   el.scrollIntoView({ block: 'center', inline: 'center', behavior: smooth ? 'smooth' : 'auto' })
 }
 
 export function MatchHighlighter() {
   useEffect(() => {
-    // After the page's own scroll on arrival.
-    const first = window.setTimeout(apply, 50)
-    const later = () => window.setTimeout(apply, 0)
-    window.addEventListener('hashchange', later)
-    window.addEventListener('popstate', later)
-    // Next's client navigation within this page: watch pushState / replaceState.
-    const push = history.pushState.bind(history)
-    const replace = history.replaceState.bind(history)
-    history.pushState = (...args: Parameters<History['pushState']>) => {
-      push(...args)
-      later()
+    const timers: number[] = []
+    const soon = () => {
+      timers.push(window.setTimeout(apply, 80), window.setTimeout(apply, 700))
     }
-    history.replaceState = (...args: Parameters<History['replaceState']>) => {
-      replace(...args)
-      later()
+    // A fresh arrival on the page.
+    soon()
+    // A click on a link to a match (the bell, a Results row), even to this page.
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href*="#match-"]')
+      if (a) {
+        document.querySelectorAll(`.${CLASS}`).forEach((x) => x.classList.remove(CLASS))
+        soon()
+      }
     }
+    document.addEventListener('click', onClick, true)
+    window.addEventListener('hashchange', soon)
+    window.addEventListener('popstate', soon)
     return () => {
-      window.clearTimeout(first)
-      window.removeEventListener('hashchange', later)
-      window.removeEventListener('popstate', later)
-      history.pushState = push
-      history.replaceState = replace
+      timers.forEach((t) => window.clearTimeout(t))
+      document.removeEventListener('click', onClick, true)
+      window.removeEventListener('hashchange', soon)
+      window.removeEventListener('popstate', soon)
     }
   }, [])
   return null
