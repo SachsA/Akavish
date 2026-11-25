@@ -237,7 +237,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   lists only esport so they stay cached); filters in `lib/esport.ts`. A list
   of articles (sections, Transfers) uses `components/ArticlesByDate.tsx`:
   the 4 newest, then by date. The
-  morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris).
+  morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris),
+  with each group / Swiss stage's standings computed from all its matches.
   Scout stories carry an *Esport kind*: `result` is never auto-drafted (the
   recap covers it), a `transfer` draft gets the `transfers` tag (Mercato),
   the only roster tag (`ROSTER_TAG_WORDS` blocks the model creating another).

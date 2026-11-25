@@ -6,7 +6,9 @@
 // a story with one source item whose text is the results, read from the
 // PandaScore sync (esport-matches), not from a web page. No big match
 // yesterday: no recap. Off with "Morning esport recap" unticked, or without
-// PANDASCORE_TOKEN.
+// PANDASCORE_TOKEN. Since 2026-11-25 each group or Swiss stage also gets its
+// standings (wins-losses over every finished match of the stage so far), so
+// the article says who is 2-0, 1-1 or 0-2, not only who won yesterday.
 
 import type { ScoutContext, SettingsDoc } from '../scout/context'
 import { draftStory } from '../scout/draft'
@@ -20,6 +22,8 @@ export const RECAP_SOURCE = 'Esport results (PandaScore)'
 const RECAP_HOUR = 8
 
 export interface RecapMatch {
+  /** The stage (PandaScore tournament) it belongs to. */
+  tournamentId: number | null
   game: EsportGame
   endAt: string
   stage: string
@@ -47,6 +51,7 @@ type MatchDoc = {
   winner?: number | null
   forfeit?: boolean | null
   tournament?: {
+    id?: number | string | null
     name?: string | null
     league?: string | null
     serie?: string | null
@@ -60,6 +65,7 @@ export function recapMatchOf(d: MatchDoc): RecapMatch | null {
   const league = (t.league ?? '').trim()
   const serie = (t.serie ?? '').trim()
   return {
+    tournamentId: t.id != null && Number.isFinite(Number(t.id)) ? Number(t.id) : null,
     game: d.game,
     endAt: d.endAt,
     stage: (t.name ?? '').trim(),
@@ -89,6 +95,88 @@ export function recapSelection(
     .sort((a, b) => Date.parse(a.endAt) - Date.parse(b.endAt))
 }
 
+/** A knockout stage: a win-loss record means nothing there. */
+export function isBracketStage(stage: string): boolean {
+  return /playoff|bracket|final|knockout|elimination|quarter|semi|decider|tiebreak|showmatch/i.test(
+    stage,
+  )
+}
+
+/**
+ * The stage's qualification rule when we know it for sure: the CS2 Major
+ * stages are Swiss, 3 wins qualify and 3 losses eliminate. Otherwise null:
+ * the records are given without a verdict.
+ */
+export function swissRule(m: Pick<RecapMatch, 'game' | 'event' | 'stage'>): {
+  wins: number
+  losses: number
+} | null {
+  if (m.game === 'cs2' && /major/i.test(m.event) && /stage\s*[123]\b/i.test(m.stage))
+    return { wins: 3, losses: 3 }
+  return null
+}
+
+export interface StageRecord {
+  team: string
+  wins: number
+  losses: number
+}
+
+/** Wins and losses of every team over the given matches (one stage), best first. */
+export function stageRecords(matches: RecapMatch[]): StageRecord[] {
+  const rec = new Map<string, StageRecord>()
+  const get = (team: string) => {
+    let r = rec.get(team)
+    if (!r) rec.set(team, (r = { team, wins: 0, losses: 0 }))
+    return r
+  }
+  for (const m of matches) {
+    if (m.winner !== 1 && m.winner !== 2) continue
+    if (m.team1 === 'TBD' || m.team2 === 'TBD') continue
+    get(m.winner === 1 ? m.team1 : m.team2).wins++
+    get(m.winner === 1 ? m.team2 : m.team1).losses++
+  }
+  return [...rec.values()].sort(
+    (a, b) => b.wins - a.wins || a.losses - b.losses || a.team.localeCompare(b.team),
+  )
+}
+
+/**
+ * The standings lines of one stage: one line per record ("- 2-0: A, B"),
+ * with "qualified" / "eliminated" when the stage's rule is known.
+ */
+export function standingsLines(
+  stage: string,
+  stageMatches: RecapMatch[],
+  rule: { wins: number; losses: number } | null,
+): string[] {
+  const records = stageRecords(stageMatches)
+  if (records.length < 3) return []
+  const groups = new Map<string, string[]>()
+  for (const r of records) {
+    const verdict = !rule
+      ? ''
+      : r.wins >= rule.wins
+        ? ' (qualified)'
+        : r.losses >= rule.losses
+          ? ' (eliminated)'
+          : ''
+    const key = `${r.wins}-${r.losses}${verdict}`
+    groups.set(key, [...(groups.get(key) ?? []), r.team])
+  }
+  return [
+    `Standings of ${stage || 'the stage'} after these matches (wins-losses over every finished match of the stage${
+      rule
+        ? `; Swiss format: ${rule.wins} wins qualify for the next stage, ${rule.losses} losses eliminate`
+        : ''
+    }):`,
+    ...[...groups.entries()].map(([k, teams]) => `- ${k}: ${teams.join(', ')}`),
+  ]
+}
+
+/** One key per stage: the PandaScore tournament, else its names. */
+const stageKey = (m: RecapMatch) => m.tournamentId ?? `${m.event}|${m.stage}`
+
 /** "Monday, November 23" */
 export function recapDay(parisDate: string): string {
   return new Date(`${parisDate}T12:00:00Z`).toLocaleDateString('en-US', {
@@ -101,12 +189,19 @@ export function recapDay(parisDate: string): string {
 
 /**
  * The source text the draft is written from: every match, by game then
- * event, with the exact scores. The opening lines say what to write.
+ * event, with the exact scores, then each group or Swiss stage's standings
+ * computed from `stageMatches` (every finished match of those stages up to
+ * that day; the day's own matches when not given). The opening lines say
+ * what to write.
  */
-export function recapText(matches: RecapMatch[], parisDate: string): string {
+export function recapText(
+  matches: RecapMatch[],
+  parisDate: string,
+  stageMatches: RecapMatch[] = matches,
+): string {
   const lines = [
     `Official results from PandaScore for ${recapDay(parisDate)} (Paris time), big tournaments only.`,
-    'Write a daily esport results round-up: a short intro on the standout results (titles, upsets, eliminations, qualifications) using only these results, then every match below grouped by game and tournament, with the exact scores. Winners as given; no stats, odds or quotes.',
+    'Write a daily esport results round-up: a short intro on the standout results (titles, upsets, eliminations, qualifications) and on where the stage stands (who is unbeaten, who is on the brink, who qualified or is out), using only these results and standings; then every match below grouped by game and tournament, with the exact scores; then, for each stage that has them, its standings as a list, one line per record exactly as given ("2-0: Team A, Team B"), under a heading such as "Standings after day 2". Winners as given; no stats, odds or quotes.',
     '',
   ]
   for (const game of ESPORT_GAMES) {
@@ -126,6 +221,17 @@ export function recapText(matches: RecapMatch[], parisDate: string): string {
         lines.push(
           `- ${m.team1} ${score} ${m.team2}${won ? `, ${won} win` : ''}${extra ? ` (${extra})` : ''}`,
         )
+      }
+      // Standings of each group / Swiss stage played that day in this event.
+      const stages = new Map<string | number, RecapMatch>()
+      for (const x of ms) if (!isBracketStage(x.stage)) stages.set(stageKey(x), x)
+      for (const [key, x] of stages) {
+        const st = standingsLines(
+          x.stage,
+          stageMatches.filter((y) => stageKey(y) === key),
+          swissRule(x),
+        )
+        if (st.length) lines.push('', ...st)
       }
     }
     lines.push('')
@@ -223,6 +329,36 @@ export async function maybeEsportRecap(
     return null
   }
 
+  // Every finished match of yesterday's group / Swiss stages so far, for
+  // their standings (the stage may have started days before).
+  const stageIds = [
+    ...new Set(
+      matches
+        .filter((m) => m.tournamentId != null && !isBracketStage(m.stage))
+        .map((m) => m.tournamentId as number),
+    ),
+  ]
+  let stageMatches: RecapMatch[] = matches
+  if (stageIds.length) {
+    const res = await ctx.payload.find({
+      collection: 'esport-matches',
+      where: {
+        and: [
+          { tournament: { in: stageIds } },
+          { status: { equals: 'finished' } },
+          { endAt: { less_than: new Date(from + 30 * 3600 * 1000).toISOString() } },
+        ],
+      },
+      limit: 2000,
+      depth: 1,
+      pagination: false,
+      overrideAccess: true,
+    })
+    stageMatches = (res.docs as unknown as MatchDoc[])
+      .map(recapMatchOf)
+      .filter((m): m is RecapMatch => m !== null && parisClock(new Date(m.endAt)).date <= yesterday)
+  }
+
   const game = mainGame(matches)
   const story = await ctx.payload.create({
     collection: 'scout-stories',
@@ -243,7 +379,7 @@ export async function maybeEsportRecap(
     data: {
       title: `Esport results, ${recapDay(yesterday)}`,
       url: `${SITE}/esport/results?day=${yesterday}&tier=${tiers.join(',')}`,
-      summary: recapText(matches, yesterday),
+      summary: recapText(matches, yesterday, stageMatches),
       publishedAt: ctx.now.toISOString(),
       source: await recapSourceId(ctx),
       status: 'triaged',

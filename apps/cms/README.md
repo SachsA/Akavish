@@ -584,7 +584,13 @@ site reads them) and read-only in practice: the next sync overwrites edits.
 *Scout settings → Esport recap: tournament tiers* (S and A by default, S, A
 and B in production since 2026-11-24)
 become a story with one item (source "Esport results (PandaScore)", never
-collected) whose text lists every match with its exact score, then a draft
+collected) whose text lists every match with its exact score and, for each
+group or Swiss stage (not playoffs: `isBracketStage`), its standings: the
+wins-losses of every team over all the stage's finished matches so far
+("2-0: A, B / 1-1: … / 0-2: …"), with "qualified" / "eliminated" for the CS2
+Major stages (Swiss, 3 wins / 3 losses: `swissRule`; no verdict elsewhere).
+The article opens on where the stage stands and ends its results with a
+"Standings after day N" list (since 2026-11-25, Alex: "qui est en 1:1"). Then a draft
 through the normal pipeline (Discord card, Publish / Edit / Reject, French
 after publish). A day without a match in those tiers: no recap. Off: untick
 *Morning esport recap*.
