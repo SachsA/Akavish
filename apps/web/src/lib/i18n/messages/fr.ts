@@ -231,6 +231,7 @@ export const fr: Messages = {
     timeNote: 'Heures dans ton fuseau horaire.',
     source: 'Données des matchs : PandaScore.',
     tournaments: 'Tournois',
+    openMatch: (a: string, b: string) => `${a} contre ${b} : voir sur la page du tournoi`,
     tournamentsTitle: 'Tournois esport',
     tournamentsBlurb: 'Les tournois en cours, tout juste finis ou qui commencent cette semaine : brackets, classements et toutes les phases.',
     bigEvents: 'Grands tournois',

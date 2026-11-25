@@ -32,7 +32,13 @@ function MatchCard({ m }: { m: StageMatch }) {
   const live = m.status === 'running'
   const done = m.status === 'finished'
   return (
-    <div className={`w-56 overflow-hidden rounded-md border bg-zinc-900 text-sm ${live ? 'border-red-500/60' : 'border-zinc-800'}`}>
+    // `#match-<id>` (a Results row, a notification) scrolls here and lights it up (globals.css).
+    <div
+      id={`match-${m.id}`}
+      className={`akv-target w-56 scroll-mt-28 overflow-hidden rounded-md border bg-zinc-900 text-sm ${
+        live ? 'border-red-500/60' : 'border-zinc-800'
+      }`}
+    >
       <Side team={m.t1} score={done || live ? m.s1 : null} won={m.winner === 1} lost={m.winner === 2} />
       <div className="border-t border-zinc-800/70" />
       <Side team={m.t2} score={done || live ? m.s2 : null} won={m.winner === 2} lost={m.winner === 1} />

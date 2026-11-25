@@ -253,8 +253,9 @@ export async function notifyMatchEvents(payload: Payload, events: MatchEvent[]):
       readers,
       type === 'start' ? 'match_start' : 'match_end',
       data,
+      // The match on its tournament page (scrolled to and highlighted).
       e.slug
-        ? `/esport/tournaments/${e.slug}`
+        ? `/esport/tournaments/${e.slug}#match-${e.matchId}`
         : type === 'start'
           ? '/esport/calendar'
           : '/esport/results',
@@ -316,11 +317,100 @@ export async function pruneNotifications(payload: Payload, now = new Date()): Pr
     },
     overrideAccess: true,
   })
+  await pruneMatchFollows(payload, now)
+}
+
+/** A followed match is dropped a day after it ended (its result was notified). */
+export const MATCH_FOLLOW_GRACE_MS = 24 * 3600 * 1000
+
+export async function pruneMatchFollows(payload: Payload, now = new Date()): Promise<number> {
+  const { docs } = await payload.find({
+    collection: 'esport-follows' as never,
+    where: { kind: { equals: 'match' } },
+    limit: 10000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    select: { pandaId: true, at: true },
+  } as never)
+  const follows = docs as unknown as Array<{ id: number; pandaId: number; at?: string | null }>
+  if (!follows.length) return 0
+  const cutoff = new Date(now.getTime() - MATCH_FOLLOW_GRACE_MS).toISOString()
+  const { docs: over } = await payload.find({
+    collection: 'esport-matches',
+    where: {
+      and: [
+        { pandaId: { in: [...new Set(follows.map((f) => f.pandaId))] } },
+        { status: { in: ['finished', 'canceled'] } },
+        { endAt: { less_than: cutoff } },
+      ],
+    },
+    limit: 10000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    select: { pandaId: true },
+  } as never)
+  const done = new Set(
+    (over as unknown as Array<{ pandaId: number }>).map((m) => Number(m.pandaId)),
+  )
+  // Also a match no longer synced that should have been played days ago.
+  const stale = (f: { at?: string | null }) =>
+    !!f.at && Date.parse(f.at) < now.getTime() - 4 * MATCH_FOLLOW_GRACE_MS
+  const ids = follows.filter((f) => done.has(Number(f.pandaId)) || stale(f)).map((f) => f.id)
+  if (ids.length) {
+    await payload.delete({
+      collection: 'esport-follows' as never,
+      where: { id: { in: ids } },
+      overrideAccess: true,
+    })
+  }
+  return ids.length
 }
 
 // ─── HTTP: the website's calls (READER_API_SECRET) ───────────────────────────
 
 const FOLLOW_FIELDS = ['kind', 'pandaId', 'game', 'label', 'acronym', 'logo', 'slug', 'at'] as const
+
+/**
+ * Followed matches with what the reader's list shows: both teams' names and
+ * logos, and their tournament page (`slug`), looked up now from the synced
+ * match (a follow made before the sync knew its tournament had none).
+ */
+async function withMatchDetails(
+  payload: Payload,
+  rows: Array<Record<string, unknown>>,
+): Promise<Array<Record<string, unknown>>> {
+  const ids = rows.filter((r) => r.kind === 'match').map((r) => Number(r.pandaId))
+  if (!ids.length) return rows
+  const { docs } = await payload.find({
+    collection: 'esport-matches',
+    where: { pandaId: { in: ids } },
+    limit: ids.length,
+    depth: 1,
+    pagination: false,
+    overrideAccess: true,
+  })
+  type T = { name?: string | null; logoUrl?: string | null }
+  const byId = new Map(
+    (
+      docs as unknown as Array<{
+        pandaId: number
+        team1?: T
+        team2?: T
+        tournament?: { slug?: string | null } | null
+      }>
+    ).map((m) => [Number(m.pandaId), m]),
+  )
+  return rows.map((r) => {
+    const m = r.kind === 'match' ? byId.get(Number(r.pandaId)) : undefined
+    if (!m) return r
+    const team = (t?: T) => ({ name: t?.name ?? null, logo: t?.logoUrl ?? null })
+    const slug =
+      (m.tournament && typeof m.tournament === 'object' ? m.tournament.slug : null) ?? r.slug
+    return { ...r, slug: slug ?? null, teams: [team(m.team1), team(m.team2)] }
+  })
+}
 
 /**
  * /reader-api/esport-follows
@@ -344,11 +434,10 @@ export const esportFollowsHandler: PayloadHandler = async (req) => {
       depth: 0,
       overrideAccess: true,
     })
-    return json({
-      docs: (docs as unknown as Array<Record<string, unknown>>).map((d) =>
-        Object.fromEntries(FOLLOW_FIELDS.map((k) => [k, d[k] ?? null])),
-      ),
-    })
+    const rows = (docs as unknown as Array<Record<string, unknown>>).map((d) =>
+      Object.fromEntries(FOLLOW_FIELDS.map((k) => [k, d[k] ?? null])),
+    )
+    return json({ docs: await withMatchDetails(req.payload, rows) })
   }
   const body = await readBody(req)
   if (req.method === 'DELETE') {

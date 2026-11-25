@@ -588,6 +588,10 @@ the name and logo). Two things make **Reader notifications**: the esport sync
 followed team in its title or excerpt (`mentionsTeam`, Articles `afterChange`).
 One per reader and event (`dedupeKey`), filtered by the reader's **notify**
 settings (match starts / results / news, all on), deleted after 30 days. A
+followed match goes a day after it ended (`pruneMatchFollows`, every sync);
+the list sent to the site adds a match's teams and tournament page from the
+synced match (`withMatchDetails`). Match notifications link to
+`/esport/tournaments/<slug>#match-<id>`. A
 notification stores facts (`data`: teams, score, event, article), the site
 words them. Website calls, with `READER_API_SECRET`:
 `/api/reader-api/esport-follows` (GET / POST / DELETE),

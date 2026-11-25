@@ -54,7 +54,12 @@ function Item({ n }: { n: ReaderNotification }) {
   }
   return (
     <Link
-      href={n.url}
+      // Older ones point at the tournament page only: open the match there.
+      href={
+        n.url.startsWith('/esport/tournaments/') && !n.url.includes('#') && d.matchId
+          ? `${n.url}#match-${d.matchId}`
+          : n.url
+      }
       className={`block px-4 py-3 hover:bg-zinc-800/60 ${n.readAt ? '' : 'bg-emerald-500/5'}`}
     >
       <span className="flex items-start gap-2">

@@ -233,6 +233,7 @@ export const en = {
     timeNote: 'Times in your time zone.',
     source: 'Match data: PandaScore.',
     tournaments: 'Tournaments',
+    openMatch: (a: string, b: string) => `${a} vs ${b}: open it on its tournament page`,
     tournamentsTitle: 'Esport tournaments',
     tournamentsBlurb: 'The tournaments on now, just finished or starting this week: brackets, standings and every stage.',
     bigEvents: 'Big tournaments',

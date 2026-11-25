@@ -226,6 +226,8 @@ export interface EsportFollow {
   slug: string | null
   /** Match: when it starts. */
   at: string | null
+  /** Match, when listed: both teams as synced now (names, logos). */
+  teams?: Array<{ name: string | null; logo: string | null }>
 }
 
 export async function fetchEsportFollows(clerkId: string): Promise<EsportFollow[]> {

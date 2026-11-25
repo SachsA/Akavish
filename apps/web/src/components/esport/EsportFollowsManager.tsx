@@ -104,7 +104,19 @@ export function EsportFollowsManager({ teams }: { teams: TeamChoice[] }) {
               <ul className="divide-y divide-zinc-800 rounded-lg border border-zinc-800">
                 {list.map((f) => (
                   <li key={`${f.kind}:${f.pandaId}`} className="flex items-center gap-3 px-3 py-2 text-sm">
-                    <Logo src={f.logo} />
+                    {f.kind === 'match' ? (
+                      // Both teams' logos (as synced now), nothing when PandaScore has none.
+                      <span className="flex shrink-0 items-center gap-1">
+                        {(f.teams ?? []).map((tm, i) =>
+                          tm.logo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img key={i} src={tm.logo} alt="" width={20} height={20} loading="lazy" className="h-5 w-5 object-contain" />
+                          ) : null
+                        )}
+                      </span>
+                    ) : (
+                      <Logo src={f.logo} />
+                    )}
                     {f.game && isEsportGame(f.game) && (
                       <span className={`rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase ${ESPORT_GAME_BADGE[f.game]}`}>
                         {ESPORT_GAME_LABEL[f.game]}
@@ -112,8 +124,14 @@ export function EsportFollowsManager({ teams }: { teams: TeamChoice[] }) {
                     )}
                     <span className="min-w-0 flex-1 truncate text-zinc-100">
                       {f.slug ? (
-                        <Link href={`/esport/tournaments/${f.slug}`} className="hover:text-emerald-400">
-                          {f.label}
+                        <Link
+                          // A match opens on its tournament page, scrolled to and lit up.
+                          href={`/esport/tournaments/${f.slug}${f.kind === 'match' ? `#match-${f.pandaId}` : ''}`}
+                          className="hover:text-emerald-400"
+                        >
+                          {f.kind === 'match' && f.teams?.every((tm) => tm.name)
+                            ? `${f.teams[0].name} vs ${f.teams[1].name}`
+                            : f.label}
                         </Link>
                       ) : (
                         f.label

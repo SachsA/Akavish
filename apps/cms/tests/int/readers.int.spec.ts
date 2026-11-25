@@ -33,6 +33,7 @@ import {
   esportFollowsHandler,
   notificationsHandler,
   notifyMatchEvents,
+  pruneMatchFollows,
   notifySettingsHandler,
   pushHandler,
 } from '@/lib/esport-follows'
@@ -402,6 +403,49 @@ describe('the website endpoints (READER_API_SECRET)', () => {
 
     const off = await esportFollowsHandler(req({ method: 'DELETE', body: { clerkId: id, kind: 'team', pandaId: 987_001 } }))
     expect(await off.json()).toEqual({ following: false })
+  })
+
+  it('lists a followed match with its teams and tournament page, and drops it a day after it ended', async () => {
+    const id = clerk('fm')
+    const profile = { clerkId: id, emailVerified: true }
+    const t = await payload.create({
+      collection: 'esport-tournaments',
+      data: { pandaId: 987_500, game: 'cs2', name: 'Playoffs', tier: 'c', slug: `${RUN.toLowerCase()}-playoffs` } as never,
+      overrideAccess: true,
+    })
+    const match = (pandaId: number, endAt: string) =>
+      payload.create({
+        collection: 'esport-matches',
+        data: {
+          pandaId,
+          game: 'cs2',
+          name: 'A vs B',
+          status: 'finished',
+          endAt,
+          tournament: t.id,
+          team1: { pandaId: 1, name: 'Alpha', logoUrl: 'https://cdn-api.pandascore.co/a.png' },
+          team2: { pandaId: 2, name: 'Bravo' },
+        } as never,
+        overrideAccess: true,
+      })
+    const old = await match(987_501, new Date(Date.now() - 2 * 86400_000).toISOString())
+    const fresh = await match(987_502, new Date(Date.now() - 3600_000).toISOString())
+    for (const pandaId of [987_501, 987_502]) {
+      await esportFollowsHandler(req({ body: { profile, follow: { kind: 'match', pandaId, label: 'A vs B' } } }))
+    }
+    const list = await (await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
+    expect(list.docs.find((d: { pandaId: number }) => d.pandaId === 987_502)).toMatchObject({
+      slug: `${RUN.toLowerCase()}-playoffs`,
+      teams: [
+        { name: 'Alpha', logo: 'https://cdn-api.pandascore.co/a.png' },
+        { name: 'Bravo', logo: null },
+      ],
+    })
+    expect(await pruneMatchFollows(payload)).toBeGreaterThanOrEqual(1)
+    const after = await (await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
+    expect(after.docs.map((d: { pandaId: number }) => d.pandaId)).toEqual([987_502])
+    for (const m of [old, fresh]) await payload.delete({ collection: 'esport-matches', id: m.id, overrideAccess: true })
+    await payload.delete({ collection: 'esport-tournaments', id: t.id, overrideAccess: true })
   })
 
   it('keeps one push subscription per browser, moves it to the reader who subscribes last', async () => {

@@ -292,8 +292,19 @@ export function EsportMatches({
                           <li
                             key={r.id}
                             data-revealed={revealed.has(r.id) || undefined}
-                            className="akv-match flex items-center gap-3 px-4 py-2.5 text-sm"
+                            className={`akv-match relative flex items-center gap-3 px-4 py-2.5 text-sm ${
+                              r.tournamentSlug ? 'hover:bg-zinc-800/40' : ''
+                            }`}
                           >
+                            {/* The whole row opens the match on its tournament page; the
+                                buttons and links in it sit above (relative z-10). */}
+                            {r.tournamentSlug && (
+                              <Link
+                                href={`/esport/tournaments/${r.tournamentSlug}#match-${r.id}`}
+                                aria-label={t.esport.openMatch(r.t1.name, r.t2.name)}
+                                className="absolute inset-0"
+                              />
+                            )}
                             <span
                               className="w-12 shrink-0 tabular-nums text-xs text-zinc-400"
                               suppressHydrationWarning
@@ -315,7 +326,7 @@ export function EsportMatches({
                                     type="button"
                                     onClick={() => setRevealed((s) => new Set(s).add(r.id))}
                                     aria-label={t.spoilers.revealLabel(r.t1.name, r.t2.name)}
-                                    className="akv-mask h-7 w-full rounded-md border border-emerald-500/60 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10"
+                                    className="akv-mask relative z-10 h-7 w-full rounded-md border border-emerald-500/60 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10"
                                   >
                                     {t.spoilers.reveal}
                                   </button>
@@ -327,7 +338,10 @@ export function EsportMatches({
                             <Team team={r.t2} won={scored && r.winner === 2} side="right" />
                             <span className="hidden w-28 shrink-0 text-right text-xs text-zinc-400 md:block">
                               {r.tournamentSlug && r.stage ? (
-                                <Link href={`/esport/tournaments/${r.tournamentSlug}`} className="hover:text-emerald-400">
+                                <Link
+                                  href={`/esport/tournaments/${r.tournamentSlug}`}
+                                  className="relative z-10 hover:text-emerald-400"
+                                >
                                   {r.stage}
                                 </Link>
                               ) : null}
@@ -345,13 +359,14 @@ export function EsportMatches({
                                 href={r.stream}
                                 target="_blank"
                                 rel="noopener noreferrer nofollow"
-                                className="hidden shrink-0 text-xs font-semibold text-emerald-400 hover:text-emerald-300 sm:inline"
+                                className="relative z-10 hidden shrink-0 text-xs font-semibold text-emerald-400 hover:text-emerald-300 sm:inline"
                               >
                                 {t.esport.watch}
                               </a>
                             ) : null}
                             {/* Follow this match: told when it starts and ends (the bell). */}
                             {mode === 'calendar' && r.status !== 'finished' && r.status !== 'canceled' ? (
+                              <span className="relative z-10">
                               <EsportFollowButton
                                 look="bell"
                                 follow={{
@@ -365,6 +380,7 @@ export function EsportMatches({
                                   at: r.at,
                                 }}
                               />
+                              </span>
                             ) : null}
                           </li>
                         )

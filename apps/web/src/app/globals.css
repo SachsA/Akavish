@@ -221,3 +221,22 @@ html[data-spoilers='hide'] .akv-zone:not([data-revealed]) .akv-zone-content {
   pointer-events: none;
   user-select: none;
 }
+/* A match opened from a link (`#match-<id>`): lit up on its tournament page. */
+.akv-target:target {
+  outline: 2px solid rgb(var(--emerald-400));
+  outline-offset: 3px;
+  animation: akv-target-pulse 1.2s ease-out 2;
+}
+@keyframes akv-target-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--emerald-400) / 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgb(var(--emerald-400) / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .akv-target:target {
+    animation: none;
+  }
+}
