@@ -15,13 +15,21 @@ export function PushToggle() {
   const [state, setState] = useState<'idle' | 'busy' | 'denied' | 'failed'>('idle')
 
   useEffect(() => {
-    const s = pushSupport()
-    setSupport(s)
-    if (s !== 'ok') return
-    if (Notification.permission === 'denied') setState('denied')
-    currentSubscription()
-      .then((sub) => setOn(!!sub))
-      .catch(() => setOn(false))
+    let cancelled = false
+    // Only in the browser, after the first render (the server can't know).
+    void (async () => {
+      await Promise.resolve()
+      const s = pushSupport()
+      if (cancelled) return
+      setSupport(s)
+      if (s !== 'ok') return
+      if (Notification.permission === 'denied') setState('denied')
+      const sub = await currentSubscription().catch(() => null)
+      if (!cancelled) setOn(!!sub)
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   async function toggle() {
