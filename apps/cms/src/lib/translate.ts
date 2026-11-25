@@ -502,6 +502,20 @@ export async function translateShort(
   return Array.isArray(out) && out.length === texts.length ? out.map((t) => String(t).trim()) : null
 }
 
+/**
+ * Run an update; false when the document was deleted meanwhile (a tag removed
+ * while the translation ran): skip it rather than fail the whole job.
+ */
+async function skipIfGone(update: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await update()
+    return true
+  } catch (err) {
+    if ((err as { status?: number }).status === 404) return false
+    throw err
+  }
+}
+
 /** Tags without a French name and authors without a French bio get one. */
 export async function translateTaxonomy(
   payload: Payload,
@@ -526,13 +540,17 @@ export async function translateTaxonomy(
     )
     if (!fr) continue
     for (const [j, tag] of batch.entries()) {
-      await payload.update({
-        collection: 'tags',
-        id: tag.id,
-        data: { nameFr: fr[j] } as never,
-        overrideAccess: true,
-      })
-      tagCount++
+      if (
+        await skipIfGone(() =>
+          payload.update({
+            collection: 'tags',
+            id: tag.id,
+            data: { nameFr: fr[j] } as never,
+            overrideAccess: true,
+          }),
+        )
+      )
+        tagCount++
     }
   }
   const { docs: authors } = await payload.find({
@@ -560,13 +578,17 @@ export async function translateTaxonomy(
   )
   if (bios) {
     for (const [j, a] of withBio.entries()) {
-      await payload.update({
-        collection: 'authors',
-        id: a.id,
-        data: { bioFr: bios[j] } as never,
-        overrideAccess: true,
-      })
-      authorCount++
+      if (
+        await skipIfGone(() =>
+          payload.update({
+            collection: 'authors',
+            id: a.id,
+            data: { bioFr: bios[j] } as never,
+            overrideAccess: true,
+          }),
+        )
+      )
+        authorCount++
     }
   }
   return { tags: tagCount, authors: authorCount }
