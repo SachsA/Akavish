@@ -253,7 +253,7 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris),
   with each group / Swiss stage's standings computed from all its matches.
   Scout stories carry an *Esport kind*: `result` is never auto-drafted (the
-  recap covers it), a `transfer` draft gets the `transfers` tag (Mercato),
+  recap covers it; `qualification`, big events only, is), a `transfer` draft gets the `transfers` tag (Mercato),
   the only roster tag (`ROSTER_TAG_WORDS` blocks the model creating another).
 - **Media sizes are WebP** (`Media.ts`, `MEDIA_SIZE_FORMAT`); the original
   stays as uploaded and the site never shows it. A new size gets

@@ -367,10 +367,13 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
    model says "news" (`decide`, since 2026-11-23: it filed CS2 roster moves
    and Major invites from HLTV as news). An esport story also gets an
    *Esport kind* (since 2026-11-24): `transfer` (signing, departure, bench,
-   roster), `final` (title, grand final of a notable event), `result` (any
-   other match or stage result), `tournament` (format, dates, invites),
-   `other`; null on any other category, `other` when the model gives none.
-   A `result` is never auto-drafted (the morning recap below covers it); a
+   roster), `final` (title, grand final of a notable event), `qualification`
+   (since 2026-11-25: a team qualified or eliminated in one of the big events
+   the prompt lists, e.g. a CS2 Major stage), `result` (any other match or
+   stage result), `tournament` (format, dates, invites), `other`; null on any
+   other category, `other` when the model gives none. A `result` is never
+   auto-drafted (the morning recap below covers it); `final`, `result` and
+   `qualification` drafts are ticked *Gives a result away*; a
    `transfer` draft gets the tag `transfers` (FR "Mercato", created on first
    use), which fills `/esport/transfers`. It is the only roster tag: the
    older "Roster Moves" was merged into it on 2026-11-24 and the draft model

@@ -8,7 +8,14 @@ export const CATEGORIES = ['news', 'leak', 'review', 'preview', 'conference', 'e
 export type Category = (typeof CATEGORIES)[number]
 
 /** What an esport story is about (step 4): transfers go to the Mercato, plain results to the morning recap. */
-export const ESPORT_KINDS = ['transfer', 'final', 'result', 'tournament', 'other'] as const
+export const ESPORT_KINDS = [
+  'transfer',
+  'final',
+  'qualification',
+  'result',
+  'tournament',
+  'other',
+] as const
 export type EsportKind = (typeof ESPORT_KINDS)[number]
 
 export interface TriageItem {
@@ -62,7 +69,8 @@ Leaks and rumours are category "leak". Esport results, transfers and tournaments
 For an esport story, also give esport_kind (null for any other category):
 - "transfer": a signing, a departure, a benching, a player or coach leaving, a team "allowing a player to explore options", a roster announced or completed, a team entering or leaving a game;
 - "final": a title won or the grand final of a notable tournament (a CS2 Major, BLAST, IEM, ESL Pro League, PGL, Worlds, MSI, LEC/LCK/LPL/LTA finals, VCT Masters or Champions, an RLCS Major or Worlds, the Six Invitational or a Six Major, the Esports World Cup…);
-- "result": any other match or series result, a team going through or out of a group or a stage, standings, a qualifier result, live coverage of matches;
+- "qualification": in one of those big events only, a team qualifying for the next stage or the playoffs, or being eliminated ("NIP beat Liquid to reach Stage 2 of the Major", "FaZe are out of the Major");
+- "result": any other match or series result, a team going through or out of a group or a stage of a smaller event, standings, a qualifier result, live coverage of matches;
 - "tournament": a tournament's announcement, format, dates, venue, invites, teams, prize pool, a league's changes;
 - "other": anything else (a player's statement, an award, a controversy, a ban).`
 

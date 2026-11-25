@@ -76,13 +76,15 @@ export const ScoutStories: CollectionConfig = {
       options: [
         { label: 'Transfer / roster', value: 'transfer' },
         { label: 'Final / title', value: 'final' },
+        // Big events only (2026-11-25, Alex): drafted, unlike a plain result.
+        { label: 'Qualified / eliminated (big event)', value: 'qualification' },
         { label: 'Match result', value: 'result' },
         { label: 'Tournament news', value: 'tournament' },
         { label: 'Other', value: 'other' },
       ],
       admin: {
         description:
-          'Esport only. "Match result" is never drafted automatically: the morning recap covers it.',
+          'Esport only. "Match result" is never drafted automatically: the morning recap covers it. "Qualified / eliminated" (big events only) is, as a spoiler.',
       },
     },
     {

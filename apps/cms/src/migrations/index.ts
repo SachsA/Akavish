@@ -27,6 +27,7 @@ import * as migration_20261124_153105_esport_recap from './20261124_153105_espor
 import * as migration_20261124_160303_esport_kind from './20261124_160303_esport_kind';
 import * as migration_20261125_092756_article_spoiler from './20261125_092756_article_spoiler';
 import * as migration_20261125_104446_tournament_structure from './20261125_104446_tournament_structure';
+import * as migration_20261125_131622_esport_kind_qualification from './20261125_131622_esport_kind_qualification';
 
 export const migrations = [
   {
@@ -173,5 +174,10 @@ export const migrations = [
     up: migration_20261125_104446_tournament_structure.up,
     down: migration_20261125_104446_tournament_structure.down,
     name: '20261125_104446_tournament_structure'
+  },
+  {
+    up: migration_20261125_131622_esport_kind_qualification.up,
+    down: migration_20261125_131622_esport_kind_qualification.down,
+    name: '20261125_131622_esport_kind_qualification'
   },
 ];

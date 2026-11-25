@@ -302,6 +302,7 @@ describe('triage answer handling', () => {
       { index: 1, title: 'G2 beat Fnatic in week 2', summary: '', source: 'Dexerto LoL' },
       { index: 2, title: 'GTA 6 patch notes', summary: '', source: 'IGN' },
       { index: 3, title: 'Odd answer', summary: '', source: 'HLTV' },
+      { index: 4, title: 'NIP beat Liquid to reach Stage 2', summary: '', source: 'HLTV' },
     ]
     const d = decide(
       {
@@ -338,8 +339,16 @@ describe('triage answer handling', () => {
             significance: 30,
             esport_kind: 'nonsense',
           },
+          {
+            key: 'N5',
+            title: 'NIP reach Stage 2',
+            game: 'Counter-Strike 2',
+            category: 'esport',
+            significance: 50,
+            esport_kind: 'qualification',
+          },
         ] as never,
-        assignments: [0, 1, 2, 3].map((i) => ({ item: i, story: `N${i + 1}` })),
+        assignments: [0, 1, 2, 3, 4].map((i) => ({ item: i, story: `N${i + 1}` })),
       },
       items,
       [],
@@ -352,6 +361,7 @@ describe('triage answer handling', () => {
     expect(kind(1)).toBe('result')
     expect(kind(2)).toBeNull() // not esport
     expect(kind(3)).toBe('other') // unknown value
+    expect(kind(4)).toBe('qualification') // big event: drafted, as a spoiler
   })
 
   it('dry run makes one story per item', () => {
