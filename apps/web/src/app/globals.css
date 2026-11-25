@@ -207,3 +207,17 @@ html[data-spoilers='hide'] .akv-match:not([data-revealed]) .akv-won {
   font-weight: 400;
   color: var(--color-zinc-300);
 }
+/* Brackets and standings (SpoilerZone): blurred behind a button while hidden. */
+.akv-zone-veil {
+  display: none;
+}
+html[data-spoilers='hide'] .akv-zone:not([data-revealed]) .akv-zone-veil {
+  display: flex;
+}
+html[data-spoilers='hide'] .akv-zone:not([data-revealed]) .akv-zone-content {
+  filter: blur(8px);
+  max-height: 28rem;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}

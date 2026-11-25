@@ -88,7 +88,11 @@ export interface RawMatch {
     tier?: string | null
     begin_at?: string | null
     end_at?: string | null
+    serie_id?: number | null
+    has_bracket?: boolean | null
   } | null
+  /** Brackets endpoint only: the matches whose winner (or loser) plays this one. */
+  previous_matches?: Array<{ match_id?: number | null; type?: string | null } | null> | null
   streams_list?: Array<{
     language?: string | null
     raw_url?: string | null
@@ -110,6 +114,11 @@ export interface TournamentData {
   pandaId: number
   game: EsportGame
   name: string
+  /** PandaScore's slug, the site's URL (/esport/tournaments/<slug>). */
+  slug: string | null
+  /** The season it is a stage of: its sibling stages share it. */
+  serieId: number | null
+  hasBracket: boolean
   league: string
   leagueLogoUrl: string | null
   serie: string
@@ -165,6 +174,9 @@ export function tournamentOf(raw: RawMatch, game: EsportGame): TournamentData | 
     pandaId: id,
     game,
     name: str(raw.tournament?.name) ?? 'Tournament',
+    slug: str(raw.tournament?.slug),
+    serieId: num(raw.tournament?.serie_id) ?? num(raw.serie?.id),
+    hasBracket: raw.tournament?.has_bracket === true,
     league: str(raw.league?.name) ?? '',
     leagueLogoUrl: str(raw.league?.image_url),
     serie: str(raw.serie?.full_name) ?? str(raw.serie?.name) ?? '',
@@ -238,4 +250,110 @@ export function syncUrls(game: EsportGame, now: Date): string[] {
     `${API_BASE}/${slug}/matches/upcoming?per_page=100&sort=begin_at&range[begin_at]=${n},${soon}`,
     `${API_BASE}/${slug}/matches/past?per_page=100&sort=-end_at&range[end_at]=${ago},${n}`,
   ]
+}
+
+// ─── Brackets and standings (the tournament pages, 2026-11-25) ───────────────
+// GET /tournaments/{id}/brackets lists a stage's matches, each with the matches
+// it follows from (`previous_matches`: the winner, or the loser, of match X).
+// A Swiss or group stage has none of those links: its rounds, plus
+// GET /tournaments/{id}/standings. Both are on the free plan ("available to
+// all customers"). Stored on the tournament as `structure` (sync.ts).
+
+export interface StructureTeam {
+  name: string
+  acronym: string | null
+  logo: string | null
+}
+
+export interface StructureMatch {
+  id: number
+  /** "Quarterfinal 2: SIN vs MZP", "Round 3: IMP vs FLY", "Grand Final: …" */
+  name: string
+  at: string | null
+  status: MatchStatus
+  t1: StructureTeam | null
+  t2: StructureTeam | null
+  s1: number | null
+  s2: number | null
+  winner: 1 | 2 | null
+  bestOf: number | null
+  prev: Array<{ id: number; type: 'winner' | 'loser' }>
+}
+
+export interface StructureStanding {
+  rank: number
+  team: StructureTeam
+  wins: number
+  losses: number
+  ties: number
+}
+
+export interface TournamentStructure {
+  matches: StructureMatch[]
+  standings: StructureStanding[]
+}
+
+const sideOf = (t: TeamSide): StructureTeam | null =>
+  t.pandaId == null && t.name === 'TBD'
+    ? null
+    : { name: t.name, acronym: t.acronym, logo: t.logoUrl }
+
+/** The brackets endpoint's matches as we store them, in time order. */
+export function bracketOf(raws: unknown, game: EsportGame): StructureMatch[] {
+  if (!Array.isArray(raws)) return []
+  return (raws as RawMatch[])
+    .filter((r) => typeof r?.id === 'number')
+    .map((r) => {
+      const m = matchOf(r, game)
+      return {
+        id: r.id,
+        name: m.name,
+        at: m.beginAt ?? m.scheduledAt,
+        status: m.status,
+        t1: sideOf(m.team1),
+        t2: sideOf(m.team2),
+        s1: m.score1,
+        s2: m.score2,
+        winner: m.winner,
+        bestOf: m.bestOf,
+        prev: (r.previous_matches ?? []).flatMap((p) =>
+          typeof p?.match_id === 'number'
+            ? [
+                {
+                  id: p.match_id,
+                  type: p.type === 'loser' ? ('loser' as const) : ('winner' as const),
+                },
+              ]
+            : [],
+        ),
+      }
+    })
+    .sort((a, b) => (a.at ?? '9999').localeCompare(b.at ?? '9999') || a.id - b.id)
+}
+
+/** The standings endpoint as we store it (rank order). */
+export function standingsOf(raws: unknown): StructureStanding[] {
+  if (!Array.isArray(raws)) return []
+  return raws
+    .flatMap((r) => {
+      const x = r as {
+        rank?: unknown
+        wins?: unknown
+        losses?: unknown
+        ties?: unknown
+        team?: RawTeam | null
+      }
+      const team = teamOf(x?.team)
+      if (team.pandaId == null) return []
+      return [
+        {
+          rank: num(x.rank) ?? 0,
+          team: { name: team.name, acronym: team.acronym, logo: team.logoUrl },
+          wins: num(x.wins) ?? 0,
+          losses: num(x.losses) ?? 0,
+          ties: num(x.ties) ?? 0,
+        },
+      ]
+    })
+    .sort((a, b) => a.rank - b.rank || b.wins - a.wins)
 }

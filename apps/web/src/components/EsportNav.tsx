@@ -7,17 +7,22 @@ import { getMessages } from '@/lib/i18n/server'
 import type { EsportGame } from '@/lib/esport'
 import { SpoilerToggle } from './SpoilerToggle'
 
-export type EsportTab = 'news' | 'results' | 'transfers' | 'calendar'
+export type EsportTab = 'news' | 'results' | 'transfers' | 'calendar' | 'tournaments'
 
 const TABS: Array<{ key: EsportTab; href: string }> = [
   { key: 'news', href: '/esport' },
   { key: 'results', href: '/esport/results' },
   { key: 'transfers', href: '/esport/transfers' },
   { key: 'calendar', href: '/esport/calendar' },
+  { key: 'tournaments', href: '/esport/tournaments' },
 ]
 
 const withGame = (tab: EsportTab, href: string, game: EsportGame | null) =>
-  !game ? href : tab === 'news' || tab === 'transfers' ? `${href}/${game}` : `${href}?game=${game}`
+  !game
+    ? href
+    : tab === 'news' || tab === 'transfers' || tab === 'tournaments'
+      ? `${href}/${game}`
+      : `${href}?game=${game}`
 
 export function EsportNav({
   active,

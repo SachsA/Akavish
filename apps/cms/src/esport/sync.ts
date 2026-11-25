@@ -8,14 +8,20 @@
 
 import type { Payload } from 'payload'
 import {
+  API_BASE,
   ESPORT_GAMES,
+  TIERS,
+  bracketOf,
   matchOf,
+  standingsOf,
   syncUrls,
   tournamentOf,
   type EsportGame,
   type MatchData,
   type RawMatch,
+  type Tier,
   type TournamentData,
+  type TournamentStructure,
 } from './pandascore'
 
 const UA = 'AkavishScout/1.0 (+https://akavish.gg)'
@@ -99,6 +105,8 @@ export interface SyncResult {
   matches: number
   created: number
   updated: number
+  /** PandaScore ids of the tournaments with a new or changed match. */
+  touched?: number[]
   error?: string
 }
 
@@ -155,6 +163,7 @@ export async function saveGame(
   )
   let created = 0
   let updated = 0
+  const touched = new Set<number>()
   for (const m of matches) {
     const { tournamentPandaId, ...fields } = m
     const data = {
@@ -171,6 +180,7 @@ export async function saveGame(
         depth: 0,
       })
       created++
+      if (m.tournamentPandaId != null) touched.add(m.tournamentPandaId)
     } else if (!m.modifiedAt || !sameInstant(found.modifiedAt, m.modifiedAt)) {
       await payload.update({
         collection: 'esport-matches',
@@ -180,9 +190,102 @@ export async function saveGame(
         depth: 0,
       })
       updated++
+      if (m.tournamentPandaId != null) touched.add(m.tournamentPandaId)
     }
   }
-  return { game, matches: matches.length, created, updated }
+  return { game, matches: matches.length, created, updated, touched: [...touched] }
+}
+
+/** Brackets / standings fetched per sync at most (2 requests each): ~150 an hour more. */
+export const MAX_STRUCTURES = 12
+
+type TournamentRow = {
+  id: number | string
+  pandaId: number
+  game: EsportGame
+  tier?: Tier | null
+  hasBracket?: boolean | null
+  beginAt?: string | null
+  structureAt?: string | null
+}
+
+/**
+ * Which tournaments get their bracket (re)fetched this run: those with a new or
+ * changed match first, then those never fetched; bigger tiers, then the most
+ * recent, first. Pure.
+ */
+export function structureQueue(
+  rows: TournamentRow[],
+  touched: Set<number>,
+  max = MAX_STRUCTURES,
+): TournamentRow[] {
+  const tierRank = (t: Tier | null | undefined) => TIERS.indexOf((t ?? 'unranked') as Tier)
+  return rows
+    .filter((r) => touched.has(r.pandaId) || !r.structureAt)
+    .sort(
+      (a, b) =>
+        Number(!touched.has(a.pandaId)) - Number(!touched.has(b.pandaId)) ||
+        tierRank(a.tier) - tierRank(b.tier) ||
+        (b.beginAt ?? '').localeCompare(a.beginAt ?? ''),
+    )
+    .slice(0, max)
+}
+
+/** Fetch and save the brackets (and standings of a stage without a bracket). */
+export async function refreshStructures(
+  payload: Payload,
+  token: string,
+  touched: Set<number>,
+  now = new Date(),
+): Promise<number> {
+  const { docs } = await payload.find({
+    collection: 'esport-tournaments',
+    where: {
+      or: [
+        { pandaId: { in: touched.size ? [...touched] : [0] } },
+        { structureAt: { exists: false } },
+      ],
+    },
+    limit: 1000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    select: {
+      pandaId: true,
+      game: true,
+      tier: true,
+      hasBracket: true,
+      beginAt: true,
+      structureAt: true,
+    },
+  } as never)
+  let done = 0
+  for (const t of structureQueue(docs as unknown as TournamentRow[], touched)) {
+    try {
+      const base = `${API_BASE}/tournaments/${t.pandaId}`
+      const structure: TournamentStructure = {
+        matches: bracketOf(await getAll(`${base}/brackets?per_page=100`, token), t.game),
+        standings: t.hasBracket
+          ? []
+          : standingsOf(await getAll(`${base}/standings?per_page=100`, token)),
+      }
+      await payload.update({
+        collection: 'esport-tournaments',
+        id: t.id,
+        data: { structure, structureAt: now.toISOString() } as never,
+        overrideAccess: true,
+        depth: 0,
+      })
+      done++
+    } catch (err) {
+      payload.logger.warn({
+        msg: '[esport] bracket failed',
+        tournament: t.pandaId,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+  return done
 }
 
 /** One sync of every game. A game that fails doesn't stop the others. */
@@ -199,7 +302,17 @@ export async function runEsportSync(payload: Payload, now = new Date()): Promise
       results.push({ game, matches: 0, created: 0, updated: 0, error })
     }
   }
-  payload.logger.info({ msg: '[esport] synced', results })
+  // Then the brackets of the tournaments that moved (and the never-fetched).
+  const touched = new Set(results.flatMap((r) => r.touched ?? []))
+  const brackets = await refreshStructures(payload, token, touched, now).catch((err) => {
+    payload.logger.warn({ msg: '[esport] brackets failed', error: String(err) })
+    return 0
+  })
+  payload.logger.info({
+    msg: '[esport] synced',
+    brackets,
+    results: results.map(({ touched: _t, ...r }) => ({ ...r, touched: _t?.length ?? 0 })),
+  })
   return results
 }
 
@@ -220,14 +333,18 @@ export const esportRawHandler = async (
   const url = new URL(req.url ?? 'http://x')
   const tournament = url.searchParams.get('tournament')
   if (tournament) {
-    if (!/^\d+$/.test(tournament)) return Response.json({ error: 'bad tournament' }, { status: 400 })
+    if (!/^\d+$/.test(tournament))
+      return Response.json({ error: 'bad tournament' }, { status: 400 })
     const kind = url.searchParams.get('kind') ?? 'brackets'
     const path = { brackets: '/brackets', standings: '/standings', tournament: '' }[kind]
     if (path === undefined) return Response.json({ error: 'unknown kind' }, { status: 400 })
-    const res = await fetch(`https://api.pandascore.co/tournaments/${tournament}${path}?per_page=100`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'User-Agent': UA },
-      signal: AbortSignal.timeout(20_000),
-    })
+    const res = await fetch(
+      `https://api.pandascore.co/tournaments/${tournament}${path}?per_page=100`,
+      {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'User-Agent': UA },
+        signal: AbortSignal.timeout(20_000),
+      },
+    )
     return Response.json({
       status: res.status,
       remaining: res.headers.get('x-rate-limit-remaining'),

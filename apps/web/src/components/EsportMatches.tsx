@@ -25,6 +25,7 @@ import {
 import { intlTag } from '@/lib/i18n/config'
 import { formatDate } from '@/lib/i18n/dates'
 import { useI18n, useRegion } from './I18nProvider'
+import Link from './LocaleLink'
 
 const field =
   'h-9 rounded-md border border-zinc-800 bg-zinc-900 px-2 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-hidden'
@@ -262,7 +263,16 @@ export function EsportMatches({
                       <span className="rounded-sm bg-zinc-800 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-300">
                         {ESPORT_GAME_LABEL[ev.game]}
                       </span>
-                      <span className="font-semibold text-white">{ev.event}</span>
+                      {ev.rows.find((r) => r.tournamentSlug) ? (
+                        <Link
+                          href={`/esport/tournaments/${ev.rows.find((r) => r.tournamentSlug)!.tournamentSlug}`}
+                          className="font-semibold text-white hover:text-emerald-400"
+                        >
+                          {ev.event}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold text-white">{ev.event}</span>
+                      )}
                       <span
                         className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${TIER_CLASS[ev.tier]}`}
                       >
@@ -312,12 +322,18 @@ export function EsportMatches({
                             </span>
                             <Team team={r.t2} won={scored && r.winner === 2} side="right" />
                             <span className="hidden w-28 shrink-0 text-right text-xs text-zinc-400 md:block">
+                              {r.tournamentSlug && r.stage ? (
+                                <Link href={`/esport/tournaments/${r.tournamentSlug}`} className="hover:text-emerald-400">
+                                  {r.stage}
+                                </Link>
+                              ) : null}
                               {[
-                                r.stage,
+                                r.tournamentSlug ? '' : r.stage,
                                 r.bestOf ? t.esport.bestOf(r.bestOf) : '',
                                 r.forfeit ? t.esport.forfeit : '',
                               ]
                                 .filter(Boolean)
+                                .map((x, i) => (i === 0 && r.tournamentSlug && r.stage ? ` · ${x}` : x))
                                 .join(' · ')}
                             </span>
                             {mode === 'calendar' && r.stream ? (

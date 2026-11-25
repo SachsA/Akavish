@@ -242,7 +242,12 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `<html data-spoilers>` (set before paint by `RESTORE_SPOILERS` in the
   layout), never a server decision, so pages stay cached. A card that can
   give a result away gets `spoilerClasses(article.spoiler)` + `<SpoilerVeil>`;
-  a score gets `.akv-score` / `.akv-mask` inside an `.akv-match` row. A list
+  a score gets `.akv-score` / `.akv-mask` inside an `.akv-match` row; a
+  bracket or standings go inside `<SpoilerZone>`.
+- **Tournament pages** (`/esport/tournaments`, `[key]` = a game or a
+  PandaScore stage slug): data from `esport-tournaments.structure` (CMS sync,
+  `refreshStructures`), layout in `lib/esport-tournaments.ts` (pure, tested on
+  a real bracket in `lib/fixtures/`). A list
   of articles (sections, Transfers) uses `components/ArticlesByDate.tsx`:
   the 4 newest, then by date. The
   morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris),

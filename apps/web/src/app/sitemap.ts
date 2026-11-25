@@ -38,7 +38,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       bothLanguages(p, { lastModified: now, changeFrequency: 'hourly', priority: 0.6 }),
     ),
     // One game's esport news and Mercato (/esport/cs2, /esport/transfers/cs2).
-    ...ESPORT_GAMES.flatMap((g) => [`/esport/${g}`, `/esport/transfers/${g}`]).flatMap((p) =>
+    ...bothLanguages('/esport/tournaments', { lastModified: now, changeFrequency: 'hourly', priority: 0.6 }),
+    ...ESPORT_GAMES.flatMap((g) => [`/esport/${g}`, `/esport/transfers/${g}`, `/esport/tournaments/${g}`]).flatMap((p) =>
       bothLanguages(p, { lastModified: now, changeFrequency: 'daily', priority: 0.5 }),
     ),
     ...['/about', '/contact', '/privacy', '/terms', '/legal'].flatMap((p) =>

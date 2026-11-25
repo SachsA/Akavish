@@ -23,6 +23,7 @@ import { matchEntities } from './entity-match'
 import { PLATFORM_FAMILIES, sortPlatforms, type PlatformFamily, type PlatformInfo } from './platforms'
 import { CACHE, CMS_TAG, TAGS } from './revalidate'
 import { rowOf, type EsportRow } from './esport'
+import { stageOf, type EsportStage } from './esport-tournaments'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
@@ -984,11 +985,62 @@ export async function fetchEsportMatches(kind: 'results' | 'calendar'): Promise<
   qs.set('limit', '1000')
   qs.set('depth', '1')
   for (const f of ESPORT_FIELDS) qs.set(`select[${f}]`, 'true')
-  for (const f of ['pandaId', 'name', 'league', 'serie', 'tier']) qs.set(`populate[esport-tournaments][${f}]`, 'true')
+  for (const f of ['pandaId', 'name', 'league', 'serie', 'tier', 'slug']) qs.set(`populate[esport-tournaments][${f}]`, 'true')
   const res = await cmsFetch(`${CMS_URL}/api/esport-matches?${qs.toString()}`, {
     next: { revalidate: CACHE.lists, tags: [TAGS.esport] },
   })
   if (!res.ok) throw new Error(`CMS esport matches: ${res.status}`)
   const json = (await res.json()) as { docs?: Array<Record<string, unknown>> }
   return (json.docs ?? []).map(rowOf).filter((r): r is EsportRow => r !== null)
+}
+
+// ─── Esport tournaments (/esport/tournaments) ────────────────────────────────
+
+const STAGE_FIELDS = ['pandaId', 'slug', 'game', 'name', 'league', 'leagueLogoUrl', 'serie', 'tier', 'beginAt', 'endAt', 'serieId', 'hasBracket']
+
+/**
+ * The stages on now or lately (ended in the last 3 days, starting within 8),
+ * without their brackets. Same daily window as the matches, so the cache holds.
+ */
+export async function fetchEsportStages(): Promise<EsportStage[]> {
+  const DAY = 24 * 3600 * 1000
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const t0 = today.getTime()
+  const qs = new URLSearchParams({ limit: '500', depth: '0', sort: '-beginAt' })
+  qs.set('where[and][0][or][0][endAt][greater_than_equal]', new Date(t0 - 3 * DAY).toISOString())
+  qs.set('where[and][0][or][1][endAt][exists]', 'false')
+  qs.set('where[and][1][beginAt][less_than]', new Date(t0 + 8 * DAY).toISOString())
+  qs.set('where[and][2][slug][exists]', 'true')
+  for (const f of STAGE_FIELDS) qs.set(`select[${f}]`, 'true')
+  const res = await cmsFetch(`${CMS_URL}/api/esport-tournaments?${qs.toString()}`, {
+    next: { revalidate: CACHE.lists, tags: [TAGS.esport] },
+  })
+  if (!res.ok) throw new Error(`CMS esport tournaments: ${res.status}`)
+  const json = (await res.json()) as { docs?: Array<Record<string, unknown>> }
+  return (json.docs ?? []).map(stageOf).filter((s): s is EsportStage => s !== null)
+}
+
+/** One stage with its bracket, and the other stages of its event (without theirs). */
+export async function fetchEsportStage(slug: string): Promise<{ stage: EsportStage; siblings: EsportStage[] } | null> {
+  const one = new URLSearchParams({ 'where[slug][equals]': slug, limit: '1', depth: '0' })
+  const res = await cmsFetch(`${CMS_URL}/api/esport-tournaments?${one.toString()}`, {
+    next: { revalidate: CACHE.lists, tags: [TAGS.esport] },
+  })
+  if (!res.ok) throw new Error(`CMS esport tournament: ${res.status}`)
+  const doc = ((await res.json()) as { docs?: Array<Record<string, unknown>> }).docs?.[0]
+  const stage = doc ? stageOf(doc) : null
+  if (!stage) return null
+  if (stage.serieId === null) return { stage, siblings: [stage] }
+  const qs = new URLSearchParams({ 'where[serieId][equals]': String(stage.serieId), limit: '50', depth: '0', sort: 'beginAt' })
+  for (const f of STAGE_FIELDS) qs.set(`select[${f}]`, 'true')
+  const sib = await cmsFetch(`${CMS_URL}/api/esport-tournaments?${qs.toString()}`, {
+    next: { revalidate: CACHE.lists, tags: [TAGS.esport] },
+  })
+  const siblings = sib.ok
+    ? (((await sib.json()) as { docs?: Array<Record<string, unknown>> }).docs ?? [])
+        .map(stageOf)
+        .filter((s): s is EsportStage => s !== null)
+    : [stage]
+  return { stage, siblings: siblings.length ? siblings : [stage] }
 }

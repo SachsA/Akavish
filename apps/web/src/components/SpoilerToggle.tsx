@@ -35,7 +35,7 @@ export function SpoilerToggle() {
         className="inline-flex items-center gap-3 text-sm font-semibold text-white"
       >
         <EyeIcon off={on} />
-        <span>{t.spoilers.switchLabel}</span>
+        <span className="whitespace-nowrap">{t.spoilers.switchLabel}</span>
         <span
           aria-hidden="true"
           className={`relative inline-block h-6 w-11 shrink-0 rounded-full transition-colors ${
@@ -48,7 +48,8 @@ export function SpoilerToggle() {
             }`}
           />
         </span>
-        <span className={on ? 'text-emerald-400' : 'text-zinc-400'}>
+        {/* The state in words from sm up; on a phone the switch alone (aria-checked). */}
+        <span className={`hidden whitespace-nowrap sm:inline ${on ? 'text-emerald-400' : 'text-zinc-400'}`}>
           {on ? t.spoilers.hidden : t.spoilers.shown}
         </span>
       </button>

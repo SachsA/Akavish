@@ -363,6 +363,18 @@ test('esport: the anti-spoil switch hides scores, is remembered, and links to th
   await expect(page.getByRole('link', { name: 'Réglage par défaut' })).toHaveAttribute('href', '/fr/account#preferences')
 })
 
+test('esport: the Tournaments tab lists the tournaments, a wrong one is a 404', async ({ page }) => {
+  await page.goto('/esport')
+  await page.getByRole('navigation', { name: 'Esport sections' }).getByRole('link', { name: 'Tournaments' }).click()
+  await expect(page).toHaveURL(/\/esport\/tournaments$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esport tournaments')
+  await expect(page.getByText('Match data: PandaScore.').or(page.getByText('No tournament to show right now.'))).toBeVisible()
+  await page.goto('/fr/esport/tournaments/cs2')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tournois esport : CS2')
+  expect((await page.goto('/esport/tournaments/not-a-real-tournament'))?.status()).toBe(404)
+  expect((await page.goto('/news/tournaments'))?.status()).toBe(404)
+})
+
 test('esport: news and Mercato by game, the game kept across tabs', async ({ page }) => {
   await page.goto('/esport')
   const games = page.getByRole('navigation', { name: 'Filter by game' })

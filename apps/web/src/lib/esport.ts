@@ -66,6 +66,8 @@ export interface EsportRow {
   stage: string
   tier: Tier
   tournamentId: number | null
+  /** The stage's page (/esport/tournaments/<slug>), when the sync has its slug. */
+  tournamentSlug: string | null
 }
 
 /** A raw `esport-matches` doc (depth 1) → a row. Null when it can't be placed. */
@@ -115,6 +117,7 @@ export function rowOf(doc: Record<string, unknown>): EsportRow | null {
     stage: (t.name as string) || '',
     tier,
     tournamentId: num(t.pandaId),
+    tournamentSlug: (t.slug as string) || null,
   }
 }
 

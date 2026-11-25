@@ -588,6 +588,17 @@ real API: `GET /api/esport/raw?game=cs2&list=past` logged in as an editor
 (the raw first match and how it's read). Both collections are public (the
 site reads them) and read-only in practice: the next sync overwrites edits.
 
+**Brackets** (2026-11-25): after the matches, the sync reads PandaScore's
+`/tournaments/{id}/brackets` (each match with the matches it follows from)
+and, for a stage without a bracket (Swiss, groups), `/standings`, for the
+tournaments with a new or changed match first, then those never read, bigger
+tiers first, 12 a run at most (`refreshStructures`, `structureQueue`; ~150
+requests an hour more). Stored on the tournament: `structure` (JSON),
+`structureAt`, plus `slug` (the site's `/esport/tournaments/<slug>`),
+`serieId` (the event's stages share it) and `hasBracket`. To look at the raw
+answer: `GET /api/esport/raw?tournament=<PandaScore id>&kind=brackets`
+(or `standings`, `tournament`), as an editor.
+
 **Morning recap** (`src/esport/recap.ts`, called by the scout's run): from
 8 am Paris, once a day (`lastEsportRecap`), yesterday's finished matches in
 *Scout settings → Esport recap: tournament tiers* (S and A by default, S, A

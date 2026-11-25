@@ -51,5 +51,27 @@ export const EsportTournaments: CollectionConfig = {
     },
     { name: 'beginAt', type: 'date', index: true },
     { name: 'endAt', type: 'date' },
+    // The tournament pages (2026-11-25): URL, sibling stages, bracket.
+    { name: 'slug', type: 'text', index: true, admin: { readOnly: true } },
+    {
+      name: 'serieId',
+      type: 'number',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'PandaScore season: the stages of one event share it.',
+      },
+    },
+    { name: 'hasBracket', type: 'checkbox', defaultValue: false, admin: { readOnly: true } },
+    {
+      name: 'structure',
+      type: 'json',
+      admin: {
+        readOnly: true,
+        description:
+          'Bracket matches (with the matches they follow from) and standings, from PandaScore (sync.ts).',
+      },
+    },
+    { name: 'structureAt', type: 'date', admin: { readOnly: true } },
   ],
 }
