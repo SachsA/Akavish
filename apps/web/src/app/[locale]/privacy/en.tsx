@@ -18,7 +18,7 @@ export function PrivacyPage() {
         Reading Akavish requires no account and no tracking. We do not sell or
         share your data for advertising, we do not build profiles of readers, and
         we do not use advertising cookies. If you create an account, we hold your
-        email address so you can log back in, the articles you save and the games you follow. If you subscribe to the newsletter,
+        email address so you can log back in, the articles you save, the games and the esport teams, tournaments and matches you follow, and the notifications about them. If you subscribe to the newsletter,
         we hold your email address to send it, until you unsubscribe. Nothing
         more.
       </p>
@@ -49,8 +49,10 @@ export function PrivacyPage() {
         privacy policy; we never see your password there. Our own database
         (Neon) keeps a copy of your account’s name, email address and avatar
         as Clerk has them, your role on the site (the badge shown next to your
-        name, such as “Author”), the articles you save and the games you follow, so we can show them on
-        your account page.
+        name, such as “Author”), the articles you save, the games and the esport
+        teams, tournaments and matches you follow, what they should notify you
+        of, and those notifications (kept 30 days), so we can show them on your
+        account page and in the bell.
       </p>
       <p>
         <strong>If you comment.</strong> Your public name (your username, or

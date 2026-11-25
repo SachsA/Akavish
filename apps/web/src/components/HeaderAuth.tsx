@@ -10,6 +10,7 @@
 
 import { SignInButton, SignUpButton, useAuth } from '@clerk/nextjs'
 import { AccountMenu } from './AccountMenu'
+import { NotificationBell } from './NotificationBell'
 import { useI18n } from './I18nProvider'
 
 const logIn = 'hidden sm:inline py-1 whitespace-nowrap hover:text-white transition-colors'
@@ -20,7 +21,13 @@ export function HeaderAuth() {
   const { t } = useI18n()
   const { isLoaded, isSignedIn } = useAuth()
 
-  if (isLoaded && isSignedIn) return <AccountMenu />
+  if (isLoaded && isSignedIn)
+    return (
+      <>
+        <NotificationBell />
+        <AccountMenu />
+      </>
+    )
 
   // Hidden on phones so the header fits (with the language menu, and in
   // French, it didn't at 360 px); the sign-up modal links to sign-in anyway.

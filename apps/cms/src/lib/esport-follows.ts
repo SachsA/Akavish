@@ -1,0 +1,499 @@
+// ─── Esport follows and the readers' notifications (2026-11-25) ──────────────
+// A reader follows a team, an event (a PandaScore season: all its stages) or a
+// match on the site; the esport sync (esport/sync.ts) and article publishing
+// (collections/Articles.ts) turn what happens to them into notifications: a
+// match starting, its result, a news naming a followed team. The site's bell
+// lists them (`/api/notifications`), wording them in the page's language.
+// Web push comes on top (same notifications).
+//
+// The site calls the handlers below with READER_API_SECRET, as the signed-in
+// reader (like saved articles, src/lib/readers.ts).
+
+import type { Payload, PayloadHandler } from 'payload'
+import {
+  checkSecret,
+  ensureReader,
+  findReader,
+  isClerkId,
+  json,
+  readBody,
+  writerFrom,
+} from './readers'
+
+export const FOLLOW_KINDS = ['team', 'event', 'match'] as const
+export type FollowKind = (typeof FOLLOW_KINDS)[number]
+
+/** At most this many esport follows per reader. */
+export const MAX_ESPORT_FOLLOWS = 300
+/** Notifications are kept this long. */
+export const NOTIFICATION_DAYS = 30
+
+export interface FollowInput {
+  kind: FollowKind
+  pandaId: number
+  game: string | null
+  label: string
+  acronym: string | null
+  logo: string | null
+  slug: string | null
+  at: string | null
+}
+
+const text = (v: unknown, max: number): string | null =>
+  typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null
+
+/** A follow sent by the site, checked field by field (null when unusable). */
+export function followFromBody(raw: unknown): FollowInput | null {
+  const b = (raw ?? {}) as Record<string, unknown>
+  const kind = b.kind as FollowKind
+  const pandaId = Number(b.pandaId)
+  const label = text(b.label, 120)
+  if (!FOLLOW_KINDS.includes(kind) || !Number.isInteger(pandaId) || pandaId <= 0 || !label)
+    return null
+  const logo = text(b.logo, 500)
+  return {
+    kind,
+    pandaId,
+    game: text(b.game, 20),
+    label,
+    acronym: text(b.acronym, 20),
+    // Only PandaScore's image CDN: the site shows it.
+    logo: logo && /^https:\/\/cdn(-api)?\.pandascore\.co\//.test(logo) ? logo : null,
+    slug: (() => {
+      const s = text(b.slug, 160)
+      return s && /^[a-z0-9-]+$/.test(s) ? s : null
+    })(),
+    at: text(b.at, 40),
+  }
+}
+
+// ─── What happened (pure) ────────────────────────────────────────────────────
+
+export interface EventTeam {
+  id: number | null
+  name: string
+  acronym: string | null
+  logo: string | null
+}
+
+export interface MatchEvent {
+  type: 'start' | 'end'
+  matchId: number
+  game: string
+  serieId: number | null
+  event: string
+  stage: string
+  slug: string | null
+  t1: EventTeam
+  t2: EventTeam
+  s1: number | null
+  s2: number | null
+  winner: 1 | 2 | null
+}
+
+/** A match's status change seen by the sync → the event to notify, if any. */
+export function transitionOf(
+  before: string | null | undefined,
+  after: string,
+): 'start' | 'end' | null {
+  if (!before || before === after) return null
+  if (after === 'running' && before === 'not_started') return 'start'
+  if (after === 'finished' && (before === 'not_started' || before === 'running')) return 'end'
+  return null
+}
+
+export interface FollowRow {
+  reader: number | string
+  kind: FollowKind
+  pandaId: number
+  label: string
+  acronym?: string | null
+}
+
+/** The readers who follow one of the match's teams, its event or the match itself. */
+export function recipientsFor(e: MatchEvent, follows: FollowRow[]): Set<string> {
+  const out = new Set<string>()
+  for (const f of follows) {
+    const hit =
+      (f.kind === 'team' && (f.pandaId === e.t1.id || f.pandaId === e.t2.id)) ||
+      (f.kind === 'event' && e.serieId !== null && f.pandaId === e.serieId) ||
+      (f.kind === 'match' && f.pandaId === e.matchId)
+    if (hit) out.add(String(f.reader))
+  }
+  return out
+}
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/**
+ * Does this text name the team? Its full name anywhere (any case, whole
+ * words), or its acronym in capitals when 3+ letters ("NIP", not "G2" or "9z").
+ */
+export function mentionsTeam(
+  text: string,
+  team: { label: string; acronym?: string | null },
+): boolean {
+  const name = team.label.trim()
+  if (
+    name.length >= 3 &&
+    new RegExp(`(^|[^\\p{L}\\p{N}])${escape(name)}($|[^\\p{L}\\p{N}])`, 'iu').test(text)
+  )
+    return true
+  const ac = team.acronym?.trim() ?? ''
+  return (
+    ac.length >= 3 &&
+    ac !== name &&
+    new RegExp(`(^|[^\\p{L}\\p{N}])${escape(ac)}($|[^\\p{L}\\p{N}])`, 'u').test(text)
+  )
+}
+
+// ─── Storage ─────────────────────────────────────────────────────────────────
+
+type NotifyKind = 'match_start' | 'match_end' | 'article'
+type Settings = { matchStart?: boolean | null; results?: boolean | null; news?: boolean | null }
+
+async function settingsOf(payload: Payload, readerIds: string[]): Promise<Map<string, Settings>> {
+  const out = new Map<string, Settings>()
+  if (!readerIds.length) return out
+  const { docs } = await payload.find({
+    collection: 'readers',
+    where: { id: { in: readerIds } },
+    limit: readerIds.length,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    select: { notify: true, banned: true },
+  } as never)
+  for (const d of docs as unknown as Array<{ id: number; notify?: Settings; banned?: boolean }>) {
+    if (!d.banned) out.set(String(d.id), d.notify ?? {})
+  }
+  return out
+}
+
+const wants = (s: Settings | undefined, kind: NotifyKind) =>
+  !!s &&
+  (kind === 'match_start' ? s.matchStart : kind === 'match_end' ? s.results : s.news) !== false
+
+/** Store one notification per reader; a second one with the same key is skipped. */
+async function store(
+  payload: Payload,
+  readers: string[],
+  kind: NotifyKind,
+  data: Record<string, unknown>,
+  url: string,
+  dedupeKey: string,
+): Promise<number> {
+  const settings = await settingsOf(payload, readers)
+  let made = 0
+  for (const reader of readers) {
+    if (!wants(settings.get(reader), kind)) continue
+    // Already notified (same reader and key): skip, without relying on the
+    // unique index's error (it would hide real failures).
+    const { totalDocs } = await payload.count({
+      collection: 'reader-notifications' as never,
+      where: { and: [{ reader: { equals: reader } }, { dedupeKey: { equals: dedupeKey } }] },
+      overrideAccess: true,
+    })
+    if (totalDocs) continue
+    await payload.create({
+      collection: 'reader-notifications' as never,
+      // Relationship ids are numbers in Postgres.
+      data: { reader: Number(reader), kind, data, url, dedupeKey } as never,
+      overrideAccess: true,
+      depth: 0,
+    })
+    made++
+  }
+  return made
+}
+
+/** The match starts / ends: notify the followers of its teams, event or itself. */
+export async function notifyMatchEvents(payload: Payload, events: MatchEvent[]): Promise<number> {
+  if (!events.length) return 0
+  const teams = [
+    ...new Set(events.flatMap((e) => [e.t1.id, e.t2.id]).filter((x): x is number => x !== null)),
+  ]
+  const series = [...new Set(events.map((e) => e.serieId).filter((x): x is number => x !== null))]
+  const matches = [...new Set(events.map((e) => e.matchId))]
+  const { docs } = await payload.find({
+    collection: 'esport-follows' as never,
+    where: {
+      or: [
+        { and: [{ kind: { equals: 'team' } }, { pandaId: { in: teams.length ? teams : [0] } }] },
+        { and: [{ kind: { equals: 'event' } }, { pandaId: { in: series.length ? series : [0] } }] },
+        { and: [{ kind: { equals: 'match' } }, { pandaId: { in: matches } }] },
+      ],
+    },
+    limit: 10000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+  })
+  const follows = docs as unknown as FollowRow[]
+  let made = 0
+  for (const e of events) {
+    const readers = [...recipientsFor(e, follows)]
+    if (!readers.length) continue
+    const { type, ...data } = e
+    made += await store(
+      payload,
+      readers,
+      type === 'start' ? 'match_start' : 'match_end',
+      data,
+      e.slug
+        ? `/esport/tournaments/${e.slug}`
+        : type === 'start'
+          ? '/esport/calendar'
+          : '/esport/results',
+      `${type}:${e.matchId}`,
+    )
+  }
+  return made
+}
+
+/** A newly published esport article: notify the followers of the teams it names. */
+export async function notifyArticle(
+  payload: Payload,
+  article: {
+    id: number | string
+    slug: string
+    title: string
+    excerpt?: string | null
+    category?: string
+  },
+): Promise<number> {
+  if (article.category !== 'esport') return 0
+  const { docs } = await payload.find({
+    collection: 'esport-follows' as never,
+    where: { kind: { equals: 'team' } },
+    limit: 10000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+  })
+  const haystack = `${article.title}\n${article.excerpt ?? ''}`
+  const byReader = new Map<string, string[]>()
+  for (const f of docs as unknown as FollowRow[]) {
+    if (!mentionsTeam(haystack, f)) continue
+    const r = String(f.reader)
+    byReader.set(r, [...(byReader.get(r) ?? []), f.label])
+  }
+  let made = 0
+  for (const [reader, teams] of byReader) {
+    made += await store(
+      payload,
+      [reader],
+      'article',
+      { articleId: Number(article.id), title: article.title, teams },
+      `/article/${article.slug}`,
+      `article:${article.id}`,
+    )
+  }
+  return made
+}
+
+/** Notifications older than NOTIFICATION_DAYS go (called by the sync). */
+export async function pruneNotifications(payload: Payload, now = new Date()): Promise<void> {
+  await payload.delete({
+    collection: 'reader-notifications' as never,
+    where: {
+      createdAt: {
+        less_than: new Date(now.getTime() - NOTIFICATION_DAYS * 86400_000).toISOString(),
+      },
+    },
+    overrideAccess: true,
+  })
+}
+
+// ─── HTTP: the website's calls (READER_API_SECRET) ───────────────────────────
+
+const FOLLOW_FIELDS = ['kind', 'pandaId', 'game', 'label', 'acronym', 'logo', 'slug', 'at'] as const
+
+/**
+ * /reader-api/esport-follows
+ *   GET    ?clerkId          → { docs: follows }
+ *   POST   { profile, follow } → { following: true }   (verified email)
+ *   DELETE { clerkId, kind, pandaId } → { following: false }
+ */
+export const esportFollowsHandler: PayloadHandler = async (req) => {
+  const denied = checkSecret(req.headers)
+  if (denied) return denied
+  if (req.method === 'GET') {
+    const clerkId = req.searchParams.get('clerkId')
+    if (!isClerkId(clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    const reader = await findReader(req.payload, clerkId)
+    if (!reader) return json({ docs: [] })
+    const { docs } = await req.payload.find({
+      collection: 'esport-follows' as never,
+      where: { reader: { equals: reader.id } },
+      sort: '-createdAt',
+      limit: MAX_ESPORT_FOLLOWS,
+      depth: 0,
+      overrideAccess: true,
+    })
+    return json({
+      docs: (docs as unknown as Array<Record<string, unknown>>).map((d) =>
+        Object.fromEntries(FOLLOW_FIELDS.map((k) => [k, d[k] ?? null])),
+      ),
+    })
+  }
+  const body = await readBody(req)
+  if (req.method === 'DELETE') {
+    if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    const kind = body.kind as FollowKind
+    const pandaId = Number(body.pandaId)
+    if (!FOLLOW_KINDS.includes(kind) || !Number.isInteger(pandaId))
+      return json({ error: 'invalid follow' }, 400)
+    const reader = await ensureReader(req.payload, body.clerkId)
+    await req.payload.delete({
+      collection: 'esport-follows' as never,
+      where: {
+        and: [
+          { reader: { equals: reader.id } },
+          { kind: { equals: kind } },
+          { pandaId: { equals: pandaId } },
+        ],
+      },
+      overrideAccess: true,
+    })
+    return json({ following: false })
+  }
+  const writer = await writerFrom(req.payload, body.profile)
+  if ('error' in writer) return writer.error
+  const follow = followFromBody(body.follow)
+  if (!follow) return json({ error: 'invalid follow' }, 400)
+  const mine = { reader: { equals: writer.reader.id } }
+  const { totalDocs: already } = await req.payload.count({
+    collection: 'esport-follows' as never,
+    where: {
+      and: [mine, { kind: { equals: follow.kind } }, { pandaId: { equals: follow.pandaId } }],
+    },
+    overrideAccess: true,
+  })
+  if (already) return json({ following: true })
+  const { totalDocs } = await req.payload.count({
+    collection: 'esport-follows' as never,
+    where: mine,
+    overrideAccess: true,
+  })
+  if (totalDocs >= MAX_ESPORT_FOLLOWS) return json({ error: 'too-many' }, 409)
+  try {
+    await req.payload.create({
+      collection: 'esport-follows' as never,
+      data: { reader: writer.reader.id, ...follow } as never,
+      overrideAccess: true,
+    })
+  } catch {
+    // Double click: the unique index refused the second one.
+  }
+  return json({ following: true })
+}
+
+/**
+ * /reader-api/notifications
+ *   GET  ?clerkId&limit   → { docs, unread }
+ *   POST { clerkId, read: 'all' | number[] } → { unread: 0 | n }
+ */
+export const notificationsHandler: PayloadHandler = async (req) => {
+  const denied = checkSecret(req.headers)
+  if (denied) return denied
+  const unreadOf = async (readerId: number | string) =>
+    (
+      await req.payload.count({
+        collection: 'reader-notifications' as never,
+        where: { and: [{ reader: { equals: readerId } }, { readAt: { exists: false } }] },
+        overrideAccess: true,
+      })
+    ).totalDocs
+  if (req.method === 'GET') {
+    const clerkId = req.searchParams.get('clerkId')
+    if (!isClerkId(clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    const reader = await findReader(req.payload, clerkId)
+    if (!reader) return json({ docs: [], unread: 0 })
+    const limit = Math.max(0, Math.min(50, Number(req.searchParams.get('limit') ?? 20) || 0))
+    const docs = limit
+      ? (
+          await req.payload.find({
+            collection: 'reader-notifications' as never,
+            where: { reader: { equals: reader.id } },
+            sort: '-createdAt',
+            limit,
+            depth: 0,
+            overrideAccess: true,
+          })
+        ).docs
+      : []
+    return json({
+      docs: (docs as unknown as Array<Record<string, unknown>>).map((d) => ({
+        id: d.id,
+        kind: d.kind,
+        data: d.data,
+        url: d.url,
+        readAt: d.readAt ?? null,
+        createdAt: d.createdAt,
+      })),
+      unread: await unreadOf(reader.id),
+    })
+  }
+  const body = await readBody(req)
+  if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
+  const reader = await findReader(req.payload, body.clerkId)
+  if (!reader) return json({ unread: 0 })
+  const ids = Array.isArray(body.read)
+    ? body.read
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n > 0)
+        .slice(0, 100)
+    : null
+  if (body.read !== 'all' && !ids?.length) return json({ error: 'invalid read' }, 400)
+  await req.payload.update({
+    collection: 'reader-notifications' as never,
+    where: {
+      and: [
+        { reader: { equals: reader.id } },
+        { readAt: { exists: false } },
+        ...(ids ? [{ id: { in: ids } }] : []),
+      ],
+    },
+    data: { readAt: new Date().toISOString() } as never,
+    overrideAccess: true,
+  })
+  return json({ unread: await unreadOf(reader.id) })
+}
+
+/**
+ * /reader-api/notify-settings
+ *   GET  ?clerkId → { matchStart, results, news }
+ *   POST { clerkId, settings } → the same, saved
+ */
+export const notifySettingsHandler: PayloadHandler = async (req) => {
+  const denied = checkSecret(req.headers)
+  if (denied) return denied
+  const pick = (s: Settings | undefined) => ({
+    matchStart: s?.matchStart !== false,
+    results: s?.results !== false,
+    news: s?.news !== false,
+  })
+  if (req.method === 'GET') {
+    const clerkId = req.searchParams.get('clerkId')
+    if (!isClerkId(clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    const reader = await findReader(req.payload, clerkId)
+    return json(pick((reader as unknown as { notify?: Settings } | null)?.notify))
+  }
+  const body = await readBody(req)
+  if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
+  const s = (body.settings ?? {}) as Record<string, unknown>
+  const notify = {
+    matchStart: s.matchStart !== false,
+    results: s.results !== false,
+    news: s.news !== false,
+  }
+  const reader = await ensureReader(req.payload, body.clerkId)
+  await req.payload.update({
+    collection: 'readers',
+    id: reader.id,
+    data: { notify } as never,
+    overrideAccess: true,
+  })
+  return json(notify)
+}

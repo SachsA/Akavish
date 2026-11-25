@@ -260,6 +260,8 @@ export function syncUrls(game: EsportGame, now: Date): string[] {
 // all customers"). Stored on the tournament as `structure` (sync.ts).
 
 export interface StructureTeam {
+  /** PandaScore team id (to follow it); absent in brackets read before 2026-11-25. */
+  id?: number | null
   name: string
   acronym: string | null
   logo: string | null
@@ -296,7 +298,7 @@ export interface TournamentStructure {
 const sideOf = (t: TeamSide): StructureTeam | null =>
   t.pandaId == null && t.name === 'TBD'
     ? null
-    : { name: t.name, acronym: t.acronym, logo: t.logoUrl }
+    : { id: t.pandaId, name: t.name, acronym: t.acronym, logo: t.logoUrl }
 
 /** The brackets endpoint's matches as we store them, in time order. */
 export function bracketOf(raws: unknown, game: EsportGame): StructureMatch[] {
@@ -348,7 +350,7 @@ export function standingsOf(raws: unknown): StructureStanding[] {
       return [
         {
           rank: num(x.rank) ?? 0,
-          team: { name: team.name, acronym: team.acronym, logo: team.logoUrl },
+          team: { id: team.pandaId, name: team.name, acronym: team.acronym, logo: team.logoUrl },
           wins: num(x.wins) ?? 0,
           losses: num(x.losses) ?? 0,
           ties: num(x.ties) ?? 0,

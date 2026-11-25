@@ -27,6 +27,7 @@ import { intlTag } from '@/lib/i18n/config'
 import { formatDate } from '@/lib/i18n/dates'
 import { useI18n, useRegion } from './I18nProvider'
 import Link from './LocaleLink'
+import { EsportFollowButton } from './esport/EsportFollowButton'
 
 const field =
   'h-9 rounded-md border border-zinc-800 bg-zinc-900 px-2 text-sm text-zinc-200 focus:border-emerald-500 focus:outline-hidden'
@@ -348,6 +349,22 @@ export function EsportMatches({
                               >
                                 {t.esport.watch}
                               </a>
+                            ) : null}
+                            {/* Follow this match: told when it starts and ends (the bell). */}
+                            {mode === 'calendar' && r.status !== 'finished' && r.status !== 'canceled' ? (
+                              <EsportFollowButton
+                                look="bell"
+                                follow={{
+                                  kind: 'match',
+                                  pandaId: r.id,
+                                  game: r.game,
+                                  label: `${r.t1.name} vs ${r.t2.name}`,
+                                  acronym: null,
+                                  logo: null,
+                                  slug: r.tournamentSlug,
+                                  at: r.at,
+                                }}
+                              />
                             ) : null}
                           </li>
                         )

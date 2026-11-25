@@ -6,6 +6,8 @@ import { getMessages, localHref, setRequestLocale } from '@/lib/i18n/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { AccountActions } from '@/components/AccountActions'
 import { SpoilerPreference } from '@/components/SpoilerPreference'
+import { NotifySettings } from '@/components/NotifySettings'
+import { EsportFollowsManager, type TeamChoice } from '@/components/esport/EsportFollowsManager'
 import { Pagination } from '@/components/Pagination'
 import { RoleBadge } from '@/components/RoleBadge'
 import { SavedArticleList, type SavedItem } from '@/components/SavedArticleList'
@@ -20,7 +22,7 @@ import {
 } from '@/lib/readers'
 import { ArticleCard } from '@/components/ArticleCard'
 import { GameCard } from '@/components/GameCard'
-import { fetchArticles } from '@/lib/payload'
+import { fetchArticles, fetchEsportMatches } from '@/lib/payload'
 import type { Article } from '@akavish/types'
 import { log } from '@/lib/log'
 
@@ -93,6 +95,23 @@ export default async function AccountPage({
     savedAt: a.savedAt,
   }))
 
+  // The teams of this week's matches, to follow one by name (Esport section).
+  const teams: TeamChoice[] = []
+  if (page === 1) {
+    const rows = (
+      await Promise.all([fetchEsportMatches('calendar').catch(() => []), fetchEsportMatches('results').catch(() => [])])
+    ).flat()
+    const seen = new Set<number>()
+    for (const r of rows) {
+      for (const team of [r.t1, r.t2]) {
+        if (!team.id || seen.has(team.id) || team.name === 'TBD') continue
+        seen.add(team.id)
+        teams.push({ id: team.id, name: team.name, acronym: team.acronym, logo: team.logo, game: r.game })
+      }
+    }
+    teams.sort((a, b) => a.name.localeCompare(b.name))
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       <div className="flex items-center gap-4 mb-10">
@@ -140,7 +159,19 @@ export default async function AccountPage({
           <h2 id="preferences" className="text-xl font-bold text-white mb-4 scroll-mt-24">
             {t.spoilers.prefTitle}
           </h2>
-          <SpoilerPreference />
+          <div className="space-y-4">
+            <SpoilerPreference />
+            <NotifySettings />
+          </div>
+        </section>
+      )}
+
+      {page === 1 && (
+        <section aria-labelledby="esport" className="mb-12">
+          <h2 id="esport" className="text-xl font-bold text-white mb-4 scroll-mt-24">
+            {t.esportFollow.title}
+          </h2>
+          <EsportFollowsManager teams={teams} />
         </section>
       )}
 

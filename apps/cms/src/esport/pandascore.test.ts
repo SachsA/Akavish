@@ -173,7 +173,7 @@ describe('brackets and standings', () => {
     const final = b[2]
     expect(final).toMatchObject({
       name: 'Grand Final: ENVY vs SIN',
-      t1: { name: 'Envy', acronym: 'ENVY', logo: 'https://cdn/1.png' },
+      t1: { id: 1, name: 'Envy', acronym: 'ENVY', logo: 'https://cdn/1.png' },
       s1: 2,
       s2: 1,
       winner: 1,
@@ -222,5 +222,13 @@ describe('brackets and standings', () => {
     ]
     expect(structureQueue(rows, new Set([1, 5])).map((r) => r.pandaId)).toEqual([5, 1, 3, 4])
     expect(structureQueue(rows, new Set(), 1).map((r) => r.pandaId)).toEqual([3])
+    // A bracket read 2 days ago, of a tournament still on, is read again; one long over is not.
+    const now = new Date('2026-11-25T12:00:00Z')
+    const old = [
+      { ...row(7, 'b', '2026-11-23T10:00:00Z'), endAt: '2026-11-27T00:00:00Z' },
+      { ...row(8, 's', '2026-11-23T10:00:00Z'), endAt: '2026-11-01T00:00:00Z' },
+      { ...row(9, 's', '2026-11-25T10:00:00Z'), endAt: null },
+    ]
+    expect(structureQueue(old, new Set(), 12, now).map((r) => r.pandaId)).toEqual([7])
   })
 })

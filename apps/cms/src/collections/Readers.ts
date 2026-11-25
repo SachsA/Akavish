@@ -49,7 +49,9 @@ export const Readers: CollectionConfig = {
         if (totalDocs > 0) {
           throw new ValidationError({
             collection: 'readers',
-            errors: [{ path: 'role', message: 'There is already an Owner. Only one account can have it.' }],
+            errors: [
+              { path: 'role', message: 'There is already an Owner. Only one account can have it.' },
+            ],
           })
         }
         return data
@@ -65,12 +67,14 @@ export const Readers: CollectionConfig = {
           overrideAccess: true,
           req,
         })
-        await req.payload.delete({
-          collection: 'game-follows' as never,
-          where: { reader: { equals: id } },
-          overrideAccess: true,
-          req,
-        })
+        for (const collection of ['game-follows', 'esport-follows', 'reader-notifications']) {
+          await req.payload.delete({
+            collection: collection as never,
+            where: { reader: { equals: id } },
+            overrideAccess: true,
+            req,
+          })
+        }
         // Comments, votes and reports (src/lib/comments.ts): a comment with
         // replies stays as "Comment deleted" so the thread still reads.
         await removeReaderCommunityData(req.payload, id, req)
@@ -148,7 +152,8 @@ export const Readers: CollectionConfig = {
       access: { update: adminsField },
       admin: {
         position: 'sidebar',
-        description: 'Can no longer comment, vote, report, save or follow. Their comments stay unless you delete them.',
+        description:
+          'Can no longer comment, vote, report, save or follow. Their comments stay unless you delete them.',
       },
     },
     {
@@ -156,7 +161,11 @@ export const Readers: CollectionConfig = {
       label: 'Email verified',
       type: 'checkbox',
       defaultValue: false,
-      admin: { position: 'sidebar', readOnly: true, description: 'Only verified accounts can write.' },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Only verified accounts can write.',
+      },
     },
     {
       name: 'clerkCreatedAt',
@@ -165,6 +174,18 @@ export const Readers: CollectionConfig = {
       admin: { position: 'sidebar', readOnly: true },
     },
     { name: 'lastSeenAt', type: 'date', admin: { position: 'sidebar', readOnly: true } },
+    {
+      // What their followed teams, tournaments and matches notify them of
+      // (/account → Preferences, 2026-11-25). All on by default.
+      name: 'notify',
+      type: 'group',
+      admin: { description: 'Set by the reader on /account. Esport notifications.' },
+      fields: [
+        { name: 'matchStart', label: 'Match starts', type: 'checkbox', defaultValue: true },
+        { name: 'results', label: 'Results', type: 'checkbox', defaultValue: true },
+        { name: 'news', label: 'News and transfers', type: 'checkbox', defaultValue: true },
+      ],
+    },
   ],
 }
 
@@ -199,5 +220,79 @@ export const GameFollows: CollectionConfig = {
   fields: [
     { name: 'reader', type: 'relationship', relationTo: 'readers', required: true, index: true },
     { name: 'game', type: 'relationship', relationTo: 'games', required: true, index: true },
+  ],
+}
+
+/**
+ * Followed esport teams, events and matches (2026-11-25): a team or a match by
+ * its PandaScore id, an event by its PandaScore season (`serieId`: all its
+ * stages). `label` / `logo` / `slug` are a snapshot for the reader's list.
+ */
+export const EsportFollows: CollectionConfig = {
+  slug: 'esport-follows',
+  labels: { singular: 'Followed esport item', plural: 'Followed esport items' },
+  admin: {
+    group: 'Readers',
+    defaultColumns: ['reader', 'kind', 'label', 'game', 'createdAt'],
+    description: 'Teams, tournaments and matches readers follow. Written by the site only.',
+  },
+  access: { create: () => false, read: admins, update: () => false, delete: admins },
+  indexes: [{ fields: ['reader', 'kind', 'pandaId'], unique: true }],
+  fields: [
+    { name: 'reader', type: 'relationship', relationTo: 'readers', required: true, index: true },
+    {
+      name: 'kind',
+      type: 'select',
+      required: true,
+      index: true,
+      options: [
+        { label: 'Team', value: 'team' },
+        { label: 'Event (all its stages)', value: 'event' },
+        { label: 'Match', value: 'match' },
+      ],
+    },
+    { name: 'pandaId', type: 'number', required: true, index: true },
+    { name: 'game', type: 'text' },
+    { name: 'label', type: 'text', required: true },
+    { name: 'acronym', type: 'text' },
+    { name: 'logo', type: 'text' },
+    { name: 'slug', type: 'text', admin: { description: 'Event: a stage page to open.' } },
+    { name: 'at', type: 'date', admin: { description: 'Match: when it starts.' } },
+  ],
+}
+
+/**
+ * What a reader is notified of (the bell, 2026-11-25): a followed match
+ * starting or ending, a news about a followed team. `data` holds the facts
+ * (teams, score, event, article); the site words it in the page's language
+ * and hides the score while scores are hidden. Kept 30 days.
+ */
+export const ReaderNotifications: CollectionConfig = {
+  slug: 'reader-notifications',
+  labels: { singular: 'Reader notification', plural: 'Reader notifications' },
+  admin: {
+    group: 'Readers',
+    defaultColumns: ['reader', 'kind', 'url', 'readAt', 'createdAt'],
+    description:
+      'Notifications of followed teams, tournaments and matches. Written by the CMS only.',
+  },
+  access: { create: () => false, read: admins, update: () => false, delete: admins },
+  indexes: [{ fields: ['reader', 'dedupeKey'], unique: true }],
+  fields: [
+    { name: 'reader', type: 'relationship', relationTo: 'readers', required: true, index: true },
+    {
+      name: 'kind',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Match starts', value: 'match_start' },
+        { label: 'Match result', value: 'match_end' },
+        { label: 'News', value: 'article' },
+      ],
+    },
+    { name: 'data', type: 'json', required: true },
+    { name: 'url', type: 'text', required: true },
+    { name: 'dedupeKey', type: 'text', required: true },
+    { name: 'readAt', type: 'date', index: true },
   ],
 }

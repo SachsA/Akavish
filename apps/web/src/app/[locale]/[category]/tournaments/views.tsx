@@ -10,6 +10,8 @@ import { JsonLd } from '@/components/JsonLd'
 import { ContentUnavailable } from '@/components/StatusMessage'
 import { DateRange } from '@/components/esport/DateRange'
 import { SpoilerZone } from '@/components/esport/SpoilerZone'
+import { EsportFollowButton } from '@/components/esport/EsportFollowButton'
+import { TeamsToFollow } from '@/components/esport/TeamsToFollow'
 import { TournamentBracket } from '@/components/esport/TournamentBracket'
 import { TournamentStandings } from '@/components/esport/TournamentStandings'
 import { ESPORT_GAME_BADGE, ESPORT_GAME_LABEL, type EsportGame, type Tier } from '@/lib/esport'
@@ -234,6 +236,23 @@ export async function TournamentView({
             <span className="font-semibold text-zinc-200">{stage.name}</span>
             <DateRange start={stage.beginAt} end={stage.endAt} />
           </p>
+          {stage.serieId !== null && (
+            <div className="mt-4">
+              <EsportFollowButton
+                look="button"
+                follow={{
+                  kind: 'event',
+                  pandaId: stage.serieId,
+                  game: stage.game,
+                  label: stage.event,
+                  acronym: null,
+                  logo: stage.logo,
+                  slug: stage.slug,
+                  at: stage.beginAt,
+                }}
+              />
+            </div>
+          )}
         </div>
       </header>
       <EsportNav active="tournaments" />
@@ -250,6 +269,7 @@ export async function TournamentView({
           {t.esport.seeCalendar}
         </Link>
       </p>
+      <TeamsToFollow stage={stage} />
       {matches.length === 0 && standings.length === 0 ? (
         <p className="text-zinc-400">{t.esport.noStructure}</p>
       ) : (

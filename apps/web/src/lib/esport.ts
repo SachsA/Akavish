@@ -59,6 +59,8 @@ export const TIER_ORDER = ['s', 'a', 'b', 'c', 'd', 'unranked'] as const
 export type Tier = (typeof TIER_ORDER)[number]
 
 export interface EsportTeam {
+  /** PandaScore team id (to follow it). */
+  id?: number | null
   name: string
   acronym: string | null
   logo: string | null
@@ -102,6 +104,7 @@ export function rowOf(doc: Record<string, unknown>): EsportRow | null {
   const team = (key: 'team1' | 'team2'): EsportTeam => {
     const g = (doc[key] ?? {}) as Record<string, unknown>
     return {
+      id: typeof g.pandaId === 'number' ? g.pandaId : null,
       name: (g.name as string) || 'TBD',
       acronym: (g.acronym as string) || null,
       logo: (g.logoUrl as string) || null,

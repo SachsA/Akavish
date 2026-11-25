@@ -3,6 +3,7 @@
 import { UserButton } from '@clerk/nextjs'
 import { BookmarkIcon } from './BookmarkIcon'
 import { SlidersIcon } from './SlidersIcon'
+import { BellIcon } from './esport/EsportFollowButton'
 import { StarIcon } from './StarIcon'
 import { useI18n } from './I18nProvider'
 
@@ -17,6 +18,7 @@ export function AccountMenu() {
           labelIcon={<SlidersIcon />}
           href={`${href('/account')}#preferences`}
         />
+        <UserButton.Link label={t.account.esportMenu} labelIcon={<BellIcon />} href={`${href('/account')}#esport`} />
         <UserButton.Link label={t.account.gamesMenu} labelIcon={<StarIcon />} href={`${href('/account')}#games`} />
         <UserButton.Link label={t.account.savedMenu} labelIcon={<BookmarkIcon />} href={`${href('/account')}#saved`} />
       </UserButton.MenuItems>

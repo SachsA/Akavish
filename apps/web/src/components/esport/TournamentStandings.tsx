@@ -2,6 +2,7 @@
 // / "eliminated" where the stage's rule is known (the CS2 Major stages).
 import { swissVerdict, type EsportStage, type StageStanding } from '@/lib/esport-tournaments'
 import { getMessages } from '@/lib/i18n/server'
+import { EsportFollowButton } from './EsportFollowButton'
 
 export function TournamentStandings({ stage, rows }: { stage: EsportStage; rows: StageStanding[] }) {
   const t = getMessages()
@@ -30,6 +31,21 @@ export function TournamentStandings({ stage, rows }: { stage: EsportStage; rows:
                       <span aria-hidden="true" className="h-[18px] w-[18px] shrink-0 rounded-sm bg-zinc-800" />
                     )}
                     <span className="truncate font-medium">{r.team.name}</span>
+                    {r.team.id ? (
+                      <EsportFollowButton
+                        look="star"
+                        follow={{
+                          kind: 'team',
+                          pandaId: r.team.id,
+                          game: stage.game,
+                          label: r.team.name,
+                          acronym: r.team.acronym,
+                          logo: r.team.logo,
+                          slug: null,
+                          at: null,
+                        }}
+                      />
+                    ) : null}
                     {verdict && (
                       <span
                         className={`ml-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${

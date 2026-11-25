@@ -42,8 +42,8 @@ describe('rowOf', () => {
     expect(r.event).toBe('PGL Major Singapore 2026')
     expect(r.stage).toBe('Stage 1')
     expect(r.tier).toBe('s')
-    expect(r.t1).toEqual({ name: 'FURIA', acronym: 'FUR', logo: 'https://x/f.png' })
-    expect(r.t2).toEqual({ name: 'Spirit', acronym: null, logo: null })
+    expect(r.t1).toMatchObject({ name: 'FURIA', acronym: 'FUR', logo: 'https://x/f.png' })
+    expect(r.t2).toMatchObject({ name: 'Spirit', acronym: null, logo: null })
     expect([r.s1, r.s2, r.winner]).toEqual([2, 1, 1])
   })
 

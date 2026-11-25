@@ -16,7 +16,18 @@ import { Companies } from './collections/Companies'
 import { Platforms } from './collections/Platforms'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
-import { Bookmarks, GameFollows, Readers } from './collections/Readers'
+import {
+  esportFollowsHandler,
+  notificationsHandler,
+  notifySettingsHandler,
+} from './lib/esport-follows'
+import {
+  Bookmarks,
+  EsportFollows,
+  GameFollows,
+  ReaderNotifications,
+  Readers,
+} from './collections/Readers'
 import { CommentReports, Comments, CommentVotes, CommunitySettings } from './collections/Comments'
 import { ScoutItems } from './collections/scout/ScoutItems'
 import { ScoutSettings } from './collections/scout/ScoutSettings'
@@ -102,6 +113,8 @@ export default buildConfig({
     Readers,
     Bookmarks,
     GameFollows,
+    EsportFollows,
+    ReaderNotifications,
     // Comments under articles (src/lib/comments.ts).
     Comments,
     CommentVotes,
@@ -150,6 +163,14 @@ export default buildConfig({
     { path: '/reader-api/follows', method: 'post', handler: readerFollowsHandler },
     { path: '/reader-api/follows', method: 'delete', handler: readerFollowsHandler },
     { path: '/reader-api/following', method: 'get', handler: readerFollowingHandler },
+    // Esport follows, the bell's notifications and their settings (src/lib/esport-follows.ts).
+    { path: '/reader-api/esport-follows', method: 'get', handler: esportFollowsHandler },
+    { path: '/reader-api/esport-follows', method: 'post', handler: esportFollowsHandler },
+    { path: '/reader-api/esport-follows', method: 'delete', handler: esportFollowsHandler },
+    { path: '/reader-api/notifications', method: 'get', handler: notificationsHandler },
+    { path: '/reader-api/notifications', method: 'post', handler: notificationsHandler },
+    { path: '/reader-api/notify-settings', method: 'get', handler: notifySettingsHandler },
+    { path: '/reader-api/notify-settings', method: 'post', handler: notifySettingsHandler },
     { path: '/reader-api/comments', method: 'get', handler: commentsHandler },
     { path: '/reader-api/comments', method: 'post', handler: commentsHandler },
     { path: '/reader-api/comments', method: 'delete', handler: commentsHandler },
@@ -255,7 +276,10 @@ export default buildConfig({
               // A run killed mid-way (a redeploy) would block every next one.
               beforeSchedule: async (args) => {
                 await releaseStaleScoutRuns(args.req.payload).catch((err) =>
-                  args.req.payload.logger.error({ msg: '[scout] stale run check failed', error: String(err) }),
+                  args.req.payload.logger.error({
+                    msg: '[scout] stale run check failed',
+                    error: String(err),
+                  }),
                 )
                 return args.defaultBeforeSchedule(args)
               },

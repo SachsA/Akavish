@@ -6,6 +6,7 @@ import { slugField } from '../fields/slug'
 import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-search-sync'
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-web'
 import { isLiveArticle, sourceHash, stableJson } from '../lib/translate'
+import { notifyArticle } from '../lib/esport-follows'
 
 const FR_TEXT_FIELDS = ['title', 'excerpt', 'seoTitle', 'seoDescription'] as const
 
@@ -152,6 +153,24 @@ export const Articles: CollectionConfig = {
       },
       // Refresh the website's cache now rather than within 30 s (lib/revalidate-web.ts).
       revalidateAfterChange,
+      // First publication of an esport article: notify the readers who follow
+      // a team it names (lib/esport-follows.ts). Best-effort, never blocks.
+      ({ doc, previousDoc, req }) => {
+        if (
+          doc._status === 'published' &&
+          previousDoc?._status !== 'published' &&
+          doc.category === 'esport'
+        ) {
+          void notifyArticle(req.payload, doc).catch((err) =>
+            req.payload.logger.warn({
+              msg: '[notify] article failed',
+              id: doc.id,
+              error: String(err),
+            }),
+          )
+        }
+        return doc
+      },
       // Queue the French translation marked "pending" above. A minute's wait,
       // so several saves in a row make one translation of the latest text.
       async ({ doc, req }) => {

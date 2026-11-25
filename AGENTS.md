@@ -247,7 +247,12 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
 - **Tournament pages** (`/esport/tournaments`, `[key]` = a game or a
   PandaScore stage slug): data from `esport-tournaments.structure` (CMS sync,
   `refreshStructures`), layout in `lib/esport-tournaments.ts` (pure, tested on
-  a real bracket in `lib/fixtures/`). A list
+  a real bracket in `lib/fixtures/`).
+- **Esport follows and the bell**: CMS `src/lib/esport-follows.ts` (follows,
+  notifications made by the sync and by article publishing), web
+  `/api/esport-follows`, `/api/notifications`, `/api/notify-settings`, one
+  shared follows store in the browser (`lib/esport-follows-store.ts`, never a
+  request per button), `EsportFollowButton`, `NotificationBell`. A list
   of articles (sections, Transfers) uses `components/ArticlesByDate.tsx`:
   the 4 newest, then by date. The
   morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris),

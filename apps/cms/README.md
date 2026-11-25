@@ -577,6 +577,24 @@ Added 2026-11-23, after the scout's editor account stayed logged in and the
 admins-only Readers group looked gone. A new admin component means
 `pnpm generate:importmap` (below).
 
+## Esport follows and notifications
+
+`src/lib/esport-follows.ts` (2026-11-25). Readers follow teams (PandaScore
+team id), events (PandaScore season id: every stage) and matches:
+**Esport follows** (unique per reader, kind and id, 300 at most, a snapshot of
+the name and logo). Two things make **Reader notifications**: the esport sync
+(a followed match going `not_started` → `running`, or ending; `transitionOf`,
+`notifyMatchEvents`) and the first publication of an esport article naming a
+followed team in its title or excerpt (`mentionsTeam`, Articles `afterChange`).
+One per reader and event (`dedupeKey`), filtered by the reader's **notify**
+settings (match starts / results / news, all on), deleted after 30 days. A
+notification stores facts (`data`: teams, score, event, article), the site
+words them. Website calls, with `READER_API_SECRET`:
+`/api/reader-api/esport-follows` (GET / POST / DELETE),
+`/api/reader-api/notifications` (GET, POST `read`),
+`/api/reader-api/notify-settings` (GET / POST). Tests:
+`src/lib/esport-follows.test.ts`, `tests/int/readers.int.spec.ts`.
+
 ## Esport data (PandaScore)
 
 `src/esport/`: every 10 minutes the `esportSync` task (queue `esport`) reads

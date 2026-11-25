@@ -29,6 +29,12 @@ import {
   verifyClerkWebhook,
 } from '@/lib/readers'
 
+import {
+  esportFollowsHandler,
+  notificationsHandler,
+  notifyMatchEvents,
+  notifySettingsHandler,
+} from '@/lib/esport-follows'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 let payload: Payload
@@ -350,6 +356,50 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     // Nobody yet: nothing followed, and no reader created to say so.
     const ghost = await readerFollowsHandler(req({ method: 'GET', query: `clerkId=${clerk('ghost2')}` }))
     expect((await ghost.json()).docs).toEqual([])
+  })
+
+  it('follows esport teams, notifies their matches, lists and marks the notifications read', async () => {
+    const id = clerk('es')
+    const profile = { clerkId: id, emailVerified: true }
+    const follow = { kind: 'team', pandaId: 987_001, label: 'Team Vitality', acronym: 'VIT', game: 'cs2' }
+    expect((await esportFollowsHandler(req({ body: { profile, follow: { ...follow, kind: 'player' } } }))).status).toBe(400)
+    expect(await (await esportFollowsHandler(req({ body: { profile, follow } }))).json()).toEqual({ following: true })
+    // Twice: still one follow.
+    await esportFollowsHandler(req({ body: { profile, follow } }))
+    const list = await (await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
+    expect(list.docs).toMatchObject([{ kind: 'team', pandaId: 987_001, label: 'Team Vitality' }])
+
+    // Starts off in the settings: only the result is notified.
+    await notifySettingsHandler(req({ body: { clerkId: id, settings: { matchStart: false } } }))
+    expect(await (await notifySettingsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()).toEqual({
+      matchStart: false,
+      results: true,
+      news: true,
+    })
+    const ev = (type: 'start' | 'end') => ({
+      type,
+      matchId: 987_100,
+      game: 'cs2',
+      serieId: null,
+      event: 'Test Cup',
+      stage: 'Playoffs',
+      slug: null,
+      t1: { id: 987_001, name: 'Vitality', acronym: 'VIT', logo: null },
+      t2: { id: 987_002, name: 'FaZe', acronym: 'FAZE', logo: null },
+      s1: 2,
+      s2: 1,
+      winner: 1 as const,
+    })
+    expect(await notifyMatchEvents(payload, [ev('start'), ev('end')])).toBe(1)
+    expect(await notifyMatchEvents(payload, [ev('end')])).toBe(0) // once
+
+    const got = await (await notificationsHandler(req({ method: 'GET', query: `clerkId=${id}&limit=10` }))).json()
+    expect(got.unread).toBe(1)
+    expect(got.docs).toMatchObject([{ kind: 'match_end', url: '/esport/results', data: { s1: 2, s2: 1 } }])
+    expect(await (await notificationsHandler(req({ body: { clerkId: id, read: 'all' } }))).json()).toEqual({ unread: 0 })
+
+    const off = await esportFollowsHandler(req({ method: 'DELETE', body: { clerkId: id, kind: 'team', pandaId: 987_001 } }))
+    expect(await off.json()).toEqual({ following: false })
   })
 
   it('does not create a reader just to answer "saved?"', async () => {

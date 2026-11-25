@@ -210,6 +210,72 @@ export async function unfollowGame(clerkId: string, gameId: string): Promise<voi
   await call('follows', { method: 'DELETE', body: { clerkId, gameId: Number(gameId) } })
 }
 
+// ─── Esport follows and notifications (apps/cms/src/lib/esport-follows.ts) ───
+
+export type EsportFollowKind = 'team' | 'event' | 'match'
+
+/** A followed team (PandaScore team id), event (PandaScore season id) or match. */
+export interface EsportFollow {
+  kind: EsportFollowKind
+  pandaId: number
+  game: string | null
+  label: string
+  acronym: string | null
+  logo: string | null
+  /** Event: a stage page to open. */
+  slug: string | null
+  /** Match: when it starts. */
+  at: string | null
+}
+
+export async function fetchEsportFollows(clerkId: string): Promise<EsportFollow[]> {
+  const { docs } = await call<{ docs: EsportFollow[] }>('esport-follows', { query: new URLSearchParams({ clerkId }) })
+  return docs.map((d) => ({ ...d, pandaId: Number(d.pandaId) }))
+}
+
+/** Following needs the full profile: the CMS checks the email is verified. */
+export async function followEsport(profile: ReaderProfile, follow: EsportFollow): Promise<void> {
+  await call('esport-follows', { method: 'POST', body: { profile, follow } })
+}
+
+export async function unfollowEsport(clerkId: string, kind: EsportFollowKind, pandaId: number): Promise<void> {
+  await call('esport-follows', { method: 'DELETE', body: { clerkId, kind, pandaId } })
+}
+
+export interface ReaderNotification {
+  id: number
+  kind: 'match_start' | 'match_end' | 'article'
+  data: Record<string, unknown>
+  url: string
+  readAt: string | null
+  createdAt: string
+}
+
+export async function fetchNotifications(
+  clerkId: string,
+  limit: number
+): Promise<{ docs: ReaderNotification[]; unread: number }> {
+  return call('notifications', { query: new URLSearchParams({ clerkId, limit: String(limit) }) })
+}
+
+export async function markNotificationsRead(clerkId: string, read: 'all' | number[]): Promise<{ unread: number }> {
+  return call('notifications', { method: 'POST', body: { clerkId, read } })
+}
+
+export interface NotifySettings {
+  matchStart: boolean
+  results: boolean
+  news: boolean
+}
+
+export async function fetchNotifySettings(clerkId: string): Promise<NotifySettings> {
+  return call('notify-settings', { query: new URLSearchParams({ clerkId }) })
+}
+
+export async function saveNotifySettings(clerkId: string, settings: NotifySettings): Promise<NotifySettings> {
+  return call('notify-settings', { method: 'POST', body: { clerkId, settings } })
+}
+
 // ─── Comments (apps/cms/src/lib/comments.ts) ────────────────────────────────
 
 export type CommentStatus = 'visible' | 'hidden' | 'deleted'
