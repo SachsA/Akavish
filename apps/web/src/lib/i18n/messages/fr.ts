@@ -294,6 +294,7 @@ export const fr: Messages = {
     saved: 'Articles sauvegardés',
     savedMenu: 'Articles sauvegardés',
     gamesMenu: 'Jeux suivis',
+    preferencesMenu: 'Préférences',
     games: 'Jeux suivis',
     gamesNews: 'Les actus de vos jeux',
     nothingFollowed: (follow: string) => `Aucun jeu pour l'instant. Cliquez sur ${follow} sur la page d'un jeu et ses actus se regrouperont ici.`,

@@ -296,6 +296,7 @@ export const en = {
     saved: 'Saved articles',
     savedMenu: 'Saved articles',
     gamesMenu: 'Followed games',
+    preferencesMenu: 'Preferences',
     games: 'Followed games',
     gamesNews: 'News from your games',
     nothingFollowed: (follow: string) => `No games yet. Hit ${follow} on a game’s page and its news will gather here.`,
