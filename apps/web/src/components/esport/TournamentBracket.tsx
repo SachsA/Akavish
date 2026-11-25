@@ -59,7 +59,9 @@ function Section({ section, title, tree }: { section: BracketSection; title: str
   return (
     <section className="mb-8">
       {title && <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-400">{title}</h3>}
-      <div className="flex gap-6 overflow-x-auto pb-3">
+      {/* Room inside the scroll box (negative margins keep the alignment) so
+          a lit-up match's outline isn't clipped by it. */}
+      <div className="-mx-2 -mt-2 flex gap-6 overflow-x-auto px-2 pt-2 pb-3">
         {section.columns.map((col, i) => (
           <div key={`${col.label}-${i}`} className="flex shrink-0 flex-col">
             <h4 className="mb-3 text-xs font-semibold text-zinc-400">{roundName(col.label, locale)}</h4>
