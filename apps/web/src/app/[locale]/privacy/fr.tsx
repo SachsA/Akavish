@@ -62,7 +62,11 @@ export function ConfidentialitePage() {
         par exemple « Author »), les articles que vous enregistrez, les jeux et les
         équipes, tournois et matchs esport que vous suivez, ce dont ils doivent
         vous prévenir, et ces notifications (gardées 30 jours), pour les
-        afficher sur votre page de compte et dans la cloche.
+        afficher sur votre page de compte et dans la cloche. Si vous activez les
+        notifications push dans un navigateur, nous gardons aussi l’adresse
+        push de ce navigateur et ses clés (et sa langue) pour vous les envoyer ;
+        c’est l’éditeur de votre navigateur (Google, Mozilla ou Apple) qui les
+        achemine. Désactiver le push, ou supprimer votre compte, l’efface.
       </p>
       <p>
         <strong>Si vous commentez.</strong> Votre nom public (votre nom

@@ -20,11 +20,13 @@ import {
   esportFollowsHandler,
   notificationsHandler,
   notifySettingsHandler,
+  pushHandler,
 } from './lib/esport-follows'
 import {
   Bookmarks,
   EsportFollows,
   GameFollows,
+  PushSubscriptions,
   ReaderNotifications,
   Readers,
 } from './collections/Readers'
@@ -115,6 +117,7 @@ export default buildConfig({
     GameFollows,
     EsportFollows,
     ReaderNotifications,
+    PushSubscriptions,
     // Comments under articles (src/lib/comments.ts).
     Comments,
     CommentVotes,
@@ -171,6 +174,10 @@ export default buildConfig({
     { path: '/reader-api/notifications', method: 'post', handler: notificationsHandler },
     { path: '/reader-api/notify-settings', method: 'get', handler: notifySettingsHandler },
     { path: '/reader-api/notify-settings', method: 'post', handler: notifySettingsHandler },
+    // Web push: the browsers a reader turned notifications on in (src/lib/web-push.ts).
+    { path: '/reader-api/push', method: 'get', handler: pushHandler },
+    { path: '/reader-api/push', method: 'post', handler: pushHandler },
+    { path: '/reader-api/push', method: 'delete', handler: pushHandler },
     { path: '/reader-api/comments', method: 'get', handler: commentsHandler },
     { path: '/reader-api/comments', method: 'post', handler: commentsHandler },
     { path: '/reader-api/comments', method: 'delete', handler: commentsHandler },

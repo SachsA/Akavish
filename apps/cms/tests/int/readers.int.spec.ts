@@ -34,6 +34,7 @@ import {
   notificationsHandler,
   notifyMatchEvents,
   notifySettingsHandler,
+  pushHandler,
 } from '@/lib/esport-follows'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -375,6 +376,7 @@ describe('the website endpoints (READER_API_SECRET)', () => {
       matchStart: false,
       results: true,
       news: true,
+      hideScores: false,
     })
     const ev = (type: 'start' | 'end') => ({
       type,
@@ -400,6 +402,24 @@ describe('the website endpoints (READER_API_SECRET)', () => {
 
     const off = await esportFollowsHandler(req({ method: 'DELETE', body: { clerkId: id, kind: 'team', pandaId: 987_001 } }))
     expect(await off.json()).toEqual({ following: false })
+  })
+
+  it('keeps one push subscription per browser, moves it to the reader who subscribes last', async () => {
+    const one = clerk('p1')
+    const two = clerk('p2')
+    const subscription = {
+      endpoint: `https://push.example.com/send/${RUN}`,
+      keys: { p256dh: 'BOr' + 'a'.repeat(84), auth: 'k'.repeat(22) },
+    }
+    expect((await pushHandler(req({ body: { clerkId: one, subscription: { endpoint: 'http://x', keys: subscription.keys } } }))).status).toBe(400)
+    expect(await (await pushHandler(req({ body: { clerkId: one, subscription, locale: 'fr' } }))).json()).toEqual({ subscribed: true })
+    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${one}` }))).json()).toEqual({ count: 1 })
+    // Same browser, another account: it moves.
+    await pushHandler(req({ body: { clerkId: two, subscription } }))
+    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${one}` }))).json()).toEqual({ count: 0 })
+    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${two}` }))).json()).toEqual({ count: 1 })
+    await pushHandler(req({ method: 'DELETE', body: { clerkId: two, endpoint: subscription.endpoint } }))
+    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${two}` }))).json()).toEqual({ count: 0 })
   })
 
   it('does not create a reader just to answer "saved?"', async () => {

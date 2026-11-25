@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { useI18n } from './I18nProvider'
 import type { NotifySettings as Settings } from '@/lib/readers'
 
-const KEYS: Array<keyof Settings> = ['matchStart', 'results', 'news']
+const KEYS = ['matchStart', 'results', 'news'] as const
 
 export function NotifySettings() {
   const { t } = useI18n()

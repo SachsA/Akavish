@@ -19,6 +19,7 @@ import {
   readBody,
   writerFrom,
 } from './readers'
+import { sendPush } from './web-push'
 
 export const FOLLOW_KINDS = ['team', 'event', 'match'] as const
 export type FollowKind = (typeof FOLLOW_KINDS)[number]
@@ -150,7 +151,12 @@ export function mentionsTeam(
 // ─── Storage ─────────────────────────────────────────────────────────────────
 
 type NotifyKind = 'match_start' | 'match_end' | 'article'
-type Settings = { matchStart?: boolean | null; results?: boolean | null; news?: boolean | null }
+type Settings = {
+  matchStart?: boolean | null
+  results?: boolean | null
+  news?: boolean | null
+  hideScores?: boolean | null
+}
 
 async function settingsOf(payload: Payload, readerIds: string[]): Promise<Map<string, Settings>> {
   const out = new Map<string, Settings>()
@@ -203,6 +209,13 @@ async function store(
       depth: 0,
     })
     made++
+    // And to the reader's browsers with push on (lib/web-push.ts; off without VAPID keys).
+    await sendPush(
+      payload,
+      Number(reader),
+      { kind, data, url, tag: dedupeKey },
+      settings.get(reader)?.hideScores === true,
+    ).catch((err) => payload.logger.warn({ msg: '[push] failed', error: String(err) }))
   }
   return made
 }
@@ -461,10 +474,14 @@ export const notificationsHandler: PayloadHandler = async (req) => {
   return json({ unread: await unreadOf(reader.id) })
 }
 
+const SETTING_KEYS = ['matchStart', 'results', 'news', 'hideScores'] as const
+
 /**
  * /reader-api/notify-settings
- *   GET  ?clerkId → { matchStart, results, news }
- *   POST { clerkId, settings } → the same, saved
+ *   GET  ?clerkId → { matchStart, results, news, hideScores }
+ *   POST { clerkId, settings } → the same, saved. Only the booleans sent
+ *        change: Preferences sends the three switches, the anti-spoil default
+ *        sends hideScores alone.
  */
 export const notifySettingsHandler: PayloadHandler = async (req) => {
   const denied = checkSecret(req.headers)
@@ -473,6 +490,7 @@ export const notifySettingsHandler: PayloadHandler = async (req) => {
     matchStart: s?.matchStart !== false,
     results: s?.results !== false,
     news: s?.news !== false,
+    hideScores: s?.hideScores === true,
   })
   if (req.method === 'GET') {
     const clerkId = req.searchParams.get('clerkId')
@@ -482,13 +500,10 @@ export const notifySettingsHandler: PayloadHandler = async (req) => {
   }
   const body = await readBody(req)
   if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
-  const s = (body.settings ?? {}) as Record<string, unknown>
-  const notify = {
-    matchStart: s.matchStart !== false,
-    results: s.results !== false,
-    news: s.news !== false,
-  }
+  const sent = (body.settings ?? {}) as Record<string, unknown>
   const reader = await ensureReader(req.payload, body.clerkId)
+  const notify = pick((reader as unknown as { notify?: Settings }).notify)
+  for (const k of SETTING_KEYS) if (typeof sent[k] === 'boolean') notify[k] = sent[k] as boolean
   await req.payload.update({
     collection: 'readers',
     id: reader.id,
@@ -496,4 +511,86 @@ export const notifySettingsHandler: PayloadHandler = async (req) => {
     overrideAccess: true,
   })
   return json(notify)
+}
+
+const text64 = (v: unknown) =>
+  typeof v === 'string' && /^[A-Za-z0-9_\-=]{8,200}$/.test(v) ? v : null
+
+/**
+ * /reader-api/push (web push, lib/web-push.ts)
+ *   GET    ?clerkId → { count }
+ *   POST   { clerkId, subscription: { endpoint, keys: { p256dh, auth } }, locale, userAgent }
+ *          → { subscribed: true } (one row per browser: the same endpoint moves to this reader)
+ *   DELETE { clerkId, endpoint } → { subscribed: false }
+ */
+export const pushHandler: PayloadHandler = async (req) => {
+  const denied = checkSecret(req.headers)
+  if (denied) return denied
+  if (req.method === 'GET') {
+    const clerkId = req.searchParams.get('clerkId')
+    if (!isClerkId(clerkId)) return json({ error: 'invalid clerkId' }, 400)
+    const reader = await findReader(req.payload, clerkId)
+    if (!reader) return json({ count: 0 })
+    const { totalDocs } = await req.payload.count({
+      collection: 'push-subscriptions' as never,
+      where: { reader: { equals: reader.id } },
+      overrideAccess: true,
+    })
+    return json({ count: totalDocs })
+  }
+  const body = await readBody(req)
+  if (!isClerkId(body.clerkId)) return json({ error: 'invalid clerkId' }, 400)
+  if (req.method === 'DELETE') {
+    const endpoint = typeof body.endpoint === 'string' ? body.endpoint : ''
+    const reader = await findReader(req.payload, body.clerkId)
+    if (reader && endpoint) {
+      await req.payload.delete({
+        collection: 'push-subscriptions' as never,
+        where: { and: [{ reader: { equals: reader.id } }, { endpoint: { equals: endpoint } }] },
+        overrideAccess: true,
+      })
+    }
+    return json({ subscribed: false })
+  }
+  const sub = (body.subscription ?? {}) as {
+    endpoint?: unknown
+    keys?: { p256dh?: unknown; auth?: unknown }
+  }
+  const endpoint =
+    typeof sub.endpoint === 'string' && sub.endpoint.length <= 1000 ? sub.endpoint : ''
+  const p256dh = text64(sub.keys?.p256dh)
+  const auth = text64(sub.keys?.auth)
+  if (!/^https:\/\/[^\s]+$/.test(endpoint) || !p256dh || !auth)
+    return json({ error: 'invalid subscription' }, 400)
+  const reader = await ensureReader(req.payload, body.clerkId)
+  const data = {
+    reader: reader.id,
+    endpoint,
+    p256dh,
+    auth,
+    locale: body.locale === 'fr' ? 'fr' : 'en',
+    userAgent: typeof body.userAgent === 'string' ? body.userAgent.slice(0, 200) : null,
+  }
+  const { docs } = await req.payload.find({
+    collection: 'push-subscriptions' as never,
+    where: { endpoint: { equals: endpoint } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  if (docs[0]) {
+    await req.payload.update({
+      collection: 'push-subscriptions' as never,
+      id: (docs[0] as unknown as { id: number }).id,
+      data: data as never,
+      overrideAccess: true,
+    })
+  } else {
+    await req.payload.create({
+      collection: 'push-subscriptions' as never,
+      data: data as never,
+      overrideAccess: true,
+    })
+  }
+  return json({ subscribed: true })
 }

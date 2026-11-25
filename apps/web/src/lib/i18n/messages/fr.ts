@@ -331,6 +331,16 @@ export const fr: Messages = {
     results: 'Résultats',
     news: 'Actus et transferts',
   },
+  push: {
+    title: 'Notifications sur cet appareil',
+    offHint: 'Recevez ici les notifications de ce que vous suivez, même site fermé. À activer dans chaque navigateur ou téléphone que vous utilisez.',
+    onHint: 'Activées pour ce navigateur. Désactivez-les ici quand vous voulez.',
+    denied: 'Les notifications sont bloquées pour akavish.gg dans ce navigateur : autorisez-les dans ses réglages du site, puis revenez ici.',
+    failed: "Impossible de les activer, réessayez.",
+    ios: "Sur iPhone et iPad : ajoutez Akavish à l'écran d'accueil (Partager, puis Sur l'écran d'accueil), ouvrez-le depuis là et activez les notifications ici.",
+    unsupported: 'Ce navigateur ne reçoit pas les notifications push. La cloche du site marche toujours.',
+    notYet: 'Bientôt disponible. La cloche du site marche déjà.',
+  },
   spoilers: {
     hidden: 'Scores masqués',
     shown: 'Scores visibles',

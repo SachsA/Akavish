@@ -252,7 +252,10 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   notifications made by the sync and by article publishing), web
   `/api/esport-follows`, `/api/notifications`, `/api/notify-settings`, one
   shared follows store in the browser (`lib/esport-follows-store.ts`, never a
-  request per button), `EsportFollowButton`, `NotificationBell`. A list
+  request per button), `EsportFollowButton`, `NotificationBell`. Web push:
+  CMS `src/lib/web-push.ts` (VAPID keys, off without them), web `/sw.js`
+  (route, not a file: the app has no `public/`), `lib/push-client.ts`,
+  `PushToggle`. A list
   of articles (sections, Transfers) uses `components/ArticlesByDate.tsx`:
   the 4 newest, then by date. The
   morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris),

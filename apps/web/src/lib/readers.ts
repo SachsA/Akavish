@@ -266,13 +266,30 @@ export interface NotifySettings {
   matchStart: boolean
   results: boolean
   news: boolean
+  /** A copy of the anti-spoil default: a result's push leaves the score out. */
+  hideScores?: boolean
 }
 
 export async function fetchNotifySettings(clerkId: string): Promise<NotifySettings> {
   return call('notify-settings', { query: new URLSearchParams({ clerkId }) })
 }
 
-export async function saveNotifySettings(clerkId: string, settings: NotifySettings): Promise<NotifySettings> {
+// ─── Web push (apps/cms/src/lib/web-push.ts) ─────────────────────────────────
+
+export async function pushCount(clerkId: string): Promise<{ count: number }> {
+  return call('push', { query: new URLSearchParams({ clerkId }) })
+}
+
+export async function pushSubscribe(clerkId: string, subscription: unknown, locale: 'en' | 'fr', userAgent: string) {
+  await call('push', { method: 'POST', body: { clerkId, subscription, locale, userAgent: userAgent.slice(0, 200) } })
+}
+
+export async function pushUnsubscribe(clerkId: string, endpoint: string) {
+  await call('push', { method: 'DELETE', body: { clerkId, endpoint } })
+}
+
+/** Only the booleans given change (the CMS merges). */
+export async function saveNotifySettings(clerkId: string, settings: Partial<NotifySettings>): Promise<NotifySettings> {
   return call('notify-settings', { method: 'POST', body: { clerkId, settings } })
 }
 

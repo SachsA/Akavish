@@ -851,6 +851,32 @@ reports:
    closes only that one. The number of reports that hides a comment is there
    too (3).
 
+### 6.5d Push notifications (web push, VAPID keys)
+
+Readers who follow esport teams, tournaments or matches get notifications in
+the site's bell; with push on in a browser (/account → Preferences →
+*Notifications on this device*) they also get them with the site closed
+(`apps/cms/src/lib/web-push.ts`, service worker `/sw.js`). Free: the browser
+makers' push services (Google, Mozilla, Apple) carry them. One key pair, made
+once:
+
+1. On your computer, in the repo: `npx web-push generate-vapid-keys`. It
+   prints a **Public Key** and a **Private Key**. Keep the private one secret
+   (a password manager); never commit it.
+2. **Railway** (CMS) → Variables: `VAPID_PUBLIC_KEY` = the public key,
+   `VAPID_PRIVATE_KEY` = the private key, `VAPID_SUBJECT` =
+   `mailto:hello@akavish.gg`. Redeploy.
+3. **Vercel** (web) → Settings → Environment Variables, Production (and
+   Preview if wanted): `NEXT_PUBLIC_VAPID_PUBLIC_KEY` = the same **public**
+   key. Redeploy (it is read at build time).
+4. Check: /account → Preferences → *Notifications on this device* is a switch
+   (not "Coming soon"); turn it on, accept the browser's prompt; follow a team
+   that plays soon.
+
+Changing the keys later cuts every existing subscription (readers turn push
+on again). Without the keys nothing breaks: the switch says "Coming soon", the
+bell works.
+
 ### 6.6 Email on the domain (free, via Cloudflare)
 
 Cloudflare **Email Routing** forwards `@akavish.gg` mail to a personal inbox, for
@@ -970,6 +996,7 @@ Neon, R2 or Resend, never through the CMS. Check *those* services' logs.
 | `READER_API_SECRET` | Railway **and** Vercel (same value) | Generate: `openssl rand -hex 32` | Saved articles and `/account` say "unavailable" | 🟠 read and edit any reader's saved articles |
 | `CLERK_WEBHOOK_SECRET` | Railway | Clerk → Webhooks → the endpoint → Signing secret → rotate | Profile sync and account deletion, until Railway redeploys | 🟠 fake profile updates or deletions |
 | `MODERATION_DISCORD_WEBHOOK_URL` | Railway | Discord → the moderation channel → Integrations → Webhooks → delete, create a new one | Report alerts (still in `/admin`) | 🟡 post into the channel |
+| `VAPID_PRIVATE_KEY` | Railway | `npx web-push generate-vapid-keys`, then the new public key on Railway **and** Vercel (§6.5d) | Push stops; every reader must turn it on again | 🟠 push notifications as Akavish to subscribed browsers |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Railway / Vercel | Sentry → Client Keys | Nothing | ⚪ public by design |
 | `BACKUP_DATABASE_URL` | GitHub secrets | Neon (same reset as above, or the `backup_ro` role) | Nightly backups fail | 🔴 if the owner role, 🟠 if read-only |
 | `BACKUP_R2_*` | GitHub secrets | Cloudflare → R2 → the backups-bucket token | Nightly backups fail | 🔴 every past dump |
@@ -1571,6 +1598,7 @@ The site is in English and French (`/fr`). Interface text lives in the web
 | `SENTRY_AUTH_TOKEN`                 | `sntrys_…`                | **Secret**, build-time only |
 | `REVALIDATE_SECRET`                 | `openssl rand -hex 32`    | **Secret**, same as the CMS's; unset → `/api/revalidate` off (§4e) |
 | `READER_API_SECRET`                 | `openssl rand -hex 32`    | **Secret**, same as the CMS's; unset → saving unavailable (§6.5b) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`      | `B…` (public)             | Web push, same as the CMS's `VAPID_PUBLIC_KEY`; unset → push "Coming soon" (§6.5d) |
 
 **CMS (Railway/Render)**
 
@@ -1609,6 +1637,8 @@ The site is in English and French (`/fr`). Interface text lives in the web
 | `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
 | `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |
 | `MODERATION_DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/…` | **Secret**, comment reports (§6.5c) |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | `npx web-push generate-vapid-keys` | Web push; the private one is a **Secret** (§6.5d). Unset → no push, the bell still works |
+| `VAPID_SUBJECT`       | `mailto:hello@akavish.gg`        | Web push contact for the push services (§6.5d) |
 
 ---
 

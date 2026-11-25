@@ -43,7 +43,8 @@
     "payload": "3.94.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "sharp": "0.35.5"
+    "sharp": "0.35.5",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",
@@ -51,6 +52,7 @@
     "@types/node": "22.19.9",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@types/web-push": "3.6.4",
     "eslint": "^9.16.0",
     "eslint-config-next": "16.4.6",
     "prettier": "^3.10.1",

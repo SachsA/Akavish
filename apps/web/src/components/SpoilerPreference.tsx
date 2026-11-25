@@ -22,6 +22,12 @@ export function SpoilerPreference() {
     try {
       await user.update({ unsafeMetadata: { ...user.unsafeMetadata, hideScores: next } })
       setDefaultSpoilers(next ? 'hide' : 'show', { endVisit: true })
+      // A copy for the CMS: a result's push notification then leaves the score out.
+      void fetch('/api/notify-settings', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ settings: { hideScores: next } }),
+      }).catch(() => undefined)
       setState('saved')
     } catch {
       setState('error')

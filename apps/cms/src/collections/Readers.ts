@@ -67,7 +67,12 @@ export const Readers: CollectionConfig = {
           overrideAccess: true,
           req,
         })
-        for (const collection of ['game-follows', 'esport-follows', 'reader-notifications']) {
+        for (const collection of [
+          'game-follows',
+          'esport-follows',
+          'reader-notifications',
+          'push-subscriptions',
+        ]) {
           await req.payload.delete({
             collection: collection as never,
             where: { reader: { equals: id } },
@@ -184,6 +189,14 @@ export const Readers: CollectionConfig = {
         { name: 'matchStart', label: 'Match starts', type: 'checkbox', defaultValue: true },
         { name: 'results', label: 'Results', type: 'checkbox', defaultValue: true },
         { name: 'news', label: 'News and transfers', type: 'checkbox', defaultValue: true },
+        {
+          // A copy of their anti-spoil default (Clerk unsafeMetadata.hideScores),
+          // so a push notification of a result leaves the score out.
+          name: 'hideScores',
+          label: 'Hide scores in push notifications',
+          type: 'checkbox',
+          defaultValue: false,
+        },
       ],
     },
   ],
@@ -294,5 +307,39 @@ export const ReaderNotifications: CollectionConfig = {
     { name: 'url', type: 'text', required: true },
     { name: 'dedupeKey', type: 'text', required: true },
     { name: 'readAt', type: 'date', index: true },
+  ],
+}
+
+/**
+ * Web push (2026-11-25): one row per browser a reader turned notifications on
+ * in (/account → Preferences). The endpoint is the browser maker's push
+ * service (Google, Mozilla, Apple); the keys encrypt the message for that
+ * browser only. A subscription the push service says is gone (404 / 410) is
+ * deleted at the next send (src/lib/web-push.ts).
+ */
+export const PushSubscriptions: CollectionConfig = {
+  slug: 'push-subscriptions',
+  labels: { singular: 'Push subscription', plural: 'Push subscriptions' },
+  admin: {
+    group: 'Readers',
+    defaultColumns: ['reader', 'locale', 'userAgent', 'createdAt'],
+    description: 'Browsers that get push notifications. Written by the site only.',
+  },
+  access: { create: () => false, read: admins, update: () => false, delete: admins },
+  fields: [
+    { name: 'reader', type: 'relationship', relationTo: 'readers', required: true, index: true },
+    { name: 'endpoint', type: 'text', required: true, unique: true, index: true },
+    { name: 'p256dh', type: 'text', required: true },
+    { name: 'auth', type: 'text', required: true },
+    {
+      name: 'locale',
+      type: 'select',
+      defaultValue: 'en',
+      options: [
+        { label: 'English', value: 'en' },
+        { label: 'Français', value: 'fr' },
+      ],
+    },
+    { name: 'userAgent', type: 'text' },
   ],
 }

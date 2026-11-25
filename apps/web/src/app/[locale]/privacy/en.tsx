@@ -52,7 +52,11 @@ export function PrivacyPage() {
         name, such as “Author”), the articles you save, the games and the esport
         teams, tournaments and matches you follow, what they should notify you
         of, and those notifications (kept 30 days), so we can show them on your
-        account page and in the bell.
+        account page and in the bell. If you turn push notifications on in a
+        browser, we also keep that browser’s push address and its keys (and
+        its language) to send them; your browser’s maker (Google, Mozilla or
+        Apple) delivers them. Turning push off, or deleting your account,
+        deletes it.
       </p>
       <p>
         <strong>If you comment.</strong> Your public name (your username, or

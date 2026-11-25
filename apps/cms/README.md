@@ -592,7 +592,13 @@ notification stores facts (`data`: teams, score, event, article), the site
 words them. Website calls, with `READER_API_SECRET`:
 `/api/reader-api/esport-follows` (GET / POST / DELETE),
 `/api/reader-api/notifications` (GET, POST `read`),
-`/api/reader-api/notify-settings` (GET / POST). Tests:
+`/api/reader-api/notify-settings` (GET / POST, only the booleans sent change),
+`/api/reader-api/push` (GET count / POST subscription / DELETE). **Web push**
+(`src/lib/web-push.ts`, since 2026-11-25): each notification is also pushed
+to the reader's **Push subscriptions** (one per browser), worded in the
+browser's language, a result without its score when `notify.hideScores`;
+404 / 410 from a push service deletes the subscription. Off without
+`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (DEPLOYMENT.md §6.5d). Tests:
 `src/lib/esport-follows.test.ts`, `tests/int/readers.int.spec.ts`.
 
 ## Esport data (PandaScore)

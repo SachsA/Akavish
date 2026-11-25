@@ -363,6 +363,13 @@ test('esport: the anti-spoil switch hides scores, is remembered, and links to th
   await expect(page.getByRole('link', { name: 'Réglage par défaut' })).toHaveAttribute('href', '/fr/account#preferences')
 })
 
+test('the push service worker is served from the root, as JavaScript', async ({ request }) => {
+  const res = await request.get('/sw.js')
+  expect(res.status()).toBe(200)
+  expect(res.headers()['content-type']).toContain('javascript')
+  expect(await res.text()).toContain("addEventListener('push'")
+})
+
 test('esport: the Tournaments tab lists the tournaments, a wrong one is a 404', async ({ page }) => {
   await page.goto('/esport')
   await page.getByRole('navigation', { name: 'Esport sections' }).getByRole('link', { name: 'Tournaments' }).click()

@@ -333,6 +333,16 @@ export const en = {
     results: 'Results',
     news: 'News and transfers',
   },
+  push: {
+    title: 'Notifications on this device',
+    offHint: 'Get the notifications of what you follow here, even with the site closed. Turn it on in each browser or phone you use.',
+    onHint: 'On for this browser. Turn it off here at any time.',
+    denied: 'Notifications are blocked for akavish.gg in this browser: allow them in its site settings, then come back.',
+    failed: "Couldn't turn them on, try again.",
+    ios: 'On iPhone and iPad: add Akavish to your home screen (Share, then Add to Home Screen), open it from there, and turn notifications on here.',
+    unsupported: "This browser can't receive push notifications. The bell on the site still works.",
+    notYet: 'Coming soon. The bell on the site already works.',
+  },
   spoilers: {
     hidden: 'Scores hidden',
     shown: 'Scores shown',

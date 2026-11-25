@@ -7,6 +7,7 @@ import { currentUser } from '@clerk/nextjs/server'
 import { AccountActions } from '@/components/AccountActions'
 import { SpoilerPreference } from '@/components/SpoilerPreference'
 import { NotifySettings } from '@/components/NotifySettings'
+import { PushToggle } from '@/components/PushToggle'
 import { EsportFollowsManager, type TeamChoice } from '@/components/esport/EsportFollowsManager'
 import { Pagination } from '@/components/Pagination'
 import { RoleBadge } from '@/components/RoleBadge'
@@ -162,6 +163,7 @@ export default async function AccountPage({
           <div className="space-y-4">
             <SpoilerPreference />
             <NotifySettings />
+            <PushToggle />
           </div>
         </section>
       )}
