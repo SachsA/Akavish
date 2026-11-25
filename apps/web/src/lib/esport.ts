@@ -33,6 +33,12 @@ export const ESPORT_GAME_SLUGS: Record<EsportGame, string[]> = {
   rl: ['rocket-league'],
 }
 
+/** The esport game a CMS game slug is (for the badge on cards), else null. */
+export function esportGameOfSlug(slug: string | undefined | null): EsportGame | null {
+  if (!slug) return null
+  return ESPORT_GAMES.find((g) => ESPORT_GAME_SLUGS[g].includes(slug)) ?? null
+}
+
 export const isEsportGame = (v: unknown): v is EsportGame =>
   typeof v === 'string' && (ESPORT_GAMES as readonly string[]).includes(v)
 

@@ -6,6 +6,7 @@ import { DateText } from '@/components/DateText'
 import { ScoreBadge } from '@/components/ScoreBadge'
 import { getMessages } from '@/lib/i18n/server'
 import { SpoilerVeil, spoilerClasses } from '@/components/SpoilerVeil'
+import { EsportBadges } from '@/components/EsportBadges'
 
 /** The lead story on the home page: big image, big headline, excerpt. */
 export function FeaturedArticle({ article }: { article: Article }) {
@@ -20,6 +21,7 @@ export function FeaturedArticle({ article }: { article: Article }) {
     >
       <div className="relative aspect-video bg-zinc-800 overflow-hidden">
         <SpoilerVeil spoiler={article.spoiler} />
+        <EsportBadges article={article} />
         {article.coverImage ? (
           <Image
             src={article.coverImage}

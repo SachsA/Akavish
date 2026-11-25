@@ -6,6 +6,7 @@ import { DateText } from '@/components/DateText'
 import { ScoreBadge } from '@/components/ScoreBadge'
 import { getMessages } from '@/lib/i18n/server'
 import { SpoilerVeil, spoilerClasses } from '@/components/SpoilerVeil'
+import { EsportBadges } from '@/components/EsportBadges'
 
 export function ArticleCard({ article }: { article: Article }) {
   const t = getMessages()
@@ -17,6 +18,7 @@ export function ArticleCard({ article }: { article: Article }) {
     >
       <div className="relative aspect-video bg-zinc-800 overflow-hidden">
         <SpoilerVeil spoiler={article.spoiler} />
+        <EsportBadges article={article} />
         {article.coverImage ? (
           <Image
             // The 960 px size: the full one is for the article's top.

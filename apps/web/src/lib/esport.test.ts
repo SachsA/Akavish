@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ESPORT_GAMES,
   ESPORT_GAME_SLUGS,
+  esportGameOfSlug,
   choicesOf,
   filterRows,
   filtersToQuery,
@@ -145,5 +146,14 @@ describe('esport games', () => {
     expect(isEsportGame('page')).toBe(false)
     for (const g of ESPORT_GAMES) expect(ESPORT_GAME_SLUGS[g].length).toBeGreaterThan(0)
     expect(ESPORT_GAME_SLUGS.cs2).toEqual(['counter-strike-2'])
+  })
+})
+
+describe('esport game of a CMS game', () => {
+  it('names the esport game for the card badge', () => {
+    expect(esportGameOfSlug('counter-strike-2')).toBe('cs2')
+    expect(esportGameOfSlug('tom-clancy-s-rainbow-six-siege-x')).toBe('r6')
+    expect(esportGameOfSlug('gta-6')).toBeNull()
+    expect(esportGameOfSlug(undefined)).toBeNull()
   })
 })
