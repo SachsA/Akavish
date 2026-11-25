@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bracketLayout,
   groupEvents,
+  matchOfHash,
   roundLabel,
   roundName,
   stageOf,
@@ -128,5 +129,15 @@ describe('Swiss verdicts', () => {
     expect(swissVerdict(major, { wins: 2, losses: 2 })).toBeNull()
     expect(swissVerdict({ ...major, name: 'Playoffs' }, { wins: 3, losses: 0 })).toBeNull()
     expect(swissVerdict({ ...major, game: 'valorant' }, { wins: 3, losses: 0 })).toBeNull()
+  })
+})
+
+describe('the match in the URL', () => {
+  it('reads #match-<id>, and the last one when Next doubled the fragment', () => {
+    expect(matchOfHash('#match-1830540')).toBe('match-1830540')
+    expect(matchOfHash('#match-1830540#match-1830540')).toBe('match-1830540')
+    expect(matchOfHash('#match-1%23match-2')).toBe('match-2')
+    expect(matchOfHash('#comments')).toBeNull()
+    expect(matchOfHash('')).toBeNull()
   })
 })

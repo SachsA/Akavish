@@ -247,3 +247,15 @@ export function swissVerdict(
   if (stage.game !== 'cs2' || !/major/i.test(stage.event) || !/stage\s*[123]\b/i.test(stage.name)) return null
   return row.wins >= 3 ? 'qualified' : row.losses >= 3 ? 'eliminated' : null
 }
+
+/**
+ * The match in the URL's fragment. Its last `match-<id>`: after a reload, Next
+ * can append the link's fragment to the one already there when the same link
+ * is clicked again (`#match-1#match-1`), which matched no element, so the
+ * match was never lit up again until the tab was closed. The URL is then put
+ * back to a single fragment.
+ */
+export function matchOfHash(hash: string): string | null {
+  const ids = decodeURIComponent(hash).match(/match-\d+/g)
+  return ids ? ids[ids.length - 1] : null
+}

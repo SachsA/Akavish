@@ -10,12 +10,17 @@
 // Twice, the second time after Next's own scroll has settled.
 
 import { useEffect } from 'react'
+import { matchOfHash } from '../../lib/esport-tournaments'
 
 const CLASS = 'akv-hl'
 
 function apply() {
-  const id = decodeURIComponent(window.location.hash.slice(1))
-  const el = id.startsWith('match-') ? document.getElementById(id) : null
+  const id = matchOfHash(window.location.hash)
+  if (id && window.location.hash !== `#${id}`) {
+    const { pathname, search } = window.location
+    window.history.replaceState(window.history.state, '', `${pathname}${search}#${id}`)
+  }
+  const el = id ? document.getElementById(id) : null
   document.querySelectorAll(`.${CLASS}`).forEach((x) => {
     if (x !== el) x.classList.remove(CLASS)
   })
