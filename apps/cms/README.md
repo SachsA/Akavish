@@ -112,6 +112,15 @@ real date and doesn't take the top of the homepage.
 `import-images/` (the images and the Markdown) and `import-docs/` (Alex's own
 source documents) are gitignored.
 
+### Results that spoil (`spoiler`)
+
+*Gives a result away* (sidebar, 2026-11-25): readers who hide esport scores
+see the article blurred in lists until they open it (the site's anti-spoil,
+`apps/web/src/lib/spoilers.ts`). The scout ticks it on a draft whose story's
+esport kind is `result` or `final`, which includes the morning recap (its
+story is a `result`); it never unticks it. Tick it by hand on any other
+article that gives a score or a winner in its title or excerpt.
+
 ### Picking the homepage lead story (`featured`)
 
 Tick **featured** in an article's sidebar to make it the big lead story on the

@@ -5,6 +5,8 @@ import { frFR } from '@clerk/localizations'
 import Link from '@/components/LocaleLink'
 import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
 import { DeferredAnalytics } from '@/components/DeferredAnalytics'
+import { SpoilerSync } from '@/components/SpoilerSync'
+import { RESTORE_SPOILERS } from '@/lib/spoilers'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { Wordmark } from '@/components/Wordmark'
 import { SearchBar } from '@/components/SearchBar'
@@ -85,6 +87,8 @@ export default async function RootLayout({
       <html lang={locale} suppressHydrationWarning>
         <head>
           <script dangerouslySetInnerHTML={{ __html: RESTORE_THEME }} />
+          {/* Anti-spoil: hide esport scores before first paint (lib/spoilers.ts). */}
+          <script dangerouslySetInnerHTML={{ __html: RESTORE_SPOILERS }} />
         </head>
         <body>
           <I18nProvider locale={locale}>
@@ -108,6 +112,7 @@ export default async function RootLayout({
               needs no consent banner. Only actually collects when deployed on
               Vercel; a no-op locally. 50k events/month on the Hobby plan. */}
           <DeferredAnalytics />
+          <SpoilerSync />
           </I18nProvider>
         </body>
       </html>

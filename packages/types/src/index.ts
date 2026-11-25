@@ -36,6 +36,8 @@ export interface Article {
   aiAssisted?: boolean
   /** Reviews: the verdict out of 10. */
   score?: number
+  /** Gives away a match result (esport recap, final): blurred in lists for readers who hide scores. */
+  spoiler?: boolean
   /**
    * The French version, machine-translated in the CMS (apps/cms/src/lib/translate.ts).
    * Absent until it exists. The web swaps it in on /fr pages.

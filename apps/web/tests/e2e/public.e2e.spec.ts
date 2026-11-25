@@ -340,6 +340,29 @@ test('esport: tabs for news, results, transfers and calendar; only under /esport
   expect((await page.goto('/news/results'))?.status()).toBe(404)
 })
 
+test('esport: the anti-spoil switch hides scores, is remembered, and links to the default setting', async ({ page }) => {
+  await page.goto('/esport/results')
+  const html = page.locator('html')
+  await expect(html).toHaveAttribute('data-spoilers', 'show')
+  const toggle = page.getByRole('switch', { name: /Hide scores/ })
+  await expect(toggle).toHaveAttribute('aria-checked', 'false')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-checked', 'true')
+  await expect(html).toHaveAttribute('data-spoilers', 'hide')
+  // A played match shows "Show" instead of its score, and reveals on click.
+  const masks = page.locator('.akv-mask:visible')
+  if ((await masks.count()) > 0) {
+    await expect(page.locator('.akv-score:visible')).toHaveCount(0)
+    await masks.first().click()
+    await expect(page.locator('.akv-score:visible')).toHaveCount(1)
+  }
+  // A visitor's choice stays on this device, before the first paint.
+  await page.goto('/fr/esport')
+  await expect(html).toHaveAttribute('data-spoilers', 'hide')
+  await expect(page.getByRole('switch', { name: /Masquer les scores/ })).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByRole('link', { name: 'Réglage par défaut' })).toHaveAttribute('href', '/fr/account#preferences')
+})
+
 test('esport: news and Mercato by game, the game kept across tabs', async ({ page }) => {
   await page.goto('/esport')
   const games = page.getByRole('navigation', { name: 'Filter by game' })

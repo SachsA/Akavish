@@ -237,7 +237,12 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   lists only esport so they stay cached); filters in `lib/esport.ts`.
   `/esport/<game>` and `/esport/transfers/<game>` (`[game]` segments,
   `dynamicParams = false`) filter by game through `ESPORT_GAME_SLUGS`; a new
-  `/esport/<game>` list path also goes in the proxy's `LIST_PATH` (`?page=`). A list
+  `/esport/<game>` list path also goes in the proxy's `LIST_PATH` (`?page=`).
+- **Anti-spoil** (`lib/spoilers.ts`): hiding scores is CSS on
+  `<html data-spoilers>` (set before paint by `RESTORE_SPOILERS` in the
+  layout), never a server decision, so pages stay cached. A card that can
+  give a result away gets `spoilerClasses(article.spoiler)` + `<SpoilerVeil>`;
+  a score gets `.akv-score` / `.akv-mask` inside an `.akv-match` row. A list
   of articles (sections, Transfers) uses `components/ArticlesByDate.tsx`:
   the 4 newest, then by date. The
   morning recap draft is `apps/cms/src/esport/recap.ts` (scout run, 8 am Paris),

@@ -5,18 +5,21 @@ import { Wordmark } from '@/components/Wordmark'
 import { DateText } from '@/components/DateText'
 import { ScoreBadge } from '@/components/ScoreBadge'
 import { getMessages } from '@/lib/i18n/server'
+import { SpoilerVeil, spoilerClasses } from '@/components/SpoilerVeil'
 
 /** The lead story on the home page: big image, big headline, excerpt. */
 export function FeaturedArticle({ article }: { article: Article }) {
   const t = getMessages()
   const category = t.categories[article.category]
+  const sp = spoilerClasses(article.spoiler)
 
   return (
     <Link
       href={`/article/${article.slug}`}
-      className="group block bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors"
+      className={`${sp.root} group block bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors`}
     >
       <div className="relative aspect-video bg-zinc-800 overflow-hidden">
+        <SpoilerVeil spoiler={article.spoiler} />
         {article.coverImage ? (
           <Image
             src={article.coverImage}
@@ -28,7 +31,7 @@ export function FeaturedArticle({ article }: { article: Article }) {
             sizes="(max-width: 1024px) 100vw, 66vw"
             // Above the fold on the home page — load it first.
             preload
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className={`${sp.blur} object-cover group-hover:scale-105 transition-transform duration-500`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
@@ -53,10 +56,12 @@ export function FeaturedArticle({ article }: { article: Article }) {
             </span>
           )}
         </div>
-        <h2 className="text-3xl font-black tracking-tight text-white leading-tight group-hover:text-emerald-400 transition-colors">
+        <h2
+          className={`${sp.blur} text-3xl font-black tracking-tight text-white leading-tight group-hover:text-emerald-400 transition-colors`}
+        >
           {article.title}
         </h2>
-        <p className="text-zinc-400 line-clamp-3">{article.excerpt}</p>
+        <p className={`${sp.blur} text-zinc-400 line-clamp-3`}>{article.excerpt}</p>
         <p className="text-sm text-zinc-400">{t.card.by(article.author.name)}</p>
       </div>
     </Link>
@@ -66,13 +71,16 @@ export function FeaturedArticle({ article }: { article: Article }) {
 /** A text-only entry for the "Top stories" column next to the lead story. */
 export function ArticleListItem({ article }: { article: Article }) {
   const category = getMessages().categories[article.category]
+  const sp = spoilerClasses(article.spoiler)
 
   return (
-    <Link href={`/article/${article.slug}`} className="group block py-4">
+    <Link href={`/article/${article.slug}`} className={`${sp.root} group block py-4`}>
       <span className="text-xs text-emerald-500 font-bold uppercase tracking-wide">
         {category?.singular ?? article.category}
       </span>
-      <h3 className="mt-1 font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors line-clamp-3">
+      <h3
+        className={`${sp.blur} mt-1 font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors line-clamp-3`}
+      >
         {article.title}
       </h3>
       {article.publishedAt && (

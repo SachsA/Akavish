@@ -69,6 +69,7 @@ export interface PayloadArticle {
   featured?: boolean | null
   aiAssisted?: boolean | null
   score?: number | null
+  spoiler?: boolean | null
   fr?: {
     title?: string | null
     excerpt?: string | null
@@ -147,6 +148,7 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     featured: doc.featured === true,
     aiAssisted: doc.aiAssisted === true,
     score: typeof doc.score === 'number' ? doc.score : undefined,
+    spoiler: doc.spoiler === true,
     tags: Array.isArray(doc.tags)
       ? doc.tags.map((t) => (typeof t === 'string' ? t : (t.slug ?? ''))).filter(Boolean)
       : [],

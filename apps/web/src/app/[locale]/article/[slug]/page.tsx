@@ -328,10 +328,10 @@ export default async function ArticlePage({ params }: Params) {
           {adjacent.previous ? (
             <Link
               href={`/article/${adjacent.previous.slug}`}
-              className="group rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors"
+              className={`${adjacent.previous.spoiler ? 'akv-spoiler ' : ''}group rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors`}
             >
               <span className="block text-xs text-zinc-400 mb-1">{t.article.previous}</span>
-              <span className="block font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
+              <span className="akv-spoiler-blur block font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
                 {adjacent.previous.title}
               </span>
             </Link>
@@ -342,10 +342,10 @@ export default async function ArticlePage({ params }: Params) {
           {adjacent.next && (
             <Link
               href={`/article/${adjacent.next.slug}`}
-              className="group rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors sm:text-right"
+              className={`${adjacent.next.spoiler ? 'akv-spoiler ' : ''}group rounded-lg border border-zinc-800 p-4 hover:border-zinc-700 transition-colors sm:text-right`}
             >
               <span className="block text-xs text-zinc-400 mb-1">{t.article.next}</span>
-              <span className="block font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
+              <span className="akv-spoiler-blur block font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
                 {adjacent.next.title}
               </span>
             </Link>

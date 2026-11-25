@@ -179,3 +179,31 @@ body {
 ::-webkit-scrollbar-thumb {
   @apply bg-zinc-700 rounded-full;
 }
+
+/* Anti-spoil (lib/spoilers.ts): while <html data-spoilers="hide">, a result
+   article's card is blurred with a "Result hidden" label; opening it reveals. */
+.akv-spoiler-veil {
+  display: none;
+}
+html[data-spoilers='hide'] .akv-spoiler .akv-spoiler-veil {
+  display: flex;
+}
+html[data-spoilers='hide'] .akv-spoiler .akv-spoiler-blur {
+  filter: blur(7px);
+  user-select: none;
+}
+/* Results and Calendar rows (EsportMatches): the score or a "Show" button,
+   the winner in bold only while scores are shown or the match revealed. */
+.akv-mask {
+  display: none;
+}
+html[data-spoilers='hide'] .akv-match:not([data-revealed]) .akv-score {
+  display: none;
+}
+html[data-spoilers='hide'] .akv-match:not([data-revealed]) .akv-mask {
+  display: inline-block;
+}
+html[data-spoilers='hide'] .akv-match:not([data-revealed]) .akv-won {
+  font-weight: 400;
+  color: var(--color-zinc-300);
+}

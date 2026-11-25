@@ -99,7 +99,10 @@ export function PrivacyPage() {
         pick one in the language menu, and last a year. If you are signed in, the
         language you pick is also saved in your account so your other devices use
         it. The light or dark theme you pick stays in your browser
-        (<code>localStorage</code>), never sent to us.
+        (<code>localStorage</code>), never sent to us. So does the esport
+        &ldquo;Hide scores&rdquo; switch; if you are signed in, the default you
+        set on your account page is saved in your account so your other devices
+        use it.
       </p>
 
       <h2>Who processes your data</h2>

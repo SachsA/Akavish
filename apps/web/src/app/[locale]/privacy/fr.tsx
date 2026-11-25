@@ -115,7 +115,10 @@ export function ConfidentialitePage() {
         langue choisie est aussi enregistrée dans votre compte pour que vos
         autres appareils l’utilisent. Le thème clair ou sombre que vous choisissez
         reste dans votre navigateur (<code>localStorage</code>) et ne nous est
-        jamais envoyé.
+        jamais envoyé. De même pour le bouton esport « Masquer les scores » ; si
+        vous êtes connecté, le réglage par défaut choisi sur votre page compte
+        est enregistré dans votre compte pour que vos autres appareils
+        l’utilisent.
       </p>
 
       <h2>Destinataires des données</h2>

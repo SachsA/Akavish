@@ -5,15 +5,18 @@ import { Wordmark } from '@/components/Wordmark'
 import { DateText } from '@/components/DateText'
 import { ScoreBadge } from '@/components/ScoreBadge'
 import { getMessages } from '@/lib/i18n/server'
+import { SpoilerVeil, spoilerClasses } from '@/components/SpoilerVeil'
 
 export function ArticleCard({ article }: { article: Article }) {
   const t = getMessages()
+  const sp = spoilerClasses(article.spoiler)
   return (
     <Link
       href={`/article/${article.slug}`}
-      className="group bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors"
+      className={`${sp.root} group bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors`}
     >
       <div className="relative aspect-video bg-zinc-800 overflow-hidden">
+        <SpoilerVeil spoiler={article.spoiler} />
         {article.coverImage ? (
           <Image
             // The 960 px size: the full one is for the article's top.
@@ -23,7 +26,7 @@ export function ArticleCard({ article }: { article: Article }) {
             alt=""
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className={`${sp.blur} object-cover group-hover:scale-105 transition-transform duration-300`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
@@ -49,10 +52,12 @@ export function ArticleCard({ article }: { article: Article }) {
             </span>
           )}
         </div>
-        <h3 className="font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors">
+        <h3
+          className={`${sp.blur} font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors`}
+        >
           {article.title}
         </h3>
-        <p className="text-sm text-zinc-400 line-clamp-2">{article.excerpt}</p>
+        <p className={`${sp.blur} text-sm text-zinc-400 line-clamp-2`}>{article.excerpt}</p>
         <p className="text-xs text-zinc-400">{t.card.by(article.author.name)}</p>
       </div>
     </Link>

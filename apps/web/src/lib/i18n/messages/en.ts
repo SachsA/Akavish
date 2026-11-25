@@ -270,6 +270,23 @@ export const en = {
     games: 'Games',
     articles: 'Articles',
   },
+  spoilers: {
+    hidden: 'Scores hidden',
+    shown: 'Scores shown',
+    switchLabel: 'Hide scores',
+    hiddenHint: 'Results are blurred. Tap a match to see its score.',
+    shownHint: 'Hide the scores to watch the matches without spoilers.',
+    defaultLink: 'Default setting',
+    veil: 'Result hidden',
+    reveal: 'Show',
+    revealLabel: (a: string, b: string) => `Show the score of ${a} vs ${b}`,
+    prefTitle: 'Preferences',
+    prefHide: 'Hide esport scores by default',
+    prefHint:
+      'Results and result articles stay blurred until you reveal them. The switch on the esport pages changes it for one visit.',
+    saved: 'Saved',
+    error: "Couldn't save, try again.",
+  },
   account: {
     title: 'Your account',
     reader: 'Reader',

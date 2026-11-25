@@ -394,6 +394,11 @@ export async function draftStory(
     // Set every time, so a revision can also correct them.
     tags: tagIds,
     game: gameId ?? null,
+    // Anti-spoil: a result or a final (and the morning recap, kind "result") is
+    // blurred in lists for readers hiding scores. Only ever ticked here.
+    ...(['result', 'final'].includes(String((story as { esportKind?: string | null }).esportKind))
+      ? { spoiler: true }
+      : {}),
   }
 
   let articleId: number

@@ -268,6 +268,23 @@ export const fr: Messages = {
     games: 'Jeux',
     articles: 'Articles',
   },
+  spoilers: {
+    hidden: 'Scores masqués',
+    shown: 'Scores visibles',
+    switchLabel: 'Masquer les scores',
+    hiddenHint: 'Les résultats sont floutés. Touchez un match pour voir son score.',
+    shownHint: 'Masquez les scores pour regarder les matchs sans spoil.',
+    defaultLink: 'Réglage par défaut',
+    veil: 'Résultat masqué',
+    reveal: 'Voir',
+    revealLabel: (a: string, b: string) => `Voir le score de ${a} contre ${b}`,
+    prefTitle: 'Préférences',
+    prefHide: 'Masquer les scores esport par défaut',
+    prefHint:
+      "Les résultats et les articles de résultats restent floutés jusqu'à ce que vous les affichiez. Le bouton des pages esport le change le temps d'une visite.",
+    saved: 'Enregistré',
+    error: "Échec de l'enregistrement, réessayez.",
+  },
   account: {
     title: 'Votre compte',
     reader: 'Lecteur',

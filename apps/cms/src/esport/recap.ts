@@ -366,6 +366,8 @@ export async function maybeEsportRecap(
       title: `Esport results: ${recapDay(yesterday)}`,
       game: game ? GAME_LABEL[game] : null,
       category: 'esport',
+      // A results round-up: its article is a spoiler (draft.ts ticks it).
+      esportKind: 'result',
       significance: 60,
       status: 'new',
       score: 0,

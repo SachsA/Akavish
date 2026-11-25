@@ -5,6 +5,7 @@ import Link from '@/components/LocaleLink'
 import { getMessages, localHref, setRequestLocale } from '@/lib/i18n/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { AccountActions } from '@/components/AccountActions'
+import { SpoilerPreference } from '@/components/SpoilerPreference'
 import { Pagination } from '@/components/Pagination'
 import { RoleBadge } from '@/components/RoleBadge'
 import { SavedArticleList, type SavedItem } from '@/components/SavedArticleList'
@@ -70,7 +71,12 @@ export default async function AccountPage({
       fetchFollowedGames(user.id).catch(() => null),
     ])
     if (games?.length) {
-      gamesNews = (await fetchArticles({ gameIds: games.map((g) => g.id), limit: GAMES_NEWS }).catch(() => null))?.data ?? []
+      gamesNews =
+        (
+          await fetchArticles({ gameIds: games.map((g) => g.id), limit: GAMES_NEWS }).catch(
+            () => null,
+          )
+        )?.data ?? []
     }
   } catch (error) {
     log.warn('account page without reader data', { error })
@@ -109,14 +115,11 @@ export default async function AccountPage({
           {profile.email && <p className="text-sm text-zinc-400 truncate">{profile.email}</p>}
           {reader && (
             <p className="text-sm text-zinc-400">
-              {t.account.commentsAs} <span className="text-zinc-200 font-medium">@{reader.username}</span>
+              {t.account.commentsAs}{' '}
+              <span className="text-zinc-200 font-medium">@{reader.username}</span>
             </p>
           )}
-          {!profile.emailVerified && (
-            <p className="text-sm text-danger">
-              {t.account.verifyEmail}
-            </p>
-          )}
+          {!profile.emailVerified && <p className="text-sm text-danger">{t.account.verifyEmail}</p>}
           {reader?.authorSlug && (
             <Link
               href={`/author/${reader.authorSlug}`}
@@ -131,6 +134,15 @@ export default async function AccountPage({
       <div className="mb-12">
         <AccountActions />
       </div>
+
+      {page === 1 && (
+        <section aria-labelledby="preferences" className="mb-12">
+          <h2 id="preferences" className="text-xl font-bold text-white mb-4 scroll-mt-24">
+            {t.spoilers.prefTitle}
+          </h2>
+          <SpoilerPreference />
+        </section>
+      )}
 
       {page === 1 && (
         <>

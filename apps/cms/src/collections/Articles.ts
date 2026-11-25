@@ -254,6 +254,20 @@ export const Articles: CollectionConfig = {
       },
     },
     {
+      // Anti-spoil (2026-11-25): readers who hide esport scores see this
+      // article blurred in lists. Ticked by the scout on the morning recap and
+      // on finals / results (the story's esport kind); editors can change it.
+      name: 'spoiler',
+      label: 'Gives a result away',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Tick for an esport result, a final or a recap: readers who hide scores see it blurred in lists until they open it.',
+      },
+    },
+    {
       // Homepage curation: the newest published article with this ticked is the
       // big lead story; without one, the lead is simply the newest article.
       name: 'featured',
