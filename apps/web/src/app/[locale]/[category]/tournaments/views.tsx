@@ -12,6 +12,7 @@ import { DateRange } from '@/components/esport/DateRange'
 import { SpoilerZone } from '@/components/esport/SpoilerZone'
 import { EsportFollowButton } from '@/components/esport/EsportFollowButton'
 import { TeamsToFollow } from '@/components/esport/TeamsToFollow'
+import { MatchHighlighter } from '@/components/esport/MatchHighlighter'
 import { TournamentBracket } from '@/components/esport/TournamentBracket'
 import { TournamentStandings } from '@/components/esport/TournamentStandings'
 import { ESPORT_GAME_BADGE, ESPORT_GAME_LABEL, type EsportGame, type Tier } from '@/lib/esport'
@@ -269,6 +270,7 @@ export async function TournamentView({
           {t.esport.seeCalendar}
         </Link>
       </p>
+      <MatchHighlighter />
       <TeamsToFollow stage={stage} />
       {matches.length === 0 && standings.length === 0 ? (
         <p className="text-zinc-400">{t.esport.noStructure}</p>

@@ -27,7 +27,7 @@ function ago(iso: string, locale: string): string {
   return rtf.format(Math.round(s / 86400), 'day')
 }
 
-function Item({ n }: { n: ReaderNotification }) {
+function Item({ n, onOpen }: { n: ReaderNotification; onOpen: () => void }) {
   const { t, locale } = useI18n()
   const d = n.data
   const where = [d.event, d.stage].filter(Boolean).join(' · ')
@@ -60,6 +60,7 @@ function Item({ n }: { n: ReaderNotification }) {
           ? `${n.url}#match-${d.matchId}`
           : n.url
       }
+      onClick={onOpen}
       className={`block px-4 py-3 hover:bg-zinc-800/60 ${n.readAt ? '' : 'bg-emerald-500/5'}`}
     >
       <span className="flex items-start gap-2">
@@ -164,7 +165,7 @@ export function NotificationBell() {
             ) : items.length === 0 ? (
               <p className="px-4 py-6 text-sm text-zinc-400">{t.bell.empty}</p>
             ) : (
-              items.map((n) => <Item key={n.id} n={n} />)
+              items.map((n) => <Item key={n.id} n={n} onOpen={() => setOpen(false)} />)
             )}
           </div>
         </div>

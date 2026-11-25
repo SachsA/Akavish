@@ -221,8 +221,10 @@ html[data-spoilers='hide'] .akv-zone:not([data-revealed]) .akv-zone-content {
   pointer-events: none;
   user-select: none;
 }
-/* A match opened from a link (`#match-<id>`): lit up on its tournament page. */
-.akv-target:target {
+/* A match opened from a link (`#match-<id>`): lit up on its tournament page.
+   `.akv-hl` is set by components/esport/MatchHighlighter.tsx (client links). */
+.akv-target:target,
+.akv-target.akv-hl {
   outline: 2px solid rgb(var(--emerald-400));
   outline-offset: 3px;
   animation: akv-target-pulse 1.2s ease-out 2;
@@ -236,7 +238,8 @@ html[data-spoilers='hide'] .akv-zone:not([data-revealed]) .akv-zone-content {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .akv-target:target {
+  .akv-target:target,
+  .akv-target.akv-hl {
     animation: none;
   }
 }
