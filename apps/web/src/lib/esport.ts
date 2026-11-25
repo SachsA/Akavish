@@ -42,6 +42,19 @@ export function esportGameOfSlug(slug: string | undefined | null): EsportGame | 
 export const isEsportGame = (v: unknown): v is EsportGame =>
   typeof v === 'string' && (ESPORT_GAMES as readonly string[]).includes(v)
 
+/**
+ * Each game's badge colours (cards, results, tournaments): one colour per game
+ * so a mixed list reads at a glance (Alex, 2026-11-25). Fixed values, not theme
+ * tokens: the same in light and dark, often over a photo. Text picked for contrast.
+ */
+export const ESPORT_GAME_BADGE: Record<EsportGame, string> = {
+  cs2: 'bg-[#f5a623] text-[#111111]',
+  valorant: 'bg-[#e8394a] text-[#ffffff]',
+  lol: 'bg-[#0ac8b9] text-[#062a33]',
+  r6: 'bg-[#2563eb] text-[#ffffff]',
+  rl: 'bg-[#8b5cf6] text-[#ffffff]',
+}
+
 export const TIER_ORDER = ['s', 'a', 'b', 'c', 'd', 'unranked'] as const
 export type Tier = (typeof TIER_ORDER)[number]
 

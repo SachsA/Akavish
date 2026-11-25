@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
+  ESPORT_GAME_BADGE,
   ESPORT_GAME_LABEL,
   choicesOf,
   filterRows,
@@ -260,7 +261,9 @@ export function EsportMatches({
                     className="rounded-lg border border-zinc-800 bg-zinc-900/50"
                   >
                     <h3 className="flex flex-wrap items-center gap-2 border-b border-zinc-800 px-4 py-2.5 text-sm">
-                      <span className="rounded-sm bg-zinc-800 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-300">
+                      <span
+                        className={`rounded-sm px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${ESPORT_GAME_BADGE[ev.game]}`}
+                      >
                         {ESPORT_GAME_LABEL[ev.game]}
                       </span>
                       {ev.rows.find((r) => r.tournamentSlug) ? (

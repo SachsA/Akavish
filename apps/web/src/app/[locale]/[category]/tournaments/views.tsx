@@ -12,7 +12,7 @@ import { DateRange } from '@/components/esport/DateRange'
 import { SpoilerZone } from '@/components/esport/SpoilerZone'
 import { TournamentBracket } from '@/components/esport/TournamentBracket'
 import { TournamentStandings } from '@/components/esport/TournamentStandings'
-import { ESPORT_GAME_LABEL, type EsportGame, type Tier } from '@/lib/esport'
+import { ESPORT_GAME_BADGE, ESPORT_GAME_LABEL, type EsportGame, type Tier } from '@/lib/esport'
 import { groupEvents, type EsportStage, type EventGroup } from '@/lib/esport-tournaments'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
@@ -41,7 +41,7 @@ function TierBadge({ tier }: { tier: Tier }) {
 
 function GameBadge({ game }: { game: EsportGame }) {
   return (
-    <span className="rounded-sm bg-zinc-800 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-300">
+    <span className={`rounded-sm px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${ESPORT_GAME_BADGE[game]}`}>
       {ESPORT_GAME_LABEL[game]}
     </span>
   )

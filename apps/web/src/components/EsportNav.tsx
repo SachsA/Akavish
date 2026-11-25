@@ -1,6 +1,6 @@
-// The Esport section's tabs: News (the articles), Results, Transfers,
-// Calendar. Above every Esport page. With a game picked (/esport/cs2), the
-// tabs keep it: Mercato → /esport/transfers/cs2, Results → ?game=cs2.
+// The Esport section's tabs: News and Transfers (the articles), then Results,
+// Calendar and Tournaments (the match data). Above every Esport page. With a
+// game picked (/esport/cs2), the tabs keep it: Mercato → /esport/transfers/cs2, Results → ?game=cs2.
 
 import Link from './LocaleLink'
 import { getMessages } from '@/lib/i18n/server'
@@ -10,9 +10,10 @@ import { SpoilerToggle } from './SpoilerToggle'
 export type EsportTab = 'news' | 'results' | 'transfers' | 'calendar' | 'tournaments'
 
 const TABS: Array<{ key: EsportTab; href: string }> = [
+  // The articles first (News, Transfers), then the match data (Alex, 2026-11-25).
   { key: 'news', href: '/esport' },
-  { key: 'results', href: '/esport/results' },
   { key: 'transfers', href: '/esport/transfers' },
+  { key: 'results', href: '/esport/results' },
   { key: 'calendar', href: '/esport/calendar' },
   { key: 'tournaments', href: '/esport/tournaments' },
 ]
