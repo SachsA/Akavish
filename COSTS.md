@@ -19,7 +19,7 @@ the provider charges it, so a "25 $" plan shows up as 30 $ on the card.
 | Clerk | Reader accounts | **monthly** (on the 10th) | 30 | 30 $ paid on 2026-11-10 (Pro, 25 $ + VAT). Taken for the production setup: social sign-in (OAuth) and no more "Development" label. Needed, stays |
 | Railway | CMS + AI scout (`cms.akavish.gg`) | Hobby: 5 $ minimum a month with 5 $ of usage included, then usage (on the 25th) | ~6 | Invoices: 6 $ (Aug), 1 $ (Sep), 6 $ (Oct). November's (Nov 25) is the first with the scout on all month |
 | Neon | Postgres | **Launch since 2026-11-19**: usage only, no fixed fee (on the 1st) | ~0-5 | 0.01 $ for Nov 19-23 (24.7 compute hours). Moved off Free after the 5 GB transfer cap was hit (`DEPLOYMENT.md`) |
-| Anthropic API | Scout (triage, drafts, live, recaps), French translations | **prepaid credit**, auto top-up when the balance runs low | ~10-20 | 9.58 $ spent Nov 1-23, launch week and live rehearsal included. The 24 $ of Nov 10 was credit bought (20 $ + VAT), not a monthly fee. Capped in code: `SCOUT_MONTHLY_BUDGET_USD` (50) + `TRANSLATE_MONTHLY_BUDGET_USD` (30), and 50 $/month in the console |
+| Anthropic API | Scout (triage, drafts, live, recaps, describing and picking game images), French translations | **prepaid credit**, auto top-up when the balance runs low | ~10-20 | 9.58 $ spent Nov 1-23, launch week and live rehearsal included. The 24 $ of Nov 10 was credit bought (20 $ + VAT), not a monthly fee. Capped in code: `SCOUT_MONTHLY_BUDGET_USD` (50) + `TRANSLATE_MONTHLY_BUDGET_USD` (30), and 50 $/month in the console |
 | **Total** | | | **~70-85** | |
 
 Not counted above: Alex's own Claude subscription (Pro, 21.60 € a month with
@@ -52,6 +52,7 @@ With the X API and the newsletter: plan on ~120-170 $/month.
 
 ## Log
 
+- 2026-11-26: game images for the scout's covers: IGDB (free, a Twitch app) and Steam (free); Haiku describes up to 12 images per game per week and picks the cover, about 0.02 $ per game a week and a fraction of a cent per draft, inside the scout's budget. Images stored on R2 (a few MB a week).
 - 2026-11-24: esport data from PandaScore's free plan (Liquipedia's API would have been ~500 $/month for results + transfers on 5 games).
 - 2026-11-23: real bills in: Railway ~6 $ (not 10-15), Neon ~0 so far (not ~20), Anthropic ~10-20 $, domain 50.80 $/year, and Clerk Pro 30 $/month since 2026-11-10 (was listed as free; needed for OAuth in production).
 - 2026-11-23: Vercel Hobby → Pro (20 $/month). First day: 0.38 $ of usage, 0.31 $ of it build minutes, so pushes that don't touch the site no longer build it (`DEPLOYMENT.md` §3).

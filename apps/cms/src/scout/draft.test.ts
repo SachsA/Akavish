@@ -255,12 +255,13 @@ describe('Discord bot', () => {
     feedback: 'Shorter',
   }
 
-  it('draft messages carry the three buttons and the admin link', () => {
+  it('draft messages carry their buttons and the admin link', () => {
     const m = draftMessage(card)
     const buttons = (m.components?.[0] as { components: Array<Record<string, unknown>> }).components
     expect(buttons.map((b) => b.custom_id ?? b.url)).toEqual([
       'scout:publish:12',
       'scout:edit:12',
+      'scout:image:12',
       'scout:reject:12',
       card.adminUrl,
     ])

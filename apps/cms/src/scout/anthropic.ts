@@ -35,7 +35,8 @@ export async function callTool<T>(args: {
   apiKey: string
   model: string
   system: string
-  prompt: string
+  /** Text, or content blocks (text and images: the game image library, game-images.ts). */
+  prompt: string | Array<Record<string, unknown>>
   tool: { name: string; description: string; input_schema: Record<string, unknown> }
   maxTokens?: number
   /** Default 90 s; a long translation needs more. */

@@ -322,6 +322,8 @@ export default buildConfig({
           { name: 'imageUrl', type: 'text' },
           // Its credit, from the same form ("BLAST / Luc Bouchon").
           { name: 'imageCredit', type: 'text' },
+          // "Autre image": the next cover, the text untouched.
+          { name: 'nextImage', type: 'checkbox' },
         ],
         handler: async ({ input, req }) => {
           await runDraftJob(
@@ -331,6 +333,7 @@ export default buildConfig({
               feedback?: string
               imageUrl?: string
               imageCredit?: string
+              nextImage?: boolean
             },
           )
           return { output: {} }

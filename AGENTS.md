@@ -205,9 +205,15 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   (Publish / Edit → V2 / Reject, endpoint `/api/scout/discord`, `scoutDraft`
   job), automatic drafts off unless *Scout settings → draftsEnabled*. Never
   publish without the owner's click, nor without a cover: official source's
-  `og:image`, else a still of an official video it links, else the game's
-  cover or one of its *Other images* (the least used in 14 days, so a game in
-  the news daily doesn't repeat one picture), never a press outlet's image (`media.ts`);
+  `og:image`, else a still of an official video it links (not one a recent
+  article about the game wears), else a fresh image of the game: never one of
+  the covers of its last 10 articles, the one whose Haiku description fits the
+  story (`game-images.ts`: the game's official images found online, IGDB with
+  `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` then Steam, join its *Other images*
+  once a week, 12 at a time, described by Haiku from the picture), else a
+  press source's `og:image` credited to the outlet (Alex's call, 2026-11-26),
+  else the game's image used least lately (`media.ts`). *Autre image* on the
+  Discord card runs the same order without the current cover;
   photos of people (esport) only with the owner's written OK and a **Credit**
   on the media (shown under the cover), never Liquipedia's (permission given
   to them, not us); esport cards say which photo to find (`photo_hint`);

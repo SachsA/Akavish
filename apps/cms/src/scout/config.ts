@@ -34,6 +34,8 @@ export interface ScoutConfig {
   /** Links in Discord messages. */
   serverUrl: string
   webUrl: string
+  /** IGDB (Twitch app): official screenshots and artworks for the game image library (game-images.ts). */
+  igdb?: { clientId: string; clientSecret: string }
 }
 
 /**
@@ -95,5 +97,8 @@ export function scoutConfig(env: Record<string, string | undefined> = process.en
     dailyBudgetUsd: num(env.SCOUT_DAILY_BUDGET_USD, 5),
     serverUrl: (env.SERVER_URL || 'http://localhost:3001').replace(/\/+$/, ''),
     webUrl: (env.WEB_URL || 'http://localhost:3000').replace(/\/+$/, ''),
+    ...(env.IGDB_CLIENT_ID && env.IGDB_CLIENT_SECRET
+      ? { igdb: { clientId: env.IGDB_CLIENT_ID, clientSecret: env.IGDB_CLIENT_SECRET } }
+      : {}),
   }
 }

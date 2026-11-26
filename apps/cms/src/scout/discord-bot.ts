@@ -14,7 +14,7 @@ const API = 'https://discord.com/api/v10'
 export const InteractionType = { PING: 1, COMMAND: 2, COMPONENT: 3, MODAL_SUBMIT: 5 } as const
 export const ResponseType = { PONG: 1, MESSAGE: 4, UPDATE_MESSAGE: 7, MODAL: 9 } as const
 const EPHEMERAL = 64
-const Button = { PRIMARY: 1, SUCCESS: 3, DANGER: 4, LINK: 5 } as const
+const Button = { PRIMARY: 1, SECONDARY: 2, SUCCESS: 3, DANGER: 4, LINK: 5 } as const
 
 // ─── Signature ───────────────────────────────────────────────────────────────
 
@@ -84,6 +84,7 @@ export interface DraftCard {
   /** The cover set on the draft, if any, and where it came from. */
   image?: { url?: string; origin: string } | null
   /** Why the image the editor gave couldn't be used. */
+  /** Why the image asked for couldn't be used (a full sentence). */
   imageError?: string
   /** This card only follows a change of image. */
   imageChange?: boolean
@@ -100,17 +101,17 @@ export interface DraftCard {
 }
 
 const NO_IMAGE =
-  '⚠️ Aucune image officielle trouvée. **Modifier** → colle l’URL d’une image officielle (ou ajoute-la dans /admin). Publier est bloqué d’ici là.'
+  '⚠️ Aucune image trouvée. **Modifier** → colle l’URL d’une image (ou ajoute-la dans /admin). Publier est bloqué d’ici là.'
 
-/** A draft with its three buttons and a link to the admin. */
+/** A draft with its buttons (Publier, Modifier, Autre image, Rejeter) and a link to the admin. */
 export function draftMessage(card: DraftCard): BotMessage {
   const sources = card.sources.map((s) => `[${s.name}](${s.url})`).join(' · ')
   const videos = (card.videos ?? [])
     .map((v) => `[${clip(v.title, 90)}](${v.url})${v.channel ? ` · ${v.channel}` : ''}`)
     .join('\n')
   const image = card.image
-    ? `${card.image.origin}${card.imageError ? `\n⚠️ L’URL donnée n’a pas marché (${card.imageError}).` : ''}`
-    : `${card.imageError ? `⚠️ L’URL donnée n’a pas marché (${card.imageError}).\n` : ''}${NO_IMAGE}`
+    ? `${card.image.origin}${card.imageError ? `\n⚠️ ${card.imageError}` : ''}`
+    : `${card.imageError ? `⚠️ ${card.imageError}\n` : ''}${NO_IMAGE}`
   const content = card.imageChange
     ? `**V${card.version}** : image changée.`
     : card.feedback
@@ -181,6 +182,12 @@ export function draftMessage(card: DraftCard): BotMessage {
             style: Button.PRIMARY,
             label: 'Modifier',
             custom_id: `scout:edit:${card.storyId}`,
+          },
+          {
+            type: 2,
+            style: Button.SECONDARY,
+            label: 'Autre image',
+            custom_id: `scout:image:${card.storyId}`,
           },
           {
             type: 2,

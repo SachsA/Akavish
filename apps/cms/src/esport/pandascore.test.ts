@@ -220,10 +220,12 @@ describe('brackets and standings', () => {
       row(4, 'd', null),
       row(5, 'c', '2026-11-25'),
     ]
-    expect(structureQueue(rows, new Set([1, 5])).map((r) => r.pandaId)).toEqual([5, 1, 3, 4])
-    expect(structureQueue(rows, new Set(), 1).map((r) => r.pandaId)).toEqual([3])
-    // A bracket read 2 days ago, of a tournament still on, is read again; one long over is not.
+    // A fixed "now": brackets read the same day aren't due again (the test
+    // failed on the 26th with the real clock).
     const now = new Date('2026-11-25T12:00:00Z')
+    expect(structureQueue(rows, new Set([1, 5]), 12, now).map((r) => r.pandaId)).toEqual([5, 1, 3, 4])
+    expect(structureQueue(rows, new Set(), 1, now).map((r) => r.pandaId)).toEqual([3])
+    // A bracket read 2 days ago, of a tournament still on, is read again; one long over is not.
     const old = [
       { ...row(7, 'b', '2026-11-23T10:00:00Z'), endAt: '2026-11-27T00:00:00Z' },
       { ...row(8, 's', '2026-11-23T10:00:00Z'), endAt: '2026-11-01T00:00:00Z' },

@@ -55,9 +55,19 @@ export const Games: CollectionConfig = {
       relationTo: 'media',
       hasMany: true,
       admin: {
-        description: 'Official visuals the AI scout can use as article covers, after the main cover.',
+        description:
+          'Official visuals the AI scout can use as article covers, after the main cover. The scout adds the official images it finds online (IGDB, Steam) once a week while the game is in the news.',
       },
     },
+    {
+      // When the scout last looked for this game's official images online
+      // (scout/game-images.ts), and the image URLs it already tried.
+      name: 'imagesCheckedAt',
+      type: 'date',
+      label: 'Images looked for online',
+      admin: { readOnly: true, position: 'sidebar' },
+    },
+    { name: 'imageSources', type: 'json', admin: { hidden: true } },
     {
       // One row per release: the consoles it came out on together, the date
       // and how precise it is. A port or a later console is its own row

@@ -7,7 +7,14 @@
 
 import type { Payload, PayloadHandler } from 'payload'
 import type { SettingsDoc, StoryDoc } from './context'
-import { draftStory, NO_COVER, publishStory, rejectStory, setStoryImage } from './draft'
+import {
+  draftStory,
+  NO_COVER,
+  nextStoryImage,
+  publishStory,
+  rejectStory,
+  setStoryImage,
+} from './draft'
 import {
   closedMessage,
   COLORS,
@@ -60,11 +67,13 @@ async function queueDraft(
   feedback?: string,
   imageUrl?: string,
   imageCredit?: string,
+  nextImage?: boolean,
 ) {
   const job = (await payload.jobs.queue({
     task: 'scoutDraft' as never,
     input: {
       storyId,
+      ...(nextImage ? { nextImage: true } : {}),
       ...(feedback ? { feedback } : {}),
       ...(imageUrl ? { imageUrl } : {}),
       ...(imageUrl && imageCredit ? { imageCredit } : {}),
@@ -148,7 +157,7 @@ export async function handleInteraction(
         if (err instanceof Error && err.message === NO_COVER) {
           return json(
             ephemeral(
-              'Pas d’image sur cet article, je ne publie pas. **Modifier** → colle l’URL d’une image officielle (ou ajoute-la dans /admin), puis Publier.',
+              'Pas d’image sur cet article, je ne publie pas. **Autre image**, ou **Modifier** → colle l’URL d’une image (ou ajoute-la dans /admin), puis Publier.',
             ),
           )
         }
@@ -184,6 +193,18 @@ export async function handleInteraction(
           },
         ]),
       )
+    }
+    if (i.type === InteractionType.COMPONENT && action === 'image') {
+      // "Autre image": the next cover in the scout's order (draft.ts, nextStoryImage).
+      await queueDraft(payload, storyId, undefined, undefined, undefined, true)
+      return json({
+        type: ResponseType.UPDATE_MESSAGE,
+        data: closedMessage(
+          original,
+          'Demandé : une autre image. La nouvelle version arrive en réponse.',
+          COLORS.working,
+        ),
+      })
     }
     if (i.type === InteractionType.COMPONENT && action === 'reject') {
       return json(
@@ -379,6 +400,7 @@ export async function runDraftJob(
     feedback?: string | null
     imageUrl?: string | null
     imageCredit?: string | null
+    nextImage?: boolean | null
   },
 ) {
   const ctx = makeContext(payload)
@@ -387,7 +409,9 @@ export async function runDraftJob(
     overrideAccess: true,
   })) as unknown as SettingsDoc
   try {
-    if (input.imageUrl && !input.feedback) {
+    if (input.nextImage) {
+      await nextStoryImage(ctx, settings, Number(input.storyId))
+    } else if (input.imageUrl && !input.feedback) {
       // Image only: no model call, the text stays as it is.
       await setStoryImage(
         ctx,

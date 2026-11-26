@@ -1355,10 +1355,28 @@ note under it, see `/terms`).
 **Media.** Every article needs a cover, so the scout picks one: the share image
 (`og:image`) of an **official** source (publisher, studio, platform, tournament
 organiser), else a still (YouTube thumbnail) of an official video the draft
-links, else an image of the story's game in *Games*: its cover or one of its
-*Other images*, whichever the last 14 days' articles used least, so a game in
-the news every day gets varied pictures. Never a press
-outlet's image: their photos aren't ours to reuse. YouTube videos embedded or
+links (unless a recent article about the game already wears that still), else
+a **fresh image of the story's game**: never one of the covers of the game's
+last 10 articles, and among the rest the one whose description fits the story
+(Haiku). The game's pool grows by itself: once a week while the game is in the
+news, the scout looks for its official images online, IGDB's artworks and
+screenshots (needs `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET`, below) then the
+Steam page's screenshots (no key), downloads up to 12 new ones, has Haiku
+describe each from the picture ("Lucia on a speedboat off Vice City beach";
+logos, menus and blank frames left out) and adds them to the game's *Other
+images* (`src/scout/game-images.ts`). Nothing fresh: a **press source's**
+`og:image`, credited to the outlet under the cover (Alex's call on
+2026-11-26: an outlet's photo can belong to an agency, a risk he takes),
+else the game's image used least lately. The **Autre image** button on the
+card asks for the next one in that order, the text untouched.
+
+**IGDB keys (Twitch app).** dev.twitch.tv/console → *Register Your
+Application*: any name (*Akavish Scout*), OAuth Redirect URL
+`http://localhost`, category *Application Integration*, client type
+*Confidential*. Then *Manage* → copy the **Client ID**, *New Secret* → copy it.
+On Railway (CMS): `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` (secret). Free.
+Without them only Steam is asked (PC games), and asked again at every draft
+until the keys are there. YouTube videos embedded or
 linked in the sources are looked up (title and channel, YouTube oEmbed, no
 key); Sonnet keeps the official ones about the story and the article links them
 in a **Watch** section above *Sources*. **Category:** never *Reviews* or
@@ -1411,7 +1429,7 @@ it came from, and the videos; with no image it says so in orange.
 | Title, excerpt, content, SEO title + description | Sonnet | never |
 | Slug | the slug hook, from the title | never |
 | Category | Sonnet (news, leak, review, preview, conference, esport), else the triage's | never |
-| Cover image + alt text | official source's `og:image` (alt: the publisher's `og:image:alt`, else "Official image from <source>: <title>"), else a still of an official video it links ("Still from the official video: <title>"), else the game's cover or *Other images* (least used in 14 days), else the URL given in *Modifier* | no official image, no video and no game image: orange warning, Publish refused |
+| Cover image + alt text | official source's `og:image` (alt: the publisher's `og:image:alt`, else "Official image from <source>: <title>"), else a still of an official video it links ("Still from the official video: <title>"), else a fresh game image (not one of its last 10 articles' covers, the one fitting the story; IGDB / Steam images stocked weekly), else a press source's `og:image` credited to the outlet, else the game image used least lately; the URL given in *Modifier* or **Autre image** replace it | nothing found: orange warning, Publish refused |
 | Game | Sonnet: from *Games*, or created when missing | story not about one game (hardware, service, company, several games) |
 | *Also covers* | on *Publier*: the games the story dates (game facts) | no official date or console in the sources |
 | The games' releases, studios, publishers | on *Publier*, from the draft's game facts (shown on the card) | rumours, or nothing stated |
@@ -1633,6 +1651,7 @@ The site is in English and French (`/fr`). Interface text lives in the web
 | `SCOUT_DISCORD_CHANNEL_ID` / `SCOUT_DISCORD_OWNER_ID` | `…` | Scout bot channel and the only allowed clicker (§11) |
 | `SCOUT_DISCORD_LIVE_CHANNEL_ID` / `_BUDGET_` / `_REPORT_` | `…` (optional) | Channels of their own for `/live`, the budget alerts and the weekly report; unset = the scout channel (§11) |
 | `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
+| `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` | Twitch app (§11, *IGDB keys*) | The secret is a **Secret**: official images of the games in the news (scout covers); unset = Steam only |
 | `PANDASCORE_TOKEN`    | PandaScore dashboard (free plan) | **Secret**, esport matches and tournaments every 10 min (`apps/cms/README.md` → Esport); unset = no esport data |
 | `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
 | `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |

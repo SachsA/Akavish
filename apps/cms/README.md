@@ -25,7 +25,7 @@ pnpm devsafe           # clears .next and starts dev on port 3001
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `articles` | Title, slug, excerpt, rich-text content, cover image, category, status (draft/published/archived), featured, author, game, *Also covers* (`relatedGames`: the other games a recap covers, listed on their pages too), tags, SEO, and for reviews a `score` out of 10 (shown on the article and the cards, and sent as a schema.org Review). Versioned with drafts. `publishedAt` is auto-stamped — see below. |
 | `authors`  | Public profile shown on article cards/pages.                                                                                                       |
-| `games`    | The games library (`/games`): cover, *Other images* (`gallery`, official visuals the AI scout rotates through so one game doesn't always get the same cover), **releases** (one row per group of consoles released together: consoles from Platforms, date, precision day / month / quarter / year / TBA; a port is its own row), developers and publishers (Companies), genres. A `beforeChange` hook derives the read-only `platforms`, `releaseDate` (the first) and `releaseDatePrecision` from the releases (`src/lib/game-releases.ts`, unit-tested). The old `platform` (families) / `developer` / `publisher` (text) fields are gone (migration `drop_old_game_fields`, 2026-11-17). |
+| `games`    | The games library (`/games`): cover, *Other images* (`gallery`, official visuals the AI scout picks covers from, grown weekly from IGDB / Steam while the game is in the news, `imagesCheckedAt` / `imageSources`), **releases** (one row per group of consoles released together: consoles from Platforms, date, precision day / month / quarter / year / TBA; a port is its own row), developers and publishers (Companies), genres. A `beforeChange` hook derives the read-only `platforms`, `releaseDate` (the first) and `releaseDatePrecision` from the releases (`src/lib/game-releases.ts`, unit-tested). The old `platform` (families) / `developer` / `publisher` (text) fields are gone (migration `drop_old_game_fields`, 2026-11-17). |
 | `platforms` | Consoles (and PC, mobile, VR), since 2026-11-18 (🟠 migration `20261118_154700_platforms_collection` turned the old select values into links): name, slug (`ps5`), short label (`PS5`), family (the library's groups), position (order in the family, newest first), aliases (the scout matches them), release date + precision, logo, tag (its articles show on its page `/platform/<slug>`). A game release links to them; the scout creates one the news names for the first time (`src/lib/platforms.ts` has the 24 it started with and `familyOf`). |
 | `companies` | Studios and publishers, each with its page `/company/<slug>` (its games and the news about them): name, *aliases* (former names, other spellings: the scout matches them), logo, and the company's tag if it has one (its articles show on the page too). |
 | `tags`     | Cross-cutting topics, 2 to 5 per article: publisher or studio (Rockstar Games, Riot Games), platform (PS5, Switch 2), event (Worlds 2026, CS2 Major) or theme (Release dates, Trailers, Earnings). Not the game (that's `game`) nor the type (that's `category`). Each tag has its public page `/tag/<slug>`, linked from the article (#chips) and listed in the sitemap once it has a published article. |
@@ -399,9 +399,15 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
    with `**Name**` gets that name in bold (`listItemChildren`): release lists
    read "**Metro 2039** · Feb 4 (…)", game first, short date after. **Media** (`media.ts`):
    the cover is the `og:image` of an official source, else a still of an
-   official video the draft links, else the game's cover or one of its
-   *Other images* in *Games*, the one the last 14 days' articles used least
-   (`leastUsed`, tested), never a press outlet's image; YouTube videos found in the
+   official video the draft links (not one a recent article about the game
+   wears), else a fresh image of the game (`game-images.ts`: never a cover of
+   its last 10 articles, the one whose description fits the story, Haiku's
+   `pick_image`; the game's official images found online, IGDB then Steam,
+   join its *Other images* once a week, 12 at a time, described by Haiku from
+   the picture, `describe_images`; tested with the network faked), else a
+   press source's `og:image` with the outlet as **Credit**, else the game's
+   image used least lately (`leastUsed`). *Autre image* on the card
+   (`scout:image`, `nextImage` on the `scoutDraft` job) asks for the next one; YouTube videos found in the
    sources go to the prompt with their oEmbed title and channel, Sonnet picks
    the official ones about the story (`videos` in the tool). **Tags:** the
    existing tag names go to the prompt; Sonnet answers `tags` (existing,

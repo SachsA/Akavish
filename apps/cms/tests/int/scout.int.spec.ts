@@ -15,6 +15,7 @@ import { scoutConfig } from '@/scout/config'
 import type { ScoutContext } from '@/scout/context'
 import { maybeSendDigest } from '@/scout/digest'
 import { autoDraft, draftStory, setStoryImage } from '@/scout/draft'
+import { pickCover } from '@/scout/media'
 import { handleInteraction, scoutReportHandler } from '@/scout/interactions'
 import { runLive } from '@/scout/live'
 import { gatherReport } from '@/scout/report'
@@ -935,7 +936,7 @@ describe('scout step 2 (drafts)', () => {
     expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain(
       'Scouttest Indie Quest (fiche créée)',
     )
-    expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain('Aucune image officielle')
+    expect(JSON.stringify(discordPosts.at(-1)!.body)).toContain('Aucune image trouvée')
     const owner = { member: { user: { id: 'owner' } } }
 
     const refused = await (
@@ -1380,5 +1381,241 @@ describe('scout weekly report', () => {
     expect(await maybeSendDigest(ctx(saturday), settings)).toBe('morning')
     expect(sent.at(-1)?.content).toContain('bilan de la semaine')
     expect(sent.at(-1)?.embeds).toHaveLength(5)
+  })
+})
+
+// ─── Covers: the game image library (scout/game-images.ts) ───────────────────
+
+describe('scout covers: a game in the news every day', () => {
+  let png: Buffer
+  let gameId: number
+  const calls: string[] = []
+  const imgFetch: ScoutContext['fetch'] = async (url, init) => {
+    calls.push(url.split('?')[0])
+    if (url.startsWith('https://id.twitch.tv/oauth2/token')) {
+      return Response.json({ access_token: 'igdb-token', expires_in: 5000000 })
+    }
+    if (url === 'https://api.igdb.com/v4/games') {
+      expect((init.headers as Record<string, string>).authorization).toBe('Bearer igdb-token')
+      // Found, without images of its own: Steam's come next.
+      return Response.json([{ name: 'Scouttest Pool Game', artworks: [] }])
+    }
+    if (url.startsWith('https://store.steampowered.com/api/storesearch/')) {
+      return Response.json({ items: [{ id: 77, name: 'Scouttest Pool Game™' }] })
+    }
+    if (url.startsWith('https://store.steampowered.com/api/appdetails')) {
+      return Response.json({
+        '77': {
+          success: true,
+          data: {
+            screenshots: [
+              { path_full: 'https://scout-test.invalid/img/scouttest-steam-1.png?t=1' },
+              { path_full: 'https://scout-test.invalid/img/scouttest-steam-2.png?t=1' },
+            ],
+          },
+        },
+      })
+    }
+    if (url.startsWith('https://scout-test.invalid/img/')) {
+      return new Response(new Uint8Array(png), { headers: { 'content-type': 'image/png' } })
+    }
+    if (url === 'https://api.anthropic.com/v1/messages') {
+      const body = JSON.parse(String(init.body)) as {
+        messages: Array<{ content: unknown }>
+        tools: Array<{ name: string }>
+      }
+      if (body.tools[0].name === 'describe_images') {
+        const blocks = body.messages[0].content as Array<{ type: string }>
+        expect(blocks.filter((b) => b.type === 'image')).toHaveLength(2) // the pictures themselves
+        return Response.json({
+          content: [
+            {
+              type: 'tool_use',
+              name: 'describe_images',
+              input: {
+                images: [
+                  { index: 1, alt: 'A storm rolling over the harbour at night.', usable: true },
+                  { index: 2, alt: 'The main menu', usable: false },
+                ],
+              },
+            },
+          ],
+          usage: { input_tokens: 3000, output_tokens: 80 },
+        })
+      }
+      if (body.tools[0].name === 'pick_image') {
+        const text = String(body.messages[0].content)
+        const id = Number(
+          text
+            .split('\n')
+            .find((l) => /^\d+: .*storm/i.test(l))
+            ?.split(':')[0],
+        )
+        return Response.json({
+          content: [{ type: 'tool_use', name: 'pick_image', input: { id } }],
+          usage: { input_tokens: 300, output_tokens: 10 },
+        })
+      }
+    }
+    return new Response('nope', { status: 404 })
+  }
+  const cctx = (): ScoutContext => ({
+    payload,
+    config: scoutConfig({
+      SCOUT_ENABLED: 'true',
+      ANTHROPIC_API_KEY: 'test-key',
+      IGDB_CLIENT_ID: 'igdb-id',
+      IGDB_CLIENT_SECRET: 'igdb-secret',
+    }),
+    now: NOW,
+    fetch: imgFetch,
+    notify: async () => {},
+  })
+  const settings = async () =>
+    (await payload.findGlobal({ slug: 'scout-settings', overrideAccess: true })) as never
+  const media = async (name: string, alt: string) =>
+    Number(
+      (
+        await payload.create({
+          collection: 'media',
+          data: { alt } as never,
+          file: { data: png, mimetype: 'image/png', name: `${name}.png`, size: png.length },
+          overrideAccess: true,
+        })
+      ).id,
+    )
+  const press = (image: string | null) => ({
+    name: 'Scouttest Press',
+    url: 'https://scout-test.invalid/press/storm',
+    title: 'Storm',
+    text: '',
+    reliability: 'high' as const,
+    image,
+  })
+  const game = async () =>
+    (await payload.findByID({
+      collection: 'games',
+      id: gameId,
+      depth: 0,
+      overrideAccess: true,
+    })) as unknown as {
+      gallery: number[]
+      imageSources: string[]
+      imagesCheckedAt: string | null
+    }
+  let a: number
+  let b: number
+
+  beforeAll(async () => {
+    png = await sharp(
+      Buffer.from(Array.from({ length: 160 * 90 * 3 }, () => (Math.random() * 256) | 0)),
+      { raw: { width: 160, height: 90, channels: 3 } },
+    )
+      .png()
+      .toBuffer()
+    a = await media('scouttest-pool-a', 'Lucia on a beach, Scouttest Pool Game')
+    b = await media('scouttest-pool-b', 'Jason in a red car, Scouttest Pool Game')
+    gameId = Number(
+      (
+        await payload.create({
+          collection: 'games',
+          data: { name: 'Scouttest Pool Game', cover: a, gallery: [b] } as never,
+          overrideAccess: true,
+        })
+      ).id,
+    )
+    // Yesterday's article wears the main cover.
+    await payload.create({
+      collection: 'articles',
+      data: {
+        title: 'Scouttest pool news',
+        category: 'news',
+        aiAssisted: true,
+        game: gameId,
+        coverImage: a,
+      } as never,
+      draft: true,
+      overrideAccess: true,
+    })
+  })
+
+  afterAll(async () => {
+    await payload.delete({
+      collection: 'articles',
+      where: { title: { like: 'Scouttest pool' } },
+      overrideAccess: true,
+    })
+    await payload.delete({
+      collection: 'games',
+      where: { id: { equals: gameId } },
+      overrideAccess: true,
+    })
+    await payload.delete({
+      collection: 'media',
+      where: { filename: { like: 'scouttest' } },
+      overrideAccess: true,
+    })
+  })
+
+  it('stocks the game’s official images found online, described, and picks the one that fits', async () => {
+    const cover = await pickCover(
+      cctx(),
+      { title: 'A storm hits Scouttest city', game: 'Scouttest Pool Game' },
+      [press('https://scout-test.invalid/img/scouttest-press.png')],
+      [],
+      { settings: await settings() },
+    )
+    const g = await game()
+    // The menu shot is left out; the storm joins the game's images, described.
+    expect(g.gallery).toHaveLength(2)
+    expect(g.imageSources).toHaveLength(2)
+    expect(g.imagesCheckedAt).toBeTruthy()
+    const storm = g.gallery.find((id) => id !== b)!
+    const stormDoc = (await payload.findByID({
+      collection: 'media',
+      id: storm,
+      overrideAccess: true,
+    })) as unknown as { alt: string }
+    expect(stormDoc.alt).toBe('A storm rolling over the harbour at night, Scouttest Pool Game')
+    // Not the recent cover, and the storm rather than the car: the subject.
+    expect(cover).toMatchObject({ id: storm })
+    expect(cover!.origin).toContain('fiche du jeu Scouttest Pool Game')
+  })
+
+  it('looks online once a week only', async () => {
+    const before = calls.length
+    await pickCover(cctx(), { title: 'Another story', game: 'Scouttest Pool Game' }, [], [], {
+      settings: await settings(),
+    })
+    expect(calls.slice(before).some((u) => /steampowered|igdb|twitch/.test(u))).toBe(false)
+  })
+
+  it('every image used: a press image, credited; without one, the least used again', async () => {
+    const g = await game()
+    const all = { ids: new Set([a, ...g.gallery]), alts: new Set<string>() }
+    const fromPress = await pickCover(
+      cctx(),
+      { title: 'Storm again', game: 'Scouttest Pool Game' },
+      [press('https://scout-test.invalid/img/scouttest-press.png')],
+      [],
+      { settings: await settings(), exclude: all },
+    )
+    expect(fromPress!.origin).toContain('image de presse, Scouttest Press')
+    const doc = (await payload.findByID({
+      collection: 'media',
+      id: fromPress!.id,
+      overrideAccess: true,
+    })) as unknown as { credit: string }
+    expect(doc.credit).toBe('Scouttest Press')
+
+    // "Autre image" on the car: no press image, every game image used lately.
+    const again = await pickCover(
+      cctx(),
+      { title: 'Storm again', game: 'Scouttest Pool Game' },
+      [press(null)],
+      [],
+      { settings: await settings(), exclude: { ids: new Set([b]), alts: new Set() } },
+    )
+    expect(again!.id).not.toBe(b)
   })
 })

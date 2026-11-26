@@ -26,6 +26,7 @@ import {
 } from './draft-prompt'
 import { duplicateReason } from './dedupe'
 import { fetchPage, type PageRead } from './extract'
+import { altKey } from './game-images'
 import { pickCover, uploadImage, videoCandidates, type Cover, type Video } from './media'
 import {
   applyConsoleFacts,
@@ -207,6 +208,42 @@ export async function setStoryImage(
 }
 
 /**
+ * "Autre image" on Discord: the next cover in pickCover's order, without the
+ * current one (nor the game's recent covers). No model call for the text.
+ */
+export async function nextStoryImage(
+  ctx: ScoutContext,
+  settings: SettingsDoc,
+  storyId: number,
+): Promise<DraftResult> {
+  return draftStory(ctx, settings, storyId, undefined, { nextImage: true })
+}
+
+/** The next cover for a draft: its sources and game again, minus the current cover. */
+async function nextCover(
+  ctx: ScoutContext,
+  settings: SettingsDoc,
+  storyId: number,
+  art: ArticleForImage,
+): Promise<Cover> {
+  const sources = await sourcesFor(ctx, storyId)
+  const videos = ctx.config.dryRun ? [] : await videoCandidates(sources, ctx.fetch)
+  const current = art.coverImage
+  const exclude = { ids: new Set<number>(), alts: new Set<string>() }
+  if (current && typeof current === 'object') {
+    exclude.ids.add(Number(current.id))
+    if (current.alt) exclude.alts.add(altKey(current.alt))
+  } else if (current != null) exclude.ids.add(Number(current))
+  const game = art.game && typeof art.game === 'object' ? art.game.name : undefined
+  const cover = await pickCover(ctx, { title: art.title, game }, sources, videos, {
+    settings,
+    exclude,
+  })
+  if (!cover) throw new Error('Pas d’autre image trouvée : l’image reste la même.')
+  return cover
+}
+
+/**
  * Draft (or, with feedback, revise) the article for a story. Throws when the
  * budget is spent or the model's answer is unusable; the caller reports it.
  */
@@ -215,7 +252,7 @@ export async function draftStory(
   settings: SettingsDoc,
   storyId: number,
   feedback?: string,
-  opts: { imageUrl?: string; imageCredit?: string; imageOnly?: boolean } = {},
+  opts: { imageUrl?: string; imageCredit?: string; imageOnly?: boolean; nextImage?: boolean } = {},
 ): Promise<DraftResult> {
   const story = (await ctx.payload.findByID({
     collection: 'scout-stories',
@@ -228,10 +265,26 @@ export async function draftStory(
       ? story.article.id
       : story.article
     : null
+  if (opts.nextImage) {
+    if (!articleRef) throw new Error('no draft for this story')
+    return imageOnly(ctx, story, storyId, Number(articleRef), (art) =>
+      nextCover(ctx, settings, storyId, art),
+    )
+  }
   if (opts.imageOnly) {
     if (!articleRef) throw new Error('no draft for this story')
-    if (!opts.imageUrl) throw new Error('image: no URL')
-    return imageOnly(ctx, story, storyId, Number(articleRef), opts.imageUrl, opts.imageCredit)
+    const url = opts.imageUrl
+    if (!url) throw new Error('image: no URL')
+    return imageOnly(ctx, story, storyId, Number(articleRef), async (art) => {
+      try {
+        const up = await uploadImage(ctx, url, art.title, opts.imageCredit)
+        return { ...up, origin: 'URL donnée sur Discord' }
+      } catch (err) {
+        throw new Error(
+          `L’URL donnée n’a pas marché (${err instanceof Error ? err.message : String(err)}).`,
+        )
+      }
+    })
   }
   const sources = await sourcesFor(ctx, storyId)
   if (sources.length === 0) throw new Error(`story ${storyId} has no items`)
@@ -361,7 +414,7 @@ export async function draftStory(
       const up = await uploadImage(ctx, opts.imageUrl, clean.title, opts.imageCredit)
       cover = { ...up, origin: 'URL donnée sur Discord' }
     } catch (err) {
-      imageError = err instanceof Error ? err.message : String(err)
+      imageError = `L’URL donnée n’a pas marché (${err instanceof Error ? err.message : String(err)}).`
     }
   }
   if (!cover && articleRef) cover = await currentCover(ctx, Number(articleRef))
@@ -371,6 +424,7 @@ export async function draftStory(
       { title: clean.title, game: gameName ?? story.game },
       sources,
       watch,
+      { settings },
     )
   }
   // A game created just now takes the official image as its own cover.
@@ -466,26 +520,33 @@ export async function draftStory(
 }
 
 /** New cover only: upload, set it on the draft, post the card again. */
+type ArticleForImage = {
+  title: string
+  excerpt?: string | null
+  category?: string | null
+  coverImage?: { id: number; alt?: string | null } | number | null
+  game?: { name: string } | number | null
+}
+
+/** Change only the draft's cover (an URL from Discord, or "Autre image"), then post the card again. */
 async function imageOnly(
   ctx: ScoutContext,
   story: StoryWithDraft,
   storyId: number,
   articleId: number,
-  imageUrl: string,
-  imageCredit?: string,
+  getCover: (art: ArticleForImage) => Promise<Cover>,
 ): Promise<DraftResult> {
   const art = (await ctx.payload.findByID({
     collection: 'articles',
     id: articleId,
-    depth: 0,
+    depth: 1,
     draft: true,
     overrideAccess: true,
-  })) as unknown as { title: string; excerpt?: string | null; category?: string | null }
+  })) as unknown as ArticleForImage
   let cover: Cover | null = null
   let imageError: string | undefined
   try {
-    const up = await uploadImage(ctx, imageUrl, art.title, imageCredit)
-    cover = { ...up, origin: 'URL donnée sur Discord' }
+    cover = await getCover(art)
     await ctx.payload.update({
       collection: 'articles',
       id: articleId,
@@ -510,7 +571,7 @@ async function imageOnly(
     ],
     cover,
     imageError,
-    imageChange: true,
+    imageChange: !imageError,
     storyUpdate: {},
   })
 }
