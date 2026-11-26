@@ -409,7 +409,8 @@ it's 20 minutes old (`releaseStaleScoutRuns`, log `[scout] stale run released`).
    image used least lately (`leastUsed`). Only pictures ≥ 1200 px wide and
    landscape are stocked (`coverShaped`); a game without a cover takes the
    first. Editors can run it for one game now: `POST /api/scout/game-images`
-   `{ game, max }` (`game-images-tool.ts`). *Autre image* on the card
+   `{ game, max }` (`game-images-tool.ts`; `game: "all"` = the whole library
+   in the background, games looked at in the last day skipped). *Autre image* on the card
    (`scout:image`, `nextImage` on the `scoutDraft` job) asks for the next one; YouTube videos found in the
    sources go to the prompt with their oEmbed title and channel, Sonnet picks
    the official ones about the story (`videos` in the tool). **Tags:** the

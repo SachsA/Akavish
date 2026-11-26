@@ -1373,7 +1373,9 @@ at least 1200 px wide and landscape (4:3 or wider) are kept; a game without a
 cover takes the first one. **Editors' tool:** `POST /api/scout/game-images`
 `{ "game": <id or slug>, "max": 24 }` (signed in as an editor) runs that look
 online for one game at once, up to 40 images, and answers with its images and
-their descriptions.
+their descriptions; `"game": "all"` does every game not looked at in the last
+day, one after another in the background (answers 202 at once; run it again
+after a deploy to pick up where it stopped).
 
 **IGDB keys (Twitch app).** dev.twitch.tv/console → *Register Your
 Application*: any name (*Akavish Scout*), OAuth Redirect URL
