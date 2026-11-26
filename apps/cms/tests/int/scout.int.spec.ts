@@ -16,6 +16,7 @@ import type { ScoutContext } from '@/scout/context'
 import { maybeSendDigest } from '@/scout/digest'
 import { autoDraft, draftStory, setStoryImage } from '@/scout/draft'
 import { pickCover } from '@/scout/media'
+import { gameImagesHandler } from '@/scout/game-images-tool'
 import { handleInteraction, scoutReportHandler } from '@/scout/interactions'
 import { runLive } from '@/scout/live'
 import { gatherReport } from '@/scout/report'
@@ -1507,11 +1508,12 @@ describe('scout covers: a game in the news every day', () => {
   let b: number
 
   beforeAll(async () => {
+    // Cover-sized: smaller or taller pictures aren't stocked (coverShaped).
     png = await sharp(
-      Buffer.from(Array.from({ length: 160 * 90 * 3 }, () => (Math.random() * 256) | 0)),
-      { raw: { width: 160, height: 90, channels: 3 } },
+      Buffer.from(Array.from({ length: 1280 * 720 * 3 }, () => (Math.random() * 256) | 0)),
+      { raw: { width: 1280, height: 720, channels: 3 } },
     )
-      .png()
+      .png({ compressionLevel: 9 })
       .toBuffer()
     a = await media('scouttest-pool-a', 'Lucia on a beach, Scouttest Pool Game')
     b = await media('scouttest-pool-b', 'Jason in a red car, Scouttest Pool Game')
@@ -1580,6 +1582,15 @@ describe('scout covers: a game in the news every day', () => {
     // Not the recent cover, and the storm rather than the car: the subject.
     expect(cover).toMatchObject({ id: storm })
     expect(cover!.origin).toContain('fiche du jeu Scouttest Pool Game')
+  })
+
+  it('the editors’ tool: editors only, a game named', async () => {
+    const call = (user: unknown, body: unknown) =>
+      gameImagesHandler({ payload, user, json: async () => body } as never)
+    expect((await call(null, { game: gameId })).status).toBe(403)
+    const editor = { collection: 'users', role: 'editor' }
+    expect((await call(editor, {})).status).toBe(400)
+    expect((await call(editor, { game: 'scouttest-no-such-game' })).status).toBe(404)
   })
 
   it('looks online once a week only', async () => {

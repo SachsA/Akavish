@@ -1368,7 +1368,12 @@ images* (`src/scout/game-images.ts`). Nothing fresh: a **press source's**
 `og:image`, credited to the outlet under the cover (Alex's call on
 2026-11-26: an outlet's photo can belong to an agency, a risk he takes),
 else the game's image used least lately. The **Autre image** button on the
-card asks for the next one in that order, the text untouched.
+card asks for the next one in that order, the text untouched. Only pictures
+at least 1200 px wide and landscape (4:3 or wider) are kept; a game without a
+cover takes the first one. **Editors' tool:** `POST /api/scout/game-images`
+`{ "game": <id or slug>, "max": 24 }` (signed in as an editor) runs that look
+online for one game at once, up to 40 images, and answers with its images and
+their descriptions.
 
 **IGDB keys (Twitch app).** dev.twitch.tv/console → *Register Your
 Application*: any name (*Akavish Scout*), OAuth Redirect URL

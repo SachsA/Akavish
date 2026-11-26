@@ -28,6 +28,8 @@ export const IMAGE_CHECK_DAYS = 7
 export const MAX_NEW_PER_CHECK = 12
 /** A game's "Other images" stop growing there. */
 export const MAX_GALLERY = 80
+/** Narrower pictures aren't kept: a cover is shown up to 1920 px wide. */
+export const MIN_WIDTH = 1200
 /** The covers of this many latest articles about the game are never reused. */
 export const RECENT_COVERS = 10
 /** How far back "used lately" looks when every image was used recently. */
@@ -307,10 +309,12 @@ export async function stockGameImages(
   ctx: ScoutContext,
   settings: SettingsDoc | undefined,
   game: GameDoc,
+  /** The editors' tool (`POST /api/scout/game-images`): now, and up to `max`. */
+  opts: { force?: boolean; max?: number } = {},
 ): Promise<number> {
   if (ctx.config.dryRun) return 0
   const checked = game.imagesCheckedAt ? Date.parse(game.imagesCheckedAt) : 0
-  if (checked && ctx.now.getTime() - checked < IMAGE_CHECK_DAYS * DAY) return 0
+  if (!opts.force && checked && ctx.now.getTime() - checked < IMAGE_CHECK_DAYS * DAY) return 0
   const gallery = (game.gallery ?? []).map(idOfMedia).filter((n): n is number => n !== null)
   const known = new Set(Array.isArray(game.imageSources) ? (game.imageSources as string[]) : [])
   const save = (data: Record<string, unknown>) =>
@@ -326,7 +330,7 @@ export async function stockGameImages(
       overrideAccess: true,
     })
   try {
-    const room = Math.min(MAX_NEW_PER_CHECK, MAX_GALLERY - gallery.length)
+    const room = Math.min(opts.max ?? MAX_NEW_PER_CHECK, MAX_GALLERY - gallery.length)
     const found: string[] = []
     for (const source of [igdbImages, steamImages]) {
       try {
@@ -347,25 +351,32 @@ export async function stockGameImages(
     const downloaded: Array<{ url: string; img: Downloaded }> = []
     for (const url of fresh) {
       try {
-        downloaded.push({ url, img: await downloadImage(ctx, url) })
+        const img = await downloadImage(ctx, url)
+        // A cover is shown 16:9 and up to 1920 px wide: small or tall
+        // pictures (IGDB has both) make poor ones.
+        if (await coverShaped(img)) downloaded.push({ url, img })
       } catch {
         // gone or not an image: noted as tried below
       }
     }
-    let described: Array<Described | null> = downloaded.map(() => null)
-    try {
-      described = await describe(
-        ctx,
-        settings,
-        game.name,
-        downloaded.map((d) => d.img),
-      )
-    } catch (err) {
-      ctx.payload.logger.info({
-        msg: '[scout] game images: no descriptions',
-        game: game.name,
-        error: err instanceof Error ? err.message : String(err),
-      })
+    const described: Array<Described | null> = downloaded.map(() => null)
+    // One Haiku call per dozen pictures.
+    for (let at = 0; at < downloaded.length; at += MAX_NEW_PER_CHECK) {
+      try {
+        const part = await describe(
+          ctx,
+          settings,
+          game.name,
+          downloaded.slice(at, at + MAX_NEW_PER_CHECK).map((d) => d.img),
+        )
+        part.forEach((d, i) => (described[at + i] = d))
+      } catch (err) {
+        ctx.payload.logger.info({
+          msg: '[scout] game images: no descriptions',
+          game: game.name,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
     }
     const added: number[] = []
     for (const [i, { img }] of downloaded.entries()) {
@@ -381,6 +392,8 @@ export async function stockGameImages(
     await save({
       gallery: [...gallery, ...added],
       imageSources: [...known, ...fresh],
+      // A game without a cover (created by a draft) takes the first one.
+      ...(game.cover == null && added.length ? { cover: added[0] } : {}),
     })
     ctx.payload.logger.info({
       msg: '[scout] game images stocked',
@@ -396,6 +409,17 @@ export async function stockGameImages(
     })
     await save({}).catch(() => undefined)
     return 0
+  }
+}
+
+/** Wide enough (1200 px) and landscape (at least 4:3) to be an article cover. */
+export async function coverShaped(img: Downloaded): Promise<boolean> {
+  try {
+    const { default: sharp } = await import('sharp')
+    const { width = 0, height = 0 } = await sharp(img.data).metadata()
+    return width >= MIN_WIDTH && height > 0 && width / height >= 4 / 3
+  } catch {
+    return false
   }
 }
 

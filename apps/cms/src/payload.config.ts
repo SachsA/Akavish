@@ -37,6 +37,7 @@ import { ScoutSources } from './collections/scout/ScoutSources'
 import { ScoutStories } from './collections/scout/ScoutStories'
 import { ScoutEvents } from './collections/scout/ScoutEvents'
 import { ScoutUsage } from './collections/scout/ScoutUsage'
+import { gameImagesHandler } from './scout/game-images-tool'
 import { EsportMatches } from './collections/esport/EsportMatches'
 import { EsportTournaments } from './collections/esport/EsportTournaments'
 import { esportRawHandler, runEsportSync } from './esport/sync'
@@ -155,6 +156,8 @@ export default buildConfig({
     // Signature-checked; only the owner's clicks are accepted.
     { path: '/scout/discord', method: 'post', handler: discordInteractionsHandler },
     { path: '/scout/report', method: 'get', handler: scoutReportHandler },
+    // Editors: look for a game's official images online now (src/scout/game-images-tool.ts).
+    { path: '/scout/game-images', method: 'post', handler: gameImagesHandler },
     // Reader accounts and saved articles, for the website (READER_API_SECRET)
     // and Clerk's webhook (signed). Details in src/lib/readers.ts.
     { path: '/reader-api/sync', method: 'post', handler: readerSyncHandler },

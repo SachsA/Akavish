@@ -213,7 +213,8 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   once a week, 12 at a time, described by Haiku from the picture), else a
   press source's `og:image` credited to the outlet (Alex's call, 2026-11-26),
   else the game's image used least lately (`media.ts`). *Autre image* on the
-  Discord card runs the same order without the current cover;
+  Discord card runs the same order without the current cover; editors run the
+  look online for one game now with `POST /api/scout/game-images`;
   photos of people (esport) only with the owner's written OK and a **Credit**
   on the media (shown under the cover), never Liquipedia's (permission given
   to them, not us); esport cards say which photo to find (`photo_hint`);
