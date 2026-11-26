@@ -52,6 +52,8 @@ export interface GameDoc {
   gallery?: unknown[] | null
   imageSources?: unknown
   imagesCheckedAt?: string | null
+  /** The first release (computed from its releases), for telling namesakes apart. */
+  releaseDate?: string | null
 }
 
 /** Covers and descriptions not to use (recent articles, the current cover). */
@@ -79,20 +81,41 @@ export function normTitle(s: string): string {
 
 type IgdbGame = {
   name: string
+  /** Unix seconds; missing for a game without a date yet. */
+  first_release_date?: number
   alternative_names?: Array<{ name?: string }>
   artworks?: Array<{ image_id?: string }>
   screenshots?: Array<{ image_id?: string }>
 }
 
-/** The IGDB entry for exactly this game (by name or alternative name), else null. */
-export function igdbMatch(results: IgdbGame[], name: string): IgdbGame | null {
+/**
+ * The IGDB entry for exactly this game (by name, else alternative name), else
+ * null. Two games can share a name (Fable, 2004 and 2026): with the year our
+ * library has, the one released that year (± 1) or not dated yet; without
+ * it, the most recent. (2026-11-26: the new Fable got the 2004 one's images.)
+ */
+export function igdbMatch(
+  results: IgdbGame[],
+  name: string,
+  year?: number | null,
+): IgdbGame | null {
   const want = normTitle(name)
+  const byName = results.filter((g) => normTitle(g.name) === want)
+  const named = byName.length
+    ? byName
+    : results.filter((g) =>
+        (g.alternative_names ?? []).some((a) => a.name && normTitle(a.name) === want),
+      )
+  const yearOf = (g: IgdbGame) =>
+    g.first_release_date ? new Date(g.first_release_date * 1000).getUTCFullYear() : null
+  if (year) {
+    return named.find((g) => yearOf(g) === null || Math.abs(yearOf(g)! - year) <= 1) ?? null
+  }
+  // Most recent first; not dated yet = upcoming = the newest.
   return (
-    results.find((g) => normTitle(g.name) === want) ??
-    results.find((g) =>
-      (g.alternative_names ?? []).some((a) => a.name && normTitle(a.name) === want),
-    ) ??
-    null
+    [...named].sort(
+      (a, b) => (b.first_release_date ?? Infinity) - (a.first_release_date ?? Infinity),
+    )[0] ?? null
   )
 }
 
@@ -160,7 +183,11 @@ async function igdbAuth(ctx: ScoutContext): Promise<{ token: string; clientId: s
 }
 
 /** The game's official images on IGDB (none without the Twitch app's keys). */
-export async function igdbImages(ctx: ScoutContext, name: string): Promise<string[]> {
+export async function igdbImages(
+  ctx: ScoutContext,
+  name: string,
+  year?: number | null,
+): Promise<string[]> {
   const auth = await igdbAuth(ctx)
   if (!auth) return []
   const res = await ctx.fetch('https://api.igdb.com/v4/games', {
@@ -171,11 +198,11 @@ export async function igdbImages(ctx: ScoutContext, name: string): Promise<strin
       accept: 'application/json',
       'content-type': 'text/plain',
     },
-    body: `search "${name.replace(/["\\]/g, ' ')}"; fields name,alternative_names.name,artworks.image_id,screenshots.image_id; limit 10;`,
+    body: `search "${name.replace(/["\\]/g, ' ')}"; fields name,first_release_date,alternative_names.name,artworks.image_id,screenshots.image_id; limit 10;`,
     signal: AbortSignal.timeout(15_000),
   })
   if (!res.ok) throw new Error(`IGDB: HTTP ${res.status}`)
-  const game = igdbMatch((await res.json()) as IgdbGame[], name)
+  const game = igdbMatch((await res.json()) as IgdbGame[], name, year)
   return game ? igdbImageUrls(game) : []
 }
 
@@ -222,7 +249,7 @@ const DESCRIBE_TOOL = {
             alt: {
               type: 'string',
               description:
-                'What the picture shows, in one plain English phrase of at most 110 characters: who (character names when obvious from the game), where, doing what, mood. No "image of", no game title.',
+                'What the picture shows, in one plain English phrase of at most 110 characters: who (character names when obvious from the game), where, doing what, mood. No "image of", no game title, and nothing about text or logos on it.',
             },
             usable: {
               type: 'boolean',
@@ -332,9 +359,10 @@ export async function stockGameImages(
   try {
     const room = Math.min(opts.max ?? MAX_NEW_PER_CHECK, MAX_GALLERY - gallery.length)
     const found: string[] = []
+    const year = game.releaseDate ? new Date(game.releaseDate).getUTCFullYear() : null
     for (const source of [igdbImages, steamImages]) {
       try {
-        found.push(...(await source(ctx, game.name)))
+        found.push(...(await source(ctx, game.name, year)))
       } catch (err) {
         ctx.payload.logger.info({
           msg: '[scout] game images: a source failed',
@@ -412,12 +440,13 @@ export async function stockGameImages(
   }
 }
 
-/** Wide enough (1200 px) and landscape (at least 4:3) to be an article cover. */
+/** Wide enough (1200 px) and landscape (4:3 to 2:1) to be an article cover. */
 export async function coverShaped(img: Downloaded): Promise<boolean> {
   try {
     const { default: sharp } = await import('sharp')
     const { width = 0, height = 0 } = await sharp(img.data).metadata()
-    return width >= MIN_WIDTH && height > 0 && width / height >= 4 / 3
+    // Panoramas (IGDB has many) crop badly to 16:9: not wider than 2:1.
+    return width >= MIN_WIDTH && height > 0 && width / height >= 4 / 3 && width / height <= 2
   } catch {
     return false
   }

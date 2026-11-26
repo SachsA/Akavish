@@ -28,6 +28,21 @@ describe('game image library: matching the game online', () => {
     expect(igdbMatch([results[0]], 'Grand Theft Auto VI')).toBeNull()
   })
 
+  it('tells namesakes apart by year, else takes the most recent', () => {
+    const at = (y: number) => Date.UTC(y, 5, 1) / 1000
+    const fables = [
+      { name: 'Fable', first_release_date: at(2004) },
+      { name: 'Fable', first_release_date: at(2026) },
+    ]
+    expect(igdbMatch(fables, 'Fable', 2026)?.first_release_date).toBe(at(2026))
+    expect(igdbMatch(fables, 'Fable', 2004)?.first_release_date).toBe(at(2004))
+    expect(igdbMatch(fables, 'Fable')?.first_release_date).toBe(at(2026))
+    // Only an old namesake for a new game: nothing rather than the wrong one.
+    expect(igdbMatch([fables[0]], 'Fable', 2026)).toBeNull()
+    // Not dated yet counts as upcoming.
+    expect(igdbMatch([fables[0], { name: 'Fable' }], 'Fable')?.first_release_date).toBeUndefined()
+  })
+
   it('builds 1080p IGDB URLs, artworks first, and drops odd ids', () => {
     expect(
       igdbImageUrls({
