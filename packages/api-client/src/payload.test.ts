@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapArticle, mediaAlt, mediaUrl, toPaginated, type PayloadArticle } from './payload'
+import { mapArticle, mediaAlt, mediaFit, mediaFocus, mediaUrl, toPaginated, type PayloadArticle } from './payload'
 
 const CMS = 'https://cms.test'
 
@@ -160,5 +160,25 @@ describe('toPaginated', () => {
       (n: number) => n * 10,
     )
     expect(res).toEqual({ data: [10, 20], total: 12, page: 2, perPage: 2, totalPages: 6 })
+  })
+})
+
+describe('cover shape and focal point', () => {
+  it('shows logos, square, tall and very wide pictures whole, crops the rest', () => {
+    const m = (width: number, height: number, mimeType = 'image/jpeg') => ({ url: '/a', width, height, mimeType })
+    expect(mediaFit(m(1920, 1080))).toBeUndefined()
+    expect(mediaFit(m(1500, 1000))).toBeUndefined() // a 3:2 photo
+    expect(mediaFit(m(1233, 1059))).toBe('contain') // Lynn Vision's logo
+    expect(mediaFit(m(720, 1079))).toBe('contain') // a tall photo
+    expect(mediaFit(m(3000, 1000))).toBe('contain')
+    expect(mediaFit(m(1600, 831, 'image/png'))).toBe('contain') // Fire Flux's logo
+    expect(mediaFit(m(1920, 1080, 'image/png'))).toBeUndefined() // a PNG screenshot
+    expect(mediaFit({ url: '/a' })).toBeUndefined()
+    expect(mediaFit('/a.jpg')).toBeUndefined()
+  })
+
+  it('gives the focal point only when it was moved', () => {
+    expect(mediaFocus({ url: '/a.jpg', focalX: 50, focalY: 50 })).toBeUndefined()
+    expect(mediaFocus({ url: '/a.jpg', focalX: 50, focalY: 20 })).toEqual({ x: 50, y: 20 })
   })
 })

@@ -23,6 +23,10 @@ export interface Article {
   coverImageAlt?: string
   /** Who the cover photo is from ("BLAST / Luc Bouchon"), shown under it. */
   coverImageCredit?: string
+  /** 'contain': show the cover whole (a logo, a tall or square picture), not cropped to 16:9. */
+  coverImageFit?: 'contain'
+  /** The focal point set in the CMS (0-100 each way): what a 16:9 crop keeps. */
+  coverImageFocus?: { x: number; y: number }
   tags: string[]
   game?: Game
   author: Author

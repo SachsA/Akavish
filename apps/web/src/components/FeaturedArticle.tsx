@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import { CoverImage } from '@/components/CoverImage'
 import type { Article } from '@akavish/types'
 import Link from '@/components/LocaleLink'
 import { Wordmark } from '@/components/Wordmark'
@@ -23,17 +23,18 @@ export function FeaturedArticle({ article }: { article: Article }) {
         <SpoilerVeil spoiler={article.spoiler} />
         <EsportBadges article={article} />
         {article.coverImage ? (
-          <Image
+          <CoverImage
             src={article.coverImage}
             // Decorative: the title sits right next to it inside the same
             // link, so a real alt would make screen readers read it twice.
             alt=""
-            fill
+            fit={article.coverImageFit}
+            focus={article.coverImageFocus}
             // Spans two of three columns on desktop.
             sizes="(max-width: 1024px) 100vw, 66vw"
             // Above the fold on the home page — load it first.
             preload
-            className={`${sp.blur} object-cover group-hover:scale-105 transition-transform duration-500`}
+            className={`${sp.blur} group-hover:scale-105 transition-transform duration-500`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true">

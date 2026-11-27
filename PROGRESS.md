@@ -456,6 +456,7 @@ Grouped by area. Rough priority: **P1** = needed before a public launch ·
 
 | Pri | Item                    | Notes                                                                    |
 | --- | ----------------------- | ------------------------------------------------------------------------ |
+| ✅  | Covers of any shape | 2026-11-27, Alex: team logos lost their names on the 16:9 covers. A photo from 5:4 to 12:5 still fills the box, cropped around the **focal point** set on the image in Media (it was ignored before); a square, tall or very wide picture, or a PNG not already 16:9 (mostly logos), is shown whole over a blurred, darkened copy of itself (`components/CoverImage.tsx`, rule in `mediaFit` of `packages/api-client`, tested): cards, lead story and the article's top. Any image can be uploaded as a cover |
 | ✅  | Mobile responsive audit | Done — roadmap #20. Phones get a section strip under the header; no horizontal overflow on any page |
 | ✅  | Accessibility pass      | Done — roadmap #20 (axe-core clean). Re-run the audit after big UI changes |
 | ✅  | Analytics               | Vercel Web Analytics — cookieless, 50k events/month free, no consent banner needed. Enable it in the Vercel dashboard to start collecting |
@@ -588,6 +589,7 @@ this list every time the website gets a reader-facing feature.
 | Esport anti-spoil (11-25) | A visible "Hide scores" switch on the esport screens (scores replaced by "Show", result articles blurred, reveal one by one), a default in the account settings (Clerk `unsafeMetadata.hideScores`, shared with the site), `spoiler` on articles |
 | Esport tournaments (11-25) | A Tournaments tab: events by tier with their stages, a stage screen with its bracket (columns per round) or standings and rounds, blurred while scores are hidden (`esport-tournaments`, public, `structure`) |
 | Esport game badges (11-25) | On esport article cards, over the cover: the game (CS2, LoL…) in its colour (same colours on results and tournaments) and a quieter "Mercato" for roster news; tabs News, Transfers, Results, Calendar, Tournaments |
+| Covers of any shape (11-27) | Cards and the article screen: a cover with `coverImageFit: 'contain'` shown whole over a blurred copy, the others cropped around `coverImageFocus` (both from `mapArticle`, shared) |
 | Esport follows and bell (11-25) | Follow a team, a tournament or a match (`/api/esport-follows` behind Clerk, CMS `esport-follows`), notifications list and unread count (`/api/notifications`), delete one (×) or all (« Clear all »), notify settings (`/api/notify-settings`); and push: a "Notifications on this device" switch registering the phone's push token with the CMS (Expo push instead of web push) |
 
 ## 8. Infrastructure, CI/CD & deployment

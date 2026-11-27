@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import { CoverImage } from '@/components/CoverImage'
 import type { Article } from '@akavish/types'
 import Link from '@/components/LocaleLink'
 import { Wordmark } from '@/components/Wordmark'
@@ -20,15 +20,16 @@ export function ArticleCard({ article }: { article: Article }) {
         <SpoilerVeil spoiler={article.spoiler} />
         <EsportBadges article={article} />
         {article.coverImage ? (
-          <Image
+          <CoverImage
             // The 960 px size: the full one is for the article's top.
             src={article.coverImageCard ?? article.coverImage}
             // Decorative: the title sits right next to it inside the same
             // link, so a real alt would make screen readers read it twice.
             alt=""
-            fill
+            fit={article.coverImageFit}
+            focus={article.coverImageFocus}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className={`${sp.blur} object-cover group-hover:scale-105 transition-transform duration-300`}
+            className={`${sp.blur} group-hover:scale-105 transition-transform duration-300`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true">

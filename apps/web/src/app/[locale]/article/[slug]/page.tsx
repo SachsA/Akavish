@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import { CoverImage } from '@/components/CoverImage'
 import { notFound, permanentRedirect } from 'next/navigation'
 import Link from '@/components/LocaleLink'
 import { DateText } from '@/components/DateText'
@@ -250,14 +250,14 @@ export default async function ArticlePage({ params }: Params) {
         {article.coverImage && (
           <figure className="mb-8">
             <div className="relative aspect-video bg-zinc-800 rounded-lg overflow-hidden">
-              <Image
+              <CoverImage
                 src={article.coverImage}
                 // The editor's alt text (required on every upload in the CMS).
                 alt={article.coverImageAlt ?? ''}
-                fill
+                fit={article.coverImageFit}
+                focus={article.coverImageFocus}
                 sizes="(max-width: 768px) 100vw, 768px"
                 preload
-                className="object-cover"
               />
             </div>
             {article.coverImageCredit && (
