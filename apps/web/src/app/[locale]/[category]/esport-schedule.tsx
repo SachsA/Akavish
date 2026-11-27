@@ -10,7 +10,7 @@ import { ContentUnavailable } from '@/components/StatusMessage'
 import type { EsportRow } from '@/lib/esport'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
-import { fetchEsportMatches } from '@/lib/payload'
+import { fetchEsportMatches, fetchTeamPages } from '@/lib/payload'
 import { breadcrumbList } from '@/lib/structured-data'
 
 type Kind = 'results' | 'calendar'
@@ -45,6 +45,12 @@ export async function EsportSchedulePage(params: Promise<{ locale: string; categ
   } catch {
     rows = null
   }
+  // The teams with a page: their names link there.
+  const teamPages = rows
+    ? await fetchTeamPages(rows.flatMap((r) => [r.t1.id, r.t2.id]).filter((x): x is number => x != null)).catch(
+        () => ({}) as Record<number, string>
+      )
+    : {}
   const title = kind === 'results' ? t.esport.resultsTitle : t.esport.calendarTitle
   const blurb = kind === 'results' ? t.esport.resultsBlurb : t.esport.calendarBlurb
   return (
@@ -66,7 +72,13 @@ export async function EsportSchedulePage(params: Promise<{ locale: string; categ
       {rows === null ? (
         <ContentUnavailable />
       ) : (
-        <EsportMatches rows={rows} mode={kind} now={new Date().toISOString()} basePath={`/esport/${kind}`} />
+        <EsportMatches
+          rows={rows}
+          mode={kind}
+          now={new Date().toISOString()}
+          basePath={`/esport/${kind}`}
+          teamPages={teamPages}
+        />
       )}
     </div>
   )

@@ -25,6 +25,7 @@ import { CACHE, CMS_TAG, TAGS } from './revalidate'
 import { rowOf, type EsportRow } from './esport'
 import { stageOf, type EsportStage } from './esport-tournaments'
 import { competitionOf, editionOf, type Competition, type Edition } from './esport-competitions'
+import { lineupOf, teamOf, type Lineup, type Team } from './esport-teams'
 import { safeUrl, type CalendarEvent, type EventKind } from './events'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
@@ -84,6 +85,8 @@ interface ListParams {
   gameIds?: string[]
   /** About this esport competition (`esportLeagues`, ticked by the CMS). */
   competitionId?: string
+  /** About this esport team (`esportTeams`, ticked by the CMS). */
+  teamId?: string
   /** Language of the articles; default: the page's (route handlers pass it). */
   locale?: Locale
   /**
@@ -127,6 +130,7 @@ export async function fetchArticles(
   }
   if (featured) qs.set('where[featured][equals]', 'true')
   if (params.competitionId) qs.set('where[esportLeagues][in]', params.competitionId)
+  if (params.teamId) qs.set('where[esportTeams][in]', params.teamId)
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     next: params.cacheTags
@@ -1055,7 +1059,7 @@ export async function fetchEsportStage(slug: string): Promise<{ stage: EsportSta
 
 const COMPETITION_FIELDS = ['slug', 'name', 'game', 'tier', 'logoUrl', 'lastAt', 'latest']
 const EDITION_FIELDS = ['pandaId', 'game', 'name', 'beginAt', 'endAt', 'tier', 'winner', 'prizePool', 'country', 'stages', 'league']
-const TEAM_FIELDS = ['pandaId', 'name', 'acronym', 'logoUrl']
+const TEAM_FIELDS = ['pandaId', 'name', 'acronym', 'logoUrl', 'slug']
 
 async function cmsDocs(path: string, qs: URLSearchParams, tags: string[], revalidate: number = CACHE.lists) {
   const res = await cmsFetch(`${CMS_URL}/api/${path}?${qs.toString()}`, { next: { revalidate, tags } })
@@ -1108,6 +1112,64 @@ export async function fetchEditionOfSerie(serieId: number): Promise<Edition | nu
   const qs = editionQuery(new URLSearchParams({ 'where[pandaId][equals]': String(serieId), limit: '1' }))
   const doc = (await cmsDocs('esport-series', qs, [TAGS.esport]))[0]
   return doc ? editionOf(doc) : null
+}
+
+// ─── Esport teams (/esport/teams/<slug>, 2026-11-27) ──────────────────────────
+
+/**
+ * One team: its doc, the editions it played with its lineups (latest first),
+ * the editions it won, its matches (the sync's: a few days back, a week ahead).
+ */
+export async function fetchEsportTeam(slug: string): Promise<{
+  team: Team
+  lineups: Lineup[]
+  titles: Edition[]
+  matches: EsportRow[]
+} | null> {
+  const one = new URLSearchParams({ 'where[slug][equals]': slug, limit: '1', depth: '0' })
+  const doc = (await cmsDocs('esport-teams', one, [TAGS.esport]))[0]
+  const team = doc ? teamOf(doc) : null
+  if (!team) return null
+  const lq = new URLSearchParams({ 'where[team][equals]': team.id, limit: '500', sort: '-beginAt', depth: '2' })
+  for (const f of ['series', 'players', 'beginAt']) lq.set(`select[${f}]`, 'true')
+  for (const f of EDITION_FIELDS) lq.set(`populate[esport-series][${f}]`, 'true')
+  for (const f of ['slug', 'name', 'game', 'logoUrl']) lq.set(`populate[esport-leagues][${f}]`, 'true')
+  for (const f of TEAM_FIELDS) lq.set(`populate[esport-teams][${f}]`, 'true')
+  const tq = editionQuery(new URLSearchParams({ 'where[winner][equals]': team.id, limit: '200', sort: '-beginAt' }))
+  const mq = new URLSearchParams({ limit: '60', depth: '1', sort: '-beginAt' })
+  mq.set('where[or][0][team1.pandaId][equals]', String(team.pandaId))
+  mq.set('where[or][1][team2.pandaId][equals]', String(team.pandaId))
+  for (const f of ESPORT_FIELDS) mq.set(`select[${f}]`, 'true')
+  for (const f of ['pandaId', 'name', 'league', 'serie', 'tier', 'slug']) mq.set(`populate[esport-tournaments][${f}]`, 'true')
+  const [lineups, titles, matches] = await Promise.all([
+    cmsDocs('esport-lineups', lq, [TAGS.esport]).then((d) => d.map(lineupOf).filter((l): l is Lineup => l !== null)),
+    cmsDocs('esport-series', tq, [TAGS.esport]).then((d) => d.map(editionOf).filter((e): e is Edition => e !== null)),
+    cmsDocs('esport-matches', mq, [TAGS.esport]).then((d) => d.map(rowOf).filter((r): r is EsportRow => r !== null)),
+  ])
+  return { team, lineups, titles, matches }
+}
+
+/** PandaScore team id → its page's slug, for these teams (links on the match lists). */
+export async function fetchTeamPages(pandaIds: number[]): Promise<Record<number, string>> {
+  const ids = [...new Set(pandaIds)].filter((n) => Number.isFinite(n))
+  const out: Record<number, string> = {}
+  for (let i = 0; i < ids.length; i += 150) {
+    const batch = ids.slice(i, i + 150)
+    const qs = new URLSearchParams({ limit: String(batch.length), depth: '0', 'select[slug]': 'true', 'select[pandaId]': 'true' })
+    qs.set('where[pandaId][in]', batch.join(','))
+    for (const d of await cmsDocs('esport-teams', qs, [TAGS.esport]))
+      if (typeof d.pandaId === 'number' && typeof d.slug === 'string') out[d.pandaId] = d.slug
+  }
+  return out
+}
+
+/** The teams that played in the last two years (the sitemap). */
+export async function fetchEsportTeamSlugs(): Promise<Array<{ slug: string; lastAt: string | null }>> {
+  const qs = new URLSearchParams({ limit: '5000', depth: '0', 'select[slug]': 'true', 'select[lastAt]': 'true' })
+  qs.set('where[lastAt][greater_than]', new Date(Date.now() - 730 * 86_400_000).toISOString().slice(0, 10))
+  return (await cmsDocs('esport-teams', qs, [TAGS.esport], CACHE.details)).flatMap((d) =>
+    typeof d.slug === 'string' ? [{ slug: d.slug, lastAt: typeof d.lastAt === 'string' ? d.lastAt : null }] : []
+  )
 }
 
 /** The competitions' slugs and last edition dates (the sitemap). */

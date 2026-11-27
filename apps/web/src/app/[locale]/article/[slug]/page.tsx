@@ -7,6 +7,7 @@ import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
 import { isInLanguage } from '@/lib/i18n/content'
 import type { Metadata } from 'next'
+import type { Article } from '@akavish/types'
 import {
   fetchAdjacentArticles,
   fetchArticleBySlug,
@@ -17,6 +18,8 @@ import {
   type EntityLink,
 } from '@/lib/payload'
 import { LexicalContent } from '@/components/LexicalContent'
+import type { AutoLink } from '@/lib/autolink'
+import { teamNames } from '@/lib/esport-teams'
 import { ArticleCard } from '@/components/ArticleCard'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { ShareButtons } from '@/components/ShareButtons'
@@ -78,6 +81,22 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description,
     },
   }
+}
+
+/** Its teams and competitions, linked where the text first names them (lib/autolink.ts). */
+function esportLinks(article: Article): AutoLink[] {
+  return [
+    ...(article.teams ?? []).map((t) => ({
+      href: `/esport/teams/${t.slug}`,
+      names: teamNames(t.name, t.acronym ?? null, t.aliases ?? []),
+      caseSensitive: true,
+    })),
+    ...(article.competitions ?? []).map((c) => ({
+      href: `/esport/competitions/${c.slug}`,
+      names: [c.name, ...(c.aliases ?? [])],
+      caseSensitive: false,
+    })),
+  ]
 }
 
 export default async function ArticlePage({ params }: Params) {
@@ -270,7 +289,7 @@ export default async function ArticlePage({ params }: Params) {
         )}
 
         <div className="prose-invert">
-          <LexicalContent content={article.content} locale={locale} />
+          <LexicalContent content={article.content} locale={locale} links={esportLinks(article)} />
         </div>
 
         {article.aiAssisted && (
@@ -284,9 +303,18 @@ export default async function ArticlePage({ params }: Params) {
           </p>
         )}
 
-        {(article.tags.length > 0 || (article.competitions?.length ?? 0) > 0) && (
+        {(article.tags.length > 0 || (article.competitions?.length ?? 0) > 0 || (article.teams?.length ?? 0) > 0) && (
           <div className="flex flex-wrap gap-2 mt-10 pt-6 border-t border-zinc-800">
-            {/* Its esport competitions (ticked by the CMS): their pages. */}
+            {/* Its esport competitions and teams (ticked by the CMS): their pages. */}
+            {(article.teams ?? []).map((c) => (
+              <Link
+                key={`t-${c.slug}`}
+                href={`/esport/teams/${c.slug}`}
+                className="px-3 py-1 rounded-full border border-emerald-700/70 text-xs font-semibold text-zinc-100 hover:text-emerald-400 hover:border-emerald-500 transition-colors"
+              >
+                {c.name}
+              </Link>
+            ))}
             {(article.competitions ?? []).map((c) => (
               <Link
                 key={`c-${c.slug}`}

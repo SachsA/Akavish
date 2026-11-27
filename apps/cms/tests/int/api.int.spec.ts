@@ -396,18 +396,34 @@ describe('esport sync (PandaScore)', () => {
 })
 
 describe('esport competitions', () => {
-  it("ticks the competitions an esport article names, and keeps the editor's choice", async () => {
+  it("ticks the competitions and teams an esport article names, and keeps the editor's choice", async () => {
     const pandaId = 900_000_000 + Math.floor(Math.random() * 1_000_000)
     const league = await payload.create({
       collection: 'esport-leagues',
       data: { pandaId, game: 'cs2', name: `${RUN} Cup`, slug: `cs2-${RUN}-cup` } as never,
       overrideAccess: true,
     })
+    const team = await payload.create({
+      collection: 'esport-teams',
+      data: {
+        pandaId,
+        game: 'cs2',
+        name: `Squad${RUN}`,
+        slug: `cs2-squad${RUN}`,
+        lastAt: new Date().toISOString(),
+      } as never,
+      overrideAccess: true,
+    })
     try {
       const named = await createArticle({
         category: 'esport',
-        title: `Vitality win the ${RUN} Cup final`,
+        title: `Squad${RUN} win the ${RUN} Cup final`,
       })
+      expect(
+        ((named as { esportTeams?: Array<{ id: unknown } | unknown> }).esportTeams ?? []).map(
+          (l) => (l && typeof l === 'object' ? (l as { id: unknown }).id : l),
+        ),
+      ).toEqual([team.id])
       expect(
         ((named as { esportLeagues?: Array<{ id: unknown } | unknown> }).esportLeagues ?? []).map(
           (l) => (l && typeof l === 'object' ? (l as { id: unknown }).id : l),
@@ -427,6 +443,7 @@ describe('esport competitions', () => {
       expect((kept as { esportLeagues?: unknown[] }).esportLeagues).toEqual([league.id])
     } finally {
       await payload.delete({ collection: 'esport-leagues', id: league.id, overrideAccess: true })
+      await payload.delete({ collection: 'esport-teams', id: team.id, overrideAccess: true })
     }
   })
 })

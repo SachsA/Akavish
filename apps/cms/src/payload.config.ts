@@ -44,6 +44,7 @@ import { EsportTournaments } from './collections/esport/EsportTournaments'
 import { EsportLeagues } from './collections/esport/EsportLeagues'
 import { EsportSeries } from './collections/esport/EsportSeries'
 import { EsportTeams } from './collections/esport/EsportTeams'
+import { EsportLineups } from './collections/esport/EsportLineups'
 import { runCompetitionSync } from './esport/competitions-sync'
 import { esportRawHandler, runEsportSync } from './esport/sync'
 import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
@@ -143,6 +144,8 @@ export default buildConfig({
     EsportLeagues,
     EsportSeries,
     EsportTeams,
+    // Who played each edition, with which players (the team pages).
+    EsportLineups,
   ],
   globals: [ScoutSettings, CommunitySettings],
   // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).

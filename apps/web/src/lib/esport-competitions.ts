@@ -14,6 +14,8 @@ export interface CompetitionTeam {
   name: string
   acronym: string | null
   logo: string | null
+  /** Its page (/esport/teams/<slug>), once the sync gave it one. */
+  slug?: string | null
 }
 
 export interface EditionStage {
@@ -71,7 +73,7 @@ function teamOf(v: unknown): CompetitionTeam | null {
   const t = v as Record<string, unknown>
   const name = str(t.name)
   if (!name) return null
-  return { pandaId: num(t.pandaId), name, acronym: str(t.acronym), logo: str(t.logoUrl) }
+  return { pandaId: num(t.pandaId), name, acronym: str(t.acronym), logo: str(t.logoUrl), slug: str(t.slug) }
 }
 
 function refOf(v: unknown): CompetitionRef | null {

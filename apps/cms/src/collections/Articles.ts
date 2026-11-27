@@ -7,7 +7,7 @@ import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-sea
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-web'
 import { isLiveArticle, sourceHash, stableJson } from '../lib/translate'
 import { notifyArticle } from '../lib/esport-follows'
-import { articleLeagues, leagueNames } from '../esport/competitions-sync'
+import { articleEsport, leagueNames, teamNamesList } from '../esport/competitions-sync'
 
 const FR_TEXT_FIELDS = ['title', 'excerpt', 'seoTitle', 'seoDescription'] as const
 
@@ -145,29 +145,38 @@ export const Articles: CollectionConfig = {
         return data
       },
 
-      // The esport competitions it names (title, excerpt, tags), ticked when
-      // it's created and when it's first published, if none are yet: their
-      // pages list it (src/esport/competitions-sync.ts). An editor's choice
-      // stays; the history run ticks the older ones once.
+      // The esport competitions and teams it names (title and tags, else the
+      // excerpt), ticked when it's created and when it's first published, if
+      // none are yet: their pages list it (src/esport/competitions-sync.ts).
+      // An editor's choice stays; a history run ticks the older ones once.
       async ({ data, originalDoc, operation, req }) => {
         if (req.context?.esportLeaguesOnly) return data
         const merged = { ...originalDoc, ...data }
         if (merged.category !== 'esport') return data
-        const current = 'esportLeagues' in data ? data.esportLeagues : originalDoc?.esportLeagues
-        if (Array.isArray(current) && current.length) return data
+        const empty = (k: 'esportLeagues' | 'esportTeams') => {
+          const v = k in data ? data[k] : originalDoc?.[k]
+          return !Array.isArray(v) || v.length === 0
+        }
+        const leagues = empty('esportLeagues')
+        const teams = empty('esportTeams')
+        if (!leagues && !teams) return data
         const publishing = merged.status === 'published' && originalDoc?.status !== 'published'
         if (operation !== 'create' && !publishing) return data
         try {
-          const found = await articleLeagues(
+          const found = await articleEsport(
             req.payload,
             merged,
-            await leagueNames(req.payload, req),
+            {
+              leagues: leagues ? await leagueNames(req.payload, req) : [],
+              teams: teams ? await teamNamesList(req.payload, req) : [],
+            },
             req,
           )
-          if (found.length) data.esportLeagues = found
+          if (leagues && found.leagues.length) data.esportLeagues = found.leagues
+          if (teams && found.teams.length) data.esportTeams = found.teams
         } catch (err) {
           req.payload.logger.warn({
-            msg: '[esport] competitions of an article',
+            msg: '[esport] competitions and teams of an article',
             error: String(err),
           })
         }
@@ -388,6 +397,20 @@ export const Articles: CollectionConfig = {
         condition: (data) => data?.category === 'esport',
         description:
           'Ticked automatically from the title, excerpt and tags. Fix it if wrong: the article shows on these competitions’ pages.',
+      },
+    },
+    {
+      // The esport teams it's about: their pages list it, its text links them.
+      name: 'esportTeams',
+      label: 'Esport teams',
+      type: 'relationship',
+      relationTo: 'esport-teams',
+      hasMany: true,
+      admin: {
+        position: 'sidebar',
+        condition: (data) => data?.category === 'esport',
+        description:
+          'Ticked automatically from the title and tags (else the excerpt). Fix it if wrong: the article shows on these teams’ pages.',
       },
     },
     {

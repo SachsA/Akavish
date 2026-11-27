@@ -668,6 +668,23 @@ when they name none), the article's game only, a shorter name inside a longer
 one found dropped (`detectLeagues`). PandaScore lists an edition about a week
 before it starts: nothing months ahead.
 
+**Teams and lineups** (2026-11-27, `src/esport/teams.ts` pure and tested): the
+same run reads each tournament's `expected_roster` (the players registered,
+as they were then) and saves **Esport teams** (every team of an S / A / B
+edition: our `slug`, `cs2-vitality`, the PandaScore one kept as `pandaSlug`;
+best tier of the last two years and last edition from its lineups) and
+**Esport lineups** (`esport-lineups`, one per team and edition, `key` =
+`<serie id>:<team id>`, the players: nickname, real name, country, role,
+PandaScore id). The current roster (`players`, `playersAt`) comes from
+`GET /teams?filter[id]=…`, for the teams that played in the last year, read
+again after 3 days, 300 a run at most (~3 requests). Editors own `aliases`.
+A game without lineups yet reads its whole history again once (the lineups
+came after the competitions). An esport article's **Esport teams**
+(`esportTeams`) are ticked like its competitions: the teams of the last 18
+months, the article's game only, by name as written (team names are often
+plain words: "Spirit", "Liquid"), without "Team" / "Esports", in capitals
+("HEROIC") and by acronym when it reads as a name ("T1", "G2"); `detectTeams`.
+
 **Morning recap** (`src/esport/recap.ts`, called by the scout's run): from
 8 am Paris, once a day (`lastEsportRecap`), yesterday's finished matches in
 *Scout settings → Esport recap: tournament tiers* (S and A by default, S, A

@@ -273,8 +273,18 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `competitions.ts`: editions, winners, the names an article uses), laid out
   by `lib/esport-competitions.ts`. An article's `esportLeagues` is ticked
   automatically (title and tags, else excerpt) and editable. Winners go
-  through `ChampionReveal` (anti-spoil). Team and player pages come next on
-  the same data (PROGRESS backlog).
+  through `ChampionReveal` (anti-spoil).
+- **Team pages** (2026-11-27, `/esport/teams/<slug>`, `cs2-vitality`): CMS
+  `esport-teams` (every team of an S / A / B edition, current roster) and
+  `esport-lineups` (each team's players per edition, PandaScore's
+  `expected_roster`), pure helpers in `apps/cms/src/esport/teams.ts`; laid
+  out by `lib/esport-teams.ts` (roster history), results in
+  `components/esport/TeamMatches.tsx`. An article's `esportTeams` is ticked
+  like its competitions (team names as written, capitals too). Esport
+  article texts link their teams and competitions where first named
+  (`lib/autolink.ts`, `LexicalContent`'s `links`); team names on Results,
+  Calendar and palmarès link to their page (`fetchTeamPages`). Player pages
+  next (PROGRESS backlog).
 - **Calendars** (2026-11-27): the events calendar `/conferences/calendar`
   (CMS `events`, `lib/events.ts`, `components/EventsCalendar.tsx`, times in
   the reader's zone) and the release calendar `/games/releases`

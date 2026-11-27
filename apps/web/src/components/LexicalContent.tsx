@@ -1,5 +1,6 @@
 import React from 'react'
 import { localizePath, type Locale } from '@/lib/i18n/config'
+import { linkify, type AutoLink } from '@/lib/autolink'
 
 // Minimal renderer for Payload's Lexical rich-text JSON.
 // Handles the common node types; unknown nodes fall back to rendering children.
@@ -22,8 +23,31 @@ const IS_STRIKETHROUGH = 1 << 2
 const IS_UNDERLINE = 1 << 3
 const IS_CODE = 1 << 4
 
-function renderText(node: LexicalNode, key: React.Key): React.ReactNode {
-  let el: React.ReactNode = node.text ?? ''
+/** One render: the page's language, and the teams / competitions to link once each (lib/autolink.ts). */
+interface Ctx {
+  locale: Locale
+  links: AutoLink[]
+  used: Set<string>
+  /** Inside an editor's link: no link in a link. */
+  inLink: boolean
+}
+
+function renderText(node: LexicalNode, key: React.Key, ctx: Ctx): React.ReactNode {
+  const text = node.text ?? ''
+  let el: React.ReactNode = text
+  if (ctx.links.length && !ctx.inLink && text) {
+    const parts = linkify(text, ctx.links, ctx.used)
+    if (parts.some((p) => p.href))
+      el = parts.map((p, i) =>
+        p.href ? (
+          <a key={i} href={localizePath(ctx.locale, p.href)} className="text-emerald-400 hover:underline">
+            {p.text}
+          </a>
+        ) : (
+          <React.Fragment key={i}>{p.text}</React.Fragment>
+        )
+      )
+  }
   const format = typeof node.format === 'number' ? node.format : 0
 
   if (format & IS_CODE)
@@ -36,20 +60,21 @@ function renderText(node: LexicalNode, key: React.Key): React.ReactNode {
   return <React.Fragment key={key}>{el}</React.Fragment>
 }
 
-function renderChildren(children: LexicalNode[] | undefined, locale: Locale): React.ReactNode {
+function renderChildren(children: LexicalNode[] | undefined, ctx: Ctx): React.ReactNode {
   if (!children) return null
-  return children.map((child, i) => renderNode(child, i, locale))
+  return children.map((child, i) => renderNode(child, i, ctx))
 }
 
-function renderNode(node: LexicalNode, key: React.Key, locale: Locale): React.ReactNode {
+function renderNode(node: LexicalNode, key: React.Key, ctx: Ctx): React.ReactNode {
+  const locale = ctx.locale
   switch (node.type) {
     case 'text':
-      return renderText(node, key)
+      return renderText(node, key, ctx)
 
     case 'paragraph':
       return (
         <p key={key} className="mb-4 leading-relaxed text-zinc-300">
-          {renderChildren(node.children, locale)}
+          {renderChildren(node.children, ctx)}
         </p>
       )
 
@@ -64,7 +89,7 @@ function renderNode(node: LexicalNode, key: React.Key, locale: Locale): React.Re
       return React.createElement(
         tag,
         { key, className: `${sizes[tag] ?? 'text-xl'} font-bold text-white mt-8 mb-3` },
-        renderChildren(node.children, locale)
+        renderChildren(node.children, ctx)
       )
     }
 
@@ -77,13 +102,13 @@ function renderNode(node: LexicalNode, key: React.Key, locale: Locale): React.Re
             node.listType === 'number' ? 'list-decimal' : 'list-disc'
           }`}
         >
-          {renderChildren(node.children, locale)}
+          {renderChildren(node.children, ctx)}
         </Tag>
       )
     }
 
     case 'listitem':
-      return <li key={key}>{renderChildren(node.children, locale)}</li>
+      return <li key={key}>{renderChildren(node.children, ctx)}</li>
 
     case 'quote':
       return (
@@ -91,7 +116,7 @@ function renderNode(node: LexicalNode, key: React.Key, locale: Locale): React.Re
           key={key}
           className="border-l-2 border-emerald-600 pl-4 italic text-zinc-400 my-4"
         >
-          {renderChildren(node.children, locale)}
+          {renderChildren(node.children, ctx)}
         </blockquote>
       )
 
@@ -110,7 +135,7 @@ function renderNode(node: LexicalNode, key: React.Key, locale: Locale): React.Re
           rel={node.fields?.newTab ? 'noopener noreferrer' : undefined}
           className="text-emerald-400 underline hover:text-emerald-300"
         >
-          {renderChildren(node.children, locale)}
+          {renderChildren(node.children, { ...ctx, inLink: true })}
         </a>
       )
     }
@@ -121,12 +146,21 @@ function renderNode(node: LexicalNode, key: React.Key, locale: Locale): React.Re
     default:
       // Unknown node type: render its children if any.
       return node.children ? (
-        <React.Fragment key={key}>{renderChildren(node.children, locale)}</React.Fragment>
+        <React.Fragment key={key}>{renderChildren(node.children, ctx)}</React.Fragment>
       ) : null
   }
 }
 
-export function LexicalContent({ content, locale = 'en' }: { content: string; locale?: Locale }) {
+export function LexicalContent({
+  content,
+  locale = 'en',
+  links = [],
+}: {
+  content: string
+  locale?: Locale
+  /** Teams and competitions to link where the text first names them (esport articles). */
+  links?: AutoLink[]
+}) {
   let root: LexicalNode | null = null
   try {
     const parsed = JSON.parse(content)
@@ -139,5 +173,5 @@ export function LexicalContent({ content, locale = 'en' }: { content: string; lo
     return <p className="text-zinc-400">{locale === 'fr' ? 'Pas de contenu.' : 'No content.'}</p>
   }
 
-  return <div>{renderChildren(root.children, locale)}</div>
+  return <div>{renderChildren(root.children, { locale, links, used: new Set(), inLink: false })}</div>
 }

@@ -43,7 +43,9 @@ export interface Article {
   /** Gives away a match result (esport recap, final): blurred in lists for readers who hide scores. */
   spoiler?: boolean
   /** The esport competitions it's about (ticked by the CMS): links to their pages. */
-  competitions?: Array<{ slug: string; name: string }>
+  competitions?: Array<{ slug: string; name: string; aliases?: string[] }>
+  /** The esport teams it's about (ticked by the CMS): links to their pages. */
+  teams?: Array<{ slug: string; name: string; acronym?: string; aliases?: string[] }>
   /**
    * The French version, machine-translated in the CMS (apps/cms/src/lib/translate.ts).
    * Absent until it exists. The web swaps it in on /fr pages.

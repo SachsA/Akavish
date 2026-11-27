@@ -13,11 +13,14 @@ export function ChampionReveal({
   children,
   game,
   team,
+  label,
 }: {
   children: React.ReactNode
   game: string
   /** PandaScore team id, for the followed-teams scope. */
   team: number | null
+  /** The button's text; default "Show the winner". */
+  label?: string
 }) {
   const { t } = useI18n()
   const [revealed, setRevealed] = useState(false)
@@ -33,7 +36,7 @@ export function ChampionReveal({
         onClick={() => setRevealed(true)}
         className="akv-champ-mask items-center rounded-full border border-zinc-700 px-2.5 py-0.5 text-xs text-zinc-300 hover:border-emerald-500 hover:text-white"
       >
-        {t.esport.showWinner}
+        {label ?? t.esport.showWinner}
       </button>
     </span>
   )

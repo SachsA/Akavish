@@ -20,6 +20,15 @@ export const EsportLeagues: CollectionConfig = {
       'From PandaScore, every hour (tier S, A and B). Only the aliases are yours: the rest is rewritten by the sync.',
   },
   access: { read: () => true, create: () => false, update: editors, delete: editors },
+  // What an article or an edition shows of its competition.
+  defaultPopulate: {
+    pandaId: true,
+    game: true,
+    name: true,
+    slug: true,
+    logoUrl: true,
+    aliases: true,
+  },
   fields: [
     {
       name: 'pandaId',

@@ -43,7 +43,13 @@ function Champion({ team, game }: { team: CompetitionTeam; game: EsportGame }) {
   return (
     <ChampionReveal game={game} team={team.pandaId}>
       <Logo src={team.logo} size={20} />
-      <span className="truncate font-semibold text-white">{team.name}</span>
+      {team.slug ? (
+        <Link href={`/esport/teams/${team.slug}`} className="truncate font-semibold text-white hover:text-emerald-400">
+          {team.name}
+        </Link>
+      ) : (
+        <span className="truncate font-semibold text-white">{team.name}</span>
+      )}
     </ChampionReveal>
   )
 }

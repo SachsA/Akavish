@@ -76,7 +76,14 @@ export interface PayloadArticle {
   aiAssisted?: boolean | null
   score?: number | null
   spoiler?: boolean | null
-  esportLeagues?: Array<{ slug?: string | null; name?: string | null } | number | string> | null
+  esportLeagues?: Array<
+    { slug?: string | null; name?: string | null; aliases?: string[] | null } | number | string
+  > | null
+  esportTeams?: Array<
+    | { slug?: string | null; name?: string | null; acronym?: string | null; aliases?: string[] | null }
+    | number
+    | string
+  > | null
   fr?: {
     title?: string | null
     excerpt?: string | null
@@ -186,7 +193,16 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     spoiler: doc.spoiler === true,
     competitions: Array.isArray(doc.esportLeagues)
       ? doc.esportLeagues.flatMap((l) =>
-          l && typeof l === 'object' && l.slug && l.name ? [{ slug: l.slug, name: l.name }] : [],
+          l && typeof l === 'object' && l.slug && l.name
+            ? [{ slug: l.slug, name: l.name, aliases: l.aliases ?? [] }]
+            : [],
+        )
+      : [],
+    teams: Array.isArray(doc.esportTeams)
+      ? doc.esportTeams.flatMap((t) =>
+          t && typeof t === 'object' && t.slug && t.name
+            ? [{ slug: t.slug, name: t.name, acronym: t.acronym ?? undefined, aliases: t.aliases ?? [] }]
+            : [],
         )
       : [],
     tags: Array.isArray(doc.tags)

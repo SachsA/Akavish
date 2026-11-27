@@ -4,6 +4,7 @@ import {
   fetchAllArticleSlugs,
   fetchAllEntitySlugs,
   fetchEsportCompetitionSlugs,
+  fetchEsportTeamSlugs,
   fetchUsedTaxonomyIds,
 } from '@/lib/payload'
 import { ESPORT_GAMES } from '@/lib/esport'
@@ -58,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   // Pull dynamic content; tolerate a CMS hiccup by falling back to empty lists.
-  const [articles, authors, games, tags, companies, platforms, used, competitions] = await Promise.all([
+  const [articles, authors, games, tags, companies, platforms, used, competitions, teams] = await Promise.all([
     fetchAllArticleSlugs().catch(() => []),
     fetchAllEntitySlugs('authors').catch(() => []),
     fetchAllEntitySlugs('games').catch(() => []),
@@ -70,6 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // few thin pages beats one that silently drops real ones.
     fetchUsedTaxonomyIds().catch(() => null),
     fetchEsportCompetitionSlugs().catch(() => []),
+    fetchEsportTeamSlugs().catch(() => []),
   ])
 
   // Only list author and tag pages that have at least one published article.
@@ -118,6 +120,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...entityEntries(
       competitions.map((c) => ({ slug: c.slug, updatedAt: c.lastAt ?? undefined })),
       'esport/competitions',
+      0.4,
+    ),
+    // The esport teams that played in the last two years (2026-11-27).
+    ...entityEntries(
+      teams.map((c) => ({ slug: c.slug, updatedAt: c.lastAt ?? undefined })),
+      'esport/teams',
       0.4,
     ),
   ]

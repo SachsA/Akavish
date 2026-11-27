@@ -48,7 +48,18 @@ const STALE_MS = 6 * 3600 * 1000
 /** Matches drawn at first, then this many more per click: a light page on phones. */
 const STEP = 120
 
-function Team({ team, won, side }: { team: EsportTeam; won: boolean; side: 'left' | 'right' }) {
+function Team({
+  team,
+  won,
+  side,
+  slug,
+}: {
+  team: EsportTeam
+  won: boolean
+  side: 'left' | 'right'
+  /** Its page (/esport/teams/<slug>), when it has one. */
+  slug?: string
+}) {
   return (
     <span
       className={`flex min-w-0 flex-1 items-center gap-2 ${side === 'left' ? 'justify-end text-right' : ''} ${
@@ -56,10 +67,18 @@ function Team({ team, won, side }: { team: EsportTeam; won: boolean; side: 'left
       }`}
     >
       {side === 'right' && <Logo team={team} />}
-      <span className="truncate" title={team.name}>
-        <span className="sm:hidden">{team.acronym ?? team.name}</span>
-        <span className="hidden sm:inline">{team.name}</span>
-      </span>
+      {slug ? (
+        // Above the row's own link (relative z-10): the team's page.
+        <Link href={`/esport/teams/${slug}`} className="relative z-10 truncate hover:text-emerald-400" title={team.name}>
+          <span className="sm:hidden">{team.acronym ?? team.name}</span>
+          <span className="hidden sm:inline">{team.name}</span>
+        </Link>
+      ) : (
+        <span className="truncate" title={team.name}>
+          <span className="sm:hidden">{team.acronym ?? team.name}</span>
+          <span className="hidden sm:inline">{team.name}</span>
+        </span>
+      )}
       {side === 'left' && <Logo team={team} />}
     </span>
   )
@@ -87,8 +106,11 @@ export function EsportMatches({
   mode,
   now,
   basePath,
+  teamPages = {},
 }: {
   rows: EsportRow[]
+  /** Teams with a page: PandaScore id → slug. */
+  teamPages?: Record<number, string>
   mode: 'results' | 'calendar'
   /** The page's time, so server and browser agree on what's stale and on Today. */
   now: string
@@ -319,7 +341,7 @@ export function EsportMatches({
                                 time(r.at)
                               )}
                             </span>
-                            <Team team={r.t1} won={scored && r.winner === 1} side="left" />
+                            <Team team={r.t1} won={scored && r.winner === 1} side="left" slug={r.t1.id != null ? teamPages[r.t1.id] : undefined} />
                             <span className="w-14 shrink-0 text-center font-bold tabular-nums text-white">
                               {scored ? (
                                 <>
@@ -337,7 +359,7 @@ export function EsportMatches({
                                 'vs'
                               )}
                             </span>
-                            <Team team={r.t2} won={scored && r.winner === 2} side="right" />
+                            <Team team={r.t2} won={scored && r.winner === 2} side="right" slug={r.t2.id != null ? teamPages[r.t2.id] : undefined} />
                             <span className="hidden w-28 shrink-0 text-right text-xs text-zinc-400 md:block">
                               {r.tournamentSlug && r.stage ? (
                                 <Link
