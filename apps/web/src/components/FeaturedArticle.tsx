@@ -80,8 +80,12 @@ export function ArticleListItem({ article }: { article: Article }) {
 
   return (
     <Link href={`/article/${article.slug}`} {...sp.data} className={`${sp.root} group block py-4`}>
-      <span className="text-xs text-emerald-500 font-bold uppercase tracking-wide">
-        {category?.singular ?? article.category}
+      <span className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-emerald-500 font-bold uppercase tracking-wide">
+          {category?.singular ?? article.category}
+        </span>
+        {/* The game (CS2, LoL…) as on the esport cards, blurred or not. */}
+        <EsportBadges article={article} inline />
       </span>
       <h3
         className={`${sp.blur} mt-1 font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors line-clamp-3`}
