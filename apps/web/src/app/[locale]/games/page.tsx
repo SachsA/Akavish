@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { GamesLibrary } from '@/components/GamesLibrary'
+import { GamesNav } from '@/components/GamesNav'
 import { JsonLd } from '@/components/JsonLd'
 import { ContentUnavailable } from '@/components/StatusMessage'
 import { alternates } from '@/lib/i18n/metadata'
@@ -79,6 +80,7 @@ export default async function GamesPage({ params }: Params) {
           </nav>
         )}
       </header>
+      <GamesNav active="library" />
 
       {!games ? (
         <ContentUnavailable />

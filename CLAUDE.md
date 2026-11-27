@@ -255,6 +255,11 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   PandaScore stage slug): data from `esport-tournaments.structure` (CMS sync,
   `refreshStructures`), layout in `lib/esport-tournaments.ts` (pure, tested on
   a real bracket in `lib/fixtures/`).
+- **Calendars** (2026-11-27): the events calendar `/conferences/calendar`
+  (CMS `events`, `lib/events.ts`, `components/EventsCalendar.tsx`, times in
+  the reader's zone) and the release calendar `/games/releases`
+  (`lib/release-calendar.ts`, `components/ReleaseCalendar.tsx`, same data as
+  `/games`), each a tab next to its section.
 - **Esport follows and the bell**: CMS `src/lib/esport-follows.ts` (follows,
   notifications made by the sync and by article publishing), web
   `/api/esport-follows`, `/api/notifications`, `/api/notify-settings`, one

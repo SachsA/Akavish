@@ -14,6 +14,7 @@ import { Authors } from './collections/Authors'
 import { Games } from './collections/Games'
 import { Companies } from './collections/Companies'
 import { Platforms } from './collections/Platforms'
+import { Events } from './collections/Events'
 import { Articles } from './collections/Articles'
 import { Subscribers } from './collections/Subscribers'
 import {
@@ -111,6 +112,8 @@ export default buildConfig({
     Companies,
     Platforms,
     Articles,
+    // The events calendar (/conferences/calendar).
+    Events,
     Subscribers,
     // Reader accounts (Clerk) and their saved articles (src/lib/readers.ts).
     Readers,

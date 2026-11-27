@@ -24,6 +24,7 @@ import { PLATFORM_FAMILIES, sortPlatforms, type PlatformFamily, type PlatformInf
 import { CACHE, CMS_TAG, TAGS } from './revalidate'
 import { rowOf, type EsportRow } from './esport'
 import { stageOf, type EsportStage } from './esport-tournaments'
+import { safeUrl, type CalendarEvent, type EventKind } from './events'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
 
@@ -1045,3 +1046,46 @@ export async function fetchEsportStage(slug: string): Promise<{ stage: EsportSta
     : [stage]
   return { stage, siblings: siblings.length ? siblings : [stage] }
 }
+
+// ─── Events calendar (/conferences/calendar) ─────────────────────────────────
+
+const EVENT_KINDS: EventKind[] = ['showcase', 'awards', 'expo', 'conference', 'other']
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+
+/** Every event, with its recap's slug and titles (published recaps only). */
+export async function fetchEvents(): Promise<CalendarEvent[]> {
+  const qs = new URLSearchParams({ limit: '500', depth: '1', sort: 'startAt' })
+  for (const f of ['slug', 'title', 'fr', '_status']) qs.set(`populate[articles][${f}]`, 'true')
+  const res = await cmsFetch(`${CMS_URL}/api/events?${qs.toString()}`, {
+    next: { revalidate: CACHE.details, tags: [TAGS.events] },
+  })
+  if (!res.ok) throw new Error(`CMS events: ${res.status}`)
+  const json = (await res.json()) as { docs?: Array<Record<string, unknown>> }
+  return (json.docs ?? []).flatMap((d): CalendarEvent[] => {
+    const name = str(d.name)
+    const startAt = str(d.startAt)
+    if (!name || !startAt || !str(d.slug)) return []
+    const a = d.article as { slug?: string; title?: string; fr?: { title?: string | null } | null; _status?: string } | null
+    const article =
+      a && typeof a === 'object' && a.slug && a.title && a._status !== 'draft'
+        ? { slug: a.slug, title: a.title, titleFr: str(a.fr?.title) }
+        : null
+    return [
+      {
+        slug: String(d.slug),
+        name,
+        kind: EVENT_KINDS.includes(d.kind as EventKind) ? (d.kind as EventKind) : 'other',
+        startAt,
+        timeKnown: d.timeKnown !== false,
+        endAt: str(d.endAt),
+        location: str(d.location),
+        streamUrl: safeUrl(d.streamUrl),
+        officialUrl: safeUrl(d.officialUrl),
+        summary: str(d.summary),
+        summaryFr: str(d.summaryFr),
+        article,
+      },
+    ]
+  })
+}
+

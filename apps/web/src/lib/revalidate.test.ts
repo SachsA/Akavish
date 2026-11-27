@@ -32,6 +32,10 @@ describe('cleanTags', () => {
     ])
   })
 
+  it('keeps the events calendar tag', () => {
+    expect(cleanTags([TAGS.events])).toEqual(['events'])
+  })
+
   it('drops anything else', () => {
     expect(cleanTags(['cms', 'foo:bar', 'game:', 'game:a b', 42, null])).toEqual([])
     expect(cleanTags('articles')).toEqual([])

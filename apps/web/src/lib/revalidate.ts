@@ -32,6 +32,8 @@ export const TAGS = {
   extras: 'article-extras',
   /** Esport matches (PandaScore sync every 10 min, no ping: the 5 min timer). */
   esport: 'esport',
+  /** The events calendar (/conferences/calendar), pinged on every event change. */
+  events: 'events',
   /** One tournament page: pinged when the sync reads its bracket again (2026-11-25). */
   esportStage: (slug: string) => `esport-stage:${slug}`,
 } as const
@@ -58,7 +60,7 @@ export function cleanTags(raw: unknown): string[] {
       raw.filter(
         (t): t is string =>
           typeof t === 'string' &&
-          /^(articles|article-extras|games|taxonomy|(article|game|tag|author|company|platform|esport-stage):[\w.~%-]{1,200})$/i.test(t),
+          /^(articles|article-extras|games|taxonomy|events|(article|game|tag|author|company|platform|esport-stage):[\w.~%-]{1,200})$/i.test(t),
       ),
     ),
   ].slice(0, MAX_TAGS)

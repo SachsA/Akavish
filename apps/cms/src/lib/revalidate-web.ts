@@ -168,6 +168,10 @@ export async function tagsFor(
       tags.add('taxonomy')
       own('platform')
       break
+    case 'events':
+      // The events calendar (a single cached list).
+      tags.add('events')
+      break
     case 'media': {
       // A new file (replaced, or its sizes made again): the old ones are
       // deleted, so every page that may link them must go (2026-11-23: after

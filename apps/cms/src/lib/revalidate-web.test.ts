@@ -133,6 +133,7 @@ describe('tagsFor', () => {
       'taxonomy',
       'platform:ps6',
     ])
+    expect(await tagsFor(payload, 'events', { slug: 'the-game-awards-2026' })).toEqual(['events'])
   })
 
   it('drops the pages showing an edited image, nothing for an unused one', async () => {

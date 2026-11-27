@@ -17,6 +17,7 @@ import { autoUnit } from '@/lib/date-groups'
 import { ArticlesByDate } from '@/components/ArticlesByDate'
 import { EsportNav } from '@/components/EsportNav'
 import { EsportGameFilter } from '@/components/EsportGameFilter'
+import { ConferencesNav } from '@/components/ConferencesNav'
 import { ESPORT_GAME_LABEL, ESPORT_GAME_SLUGS, isEsportGame, type EsportGame } from '@/lib/esport'
 
 type ListParams = { locale: string; category: string; n?: string; game?: string }
@@ -104,6 +105,7 @@ export async function ListPage({ params }: { params: Promise<ListParams> }) {
         <h1 className="text-4xl font-black tracking-tight text-white">{label}</h1>
         <p className="text-zinc-400 mt-2">{blurb}</p>
       </header>
+      {conf.value === 'conference' && <ConferencesNav active="articles" />}
       {conf.value === 'esport' && (
         <>
           <EsportNav active="news" game={game} />
