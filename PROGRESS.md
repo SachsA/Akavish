@@ -661,6 +661,12 @@ checklist it walks through.
 ## Known notes / gotchas
 
 - Run the CMS and web as **two separate processes** (ports 3001 and 3000).
+- **JSON-LD: one script per object** (`components/JsonLd.tsx`, 2026-11-27).
+  A top-level array is valid for Google, but scripts that read
+  `data["@context"]` (a browser extension, Safari) threw on it and Sentry
+  logged it as ours (AKAVISH-WEB-4: `undefined is not an object (evaluating
+  'r["@context"].toLowerCase')`, article pages). Every object carries its own
+  `@context`; the e2e test checks it.
 - **Games: one date per console, and the first one is computed.** Edit a
   game's dates in its *Releases* rows, never `releaseDate` (read-only, the
   hook recomputes it, with `platforms`). A date known only to the month,

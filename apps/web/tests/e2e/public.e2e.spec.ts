@@ -36,9 +36,11 @@ test('article page: content, editor alt text, breadcrumbs, read next', async ({ 
     'alt',
     /^Illustration for "Neon Drift review/,
   )
-  const jsonLd = await page.locator('script[type="application/ld+json"]').first().textContent()
-  expect(jsonLd).toContain('"BreadcrumbList"')
-  expect(jsonLd).toContain('"NewsArticle"')
+  // One script per object, each with its @context (components/JsonLd.tsx).
+  const blocks = await page.locator('script[type="application/ld+json"]').allTextContents()
+  expect(blocks.some((b) => b.includes('"NewsArticle"'))).toBe(true)
+  expect(blocks.some((b) => b.includes('"BreadcrumbList"'))).toBe(true)
+  expect(blocks.every((b) => JSON.parse(b)['@context'] === 'https://schema.org')).toBe(true)
   await expect(page.getByRole('heading', { name: 'Read next' })).toBeVisible()
 })
 
