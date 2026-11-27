@@ -228,6 +228,21 @@ html[data-spoilers='hide']:not([data-sp-off~='winners']) .akv-match:not([data-re
   display: none;
 }
 
+/* A competition's winner (ChampionReveal): "Show the winner" instead while
+   winners are hidden. */
+.akv-champ {
+  display: inline-flex;
+}
+.akv-champ-mask {
+  display: none;
+}
+html[data-spoilers='hide']:not([data-sp-off~='winners']) .akv-match:not([data-revealed]):not(.akv-free) .akv-champ {
+  display: none;
+}
+html[data-spoilers='hide']:not([data-sp-off~='winners']) .akv-match:not([data-revealed]):not(.akv-free) .akv-champ-mask {
+  display: inline-flex;
+}
+
 /* Whole brackets and standings (SpoilerZone): blurred behind a button. */
 .akv-zone-veil {
   display: none;

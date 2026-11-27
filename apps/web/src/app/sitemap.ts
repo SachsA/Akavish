@@ -1,6 +1,11 @@
 import type { MetadataRoute } from 'next'
 import { absoluteUrl } from '@/lib/site'
-import { fetchAllArticleSlugs, fetchAllEntitySlugs, fetchUsedTaxonomyIds } from '@/lib/payload'
+import {
+  fetchAllArticleSlugs,
+  fetchAllEntitySlugs,
+  fetchEsportCompetitionSlugs,
+  fetchUsedTaxonomyIds,
+} from '@/lib/payload'
 import { ESPORT_GAMES } from '@/lib/esport'
 import { CATEGORIES } from '@/lib/categories'
 import { LOCALES, localizePath } from '@/lib/i18n/config'
@@ -40,7 +45,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
     // One game's esport news and Mercato (/esport/cs2, /esport/transfers/cs2).
     ...bothLanguages('/esport/tournaments', { lastModified: now, changeFrequency: 'hourly', priority: 0.6 }),
-    ...ESPORT_GAMES.flatMap((g) => [`/esport/${g}`, `/esport/transfers/${g}`, `/esport/tournaments/${g}`]).flatMap((p) =>
+    ...bothLanguages('/esport/competitions', { lastModified: now, changeFrequency: 'daily', priority: 0.6 }),
+    ...ESPORT_GAMES.flatMap((g) => [
+      `/esport/${g}`,
+      `/esport/transfers/${g}`,
+      `/esport/tournaments/${g}`,
+      `/esport/competitions/${g}`,
+    ]).flatMap((p) =>
       bothLanguages(p, { lastModified: now, changeFrequency: 'daily', priority: 0.5 }),
     ),
     ...['/about', '/contact', '/privacy', '/terms', '/legal'].flatMap((p) =>
@@ -49,7 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   // Pull dynamic content; tolerate a CMS hiccup by falling back to empty lists.
-  const [articles, authors, games, tags, companies, platforms, used] = await Promise.all([
+  const [articles, authors, games, tags, companies, platforms, used, competitions] = await Promise.all([
     fetchAllArticleSlugs().catch(() => []),
     fetchAllEntitySlugs('authors').catch(() => []),
     fetchAllEntitySlugs('games').catch(() => []),
@@ -60,6 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // `null` and the filter below lets everything through — a sitemap with a
     // few thin pages beats one that silently drops real ones.
     fetchUsedTaxonomyIds().catch(() => null),
+    fetchEsportCompetitionSlugs().catch(() => []),
   ])
 
   // Only list author and tag pages that have at least one published article.
@@ -104,5 +116,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...entityEntries(companies, 'company', 0.4),
     ...entityEntries(platforms, 'platform', 0.4),
     ...entityEntries(inUse(tags, used?.tags), 'tag', 0.4),
+    // The esport competitions (2026-11-27): their editions and winners.
+    ...entityEntries(
+      competitions.map((c) => ({ slug: c.slug, updatedAt: c.lastAt ?? undefined })),
+      'esport/competitions',
+      0.4,
+    ),
   ]
 }

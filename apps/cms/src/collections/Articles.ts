@@ -7,6 +7,7 @@ import { syncArticleToSearch, removeArticleFromSearch } from '../lib/article-sea
 import { revalidateAfterChange, revalidateAfterDelete } from '../lib/revalidate-web'
 import { isLiveArticle, sourceHash, stableJson } from '../lib/translate'
 import { notifyArticle } from '../lib/esport-follows'
+import { articleLeagues, leagueNames } from '../esport/competitions-sync'
 
 const FR_TEXT_FIELDS = ['title', 'excerpt', 'seoTitle', 'seoDescription'] as const
 
@@ -140,6 +141,35 @@ export const Articles: CollectionConfig = {
             return data
           data.fr = { ...fr, status: 'pending' }
           req.context.queueTranslation = true
+        }
+        return data
+      },
+
+      // The esport competitions it names (title, excerpt, tags), ticked when
+      // it's created and when it's first published, if none are yet: their
+      // pages list it (src/esport/competitions-sync.ts). An editor's choice
+      // stays; the history run ticks the older ones once.
+      async ({ data, originalDoc, operation, req }) => {
+        if (req.context?.esportLeaguesOnly) return data
+        const merged = { ...originalDoc, ...data }
+        if (merged.category !== 'esport') return data
+        const current = 'esportLeagues' in data ? data.esportLeagues : originalDoc?.esportLeagues
+        if (Array.isArray(current) && current.length) return data
+        const publishing = merged.status === 'published' && originalDoc?.status !== 'published'
+        if (operation !== 'create' && !publishing) return data
+        try {
+          const found = await articleLeagues(
+            req.payload,
+            merged,
+            await leagueNames(req.payload, req),
+            req,
+          )
+          if (found.length) data.esportLeagues = found
+        } catch (err) {
+          req.payload.logger.warn({
+            msg: '[esport] competitions of an article',
+            error: String(err),
+          })
         }
         return data
       },
@@ -343,6 +373,21 @@ export const Articles: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'Other games this article covers. It also shows up on their game pages.',
+      },
+    },
+    {
+      // The esport competitions it's about: their pages list it. Ticked
+      // automatically from the title, excerpt and tags (hook above).
+      name: 'esportLeagues',
+      label: 'Esport competitions',
+      type: 'relationship',
+      relationTo: 'esport-leagues',
+      hasMany: true,
+      admin: {
+        position: 'sidebar',
+        condition: (data) => data?.category === 'esport',
+        description:
+          'Ticked automatically from the title, excerpt and tags. Fix it if wrong: the article shows on these competitions’ pages.',
       },
     },
     {

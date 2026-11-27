@@ -24,6 +24,7 @@ import { PLATFORM_FAMILIES, sortPlatforms, type PlatformFamily, type PlatformInf
 import { CACHE, CMS_TAG, TAGS } from './revalidate'
 import { rowOf, type EsportRow } from './esport'
 import { stageOf, type EsportStage } from './esport-tournaments'
+import { competitionOf, editionOf, type Competition, type Edition } from './esport-competitions'
 import { safeUrl, type CalendarEvent, type EventKind } from './events'
 
 const CMS_URL = process.env.CMS_URL ?? 'http://localhost:3001'
@@ -81,6 +82,8 @@ interface ListParams {
   company?: { gameIds: string[]; tagId?: string }
   /** About one of these games (main game or Also covers): a reader's followed games. */
   gameIds?: string[]
+  /** About this esport competition (`esportLeagues`, ticked by the CMS). */
+  competitionId?: string
   /** Language of the articles; default: the page's (route handlers pass it). */
   locale?: Locale
   /**
@@ -123,6 +126,7 @@ export async function fetchArticles(
     if (company.tagId) qs.set('where[or][2][tags][in]', company.tagId)
   }
   if (featured) qs.set('where[featured][equals]', 'true')
+  if (params.competitionId) qs.set('where[esportLeagues][in]', params.competitionId)
 
   const res = await cmsFetch(`${CMS_URL}/api/articles?${qs.toString()}`, {
     next: params.cacheTags
@@ -1045,6 +1049,75 @@ export async function fetchEsportStage(slug: string): Promise<{ stage: EsportSta
         .filter((s): s is EsportStage => s !== null)
     : [stage]
   return { stage, siblings: siblings.length ? siblings : [stage] }
+}
+
+// ─── Esport competitions (/esport/competitions, 2026-11-27) ───────────────────
+
+const COMPETITION_FIELDS = ['slug', 'name', 'game', 'tier', 'logoUrl', 'lastAt', 'latest']
+const EDITION_FIELDS = ['pandaId', 'game', 'name', 'beginAt', 'endAt', 'tier', 'winner', 'prizePool', 'country', 'stages', 'league']
+const TEAM_FIELDS = ['pandaId', 'name', 'acronym', 'logoUrl']
+
+async function cmsDocs(path: string, qs: URLSearchParams, tags: string[], revalidate: number = CACHE.lists) {
+  const res = await cmsFetch(`${CMS_URL}/api/${path}?${qs.toString()}`, { next: { revalidate, tags } })
+  if (!res.ok) throw new Error(`CMS ${path}: ${res.status}`)
+  return ((await res.json()) as { docs?: Array<Record<string, unknown>> }).docs ?? []
+}
+
+const editionQuery = (qs: URLSearchParams) => {
+  qs.set('depth', '1')
+  for (const f of EDITION_FIELDS) qs.set(`select[${f}]`, 'true')
+  for (const f of TEAM_FIELDS) qs.set(`populate[esport-teams][${f}]`, 'true')
+  for (const f of ['slug', 'name', 'game', 'logoUrl']) qs.set(`populate[esport-leagues][${f}]`, 'true')
+  return qs
+}
+
+/** Every competition (tier S / A / B), with its latest winner. */
+export async function fetchEsportCompetitions(): Promise<Competition[]> {
+  const qs = new URLSearchParams({ limit: '1000', depth: '0', sort: '-lastAt' })
+  for (const f of COMPETITION_FIELDS) qs.set(`select[${f}]`, 'true')
+  return (await cmsDocs('esport-leagues', qs, [TAGS.esport])).map(competitionOf).filter((c): c is Competition => c !== null)
+}
+
+/**
+ * The editions on now, coming and over in the last 45 days. The window moves
+ * once a day (midnight UTC), so the URL and its cache hold all day.
+ */
+export async function fetchEsportEditionsAround(): Promise<Edition[]> {
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const qs = editionQuery(new URLSearchParams({ limit: '300', sort: '-beginAt' }))
+  qs.set('where[or][0][endAt][greater_than_equal]', new Date(today.getTime() - 46 * 86_400_000).toISOString())
+  qs.set('where[or][1][endAt][exists]', 'false')
+  return (await cmsDocs('esport-series', qs, [TAGS.esport])).map(editionOf).filter((e): e is Edition => e !== null)
+}
+
+/** One competition with all its editions. */
+export async function fetchEsportCompetition(slug: string): Promise<{ competition: Competition; editions: Edition[] } | null> {
+  const one = new URLSearchParams({ 'where[slug][equals]': slug, limit: '1', depth: '0' })
+  for (const f of COMPETITION_FIELDS) one.set(`select[${f}]`, 'true')
+  const doc = (await cmsDocs('esport-leagues', one, [TAGS.esport]))[0]
+  const competition = doc ? competitionOf(doc) : null
+  if (!competition) return null
+  const qs = editionQuery(new URLSearchParams({ 'where[league][equals]': competition.id, limit: '500', sort: '-beginAt' }))
+  const editions = (await cmsDocs('esport-series', qs, [TAGS.esport])).map(editionOf).filter((e): e is Edition => e !== null)
+  return { competition, editions }
+}
+
+/** The competitions' slugs and last edition dates (the sitemap). */
+export async function fetchEsportCompetitionSlugs(): Promise<Array<{ slug: string; lastAt: string | null }>> {
+  const qs = new URLSearchParams({ limit: '2000', depth: '0', 'select[slug]': 'true', 'select[lastAt]': 'true' })
+  return (await cmsDocs('esport-leagues', qs, [TAGS.esport], CACHE.details)).flatMap((d) =>
+    typeof d.slug === 'string' ? [{ slug: d.slug, lastAt: typeof d.lastAt === 'string' ? d.lastAt : null }] : []
+  )
+}
+
+/** Which of these stage slugs have a tournament page (the sync keeps the recent ones). */
+export async function fetchStagePages(slugs: string[]): Promise<Set<string>> {
+  if (!slugs.length) return new Set()
+  const qs = new URLSearchParams({ limit: String(slugs.length), depth: '0', 'select[slug]': 'true' })
+  qs.set('where[slug][in]', slugs.join(','))
+  const docs = await cmsDocs('esport-tournaments', qs, [TAGS.esport])
+  return new Set(docs.flatMap((d) => (typeof d.slug === 'string' ? [d.slug] : [])))
 }
 
 // ─── Events calendar (/conferences/calendar) ─────────────────────────────────

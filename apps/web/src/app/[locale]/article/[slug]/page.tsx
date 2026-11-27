@@ -284,8 +284,18 @@ export default async function ArticlePage({ params }: Params) {
           </p>
         )}
 
-        {article.tags.length > 0 && (
+        {(article.tags.length > 0 || (article.competitions?.length ?? 0) > 0) && (
           <div className="flex flex-wrap gap-2 mt-10 pt-6 border-t border-zinc-800">
+            {/* Its esport competitions (ticked by the CMS): their pages. */}
+            {(article.competitions ?? []).map((c) => (
+              <Link
+                key={`c-${c.slug}`}
+                href={`/esport/competitions/${c.slug}`}
+                className="px-3 py-1 rounded-full border border-emerald-700/70 text-xs font-semibold text-zinc-100 hover:text-emerald-400 hover:border-emerald-500 transition-colors"
+              >
+                {c.name}
+              </Link>
+            ))}
             {article.tags.map((tag) => {
               const page = tagPages.get(tag)
               return page ? (

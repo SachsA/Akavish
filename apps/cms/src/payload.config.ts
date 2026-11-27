@@ -41,6 +41,10 @@ import { ScoutUsage } from './collections/scout/ScoutUsage'
 import { gameImagesHandler } from './scout/game-images-tool'
 import { EsportMatches } from './collections/esport/EsportMatches'
 import { EsportTournaments } from './collections/esport/EsportTournaments'
+import { EsportLeagues } from './collections/esport/EsportLeagues'
+import { EsportSeries } from './collections/esport/EsportSeries'
+import { EsportTeams } from './collections/esport/EsportTeams'
+import { runCompetitionSync } from './esport/competitions-sync'
 import { esportRawHandler, runEsportSync } from './esport/sync'
 import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
 import { scoutConfig } from './scout/config'
@@ -135,6 +139,10 @@ export default buildConfig({
     // Esport schedules and results from PandaScore (src/esport/).
     EsportTournaments,
     EsportMatches,
+    // The competitions, their editions and winners (src/esport/competitions-sync.ts).
+    EsportLeagues,
+    EsportSeries,
+    EsportTeams,
   ],
   globals: [ScoutSettings, CommunitySettings],
   // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).
@@ -314,6 +322,18 @@ export default buildConfig({
         retries: 0,
         handler: async ({ req }) => {
           const results = await runEsportSync(req.payload)
+          return { output: { results } }
+        },
+      },
+      {
+        // Every hour: the tier S / A / B competitions, their editions and
+        // winners (src/esport/competitions-sync.ts); a game's whole history
+        // at its first run. Nothing without PANDASCORE_TOKEN.
+        slug: 'esportCompetitions',
+        schedule: [{ cron: '0 23 * * * *', queue: 'esport' }],
+        retries: 0,
+        handler: async ({ req }) => {
+          const results = await runCompetitionSync(req.payload)
           return { output: { results } }
         },
       },

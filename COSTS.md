@@ -31,7 +31,7 @@ VAT, on the 29th), used to build the site.
 | --- | --- | --- |
 | Cloudflare | DNS, R2 media (`media.akavish.gg`) + backups, email routing | R2: 10 GB storage free, no egress fees |
 | Resend | Newsletter confirmation emails | 100 emails/day |
-| PandaScore | Esport schedules, results, tournaments (scout step 4, since 2026-11-24) | Free plan: 1,000 requests an hour (we use ~150), no detailed stats. Paid plans start at 400 €/month per game: not needed. Liquipedia's data API (49 $/month per data type and game) was ruled out |
+| PandaScore | Esport schedules, results, tournaments (scout step 4, since 2026-11-24), competitions and their past editions (since 2026-11-27) | Free plan: 1,000 requests an hour (we use ~170: ~150 for matches and brackets, ~20 for the competitions; the competitions' history ~35 once), no detailed stats. Paid plans start at 400 €/month per game: not needed. Liquipedia's data API (49 $/month per data type and game) was ruled out |
 | Sentry | Error tracking | Free tier's events/month |
 | UptimeRobot | Uptime checks (web + CMS) | Free plan |
 | GitHub | Code, CI, backup workflow | Free for this repo |

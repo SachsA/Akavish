@@ -76,6 +76,7 @@ export interface PayloadArticle {
   aiAssisted?: boolean | null
   score?: number | null
   spoiler?: boolean | null
+  esportLeagues?: Array<{ slug?: string | null; name?: string | null } | number | string> | null
   fr?: {
     title?: string | null
     excerpt?: string | null
@@ -183,6 +184,11 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
     aiAssisted: doc.aiAssisted === true,
     score: typeof doc.score === 'number' ? doc.score : undefined,
     spoiler: doc.spoiler === true,
+    competitions: Array.isArray(doc.esportLeagues)
+      ? doc.esportLeagues.flatMap((l) =>
+          l && typeof l === 'object' && l.slug && l.name ? [{ slug: l.slug, name: l.name }] : [],
+        )
+      : [],
     tags: Array.isArray(doc.tags)
       ? doc.tags.map((t) => (typeof t === 'string' ? t : (t.slug ?? ''))).filter(Boolean)
       : [],

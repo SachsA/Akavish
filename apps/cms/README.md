@@ -646,6 +646,28 @@ that has the match), and each refreshed stage's page is pinged at once
 answer: `GET /api/esport/raw?tournament=<PandaScore id>&kind=brackets`
 (or `standings`, `tournament`), as an editor.
 
+**Competitions** (2026-11-27, `src/esport/competitions.ts` pure and tested,
+`competitions-sync.ts`): every hour the `esportCompetitions` task (queue
+`esport`, minute 23) reads, per game, the tier S / A / B tournaments on now,
+coming and the last 100 finished (`/<game>/tournaments/{running,upcoming,past}`
+with `filter[tier]=s,a,b`, ~20 requests), groups them by edition (PandaScore's
+*serie*) and competition (*league*), and saves **Esport competitions**
+(`esport-leagues`: name, our `slug` for the page, logo, best tier, `latest`
+edition and winner for the list), **Esport editions** (`esport-series`: dates,
+tier, stages, prize pool, country, `winner`) and **Esport teams** (the winners,
+from `/teams`). The winner is PandaScore's, else the winner of the stage that
+ended last once every stage is over. A game with no edition yet reads every
+page of its finished ones (the whole history, ~35 requests for the five,
+once), then the published esport articles get their competitions. Only the
+competitions' `aliases` are editors' (other names articles use); the rest is
+rewritten. An esport article's **Esport competitions** (`esportLeagues`) are
+ticked on create and first publish when empty: the competition's name,
+aliases and its last two years' editions ("Singapore Major", "IEM Beijing",
+"Valorant Champions", `editionNames`), in the title and tags (the excerpt only
+when they name none), the article's game only, a shorter name inside a longer
+one found dropped (`detectLeagues`). PandaScore lists an edition about a week
+before it starts: nothing months ahead.
+
 **Morning recap** (`src/esport/recap.ts`, called by the scout's run): from
 8 am Paris, once a day (`lastEsportRecap`), yesterday's finished matches in
 *Scout settings → Esport recap: tournament tiers* (S and A by default, S, A

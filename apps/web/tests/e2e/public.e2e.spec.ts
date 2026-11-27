@@ -412,6 +412,17 @@ test('esport: the Tournaments tab lists the tournaments, a wrong one is a 404', 
   expect((await page.goto('/news/tournaments'))?.status()).toBe(404)
 })
 
+test('esport: the Competitions tab lists the competitions, a wrong one is a 404', async ({ page }) => {
+  await page.goto('/esport/tournaments')
+  await page.getByRole('navigation', { name: 'Esport sections' }).getByRole('link', { name: 'Competitions' }).click()
+  await expect(page).toHaveURL(/\/esport\/competitions$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esport competitions')
+  await page.goto('/fr/esport/competitions/cs2')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Compétitions esport : CS2')
+  expect((await page.goto('/esport/competitions/not-a-real-competition'))?.status()).toBe(404)
+  expect((await page.goto('/news/competitions'))?.status()).toBe(404)
+})
+
 test('esport: news and Mercato by game, the game kept across tabs', async ({ page }) => {
   await page.goto('/esport')
   const games = page.getByRole('navigation', { name: 'Filter by game' })

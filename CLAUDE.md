@@ -264,6 +264,15 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   PandaScore stage slug): data from `esport-tournaments.structure` (CMS sync,
   `refreshStructures`), layout in `lib/esport-tournaments.ts` (pure, tested on
   a real bracket in `lib/fixtures/`).
+- **Competitions** (2026-11-27, `/esport/competitions`, `[key]` = a game or
+  a competition slug like `cs2-pgl-major`): CMS `esport-leagues` /
+  `esport-series` / `esport-teams`, filled hourly by
+  `apps/cms/src/esport/competitions-sync.ts` (pure helpers in
+  `competitions.ts`: editions, winners, the names an article uses), laid out
+  by `lib/esport-competitions.ts`. An article's `esportLeagues` is ticked
+  automatically (title and tags, else excerpt) and editable. Winners go
+  through `ChampionReveal` (anti-spoil). Team and player pages come next on
+  the same data (PROGRESS backlog).
 - **Calendars** (2026-11-27): the events calendar `/conferences/calendar`
   (CMS `events`, `lib/events.ts`, `components/EventsCalendar.tsx`, times in
   the reader's zone) and the release calendar `/games/releases`

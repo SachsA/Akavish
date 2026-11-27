@@ -1,38 +1,39 @@
-import * as migration_20260727_123459_initial from './20260727_123459_initial';
-import * as migration_20260810_135732_r2_storage from './20260810_135732_r2_storage';
-import * as migration_20260810_145335_image_sizes from './20260810_145335_image_sizes';
-import * as migration_20261105_094814_article_previous_slugs from './20261105_094814_article_previous_slugs';
-import * as migration_20261106_111409_article_featured from './20261106_111409_article_featured';
-import * as migration_20261106_134415_payload_3_93 from './20261106_134415_payload_3_93';
-import * as migration_20261107_161231_scheduled_publish from './20261107_161231_scheduled_publish';
-import * as migration_20261107_161315_editorial_status_enum from './20261107_161315_editorial_status_enum';
-import * as migration_20261109_094550_storage_object_key from './20261109_094550_storage_object_key';
-import * as migration_20261109_102521_newsletter_subscribers from './20261109_102521_newsletter_subscribers';
-import * as migration_20261110_095447_scout_step1 from './20261110_095447_scout_step1';
-import * as migration_20261110_103703_scout_step2 from './20261110_103703_scout_step2';
-import * as migration_20261112_144344_scout_events from './20261112_144344_scout_events';
-import * as migration_20261112_155209_related_games_gallery from './20261112_155209_related_games_gallery';
-import * as migration_20261112_163903_review_score from './20261112_163903_review_score';
-import * as migration_20261113_083945_roles_readers from './20261113_083945_roles_readers';
-import * as migration_20261113_094425_comments from './20261113_094425_comments';
-import * as migration_20261116_130858_french_version from './20261116_130858_french_version';
-import * as migration_20261116_165443_media_credit from './20261116_165443_media_credit';
-import * as migration_20261117_095500_games_library from './20261117_095500_games_library';
-import * as migration_20261117_104444_drop_old_game_fields from './20261117_104444_drop_old_game_fields';
-import * as migration_20261118_085243_game_follows from './20261118_085243_game_follows';
-import * as migration_20261118_125206_live_rehearsal from './20261118_125206_live_rehearsal';
-import * as migration_20261118_154700_platforms_collection from './20261118_154700_platforms_collection';
-import * as migration_20261124_133651_esport_data from './20261124_133651_esport_data';
-import * as migration_20261124_153105_esport_recap from './20261124_153105_esport_recap';
-import * as migration_20261124_160303_esport_kind from './20261124_160303_esport_kind';
-import * as migration_20261125_092756_article_spoiler from './20261125_092756_article_spoiler';
-import * as migration_20261125_104446_tournament_structure from './20261125_104446_tournament_structure';
-import * as migration_20261125_131622_esport_kind_qualification from './20261125_131622_esport_kind_qualification';
-import * as migration_20261125_133556_esport_follows from './20261125_133556_esport_follows';
-import * as migration_20261125_141612_push_subscriptions from './20261125_141612_push_subscriptions';
-import * as migration_20261126_133214_game_image_library from './20261126_133214_game_image_library';
-import * as migration_20261127_092722_events from './20261127_092722_events';
-import * as migration_20261127_105652_notify_spoiler_prefs from './20261127_105652_notify_spoiler_prefs';
+import * as migration_20260727_123459_initial from './20260727_123459_initial'
+import * as migration_20260810_135732_r2_storage from './20260810_135732_r2_storage'
+import * as migration_20260810_145335_image_sizes from './20260810_145335_image_sizes'
+import * as migration_20261105_094814_article_previous_slugs from './20261105_094814_article_previous_slugs'
+import * as migration_20261106_111409_article_featured from './20261106_111409_article_featured'
+import * as migration_20261106_134415_payload_3_93 from './20261106_134415_payload_3_93'
+import * as migration_20261107_161231_scheduled_publish from './20261107_161231_scheduled_publish'
+import * as migration_20261107_161315_editorial_status_enum from './20261107_161315_editorial_status_enum'
+import * as migration_20261109_094550_storage_object_key from './20261109_094550_storage_object_key'
+import * as migration_20261109_102521_newsletter_subscribers from './20261109_102521_newsletter_subscribers'
+import * as migration_20261110_095447_scout_step1 from './20261110_095447_scout_step1'
+import * as migration_20261110_103703_scout_step2 from './20261110_103703_scout_step2'
+import * as migration_20261112_144344_scout_events from './20261112_144344_scout_events'
+import * as migration_20261112_155209_related_games_gallery from './20261112_155209_related_games_gallery'
+import * as migration_20261112_163903_review_score from './20261112_163903_review_score'
+import * as migration_20261113_083945_roles_readers from './20261113_083945_roles_readers'
+import * as migration_20261113_094425_comments from './20261113_094425_comments'
+import * as migration_20261116_130858_french_version from './20261116_130858_french_version'
+import * as migration_20261116_165443_media_credit from './20261116_165443_media_credit'
+import * as migration_20261117_095500_games_library from './20261117_095500_games_library'
+import * as migration_20261117_104444_drop_old_game_fields from './20261117_104444_drop_old_game_fields'
+import * as migration_20261118_085243_game_follows from './20261118_085243_game_follows'
+import * as migration_20261118_125206_live_rehearsal from './20261118_125206_live_rehearsal'
+import * as migration_20261118_154700_platforms_collection from './20261118_154700_platforms_collection'
+import * as migration_20261124_133651_esport_data from './20261124_133651_esport_data'
+import * as migration_20261124_153105_esport_recap from './20261124_153105_esport_recap'
+import * as migration_20261124_160303_esport_kind from './20261124_160303_esport_kind'
+import * as migration_20261125_092756_article_spoiler from './20261125_092756_article_spoiler'
+import * as migration_20261125_104446_tournament_structure from './20261125_104446_tournament_structure'
+import * as migration_20261125_131622_esport_kind_qualification from './20261125_131622_esport_kind_qualification'
+import * as migration_20261125_133556_esport_follows from './20261125_133556_esport_follows'
+import * as migration_20261125_141612_push_subscriptions from './20261125_141612_push_subscriptions'
+import * as migration_20261126_133214_game_image_library from './20261126_133214_game_image_library'
+import * as migration_20261127_092722_events from './20261127_092722_events'
+import * as migration_20261127_105652_notify_spoiler_prefs from './20261127_105652_notify_spoiler_prefs'
+import * as migration_20261127_141516_esport_competitions from './20261127_141516_esport_competitions'
 
 export const migrations = [
   {
@@ -143,71 +144,76 @@ export const migrations = [
   {
     up: migration_20261118_085243_game_follows.up,
     down: migration_20261118_085243_game_follows.down,
-    name: '20261118_085243_game_follows'
+    name: '20261118_085243_game_follows',
   },
   {
     up: migration_20261118_125206_live_rehearsal.up,
     down: migration_20261118_125206_live_rehearsal.down,
-    name: '20261118_125206_live_rehearsal'
+    name: '20261118_125206_live_rehearsal',
   },
   {
     up: migration_20261118_154700_platforms_collection.up,
     down: migration_20261118_154700_platforms_collection.down,
-    name: '20261118_154700_platforms_collection'
+    name: '20261118_154700_platforms_collection',
   },
   {
     up: migration_20261124_133651_esport_data.up,
     down: migration_20261124_133651_esport_data.down,
-    name: '20261124_133651_esport_data'
+    name: '20261124_133651_esport_data',
   },
   {
     up: migration_20261124_153105_esport_recap.up,
     down: migration_20261124_153105_esport_recap.down,
-    name: '20261124_153105_esport_recap'
+    name: '20261124_153105_esport_recap',
   },
   {
     up: migration_20261124_160303_esport_kind.up,
     down: migration_20261124_160303_esport_kind.down,
-    name: '20261124_160303_esport_kind'
+    name: '20261124_160303_esport_kind',
   },
   {
     up: migration_20261125_092756_article_spoiler.up,
     down: migration_20261125_092756_article_spoiler.down,
-    name: '20261125_092756_article_spoiler'
+    name: '20261125_092756_article_spoiler',
   },
   {
     up: migration_20261125_104446_tournament_structure.up,
     down: migration_20261125_104446_tournament_structure.down,
-    name: '20261125_104446_tournament_structure'
+    name: '20261125_104446_tournament_structure',
   },
   {
     up: migration_20261125_131622_esport_kind_qualification.up,
     down: migration_20261125_131622_esport_kind_qualification.down,
-    name: '20261125_131622_esport_kind_qualification'
+    name: '20261125_131622_esport_kind_qualification',
   },
   {
     up: migration_20261125_133556_esport_follows.up,
     down: migration_20261125_133556_esport_follows.down,
-    name: '20261125_133556_esport_follows'
+    name: '20261125_133556_esport_follows',
   },
   {
     up: migration_20261125_141612_push_subscriptions.up,
     down: migration_20261125_141612_push_subscriptions.down,
-    name: '20261125_141612_push_subscriptions'
+    name: '20261125_141612_push_subscriptions',
   },
   {
     up: migration_20261126_133214_game_image_library.up,
     down: migration_20261126_133214_game_image_library.down,
-    name: '20261126_133214_game_image_library'
+    name: '20261126_133214_game_image_library',
   },
   {
     up: migration_20261127_092722_events.up,
     down: migration_20261127_092722_events.down,
-    name: '20261127_092722_events'
+    name: '20261127_092722_events',
   },
   {
     up: migration_20261127_105652_notify_spoiler_prefs.up,
     down: migration_20261127_105652_notify_spoiler_prefs.down,
-    name: '20261127_105652_notify_spoiler_prefs'
+    name: '20261127_105652_notify_spoiler_prefs',
   },
-];
+  {
+    up: migration_20261127_141516_esport_competitions.up,
+    down: migration_20261127_141516_esport_competitions.down,
+    name: '20261127_141516_esport_competitions',
+  },
+]

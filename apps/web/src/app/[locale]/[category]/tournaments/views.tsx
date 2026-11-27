@@ -33,7 +33,7 @@ const TIER_CLASS: Record<Tier, string> = {
 
 const BIG: Tier[] = ['s', 'a', 'b']
 
-function TierBadge({ tier }: { tier: Tier }) {
+export function TierBadge({ tier }: { tier: Tier }) {
   const t = getMessages()
   return (
     <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${TIER_CLASS[tier]}`}>
@@ -42,7 +42,7 @@ function TierBadge({ tier }: { tier: Tier }) {
   )
 }
 
-function GameBadge({ game }: { game: EsportGame }) {
+export function GameBadge({ game }: { game: EsportGame }) {
   return (
     <span className={`rounded-sm px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${ESPORT_GAME_BADGE[game]}`}>
       {ESPORT_GAME_LABEL[game]}
@@ -50,7 +50,7 @@ function GameBadge({ game }: { game: EsportGame }) {
   )
 }
 
-function Logo({ src, size }: { src: string | null; size: number }) {
+export function Logo({ src, size }: { src: string | null; size: number }) {
   if (!src) return <span aria-hidden="true" style={{ width: size, height: size }} className="shrink-0 rounded-sm bg-zinc-800" />
   // League logos come from PandaScore's CDN, already sized.
   // eslint-disable-next-line @next/next/no-img-element

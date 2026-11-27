@@ -394,3 +394,39 @@ describe('esport sync (PandaScore)', () => {
     }
   })
 })
+
+describe('esport competitions', () => {
+  it("ticks the competitions an esport article names, and keeps the editor's choice", async () => {
+    const pandaId = 900_000_000 + Math.floor(Math.random() * 1_000_000)
+    const league = await payload.create({
+      collection: 'esport-leagues',
+      data: { pandaId, game: 'cs2', name: `${RUN} Cup`, slug: `cs2-${RUN}-cup` } as never,
+      overrideAccess: true,
+    })
+    try {
+      const named = await createArticle({
+        category: 'esport',
+        title: `Vitality win the ${RUN} Cup final`,
+      })
+      expect(
+        ((named as { esportLeagues?: Array<{ id: unknown } | unknown> }).esportLeagues ?? []).map(
+          (l) => (l && typeof l === 'object' ? (l as { id: unknown }).id : l),
+        ),
+      ).toEqual([league.id])
+      // Another section: nothing ticked.
+      const news = await createArticle({ title: `${RUN} Cup in the news` })
+      expect((news as { esportLeagues?: unknown[] }).esportLeagues ?? []).toEqual([])
+      // An editor's own pick stays.
+      const other = await createArticle({ category: 'esport', title: `Roster news` })
+      const kept = await payload.update({
+        collection: 'articles',
+        id: other.id,
+        data: { esportLeagues: [league.id], title: 'Roster news, again' } as never,
+        depth: 0,
+      })
+      expect((kept as { esportLeagues?: unknown[] }).esportLeagues).toEqual([league.id])
+    } finally {
+      await payload.delete({ collection: 'esport-leagues', id: league.id, overrideAccess: true })
+    }
+  })
+})

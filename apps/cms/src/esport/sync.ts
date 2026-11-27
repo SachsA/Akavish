@@ -49,9 +49,14 @@ export function nextLink(header: string | null): string | null {
 }
 
 async function getAll(url: string, token: string): Promise<RawMatch[]> {
-  const out: RawMatch[] = []
+  return getList<RawMatch>(url, token, MAX_PAGES)
+}
+
+/** A PandaScore list, following its pages (at most `maxPages`). */
+export async function getList<T>(url: string, token: string, maxPages: number): Promise<T[]> {
+  const out: T[] = []
   let next: string | null = url
-  for (let page = 0; next && page < MAX_PAGES; page++) {
+  for (let page = 0; next && page < maxPages; page++) {
     const res: Response = await fetch(next, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'User-Agent': UA },
       signal: AbortSignal.timeout(20_000),
@@ -59,7 +64,7 @@ async function getAll(url: string, token: string): Promise<RawMatch[]> {
     if (!res.ok) throw new Error(`PandaScore ${res.status} on ${next.replace(/\?.*$/, '')}`)
     const body = (await res.json()) as unknown
     if (!Array.isArray(body)) throw new Error('PandaScore: not a list')
-    out.push(...(body as RawMatch[]))
+    out.push(...(body as T[]))
     next = nextLink(res.headers.get('link'))
   }
   return out
