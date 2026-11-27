@@ -1,4 +1,5 @@
-// /esport/competitions (all games, or one: /esport/competitions/cs2) and one
+// /esport/competitions (all games, or one: /esport/competitions/cs2; the
+// Tournaments tab merged into it on 2026-11-27, its smaller ones folded) and one
 // competition (/esport/competitions/<slug>, e.g. cs2-pgl-major): its editions
 // on now and coming, its past editions with their winner, its news. Data: the
 // CMS's hourly PandaScore sync (esport-leagues / esport-series), laid out by
@@ -31,10 +32,12 @@ import {
   fetchArticles,
   fetchEsportCompetitions,
   fetchEsportEditionsAround,
+  fetchEsportStages,
   fetchStagePages,
 } from '@/lib/payload'
 import { breadcrumbList } from '@/lib/structured-data'
-import { GameBadge, Logo, TierBadge } from '../tournaments/views'
+import { groupEvents } from '@/lib/esport-tournaments'
+import { BIG, EventCard, GameBadge, Logo, TierBadge } from '../tournaments/views'
 
 function Champion({ team, game }: { team: CompetitionTeam; game: EsportGame }) {
   return (
@@ -161,11 +164,15 @@ export async function competitionsIndexMetadata(rawLocale: string, game: EsportG
 export async function CompetitionsIndex({ rawLocale, game }: { rawLocale: string; game: EsportGame | null }) {
   const locale = setRequestLocale(rawLocale)
   const t = getMessages()
-  const [competitions, editions] = await Promise.all([
+  const [competitions, editions, stages] = await Promise.all([
     fetchEsportCompetitions().catch(() => null),
     fetchEsportEditionsAround().catch(() => null),
+    fetchEsportStages().catch(() => null),
   ])
   const mine = <T extends { game: EsportGame }>(xs: T[] | null) => (xs ?? []).filter((x) => !game || x.game === game)
+  // The smaller tournaments of the week (tier C, D): not competitions here,
+  // still a bracket each (what the Tournaments tab showed until 2026-11-27).
+  const smaller = groupEvents(mine(stages)).filter((g) => !BIG.includes(g.tier))
   const { running, upcoming, recent } = groupEditions(mine(editions))
   const { active, archive } = sortCompetitions(mine(competitions))
   const shown = [...running, ...upcoming, ...recent]
@@ -214,6 +221,18 @@ export async function CompetitionsIndex({ rawLocale, game }: { rawLocale: string
                   {s.id === 'upcoming' && <p className="mt-3 text-xs text-zinc-400">{t.esport.compSoon}</p>}
                 </section>
               )
+          )}
+          {smaller.length > 0 && (
+            <details className="mb-10">
+              <summary className="cursor-pointer text-sm font-semibold text-zinc-300 hover:text-white">
+                {t.esport.otherEvents} ({smaller.length})
+              </summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {smaller.map((g) => (
+                  <EventCard key={g.key} g={g} />
+                ))}
+              </div>
+            </details>
           )}
           <section aria-labelledby="c-all">
             <SectionTitle id="c-all">{t.esport.compAll}</SectionTitle>

@@ -1103,6 +1103,13 @@ export async function fetchEsportCompetition(slug: string): Promise<{ competitio
   return { competition, editions }
 }
 
+/** The edition a stage belongs to (PandaScore serie id), with its competition: the stage page's way up. */
+export async function fetchEditionOfSerie(serieId: number): Promise<Edition | null> {
+  const qs = editionQuery(new URLSearchParams({ 'where[pandaId][equals]': String(serieId), limit: '1' }))
+  const doc = (await cmsDocs('esport-series', qs, [TAGS.esport]))[0]
+  return doc ? editionOf(doc) : null
+}
+
 /** The competitions' slugs and last edition dates (the sitemap). */
 export async function fetchEsportCompetitionSlugs(): Promise<Array<{ slug: string; lastAt: string | null }>> {
   const qs = new URLSearchParams({ limit: '2000', depth: '0', 'select[slug]': 'true', 'select[lastAt]': 'true' })

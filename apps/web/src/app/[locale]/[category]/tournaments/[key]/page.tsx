@@ -1,33 +1,35 @@
-// /esport/tournaments/cs2 (the list for one game) or
-// /esport/tournaments/<PandaScore slug> (one stage: its bracket). views.tsx.
+// /esport/tournaments/<PandaScore slug>: one stage, its bracket (views.tsx),
+// linked up to its competition. The tournaments list moved into
+// /esport/competitions on 2026-11-27 (/esport/tournaments and
+// /esport/tournaments/<game> redirect there: next.config.ts).
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { LOCALES } from '@/lib/i18n/config'
-import { ESPORT_GAMES, isEsportGame } from '@/lib/esport'
-import { fetchEsportStage } from '@/lib/payload'
-import { TournamentView, TournamentsIndex, tournamentMetadata, tournamentsIndexMetadata } from '../views'
+import { fetchEditionOfSerie, fetchEsportStage } from '@/lib/payload'
+import { TournamentView, tournamentMetadata } from '../views'
 
 export const revalidate = 300
 
-// The five game lists are built ahead; a stage is rendered on its first visit, then cached.
+// None built ahead: a stage is rendered on its first visit, then cached (ISR).
 export function generateStaticParams() {
-  return LOCALES.flatMap((locale) => ESPORT_GAMES.map((key) => ({ locale, category: 'esport', key })))
+  return [] as Array<{ locale: string; category: string; key: string }>
 }
 
 type Params = { params: Promise<{ locale: string; category: string; key: string }> }
 
+const valid = (key: string) => /^[a-z0-9-]{1,160}$/.test(key)
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { locale, category, key } = await params
-  if (category !== 'esport') return {}
-  return isEsportGame(key) ? tournamentsIndexMetadata(locale, key) : tournamentMetadata(locale, key)
+  if (category !== 'esport' || !valid(key)) return {}
+  return tournamentMetadata(locale, key)
 }
 
 export default async function Page({ params }: Params) {
   const { locale, category, key } = await params
-  if (category !== 'esport') notFound()
-  if (isEsportGame(key)) return <TournamentsIndex rawLocale={locale} game={key} />
-  if (!/^[a-z0-9-]{1,160}$/.test(key)) notFound()
+  if (category !== 'esport' || !valid(key)) notFound()
   const found = await fetchEsportStage(key).catch(() => null)
   if (!found) notFound()
-  return <TournamentView rawLocale={locale} found={found} />
+  const edition =
+    found.stage.serieId !== null ? await fetchEditionOfSerie(found.stage.serieId).catch(() => null) : null
+  return <TournamentView rawLocale={locale} found={found} edition={edition} />
 }

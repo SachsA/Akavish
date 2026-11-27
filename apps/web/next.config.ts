@@ -45,6 +45,20 @@ const nextConfig: NextConfig = {
       // The "Roster Moves" tag was merged into Transfers (Mercato) on 2026-11-24.
       { source: '/tag/roster-moves', destination: '/tag/transfers', permanent: true },
       { source: '/fr/tag/roster-moves', destination: '/fr/tag/transfers', permanent: true },
+      // The Tournaments tab became part of Competitions on 2026-11-27; the
+      // stage pages (/esport/tournaments/<slug>, brackets) stay where they were.
+      { source: '/esport/tournaments', destination: '/esport/competitions', permanent: true },
+      { source: '/fr/esport/tournaments', destination: '/fr/esport/competitions', permanent: true },
+      {
+        source: '/esport/tournaments/:game(cs2|valorant|lol|r6|rl)',
+        destination: '/esport/competitions/:game',
+        permanent: true,
+      },
+      {
+        source: '/fr/esport/tournaments/:game(cs2|valorant|lol|r6|rl)',
+        destination: '/fr/esport/competitions/:game',
+        permanent: true,
+      },
     ]
   },
   transpilePackages: ['@akavish/ui', '@akavish/types', '@akavish/api-client'],

@@ -260,10 +260,12 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   Push notifications follow the same choices: the site copies them to the
   CMS (`notify.spoilerPrefs` via `/api/notify-settings`), `hidesResult` in
   `apps/cms/src/lib/esport-follows.ts` decides.
-- **Tournament pages** (`/esport/tournaments`, `[key]` = a game or a
-  PandaScore stage slug): data from `esport-tournaments.structure` (CMS sync,
+- **Tournament stage pages** (`/esport/tournaments/<PandaScore stage slug>`,
+  a bracket each): data from `esport-tournaments.structure` (CMS sync,
   `refreshStructures`), layout in `lib/esport-tournaments.ts` (pure, tested on
-  a real bracket in `lib/fixtures/`).
+  a real bracket in `lib/fixtures/`), a link up to their competition. No
+  Tournaments tab or list since 2026-11-27: it merged into Competitions
+  (`/esport/tournaments[/<game>]` 308 there, `next.config.ts`).
 - **Competitions** (2026-11-27, `/esport/competitions`, `[key]` = a game or
   a competition slug like `cs2-pgl-major`): CMS `esport-leagues` /
   `esport-series` / `esport-teams`, filled hourly by

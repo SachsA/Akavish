@@ -402,27 +402,24 @@ test('the push service worker is served from the root, as JavaScript', async ({ 
   expect(await res.text()).toContain("addEventListener('push'")
 })
 
-test('esport: the Tournaments tab lists the tournaments, a wrong one is a 404', async ({ page }) => {
+test('esport: the Competitions tab (Tournaments merged in), a wrong one is a 404', async ({ page }) => {
   await page.goto('/esport')
-  await page.getByRole('navigation', { name: 'Esport sections' }).getByRole('link', { name: 'Tournaments' }).click()
-  await expect(page).toHaveURL(/\/esport\/tournaments$/)
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esport tournaments')
-  await expect(page.getByText('Match data: PandaScore.').or(page.getByText('No tournament to show right now.'))).toBeVisible()
-  await page.goto('/fr/esport/tournaments/cs2')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tournois esport : CS2')
-  expect((await page.goto('/esport/tournaments/not-a-real-tournament'))?.status()).toBe(404)
-  expect((await page.goto('/news/tournaments'))?.status()).toBe(404)
-})
-
-test('esport: the Competitions tab lists the competitions, a wrong one is a 404', async ({ page }) => {
-  await page.goto('/esport/tournaments')
-  await page.getByRole('navigation', { name: 'Esport sections' }).getByRole('link', { name: 'Competitions' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Esport sections' })
+  await expect(tabs.getByRole('link', { name: 'Tournaments' })).toHaveCount(0)
+  await tabs.getByRole('link', { name: 'Competitions' }).click()
   await expect(page).toHaveURL(/\/esport\/competitions$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Esport competitions')
   await page.goto('/fr/esport/competitions/cs2')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Compétitions esport : CS2')
   expect((await page.goto('/esport/competitions/not-a-real-competition'))?.status()).toBe(404)
   expect((await page.goto('/news/competitions'))?.status()).toBe(404)
+  // The old Tournaments tab: its lists redirect, a stage page stays (404 if unknown).
+  await page.goto('/fr/esport/tournaments/cs2')
+  await expect(page).toHaveURL(/\/fr\/esport\/competitions\/cs2$/)
+  await page.goto('/esport/tournaments')
+  await expect(page).toHaveURL(/\/esport\/competitions$/)
+  expect((await page.goto('/esport/tournaments/not-a-real-tournament'))?.status()).toBe(404)
+  expect((await page.goto('/news/tournaments'))?.status()).toBe(404)
 })
 
 test('esport: news and Mercato by game, the game kept across tabs', async ({ page }) => {

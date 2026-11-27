@@ -1,13 +1,13 @@
-// /esport/tournaments (all games, or one: /esport/tournaments/cs2) and one
-// tournament stage (/esport/tournaments/<PandaScore slug>): bracket or rounds,
-// standings, the event's other stages. Data: the CMS's PandaScore sync
-// (esport-tournaments, `structure`), lib/esport-tournaments.ts lays it out.
+// One tournament stage (/esport/tournaments/<PandaScore slug>): bracket or
+// rounds, standings, the event's other stages, a link up to its competition.
+// Data: the CMS's PandaScore sync (esport-tournaments, `structure`),
+// lib/esport-tournaments.ts lays it out. The list of tournaments is part of
+// /esport/competitions since 2026-11-27 (its EventCard shows the smaller
+// ones; /esport/tournaments redirects there, next.config.ts).
 import type { Metadata } from 'next'
 import Link from '@/components/LocaleLink'
 import { EsportNav } from '@/components/EsportNav'
-import { EsportGameFilter } from '@/components/EsportGameFilter'
 import { JsonLd } from '@/components/JsonLd'
-import { ContentUnavailable } from '@/components/StatusMessage'
 import { DateRange } from '@/components/esport/DateRange'
 import { SpoilerZone } from '@/components/esport/SpoilerZone'
 import { EsportFollowButton } from '@/components/esport/EsportFollowButton'
@@ -16,10 +16,11 @@ import { MatchHighlighter } from '@/components/esport/MatchHighlighter'
 import { TournamentBracket } from '@/components/esport/TournamentBracket'
 import { TournamentStandings } from '@/components/esport/TournamentStandings'
 import { ESPORT_GAME_BADGE, ESPORT_GAME_LABEL, type EsportGame, type Tier } from '@/lib/esport'
-import { groupEvents, type EsportStage, type EventGroup } from '@/lib/esport-tournaments'
+import type { EsportStage, EventGroup } from '@/lib/esport-tournaments'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
-import { fetchEsportStage, fetchEsportStages } from '@/lib/payload'
+import { fetchEsportStage } from '@/lib/payload'
+import type { Edition } from '@/lib/esport-competitions'
 import { breadcrumbList } from '@/lib/structured-data'
 
 const TIER_CLASS: Record<Tier, string> = {
@@ -31,7 +32,7 @@ const TIER_CLASS: Record<Tier, string> = {
   unranked: 'border-zinc-800 text-zinc-500',
 }
 
-const BIG: Tier[] = ['s', 'a', 'b']
+export const BIG: Tier[] = ['s', 'a', 'b']
 
 export function TierBadge({ tier }: { tier: Tier }) {
   const t = getMessages()
@@ -83,7 +84,7 @@ function StageChips({ stages, active }: { stages: EsportStage[]; active?: number
   )
 }
 
-function EventCard({ g }: { g: EventGroup }) {
+export function EventCard({ g }: { g: EventGroup }) {
   const main = mainStage(g)
   return (
     <article className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
@@ -111,82 +112,6 @@ function EventCard({ g }: { g: EventGroup }) {
   )
 }
 
-export async function tournamentsIndexMetadata(rawLocale: string, game: EsportGame | null): Promise<Metadata> {
-  const locale = setRequestLocale(rawLocale)
-  const t = getMessages()
-  const title = game ? t.esport.withGame(t.esport.tournamentsTitle, ESPORT_GAME_LABEL[game]) : t.esport.tournamentsTitle
-  const path = game ? `/esport/tournaments/${game}` : '/esport/tournaments'
-  return { title, description: t.esport.tournamentsBlurb, alternates: alternates(locale, path) }
-}
-
-export async function TournamentsIndex({ rawLocale, game }: { rawLocale: string; game: EsportGame | null }) {
-  const locale = setRequestLocale(rawLocale)
-  const t = getMessages()
-  let stages: EsportStage[] | null = null
-  try {
-    stages = (await fetchEsportStages()).filter((s) => !game || s.game === game)
-  } catch {
-    stages = null
-  }
-  const groups = stages ? groupEvents(stages) : []
-  const big = groups.filter((g) => BIG.includes(g.tier))
-  const other = groups.filter((g) => !BIG.includes(g.tier))
-  const title = game ? t.esport.withGame(t.esport.tournamentsTitle, ESPORT_GAME_LABEL[game]) : t.esport.tournamentsTitle
-  return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
-      <JsonLd
-        data={breadcrumbList(
-          [
-            { name: t.categories.esport.label, path: '/esport' },
-            { name: t.esport.tournamentsTitle, path: '/esport/tournaments' },
-            ...(game ? [{ name: ESPORT_GAME_LABEL[game], path: `/esport/tournaments/${game}` }] : []),
-          ],
-          locale,
-        )}
-      />
-      <header className="mb-10">
-        <h1 className="text-4xl font-black tracking-tight text-white">{title}</h1>
-        <p className="text-zinc-400 mt-2">{t.esport.tournamentsBlurb}</p>
-      </header>
-      <EsportNav active="tournaments" game={game} />
-      <EsportGameFilter base="/esport/tournaments" active={game} />
-      {stages === null ? (
-        <ContentUnavailable />
-      ) : groups.length === 0 ? (
-        <p className="text-zinc-400">{t.esport.noTournaments}</p>
-      ) : (
-        <>
-          {big.length > 0 && (
-            <section aria-labelledby="big" className="mb-10">
-              <h2 id="big" className="mb-4 pb-2 border-b border-zinc-800 text-sm font-semibold uppercase tracking-wider text-zinc-400">
-                {t.esport.bigEvents}
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                {big.map((g) => (
-                  <EventCard key={g.key} g={g} />
-                ))}
-              </div>
-            </section>
-          )}
-          {other.length > 0 && (
-            <section aria-labelledby="other">
-              <h2 id="other" className="mb-4 pb-2 border-b border-zinc-800 text-sm font-semibold uppercase tracking-wider text-zinc-400">
-                {t.esport.otherEvents} ({other.length})
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                {other.map((g) => (
-                  <EventCard key={g.key} g={g} />
-                ))}
-              </div>
-            </section>
-          )}
-          <p className="mt-10 text-xs text-zinc-400">{t.esport.source}</p>
-        </>
-      )}
-    </div>
-  )
-}
-
 const stageTitle = (s: EsportStage) => `${s.event}: ${s.name}`
 
 export async function tournamentMetadata(rawLocale: string, slug: string): Promise<Metadata> {
@@ -204,9 +129,12 @@ export async function tournamentMetadata(rawLocale: string, slug: string): Promi
 export async function TournamentView({
   rawLocale,
   found,
+  edition = null,
 }: {
   rawLocale: string
   found: { stage: EsportStage; siblings: EsportStage[] }
+  /** Its edition with its competition (PGL Major › Singapore 2026), when the sync has it. */
+  edition?: Edition | null
 }) {
   const locale = setRequestLocale(rawLocale)
   const t = getMessages()
@@ -215,13 +143,15 @@ export async function TournamentView({
   const standings = stage.structure?.standings ?? []
   const linked = matches.some((m) => m.prev.length > 0)
   const query = new URLSearchParams({ game: stage.game, event: stage.event }).toString()
+  const comp = edition?.competition ?? null
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <JsonLd
         data={breadcrumbList(
           [
             { name: t.categories.esport.label, path: '/esport' },
-            { name: t.esport.tournamentsTitle, path: '/esport/tournaments' },
+            { name: t.esport.competitionsTitle, path: '/esport/competitions' },
+            ...(comp ? [{ name: comp.name, path: `/esport/competitions/${comp.slug}` }] : []),
             { name: stageTitle(stage), path: `/esport/tournaments/${stage.slug}` },
           ],
           locale,
@@ -230,6 +160,15 @@ export async function TournamentView({
       <header className="mb-10 flex items-start gap-4">
         <Logo src={stage.logo} size={56} />
         <div className="min-w-0">
+          {comp && (
+            // Up to its competition: the palmarès, the other editions.
+            <Link
+              href={`/esport/competitions/${comp.slug}`}
+              className="mb-1 inline-block text-sm font-semibold text-emerald-400 hover:text-emerald-300"
+            >
+              ← {t.esport.backTo(comp.name)}
+            </Link>
+          )}
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">{stage.event}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-400">
             <GameBadge game={stage.game} />
@@ -256,7 +195,7 @@ export async function TournamentView({
           )}
         </div>
       </header>
-      <EsportNav active="tournaments" />
+      <EsportNav active="competitions" game={stage.game} />
       {siblings.length > 1 && (
         <nav aria-label={t.esport.stages} className="mb-6">
           <StageChips stages={siblings} active={stage.id} />
