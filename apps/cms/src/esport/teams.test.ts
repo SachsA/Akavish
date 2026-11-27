@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  detectPlayers,
   detectTeams,
   lineupsOf,
   playerOf,
+  playerSlug,
   teamNames,
   teamSlug,
   teamStanding,
@@ -139,5 +141,28 @@ describe('detectTeams', () => {
   })
   it('drops a name found inside a longer one found', () => {
     expect(detectTeams('Eternal Fire reach Stage 2', teams, 'cs2')).toEqual([3])
+  })
+})
+
+describe('players', () => {
+  it('slugs a nickname', () => {
+    expect(playerSlug('ZywOo')).toBe('zywoo')
+    expect(playerSlug('s1mple')).toBe('s1mple')
+    expect(playerSlug('???')).toBe('player')
+  })
+  const players = [
+    { id: 1, game: 'cs2' as const, names: ['NiKo'], teams: [10] },
+    { id: 2, game: 'cs2' as const, names: ['frozen'], teams: [20] },
+    { id: 3, game: 'lol' as const, names: ['Zeus'], teams: [30] },
+    { id: 4, game: 'cs2' as const, names: ['karrigan'], teams: [20] },
+  ]
+  it('finds nicknames with a capital or a digit on their own', () => {
+    expect(detectPlayers('NiKo to become IGL', players, 'cs2', [])).toEqual([1])
+    expect(detectPlayers('T1 re-signs Zeus', players, 'cs2', [])).toEqual([])
+    expect(detectPlayers('T1 re-signs Zeus', players, 'lol', [])).toEqual([3])
+  })
+  it('a plain-word nickname only with one of its teams named', () => {
+    expect(detectPlayers('a frozen lake, karrigan benched', players, 'cs2', [])).toEqual([])
+    expect(detectPlayers('FaZe bench karrigan; frozen stays', players, 'cs2', [20])).toEqual([2, 4])
   })
 })

@@ -311,6 +311,16 @@ export const fr: Messages = {
     compCurrent: 'Cette édition',
     compNext: 'Prochaine édition',
     compPage: 'La compétition',
+    playerBlurb: (name: string, team: string | null) =>
+      `${name}${team ? ` (${team})` : ''} : sa carrière équipe par équipe, ses titres, toutes ses compétitions, ses actus.`,
+    teamNow: 'Équipe',
+    noTeam: 'Sans équipe pour le moment',
+    lastTeam: 'Dernière équipe',
+    teamNextMatches: (team: string) => `${team} : prochains matchs`,
+    teamLastResults: (team: string) => `${team} : derniers résultats`,
+    career: 'Carrière',
+    withTeam: (team: string) => `avec ${team}`,
+    playerNoNews: 'Aucun article sur ce joueur pour le moment.',
     teamBlurb: (name: string, game: string) =>
       `${name} sur ${game} : effectif, prochains matchs, résultats, titres, toutes ses compétitions et l'historique de son effectif.`,
     titlesCount: (n: number) => `${n} ${plural(n, 'titre', 'titres')}`,

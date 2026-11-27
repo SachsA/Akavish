@@ -423,6 +423,8 @@ test('esport: the Competitions tab (Tournaments merged in), a wrong one is a 404
   // Team pages: under /esport only.
   expect((await page.goto('/esport/teams/not-a-real-team'))?.status()).toBe(404)
   expect((await page.goto('/news/teams/cs2-vitality'))?.status()).toBe(404)
+  expect((await page.goto('/esport/players/not-a-real-player'))?.status()).toBe(404)
+  expect((await page.goto('/news/players/zywoo'))?.status()).toBe(404)
 })
 
 test('esport: news and Mercato by game, the game kept across tabs', async ({ page }) => {

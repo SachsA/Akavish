@@ -283,8 +283,15 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   like its competitions (team names as written, capitals too). Esport
   article texts link their teams and competitions where first named
   (`lib/autolink.ts`, `LexicalContent`'s `links`); team names on Results,
-  Calendar and palmarès link to their page (`fetchTeamPages`). Player pages
-  next (PROGRESS backlog).
+  Calendar and palmarès link to their page (`fetchTeamPages`).
+- **Player pages** (2026-11-27, `/esport/players/<slug>`, `zywoo`): CMS
+  `esport-players` (everyone in a lineup or a current roster; a lineup's
+  `members`), laid out by `lib/esport-players.ts` (career team by team,
+  titles, `teamNow`). No photo. An article's `esportPlayers` is ticked
+  automatically too (a plain lower-case nickname only with one of its teams
+  named: `detectPlayers`); names on team pages link to players
+  (`fetchPlayerPages`). The hourly `esportCompetitions` job skips itself
+  while another run of it is on (payload.config.ts).
 - **Calendars** (2026-11-27): the events calendar `/conferences/calendar`
   (CMS `events`, `lib/events.ts`, `components/EventsCalendar.tsx`, times in
   the reader's zone) and the release calendar `/games/releases`

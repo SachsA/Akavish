@@ -45,6 +45,7 @@ import { EsportLeagues } from './collections/esport/EsportLeagues'
 import { EsportSeries } from './collections/esport/EsportSeries'
 import { EsportTeams } from './collections/esport/EsportTeams'
 import { EsportLineups } from './collections/esport/EsportLineups'
+import { EsportPlayers } from './collections/esport/EsportPlayers'
 import { runCompetitionSync } from './esport/competitions-sync'
 import { esportRawHandler, runEsportSync } from './esport/sync'
 import { discordInteractionsHandler, runDraftJob, scoutReportHandler } from './scout/interactions'
@@ -146,6 +147,8 @@ export default buildConfig({
     EsportTeams,
     // Who played each edition, with which players (the team pages).
     EsportLineups,
+    // Everyone in a lineup or a current roster (the player pages).
+    EsportPlayers,
   ],
   globals: [ScoutSettings, CommunitySettings],
   // Newsletter double opt-in, called by the web (src/lib/newsletter.ts).
@@ -335,7 +338,23 @@ export default buildConfig({
         slug: 'esportCompetitions',
         schedule: [{ cron: '0 23 * * * *', queue: 'esport' }],
         retries: 0,
-        handler: async ({ req }) => {
+        handler: async ({ req, job }) => {
+          // Never two at once (2026-11-27: two runs of the history at the same
+          // time gave the same teams two slugs, the second one winning).
+          const running = await req.payload.count({
+            collection: 'payload-jobs',
+            where: {
+              and: [
+                { taskSlug: { equals: 'esportCompetitions' } },
+                { processing: { equals: true } },
+                { id: { not_equals: job.id } },
+                // A run cut by a deploy stays "processing" forever: not after 2 hours.
+                { updatedAt: { greater_than: new Date(Date.now() - 2 * 3600_000).toISOString() } },
+              ],
+            },
+            overrideAccess: true,
+          })
+          if (running.totalDocs) return { output: { skipped: 'another run is on' } }
           const results = await runCompetitionSync(req.payload)
           return { output: { results } }
         },

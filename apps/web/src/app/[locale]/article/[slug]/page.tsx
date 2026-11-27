@@ -83,9 +83,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 }
 
-/** Its teams and competitions, linked where the text first names them (lib/autolink.ts). */
+/** Its players, teams and competitions, linked where the text first names them (lib/autolink.ts). */
 function esportLinks(article: Article): AutoLink[] {
   return [
+    ...(article.players ?? []).map((p) => ({
+      href: `/esport/players/${p.slug}`,
+      names: [p.name, ...(p.aliases ?? [])],
+      caseSensitive: true,
+    })),
     ...(article.teams ?? []).map((t) => ({
       href: `/esport/teams/${t.slug}`,
       names: teamNames(t.name, t.acronym ?? null, t.aliases ?? []),
@@ -303,9 +308,18 @@ export default async function ArticlePage({ params }: Params) {
           </p>
         )}
 
-        {(article.tags.length > 0 || (article.competitions?.length ?? 0) > 0 || (article.teams?.length ?? 0) > 0) && (
+        {(article.tags.length > 0 || (article.competitions?.length ?? 0) > 0 || (article.teams?.length ?? 0) > 0 || (article.players?.length ?? 0) > 0) && (
           <div className="flex flex-wrap gap-2 mt-10 pt-6 border-t border-zinc-800">
             {/* Its esport competitions and teams (ticked by the CMS): their pages. */}
+            {(article.players ?? []).map((c) => (
+              <Link
+                key={`p-${c.slug}`}
+                href={`/esport/players/${c.slug}`}
+                className="px-3 py-1 rounded-full border border-emerald-700/70 text-xs font-semibold text-zinc-100 hover:text-emerald-400 hover:border-emerald-500 transition-colors"
+              >
+                {c.name}
+              </Link>
+            ))}
             {(article.teams ?? []).map((c) => (
               <Link
                 key={`t-${c.slug}`}

@@ -685,6 +685,20 @@ months, the article's game only, by name as written (team names are often
 plain words: "Spirit", "Liquid"), without "Team" / "Esports", in capitals
 ("HEROIC") and by acronym when it reads as a name ("T1", "G2"); `detectTeams`.
 
+**Players** (2026-11-27, step 3): **Esport players** (`esport-players`): everyone
+in a lineup (each lineup's `members`) or in a team's current roster (their
+`currentTeam`, cleared when the next roster read no longer lists them), with
+their team and date of their latest lineup (`lastTeam`, `lastAt`); nickname,
+real name, country, role, our `slug` (the nickname, its PandaScore id
+appended when taken). No photo. A game without players yet reads its history
+once more (the members). An esport article's **Esport players**
+(`esportPlayers`) are ticked from its title, tags and excerpt: nicknames as
+written, a plain lower-case one ("frozen") only when one of the player's
+teams is named too (`detectPlayers`). The job skips itself while another run
+of it is on: on 2026-11-27 two history runs at once gave the 345 teams
+already stored a slug with their id appended; a history run puts the plain
+one back (`repairTeamSlugs`).
+
 **Morning recap** (`src/esport/recap.ts`, called by the scout's run): from
 8 am Paris, once a day (`lastEsportRecap`), yesterday's finished matches in
 *Scout settings → Esport recap: tournament tiers* (S and A by default, S, A

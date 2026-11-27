@@ -313,6 +313,16 @@ export const en = {
     compCurrent: 'This edition',
     compNext: 'Next edition',
     compPage: 'The competition',
+    playerBlurb: (name: string, team: string | null) =>
+      `${name}${team ? ` (${team})` : ''}: career team by team, titles, every competition played, news.`,
+    teamNow: 'Team',
+    noTeam: 'No team right now',
+    lastTeam: 'Last team',
+    teamNextMatches: (team: string) => `${team}: next matches`,
+    teamLastResults: (team: string) => `${team}: last results`,
+    career: 'Career',
+    withTeam: (team: string) => `with ${team}`,
+    playerNoNews: 'No article about this player yet.',
     teamBlurb: (name: string, game: string) =>
       `${name} in ${game}: roster, next matches, results, titles, every competition played and roster changes.`,
     titlesCount: (n: number) => `${n} ${plural(n, 'title', 'titles')}`,

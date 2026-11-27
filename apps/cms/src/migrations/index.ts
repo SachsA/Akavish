@@ -35,6 +35,7 @@ import * as migration_20261127_092722_events from './20261127_092722_events'
 import * as migration_20261127_105652_notify_spoiler_prefs from './20261127_105652_notify_spoiler_prefs'
 import * as migration_20261127_141516_esport_competitions from './20261127_141516_esport_competitions'
 import * as migration_20261127_155158_esport_teams from './20261127_155158_esport_teams'
+import * as migration_20261127_162421_esport_players from './20261127_162421_esport_players'
 
 export const migrations = [
   {
@@ -221,5 +222,10 @@ export const migrations = [
     up: migration_20261127_155158_esport_teams.up,
     down: migration_20261127_155158_esport_teams.down,
     name: '20261127_155158_esport_teams',
+  },
+  {
+    up: migration_20261127_162421_esport_players.up,
+    down: migration_20261127_162421_esport_players.down,
+    name: '20261127_162421_esport_players',
   },
 ]

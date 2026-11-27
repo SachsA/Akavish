@@ -18,7 +18,7 @@ import { countryName, editionStatus, editionTitle, type Edition } from '@/lib/es
 import { rosterHistory, rosterMoves, type Lineup, type Team, type TeamPlayer } from '@/lib/esport-teams'
 import { alternates } from '@/lib/i18n/metadata'
 import { getMessages, setRequestLocale } from '@/lib/i18n/server'
-import { fetchArticles, fetchEsportTeam, fetchTeamPages } from '@/lib/payload'
+import { fetchArticles, fetchEsportTeam, fetchPlayerPages, fetchTeamPages } from '@/lib/payload'
 import { breadcrumbList } from '@/lib/structured-data'
 import { GameBadge, Logo, TierBadge } from '../../tournaments/views'
 
@@ -49,8 +49,24 @@ function SectionTitle({ id, children }: { id: string; children: React.ReactNode 
   )
 }
 
-function PlayerNames({ players }: { players: TeamPlayer[] }) {
-  return <>{players.map((p) => p.name).join(', ')}</>
+/** Players, each linked to their page when they have one. */
+function PlayerNames({ players, pages }: { players: TeamPlayer[]; pages: Record<number, string> }) {
+  return (
+    <>
+      {players.map((p, i) => (
+        <span key={p.pandaId}>
+          {i > 0 && ', '}
+          {pages[p.pandaId] ? (
+            <Link href={`/esport/players/${pages[p.pandaId]}`} className="hover:text-emerald-400">
+              {p.name}
+            </Link>
+          ) : (
+            p.name
+          )}
+        </span>
+      ))}
+    </>
+  )
 }
 
 function EditionLink({ e }: { e: Edition }) {
@@ -85,7 +101,12 @@ export async function TeamView({
   // Who plays now: PandaScore's current roster, else the latest lineup.
   const roster = team.players.length ? team.players : (history[0]?.players ?? [])
   const played = lineups.filter((l) => editionStatus(l.edition) !== 'upcoming')
-  const [teamPages, news] = await Promise.all([
+  const [playerPages, teamPages, news] = await Promise.all([
+    fetchPlayerPages([
+      ...roster,
+      ...history.slice(0, 13).flatMap((h) => h.players),
+      ...played.slice(0, 40).flatMap((l) => l.players),
+    ].map((x) => x.pandaId)).catch(() => ({}) as Record<number, string>),
     fetchTeamPages([...next, ...last].flatMap((m) => [m.t1.id, m.t2.id]).filter((x): x is number => x != null)).catch(
       () => ({}) as Record<number, string>
     ),
@@ -150,7 +171,16 @@ export async function TeamView({
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {roster.map((p) => (
               <li key={p.pandaId} className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-3">
-                <span className="block truncate font-bold text-white">{p.name}</span>
+                {playerPages[p.pandaId] ? (
+                  <Link
+                    href={`/esport/players/${playerPages[p.pandaId]}`}
+                    className="block truncate font-bold text-white hover:text-emerald-400"
+                  >
+                    {p.name}
+                  </Link>
+                ) : (
+                  <span className="block truncate font-bold text-white">{p.name}</span>
+                )}
                 {(p.firstName || p.lastName) && (
                   <span className="block truncate text-xs text-zinc-400">
                     {[p.firstName, p.lastName].filter(Boolean).join(' ')}
@@ -228,19 +258,19 @@ export async function TeamView({
                     {t.esport.editions(period.editions)}
                   </p>
                   <p className="mt-1 font-semibold text-white">
-                    <PlayerNames players={period.players} />
+                    <PlayerNames players={period.players} pages={playerPages} />
                   </p>
                   {moves && (moves.joined.length > 0 || moves.left.length > 0) && (
                     <p className="mt-1 text-xs text-zinc-400">
                       {moves.joined.length > 0 && (
                         <span className="text-emerald-400">
-                          + <PlayerNames players={moves.joined} />
+                          + <PlayerNames players={moves.joined} pages={playerPages} />
                         </span>
                       )}
                       {moves.joined.length > 0 && moves.left.length > 0 && ' · '}
                       {moves.left.length > 0 && (
                         <span className="text-red-400">
-                          − <PlayerNames players={moves.left} />
+                          − <PlayerNames players={moves.left} pages={playerPages} />
                         </span>
                       )}
                     </p>
@@ -265,7 +295,7 @@ export async function TeamView({
                 </span>
                 {l.players.length > 0 && (
                   <span className="w-full text-xs text-zinc-500 sm:w-auto">
-                    <PlayerNames players={l.players} />
+                    <PlayerNames players={l.players} pages={playerPages} />
                   </span>
                 )}
               </li>

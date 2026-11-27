@@ -47,6 +47,14 @@ export const EsportLineups: CollectionConfig = {
     },
     { name: 'beginAt', type: 'date', index: true },
     {
+      // The same players as rows: a player page finds its lineups (2026-11-27).
+      name: 'members',
+      type: 'relationship',
+      relationTo: 'esport-players',
+      hasMany: true,
+      admin: { readOnly: true },
+    },
+    {
       name: 'players',
       type: 'json',
       admin: { readOnly: true, description: 'Nickname, real name, country, role, PandaScore id.' },

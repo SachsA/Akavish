@@ -26,7 +26,9 @@ import {
 import {
   detectTeams,
   lineupsOf,
+  detectPlayers,
   playerOf,
+  playerSlug,
   teamNames,
   teamOf,
   teamSlug,
@@ -35,6 +37,7 @@ import {
   type RawRosterTeam,
   type RawTournamentWithRosters,
   type PlayerData,
+  type PlayerNames,
   type TeamData,
   type TeamNames,
 } from './teams'
@@ -47,7 +50,7 @@ type Row = { id: Id; pandaId: number } & Record<string, unknown>
 
 async function byPandaId(
   payload: Payload,
-  collection: 'esport-leagues' | 'esport-series' | 'esport-teams',
+  collection: 'esport-leagues' | 'esport-series' | 'esport-teams' | 'esport-players',
   ids: number[],
 ): Promise<Map<number, Row>> {
   const out = new Map<number, Row>()
@@ -225,6 +228,89 @@ export async function saveTeams(
   return out
 }
 
+// ─── Players (2026-11-27, step 3) ────────────────────────────────────────────
+
+interface PlayerEntry {
+  data: PlayerData
+  game: EsportGame
+  /** Its latest lineup here: when, and for which team (doc id). */
+  lastAt?: string | null
+  lastTeam?: Id | null
+  /** In this team's current roster (doc id), or out of it (null); undefined: unknown here. */
+  currentTeam?: Id | null
+}
+
+/** Player slugs already given, read once a run (a new player's slug must be free). */
+type SlugCache = { slugs?: Set<string> }
+
+async function freePlayerSlug(payload: Payload, cache: SlugCache, name: string, pandaId: number) {
+  if (!cache.slugs) {
+    const { docs } = await payload.find({
+      collection: 'esport-players',
+      limit: 200_000,
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+      select: { slug: true },
+    } as never)
+    cache.slugs = new Set((docs as Array<{ slug?: string | null }>).map((d) => d.slug ?? ''))
+  }
+  const base = playerSlug(name)
+  const slug = cache.slugs.has(base) ? `${base}-${pandaId}` : base
+  cache.slugs.add(slug)
+  return slug
+}
+
+/** Save these players (created, or changed); returns PandaScore id → doc id. */
+export async function savePlayers(
+  payload: Payload,
+  entries: Map<number, PlayerEntry>,
+  cache: SlugCache = {},
+): Promise<Map<number, Id>> {
+  const stored = await byPandaId(payload, 'esport-players', [...entries.keys()])
+  const out = new Map<number, Id>([...stored].map(([k, v]) => [k, v.id]))
+  for (const [pandaId, e] of entries) {
+    const found = stored.get(pandaId)
+    const fields: Record<string, unknown> = { ...e.data, game: e.game }
+    delete fields.pandaId
+    if (e.currentTeam !== undefined) fields.currentTeam = e.currentTeam
+    const newer =
+      !!e.lastAt && (!found?.lastAt || Date.parse(e.lastAt) > Date.parse(String(found.lastAt)))
+    if (newer) {
+      fields.lastAt = e.lastAt
+      if (e.lastTeam != null) fields.lastTeam = e.lastTeam
+    }
+    if (found) {
+      const data: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(fields)) {
+        if (v === undefined || (v === null && k !== 'currentTeam')) continue
+        if (k === 'lastAt' ? !sameInstant(found[k], v) : !same(found[k], v)) data[k] = v
+      }
+      if (Object.keys(data).length)
+        await payload.update({
+          collection: 'esport-players',
+          id: found.id,
+          data: data as never,
+          overrideAccess: true,
+          depth: 0,
+        })
+      continue
+    }
+    const doc = await payload.create({
+      collection: 'esport-players',
+      data: {
+        ...fields,
+        pandaId,
+        slug: await freePlayerSlug(payload, cache, e.data.name, pandaId),
+      } as never,
+      overrideAccess: true,
+      depth: 0,
+    })
+    out.set(pandaId, doc.id)
+  }
+  return out
+}
+
 export interface CompetitionResult {
   game: EsportGame
   tournaments: number
@@ -241,6 +327,7 @@ async function saveGame(
   game: EsportGame,
   raws: RawTournamentWithRosters[],
   now: Date,
+  slugs: SlugCache = {},
 ): Promise<{ result: CompetitionResult; leagues: Id[]; teams: Id[] }> {
   const { leagues, series } = editionsOf(raws, game, now)
   const leagueIds = await saveLeagues(payload, leagues)
@@ -328,6 +415,20 @@ async function saveGame(
   const tierOf = new Map(merged.map((s) => [s.pandaId, s.tier]))
   const storedL = await byKey(payload, [...rosters.lineups.keys()])
   const movedTeams = new Set<Id>()
+  // Their players, each with its latest lineup here.
+  const entries = new Map<number, PlayerEntry>()
+  for (const l of rosters.lineups.values())
+    for (const p of l.players) {
+      const old = entries.get(p.pandaId)
+      if (old && (old.lastAt ?? '') >= (l.beginAt ?? '')) continue
+      entries.set(p.pandaId, {
+        data: p,
+        game,
+        lastAt: l.beginAt,
+        lastTeam: teams.get(l.teamPandaId) ?? null,
+      })
+    }
+  const playerIds = await savePlayers(payload, entries, slugs)
   for (const l of rosters.lineups.values()) {
     const team = teams.get(l.teamPandaId)
     if (team == null) continue
@@ -339,6 +440,10 @@ async function saveGame(
       tier: tierOf.get(l.seriePandaId) ?? 'unranked',
       beginAt: l.beginAt,
       players: l.players,
+      members: l.players.flatMap((p) => {
+        const id = playerIds.get(p.pandaId)
+        return id == null ? [] : [id]
+      }),
     }
     const found = storedL.get(l.key)
     if (found) {
@@ -517,6 +622,7 @@ type ArticleLike = {
   excerpt?: string | null
   game?: unknown
   tags?: unknown
+  esportTeams?: unknown
 }
 
 const idOf = (v: unknown): Id | null =>
@@ -594,20 +700,70 @@ async function articleContext(
 export async function articleEsport(
   payload: Payload,
   a: ArticleLike,
-  names: { leagues: LeagueNames[]; teams: TeamNames[] },
+  names: { leagues: LeagueNames[]; teams: TeamNames[]; players?: PlayerNames[] },
   req?: PayloadRequest,
-): Promise<{ leagues: Id[]; teams: Id[] }> {
-  if (a.category !== 'esport') return { leagues: [], teams: [] }
+): Promise<{ leagues: Id[]; teams: Id[]; players: Id[] }> {
+  if (a.category !== 'esport') return { leagues: [], teams: [], players: [] }
   const { game, tags } = await articleContext(payload, a, req)
   const head = [a.title ?? '', ...tags].join('\n')
   const pick = <T>(find: (text: string) => T[]) => {
     const first = find(head)
     return first.length ? first : find(a.excerpt ?? '')
   }
+  const teams = pick((t) => detectTeams(t, names.teams, game)) as Id[]
+  // Players: anywhere in the title, tags and excerpt ("signs Siwoo, Sharvel and
+  // Cloud"); a plain-word nickname only with one of its teams named.
+  const known = (Array.isArray(a.esportTeams) ? a.esportTeams : [])
+    .map(idOf)
+    .filter((x): x is Id => x != null)
   return {
     leagues: pick((t) => detectLeagues(t, names.leagues, game)) as Id[],
-    teams: pick((t) => detectTeams(t, names.teams, game)) as Id[],
+    teams,
+    players: names.players?.length
+      ? (detectPlayers(`${head}\n${a.excerpt ?? ''}`, names.players, game, [
+          ...teams,
+          ...known,
+        ]) as Id[])
+      : [],
   }
+}
+
+/** The players articles can name: in a current roster, or in a lineup of the last year. */
+export async function playerNamesList(
+  payload: Payload,
+  req?: PayloadRequest,
+  now = new Date(),
+): Promise<PlayerNames[]> {
+  const { docs } = await payload.find({
+    collection: 'esport-players',
+    where: {
+      or: [
+        { currentTeam: { exists: true } },
+        { lastAt: { greater_than: new Date(now.getTime() - 365 * 86_400_000).toISOString() } },
+      ],
+    },
+    limit: 20_000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    select: { name: true, aliases: true, game: true, currentTeam: true, lastTeam: true },
+    req,
+  } as never)
+  return (
+    docs as unknown as Array<{
+      id: Id
+      name: string
+      aliases?: string[] | null
+      game?: EsportGame | null
+      currentTeam?: Id | null
+      lastTeam?: Id | null
+    }>
+  ).map((d) => ({
+    id: d.id,
+    game: d.game ?? null,
+    names: [d.name, ...(d.aliases ?? [])],
+    teams: [d.currentTeam, d.lastTeam].filter((x): x is Id => x != null),
+  }))
 }
 
 /** The competitions an esport article names (title and tags, else excerpt). */
@@ -620,9 +776,13 @@ export async function articleLeagues(
   return (await articleEsport(payload, a, { leagues: names, teams: [] }, req)).leagues
 }
 
-/** Tick the competitions and teams on the published esport articles that have none (history runs). */
+/** Tick the competitions, teams and players on the published esport articles that have none (history runs). */
 export async function tagPublishedArticles(payload: Payload): Promise<number> {
-  const names = { leagues: await leagueNames(payload), teams: await teamNamesList(payload) }
+  const names = {
+    leagues: await leagueNames(payload),
+    teams: await teamNamesList(payload),
+    players: await playerNamesList(payload),
+  }
   const { docs } = await payload.find({
     collection: 'articles',
     where: { and: [{ category: { equals: 'esport' } }, { status: { equals: 'published' } }] },
@@ -633,13 +793,19 @@ export async function tagPublishedArticles(payload: Payload): Promise<number> {
   } as never)
   let n = 0
   for (const a of docs as unknown as Array<
-    ArticleLike & { id: Id; esportLeagues?: unknown[]; esportTeams?: unknown[] }
+    ArticleLike & {
+      id: Id
+      esportLeagues?: unknown[]
+      esportTeams?: unknown[]
+      esportPlayers?: unknown[]
+    }
   >) {
-    if (a.esportLeagues?.length && a.esportTeams?.length) continue
+    if (a.esportLeagues?.length && a.esportTeams?.length && a.esportPlayers?.length) continue
     const found = await articleEsport(payload, a, names)
     const data: Record<string, Id[]> = {}
     if (!a.esportLeagues?.length && found.leagues.length) data.esportLeagues = found.leagues
     if (!a.esportTeams?.length && found.teams.length) data.esportTeams = found.teams
+    if (!a.esportPlayers?.length && found.players.length) data.esportPlayers = found.players
     if (!Object.keys(data).length) continue
     await payload.update({
       collection: 'articles',
@@ -704,9 +870,10 @@ export async function refreshTeamDetails(
     depth: 0,
     pagination: false,
     overrideAccess: true,
-    select: { pandaId: true },
+    select: { pandaId: true, game: true },
   } as never)
-  const rows = docs as unknown as Array<{ id: Id; pandaId: number }>
+  const rows = docs as unknown as Array<{ id: Id; pandaId: number; game?: EsportGame | null }>
+  const slugs: SlugCache = {}
   let n = 0
   for (let i = 0; i < rows.length; i += 100) {
     const batch = rows.slice(i, i + 100)
@@ -722,6 +889,28 @@ export async function refreshTeamDetails(
         .filter((p) => p?.active !== false)
         .map(playerOf)
         .filter((p): p is PlayerData => p !== null)
+      // Its players now in this team; the ones who left it, in none (until another team lists them).
+      if (raw && row.game) {
+        const ids = await savePlayers(
+          payload,
+          new Map(
+            players.map((p) => [p.pandaId, { data: p, game: row.game!, currentTeam: row.id }]),
+          ),
+          slugs,
+        )
+        await payload.update({
+          collection: 'esport-players',
+          where: {
+            and: [
+              { currentTeam: { equals: row.id } },
+              { id: { not_in: [...ids.values()].length ? [...ids.values()] : [0] } },
+            ],
+          },
+          data: { currentTeam: null } as never,
+          overrideAccess: true,
+          depth: 0,
+        })
+      }
       await payload.update({
         collection: 'esport-teams',
         id: row.id,
@@ -731,6 +920,47 @@ export async function refreshTeamDetails(
       })
       n++
     }
+  }
+  return n
+}
+
+/**
+ * Teams that got their PandaScore id appended to their slug though the plain
+ * one is free ("cs2-vitality-3455": two runs at once on 2026-11-27) get the
+ * plain one back. Returns how many.
+ */
+export async function repairTeamSlugs(payload: Payload): Promise<number> {
+  const { docs } = await payload.find({
+    collection: 'esport-teams',
+    limit: 100_000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+    select: { slug: true, pandaId: true, game: true, name: true },
+  } as never)
+  const rows = docs as unknown as Array<{
+    id: Id
+    slug?: string | null
+    pandaId: number
+    game?: EsportGame | null
+    name: string
+  }>
+  const taken = new Set(rows.map((r) => r.slug ?? ''))
+  let n = 0
+  for (const r of rows) {
+    if (!r.game || !r.slug) continue
+    const base = teamSlug(r.game, r.name)
+    if (r.slug !== `${base}-${r.pandaId}` || taken.has(base)) continue
+    await payload.update({
+      collection: 'esport-teams',
+      id: r.id,
+      data: { slug: base } as never,
+      overrideAccess: true,
+      depth: 0,
+    })
+    taken.delete(r.slug)
+    taken.add(base)
+    n++
   }
   return n
 }
@@ -745,6 +975,7 @@ export async function runCompetitionSync(
   const results: CompetitionResult[] = []
   const touched = new Set<Id>()
   const touchedTeams = new Set<Id>()
+  const slugs: SlugCache = {}
   let history = false
   for (const game of ESPORT_GAMES) {
     try {
@@ -758,7 +989,17 @@ export async function runCompetitionSync(
             overrideAccess: true,
           })
         ).totalDocs
-      const first = (await count('esport-series')) === 0 || (await count('esport-lineups')) === 0
+      const first =
+        (await count('esport-series')) === 0 ||
+        (await count('esport-lineups')) === 0 ||
+        // The players came on 2026-11-27 too: their lineups' members.
+        (
+          await payload.count({
+            collection: 'esport-players',
+            where: { game: { equals: game } },
+            overrideAccess: true,
+          })
+        ).totalDocs === 0
       history ||= first
       const raws: RawTournamentWithRosters[] = []
       for (const url of competitionUrls(game))
@@ -769,7 +1010,7 @@ export async function runCompetitionSync(
             first && url.includes('/past?') ? HISTORY_PAGES : 1,
           )),
         )
-      const { result, leagues, teams } = await saveGame(payload, token, game, raws, now)
+      const { result, leagues, teams } = await saveGame(payload, token, game, raws, now, slugs)
       results.push(result)
       for (const id of leagues) touched.add(id)
       for (const id of teams) touchedTeams.add(id)
@@ -781,6 +1022,9 @@ export async function runCompetitionSync(
   }
   // A history run refreshes every competition's line (its winner's team page link too).
   if (history) {
+    await repairTeamSlugs(payload).catch((err) =>
+      payload.logger.warn({ msg: '[esport] team slugs repair failed', error: String(err) }),
+    )
     const all = await payload.find({
       collection: 'esport-leagues',
       limit: 5000,

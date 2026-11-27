@@ -79,6 +79,9 @@ export interface PayloadArticle {
   esportLeagues?: Array<
     { slug?: string | null; name?: string | null; aliases?: string[] | null } | number | string
   > | null
+  esportPlayers?: Array<
+    { slug?: string | null; name?: string | null; aliases?: string[] | null } | number | string
+  > | null
   esportTeams?: Array<
     | { slug?: string | null; name?: string | null; acronym?: string | null; aliases?: string[] | null }
     | number
@@ -195,6 +198,13 @@ export function mapArticle(doc: PayloadArticle, cmsUrl: string): Article {
       ? doc.esportLeagues.flatMap((l) =>
           l && typeof l === 'object' && l.slug && l.name
             ? [{ slug: l.slug, name: l.name, aliases: l.aliases ?? [] }]
+            : [],
+        )
+      : [],
+    players: Array.isArray(doc.esportPlayers)
+      ? doc.esportPlayers.flatMap((t) =>
+          t && typeof t === 'object' && t.slug && t.name
+            ? [{ slug: t.slug, name: t.name, aliases: t.aliases ?? [] }]
             : [],
         )
       : [],

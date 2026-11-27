@@ -414,11 +414,27 @@ describe('esport competitions', () => {
       } as never,
       overrideAccess: true,
     })
+    const player = await payload.create({
+      collection: 'esport-players',
+      data: {
+        pandaId,
+        game: 'cs2',
+        name: `Ace${RUN}`,
+        slug: `ace${RUN}`,
+        lastAt: new Date().toISOString(),
+      } as never,
+      overrideAccess: true,
+    })
     try {
       const named = await createArticle({
         category: 'esport',
-        title: `Squad${RUN} win the ${RUN} Cup final`,
+        title: `Squad${RUN} win the ${RUN} Cup final, Ace${RUN} MVP`,
       })
+      expect(
+        ((named as { esportPlayers?: Array<{ id: unknown } | unknown> }).esportPlayers ?? []).map(
+          (l) => (l && typeof l === 'object' ? (l as { id: unknown }).id : l),
+        ),
+      ).toEqual([player.id])
       expect(
         ((named as { esportTeams?: Array<{ id: unknown } | unknown> }).esportTeams ?? []).map(
           (l) => (l && typeof l === 'object' ? (l as { id: unknown }).id : l),
@@ -444,6 +460,7 @@ describe('esport competitions', () => {
     } finally {
       await payload.delete({ collection: 'esport-leagues', id: league.id, overrideAccess: true })
       await payload.delete({ collection: 'esport-teams', id: team.id, overrideAccess: true })
+      await payload.delete({ collection: 'esport-players', id: player.id, overrideAccess: true })
     }
   })
 })

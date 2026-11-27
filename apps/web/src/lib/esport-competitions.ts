@@ -68,7 +68,8 @@ const tierOf = (v: unknown): Tier => (TIERS.includes(v as Tier) ? (v as Tier) : 
 const gameOf = (v: unknown): EsportGame | null =>
   ESPORT_GAMES.includes(v as EsportGame) ? (v as EsportGame) : null
 
-function teamOf(v: unknown): CompetitionTeam | null {
+/** A populated esport-teams doc (or a stored winner) → CompetitionTeam. */
+export function teamOf(v: unknown): CompetitionTeam | null {
   if (!v || typeof v !== 'object') return null
   const t = v as Record<string, unknown>
   const name = str(t.name)

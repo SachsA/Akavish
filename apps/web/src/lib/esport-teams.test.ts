@@ -19,6 +19,7 @@ const lineup = (at: string, ids: number[]): Lineup => ({
     competition: null,
   },
   players: ids.map((i) => p(i, `p${i}`)),
+  team: null,
 })
 
 describe('teamOf / lineupOf', () => {

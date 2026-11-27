@@ -1659,7 +1659,7 @@ The site is in English and French (`/fr`). Interface text lives in the web
 | `SCOUT_DISCORD_LIVE_CHANNEL_ID` / `_BUDGET_` / `_REPORT_` | `…` (optional) | Channels of their own for `/live`, the budget alerts and the weekly report; unset = the scout channel (§11) |
 | `REVALIDATE_SECRET`   | same as the web's                | **Secret**, pings the site after a change (§4e) |
 | `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` | Twitch app (§11, *IGDB keys*) | The secret is a **Secret**: official images of the games in the news (scout covers); unset = Steam only |
-| `PANDASCORE_TOKEN`    | PandaScore dashboard (free plan) | **Secret**, esport matches and tournaments every 10 min, competitions, teams and lineups every hour (`apps/cms/README.md` → Esport); unset = no esport data |
+| `PANDASCORE_TOKEN`    | PandaScore dashboard (free plan) | **Secret**, esport matches and tournaments every 10 min, competitions, teams, lineups and players every hour (`apps/cms/README.md` → Esport); unset = no esport data |
 | `READER_API_SECRET`   | same as the web's                | **Secret**, saved articles for the site (§6.5b) |
 | `CLERK_WEBHOOK_SECRET`| `whsec_…`                        | **Secret**, Clerk's webhook (§6.5b) |
 | `MODERATION_DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/…` | **Secret**, comment reports (§6.5c) |

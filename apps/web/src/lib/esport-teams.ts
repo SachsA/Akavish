@@ -6,7 +6,7 @@
 // history, the names a team goes by (for the links in articles). Tested.
 
 import { ESPORT_GAMES, type EsportGame, type Tier } from './esport'
-import { editionOf, type Edition } from './esport-competitions'
+import { editionOf, teamOf as teamRefOf, type CompetitionTeam, type Edition } from './esport-competitions'
 
 const TIERS: Tier[] = ['s', 'a', 'b', 'c', 'd', 'unranked']
 
@@ -38,6 +38,8 @@ export interface Lineup {
   /** The edition it played, with its competition. */
   edition: Edition
   players: TeamPlayer[]
+  /** The team (when read with it: a player's lineups). */
+  team: CompetitionTeam | null
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
@@ -89,7 +91,7 @@ export function teamOf(doc: Record<string, unknown>): Team | null {
 export function lineupOf(doc: Record<string, unknown>): Lineup | null {
   const series = doc.series && typeof doc.series === 'object' ? editionOf(doc.series as Record<string, unknown>) : null
   if (!series) return null
-  return { edition: series, players: playersOf(doc.players) }
+  return { edition: series, players: playersOf(doc.players), team: teamRefOf(doc.team) }
 }
 
 export interface RosterPeriod {
