@@ -279,11 +279,32 @@ test('games: the A-Z page, and the search shows games first', async ({ page }) =
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Jeux')
 })
 
+test('release calendar: upcoming by period, console filter; events calendar next to the recaps', async ({ page }) => {
+  // Seed: Ironclad Arena comes out on PC in 2028 (year only).
+  await page.goto('/games/releases')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Release calendar')
+  await expect(page.getByRole('heading', { name: '2028' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Ironclad Arena/ })).toContainText('PC')
+  await page.getByRole('combobox', { name: 'Console' }).selectOption('pc')
+  await expect(page).toHaveURL(/\/games\/releases\?platform=pc$/)
+  await expect(page.getByRole('link', { name: /Ironclad Arena/ })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Games' }).getByRole('link', { name: 'Library' }).click()
+  await expect(page).toHaveURL(/\/games$/)
+
+  await page.goto('/conferences')
+  await page.getByRole('navigation', { name: 'Conferences' }).getByRole('link', { name: 'Calendar' }).click()
+  await expect(page).toHaveURL(/\/conferences\/calendar$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Events calendar')
+  await expect(page.getByRole('heading', { name: 'Coming up' })).toBeVisible()
+  // Only these two sections have a calendar.
+  expect((await page.goto('/reviews/calendar'))?.status()).toBe(404)
+})
+
 test('games library: console + year in the URL, upcoming, game and company pages', async ({ page }) => {
   // Seed: Neon Drift is out on PC in 2024 and on Switch / Switch 2 in
   // November 2025; Ironclad Arena comes out in 2028 (year only).
   await page.goto('/games?platform=switch&year=2025')
-  const grid = page.locator('main ul')
+  const grid = page.locator('main ul:not(nav ul)')
   await expect(grid.getByRole('link')).toHaveCount(1)
   await expect(grid.getByRole('link', { name: /Neon Drift/ })).toContainText('November 2025 · Switch 2, Switch')
 
@@ -293,11 +314,11 @@ test('games library: console + year in the URL, upcoming, game and company pages
   await expect(page.getByText('No game matches these filters.')).toBeVisible()
 
   await page.goto('/games?status=upcoming')
-  await expect(page.locator('main ul').getByRole('link')).toHaveCount(1)
-  await expect(page.locator('main ul').getByRole('link', { name: /Ironclad Arena/ })).toContainText('2028 · PC')
+  await expect(page.locator('main ul:not(nav ul)').getByRole('link')).toHaveCount(1)
+  await expect(page.locator('main ul:not(nav ul)').getByRole('link', { name: /Ironclad Arena/ })).toContainText('2028 · PC')
 
   await page.goto('/fr/games?company=halfpipe-studio')
-  await expect(page.locator('main ul').getByRole('link', { name: /Neon Drift/ })).toContainText('20 juin 2024 · PC')
+  await expect(page.locator('main ul:not(nav ul)').getByRole('link', { name: /Neon Drift/ })).toContainText('20 juin 2024 · PC')
 
   await page.goto('/game/neon-drift')
   await expect(page.getByText('November 2025')).toBeVisible()
