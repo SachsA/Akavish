@@ -132,12 +132,15 @@ export function mediaAlt(m: PayloadMedia): string | undefined {
  * How a cover goes into a 16:9 box: 'contain' (whole, over a blurred copy of
  * itself) for a picture a crop would spoil, undefined (fill and crop) for the
  * rest. Cropped: photos from 5:4 to 12:5. Whole: anything squarer, taller or
- * wider, and a PNG not already 16:9, PNGs being mostly logos with text to the
- * edges (2026-11-27: Fire Flux's 1.93:1 logo lost its F and its X).
+ * wider, a PNG not already 16:9, PNGs being mostly logos with text to the
+ * edges (2026-11-27: Fire Flux's 1.93:1 logo lost its F and its X), and a
+ * small picture (under 900 px wide), which filling the article's top would
+ * blow up and crop (NiKo's 548 px photo, same day): shown at its own size.
  */
 export function mediaFit(m: PayloadMedia): 'contain' | undefined {
   if (!m || typeof m === 'string' || !m.width || !m.height) return undefined
   const ratio = m.width / m.height
+  if (m.width < 900) return 'contain'
   if (ratio < 1.25 || ratio > 2.4) return 'contain'
   if (m.mimeType === 'image/png' && Math.abs(ratio - 16 / 9) > 0.04) return 'contain'
   return undefined

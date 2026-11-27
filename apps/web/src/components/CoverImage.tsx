@@ -6,7 +6,8 @@ import Image from 'next/image'
 // picture, a panorama (`coverImageFit: 'contain'`, decided in
 // packages/api-client `mediaFit`) is shown whole over a blurred, darkened copy
 // of itself instead of being cut (2026-11-27: Lynn Vision's and Fire Flux's
-// logos lost their names). So any image can be uploaded as a cover.
+// logos lost their names), never larger than its own size (a small photo
+// isn't blown up). So any image can be uploaded as a cover.
 
 export function CoverImage({
   src,
@@ -50,7 +51,7 @@ export function CoverImage({
         sizes={sizes}
         className={`object-cover scale-125 blur-2xl brightness-50 ${className}`}
       />
-      <Image src={src} alt={alt} fill sizes={sizes} preload={preload} className={`object-contain p-[4%] ${className}`} />
+      <Image src={src} alt={alt} fill sizes={sizes} preload={preload} className={`object-scale-down p-[4%] ${className}`} />
     </>
   )
 }

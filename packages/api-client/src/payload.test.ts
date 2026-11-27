@@ -168,6 +168,7 @@ describe('cover shape and focal point', () => {
     const m = (width: number, height: number, mimeType = 'image/jpeg') => ({ url: '/a', width, height, mimeType })
     expect(mediaFit(m(1920, 1080))).toBeUndefined()
     expect(mediaFit(m(1500, 1000))).toBeUndefined() // a 3:2 photo
+    expect(mediaFit(m(548, 364))).toBe('contain') // too small to fill the article's top
     expect(mediaFit(m(1233, 1059))).toBe('contain') // Lynn Vision's logo
     expect(mediaFit(m(720, 1079))).toBe('contain') // a tall photo
     expect(mediaFit(m(3000, 1000))).toBe('contain')
