@@ -2,10 +2,17 @@
 // scores are hidden (globals.css, `.akv-spoiler`). The card stays a link:
 // opening the article is the reveal.
 import { getMessages } from '@/lib/i18n/server'
+import { esportGameOfSlug } from '@/lib/esport'
+import { spoilerData } from '@/lib/spoilers'
 
-/** Classes for a card that may give a result away: `root` on the card, `blur` on what to blur. */
-export const spoilerClasses = (spoiler: boolean | undefined) =>
-  spoiler ? { root: 'akv-spoiler', blur: 'akv-spoiler-blur' } : { root: '', blur: '' }
+/**
+ * Classes for a card that may give a result away: `root` on the card, `blur`
+ * on what to blur, `data` its game for the games scope (lib/spoilers.ts).
+ */
+export const spoilerClasses = (spoiler: boolean | undefined, gameSlug?: string | null) =>
+  spoiler
+    ? { root: 'akv-spoiler', blur: 'akv-spoiler-blur', data: spoilerData({ game: esportGameOfSlug(gameSlug) }) }
+    : { root: '', blur: '', data: {} }
 
 export function SpoilerVeil({ spoiler }: { spoiler: boolean | undefined }) {
   if (!spoiler) return null

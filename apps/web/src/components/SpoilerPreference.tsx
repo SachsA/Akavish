@@ -7,7 +7,8 @@
 import { useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useI18n } from './I18nProvider'
-import { setDefaultSpoilers } from '@/lib/spoilers'
+import { setDefaultSpoilers, storedPrefs } from '@/lib/spoilers'
+import { SpoilerSettings } from './SpoilerSettings'
 
 export function SpoilerPreference() {
   const { t } = useI18n()
@@ -26,7 +27,7 @@ export function SpoilerPreference() {
       void fetch('/api/notify-settings', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ settings: { hideScores: next } }),
+        body: JSON.stringify({ settings: { hideScores: next && storedPrefs().scores } }),
       }).catch(() => undefined)
       setState('saved')
     } catch {
@@ -61,6 +62,9 @@ export function SpoilerPreference() {
         {state === 'saved' && <span className="text-emerald-400">{t.spoilers.saved}</span>}
         {state === 'error' && <span className="text-danger">{t.spoilers.error}</span>}
       </p>
+      <div className="mt-4 border-t border-zinc-800 pt-4">
+        <SpoilerSettings />
+      </div>
     </div>
   )
 }

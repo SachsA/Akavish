@@ -275,7 +275,10 @@ export async function TournamentView({
       {matches.length === 0 && standings.length === 0 ? (
         <p className="text-zinc-400">{t.esport.noStructure}</p>
       ) : (
-        <SpoilerZone>
+        <SpoilerZone
+          game={stage.game}
+          teams={[...matches.flatMap((m) => [m.t1?.id, m.t2?.id]), ...standings.map((r) => r.team.id)]}
+        >
           {standings.length > 0 && (
             <section aria-labelledby="standings" className="mb-10 max-w-xl">
               <h2 id="standings" className="mb-4 text-xl font-bold text-white">
@@ -289,7 +292,7 @@ export async function TournamentView({
               <h2 id="bracket" className="mb-4 text-xl font-bold text-white">
                 {linked ? t.esport.bracket : t.esport.rounds}
               </h2>
-              <TournamentBracket matches={matches} />
+              <TournamentBracket matches={matches} game={stage.game} />
             </section>
           )}
         </SpoilerZone>

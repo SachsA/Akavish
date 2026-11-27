@@ -2,6 +2,7 @@
 // / "eliminated" where the stage's rule is known (the CS2 Major stages).
 import { swissVerdict, type EsportStage, type StageStanding } from '@/lib/esport-tournaments'
 import { getMessages } from '@/lib/i18n/server'
+import { spoilerData } from '@/lib/spoilers'
 import { EsportFollowButton } from './EsportFollowButton'
 
 export function TournamentStandings({ stage, rows }: { stage: EsportStage; rows: StageStanding[] }) {
@@ -20,7 +21,11 @@ export function TournamentStandings({ stage, rows }: { stage: EsportStage; rows:
           {rows.map((r) => {
             const verdict = swissVerdict(stage, r)
             return (
-              <tr key={`${r.rank}-${r.team.name}`} className={verdict === 'eliminated' ? 'text-zinc-500' : 'text-zinc-200'}>
+              <tr
+                key={`${r.rank}-${r.team.name}`}
+                {...spoilerData({ game: stage.game, teams: [r.team.id] })}
+                className={`akv-match ${verdict === 'eliminated' ? 'akv-lost text-zinc-500' : 'text-zinc-200'}`}
+              >
                 <td className="px-3 py-2 tabular-nums text-zinc-400">{r.rank}</td>
                 <td className="px-3 py-2">
                   <span className="flex items-center gap-2">
@@ -48,7 +53,7 @@ export function TournamentStandings({ stage, rows }: { stage: EsportStage; rows:
                     ) : null}
                     {verdict && (
                       <span
-                        className={`ml-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                        className={`akv-verdict ml-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
                           verdict === 'qualified' ? 'border-emerald-600/60 text-emerald-400' : 'border-zinc-700 text-zinc-400'
                         }`}
                       >
@@ -58,7 +63,12 @@ export function TournamentStandings({ stage, rows }: { stage: EsportStage; rows:
                   </span>
                 </td>
                 <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                  {r.wins} – {r.losses}
+                  <span className="akv-score">
+                    {r.wins} – {r.losses}
+                  </span>
+                  <span aria-hidden="true" className="akv-mask text-zinc-500">
+                    ? – ?
+                  </span>
                 </td>
               </tr>
             )

@@ -6,6 +6,7 @@ import Link from '@/components/LocaleLink'
 import { SITE_URL, SITE_NAME, SITE_TWITTER, SITE_SOCIALS } from '@/lib/site'
 import { DeferredAnalytics } from '@/components/DeferredAnalytics'
 import { SpoilerSync } from '@/components/SpoilerSync'
+import { SpoilerScope } from '@/components/SpoilerScope'
 import { RESTORE_SPOILERS } from '@/lib/spoilers'
 import { NewsletterSignup } from '@/components/NewsletterSignup'
 import { Wordmark } from '@/components/Wordmark'
@@ -113,6 +114,7 @@ export default async function RootLayout({
               Vercel; a no-op locally. 50k events/month on the Hobby plan. */}
           <DeferredAnalytics />
           <SpoilerSync />
+          <SpoilerScope />
           </I18nProvider>
         </body>
       </html>

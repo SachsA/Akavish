@@ -361,7 +361,7 @@ test('esport: tabs for news, results, transfers and calendar; only under /esport
   expect((await page.goto('/news/results'))?.status()).toBe(404)
 })
 
-test('esport: the anti-spoil switch hides scores, is remembered, and links to the default setting', async ({ page }) => {
+test('esport: the anti-spoil switch hides scores, is remembered, and what it hides can be chosen', async ({ page }) => {
   await page.goto('/esport/results')
   const html = page.locator('html')
   await expect(html).toHaveAttribute('data-spoilers', 'show')
@@ -381,7 +381,16 @@ test('esport: the anti-spoil switch hides scores, is remembered, and links to th
   await page.goto('/fr/esport')
   await expect(html).toHaveAttribute('data-spoilers', 'hide')
   await expect(page.getByRole('switch', { name: /Masquer les scores/ })).toHaveAttribute('aria-checked', 'true')
-  await expect(page.getByRole('link', { name: 'Réglage par défaut' })).toHaveAttribute('href', '/fr/account#preferences')
+  // What to hide: the settings open under the switch, kept on this device,
+  // on <html> before the first paint (the default link is for signed-in readers).
+  await page.getByRole('button', { name: 'Choisir ce qui est masqué', exact: true }).click()
+  await page.getByRole('switch', { name: 'Scores finaux' }).click()
+  await expect(html).toHaveAttribute('data-sp-off', 'scores')
+  await page.getByRole('radio', { name: 'Cacher' }).click()
+  await expect(html).toHaveAttribute('data-sp-hide', 'articles')
+  await page.reload()
+  await expect(html).toHaveAttribute('data-sp-off', 'scores')
+  await expect(html).toHaveAttribute('data-sp-hide', 'articles')
 })
 
 test('the push service worker is served from the root, as JavaScript', async ({ request }) => {

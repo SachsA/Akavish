@@ -12,12 +12,14 @@ import { EsportBadges } from '@/components/EsportBadges'
 export function FeaturedArticle({ article }: { article: Article }) {
   const t = getMessages()
   const category = t.categories[article.category]
-  const sp = spoilerClasses(article.spoiler)
+  const sp = spoilerClasses(article.spoiler, article.game?.slug)
 
   return (
     <Link
       href={`/article/${article.slug}`}
-      className={`${sp.root} group block bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors`}
+      {...sp.data}
+      // The lead story stays (blurred) when result articles are hidden: the home page keeps its layout.
+      className={`${sp.root} akv-keep group block bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors`}
     >
       <div className="relative aspect-video bg-zinc-800 overflow-hidden">
         <SpoilerVeil spoiler={article.spoiler} />
@@ -74,10 +76,10 @@ export function FeaturedArticle({ article }: { article: Article }) {
 /** A text-only entry for the "Top stories" column next to the lead story. */
 export function ArticleListItem({ article }: { article: Article }) {
   const category = getMessages().categories[article.category]
-  const sp = spoilerClasses(article.spoiler)
+  const sp = spoilerClasses(article.spoiler, article.game?.slug)
 
   return (
-    <Link href={`/article/${article.slug}`} className={`${sp.root} group block py-4`}>
+    <Link href={`/article/${article.slug}`} {...sp.data} className={`${sp.root} group block py-4`}>
       <span className="text-xs text-emerald-500 font-bold uppercase tracking-wide">
         {category?.singular ?? article.category}
       </span>

@@ -11,6 +11,7 @@ import Link from './LocaleLink'
 import { useI18n } from './I18nProvider'
 import { BellIcon } from './esport/EsportFollowButton'
 import type { ReaderNotification } from '@/lib/readers'
+import { spoilerData } from '@/lib/spoilers'
 
 const POLL_MS = 2 * 60 * 1000
 
@@ -40,7 +41,14 @@ function Item({ n, onOpen, onRemove }: { n: ReaderNotification; onOpen: () => vo
     sub = (
       <>
         {score && (
-          <span className="akv-match block">
+          <span
+            className="akv-match block"
+            {...spoilerData({
+              game: typeof d.game === 'string' ? d.game : null,
+              teams: [(d.t1 as { id?: number } | undefined)?.id, (d.t2 as { id?: number } | undefined)?.id],
+              match: typeof d.matchId === 'number' ? d.matchId : null,
+            })}
+          >
             <span className="akv-score font-semibold text-zinc-200">{score}</span>
             <span className="akv-mask italic">{t.bell.scoreHidden}</span>
           </span>

@@ -249,8 +249,14 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `<html data-spoilers>` (set before paint by `RESTORE_SPOILERS` in the
   layout), never a server decision, so pages stay cached. A card that can
   give a result away gets `spoilerClasses(article.spoiler)` + `<SpoilerVeil>`;
-  a score gets `.akv-score` / `.akv-mask` inside an `.akv-match` row; a
-  bracket or standings go inside `<SpoilerZone>`.
+  a score gets `.akv-score` / `.akv-mask` inside an `.akv-match` row (`.akv-live`
+  while played, `.akv-won` / `.akv-lost` / `.akv-verdict` for who won); a
+  bracket or standings go inside `<SpoilerZone>`. What is hidden is the
+  reader's choice (2026-11-27, `SpoilerPrefs`, `components/SpoilerSettings.tsx`):
+  `data-sp-off` / `data-sp-hide` on `<html>` for the parts, and
+  `.akv-free` (`components/SpoilerScope.tsx`) for the games and followed-teams
+  scope, read from each element's `spoilerData()` attributes. A new
+  spoiler-prone element: the right class plus `spoilerData({ game, teams, match })`.
 - **Tournament pages** (`/esport/tournaments`, `[key]` = a game or a
   PandaScore stage slug): data from `esport-tournaments.structure` (CMS sync,
   `refreshStructures`), layout in `lib/esport-tournaments.ts` (pure, tested on

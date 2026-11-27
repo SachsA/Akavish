@@ -7,11 +7,14 @@ import type { EsportTeam } from '@/lib/esport'
 import { bracketLayout, roundName, type BracketSection, type StageMatch } from '@/lib/esport-tournaments'
 import { getLocale, getMessages } from '@/lib/i18n/server'
 import { DateText } from '../DateText'
+import { spoilerData } from '@/lib/spoilers'
 
 function Side({ team, score, won, lost }: { team: EsportTeam | null; score: number | null; won: boolean; lost: boolean }) {
   const t = getMessages()
   return (
-    <div className={`flex items-center gap-2 px-2.5 py-1.5 ${won ? 'font-bold text-white' : lost ? 'text-zinc-400' : 'text-zinc-200'}`}>
+    <div
+      className={`flex items-center gap-2 px-2.5 py-1.5 ${won ? 'akv-won font-bold text-white' : lost ? 'akv-lost text-zinc-400' : 'text-zinc-200'}`}
+    >
       {team?.logo ? (
         // A team logo from PandaScore's CDN: small, already sized.
         // eslint-disable-next-line @next/next/no-img-element
@@ -22,12 +25,21 @@ function Side({ team, score, won, lost }: { team: EsportTeam | null; score: numb
       <span className="min-w-0 flex-1 truncate" title={team?.name}>
         {team ? team.name : <span className="italic text-zinc-500">{t.esport.tbd}</span>}
       </span>
-      <span className="w-5 shrink-0 text-right tabular-nums">{score ?? ''}</span>
+      <span className="w-5 shrink-0 text-right tabular-nums">
+        {score == null ? (
+          ''
+        ) : (
+          <>
+            <span className="akv-score">{score}</span>
+            <span aria-hidden="true" className="akv-mask text-zinc-500">–</span>
+          </>
+        )}
+      </span>
     </div>
   )
 }
 
-function MatchCard({ m }: { m: StageMatch }) {
+function MatchCard({ m, game }: { m: StageMatch; game: string }) {
   const t = getMessages()
   const live = m.status === 'running'
   const done = m.status === 'finished'
@@ -35,7 +47,8 @@ function MatchCard({ m }: { m: StageMatch }) {
     // `#match-<id>` (a Results row, a notification) scrolls here and lights it up (globals.css).
     <div
       id={`match-${m.id}`}
-      className={`akv-target w-56 scroll-mt-28 overflow-hidden rounded-md border bg-zinc-900 text-sm ${
+      {...spoilerData({ game, teams: [m.t1?.id, m.t2?.id], match: m.id })}
+      className={`akv-target akv-match ${live ? 'akv-live ' : ''}w-56 scroll-mt-28 overflow-hidden rounded-md border bg-zinc-900 text-sm ${
         live ? 'border-red-500/60' : 'border-zinc-800'
       }`}
     >
@@ -54,7 +67,7 @@ function MatchCard({ m }: { m: StageMatch }) {
   )
 }
 
-function Section({ section, title, tree }: { section: BracketSection; title: string | null; tree: boolean }) {
+function Section({ section, title, tree, game }: { section: BracketSection; title: string | null; tree: boolean; game: string }) {
   const locale = getLocale()
   return (
     <section className="mb-8">
@@ -69,7 +82,7 @@ function Section({ section, title, tree }: { section: BracketSection; title: str
             <ul className={`flex flex-1 flex-col gap-3 ${tree ? 'justify-around' : 'justify-start'}`}>
               {col.matches.map((m) => (
                 <li key={m.id}>
-                  <MatchCard m={m} />
+                  <MatchCard m={m} game={game} />
                 </li>
               ))}
             </ul>
@@ -80,7 +93,7 @@ function Section({ section, title, tree }: { section: BracketSection; title: str
   )
 }
 
-export function TournamentBracket({ matches }: { matches: StageMatch[] }) {
+export function TournamentBracket({ matches, game }: { matches: StageMatch[]; game: string }) {
   const t = getMessages()
   const sections = bracketLayout(matches)
   const tree = matches.some((m) => m.prev.length > 0)
@@ -88,7 +101,7 @@ export function TournamentBracket({ matches }: { matches: StageMatch[] }) {
   return (
     <div>
       {sections.map((s) => (
-        <Section key={s.key} section={s} title={title[s.key]} tree={tree} />
+        <Section key={s.key} section={s} title={title[s.key]} tree={tree} game={game} />
       ))}
     </div>
   )

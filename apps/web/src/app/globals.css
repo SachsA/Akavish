@@ -180,41 +180,62 @@ body {
   @apply bg-zinc-700 rounded-full;
 }
 
-/* Anti-spoil (lib/spoilers.ts): while <html data-spoilers="hide">, a result
-   article's card is blurred with a "Result hidden" label; opening it reveals. */
+/* Anti-spoil (lib/spoilers.ts). While <html data-spoilers="hide">, each part
+   is hidden unless the reader left it visible (`data-sp-off`, their settings:
+   components/SpoilerSettings.tsx) or the element is outside what they
+   protect (`.akv-free`: another game, a team they don't follow, set by
+   components/SpoilerScope.tsx once the page is up). Revealed one by one with
+   `data-revealed`. */
+
+/* Result articles: blurred with a "Result hidden" label (opening one reveals
+   it), or gone from the lists (`data-sp-hide~=articles`); the lead story and
+   an article's previous / next links (`.akv-keep`) stay blurred instead, so
+   the layout holds. */
 .akv-spoiler-veil {
   display: none;
 }
-html[data-spoilers='hide'] .akv-spoiler .akv-spoiler-veil {
+html[data-spoilers='hide']:not([data-sp-off~='articles']) .akv-spoiler:not(.akv-free) .akv-spoiler-veil {
   display: flex;
 }
-html[data-spoilers='hide'] .akv-spoiler .akv-spoiler-blur {
+html[data-spoilers='hide']:not([data-sp-off~='articles']) .akv-spoiler:not(.akv-free) .akv-spoiler-blur {
   filter: blur(7px);
   user-select: none;
 }
-/* Results and Calendar rows (EsportMatches): the score or a "Show" button,
-   the winner in bold only while scores are shown or the match revealed. */
+html[data-spoilers='hide'][data-sp-hide~='articles'] .akv-spoiler:not(.akv-free):not(.akv-keep) {
+  display: none;
+}
+
+/* Matches (Results and Calendar rows, bracket cards, standings rows, the
+   bell): the score (finished, or live: `.akv-live`) or a mask, the winner in
+   bold and "qualified" / "eliminated" only while shown or revealed. */
 .akv-mask {
   display: none;
 }
-html[data-spoilers='hide'] .akv-match:not([data-revealed]) .akv-score {
+html[data-spoilers='hide']:not([data-sp-off~='scores']) .akv-match:not(.akv-live):not([data-revealed]):not(.akv-free) .akv-score,
+html[data-spoilers='hide']:not([data-sp-off~='live']) .akv-match.akv-live:not([data-revealed]):not(.akv-free) .akv-score {
   display: none;
 }
-html[data-spoilers='hide'] .akv-match:not([data-revealed]) .akv-mask {
+html[data-spoilers='hide']:not([data-sp-off~='scores']) .akv-match:not(.akv-live):not([data-revealed]):not(.akv-free) .akv-mask,
+html[data-spoilers='hide']:not([data-sp-off~='live']) .akv-match.akv-live:not([data-revealed]):not(.akv-free) .akv-mask {
   display: inline-block;
 }
-html[data-spoilers='hide'] .akv-match:not([data-revealed]) .akv-won {
+html[data-spoilers='hide']:not([data-sp-off~='winners']) .akv-match:not([data-revealed]):not(.akv-free) .akv-won,
+html[data-spoilers='hide']:not([data-sp-off~='winners']) .akv-match:not([data-revealed]):not(.akv-free) .akv-lost {
   font-weight: 400;
   color: var(--color-zinc-300);
 }
-/* Brackets and standings (SpoilerZone): blurred behind a button while hidden. */
+html[data-spoilers='hide']:not([data-sp-off~='winners']) .akv-match:not([data-revealed]):not(.akv-free) .akv-verdict {
+  display: none;
+}
+
+/* Whole brackets and standings (SpoilerZone): blurred behind a button. */
 .akv-zone-veil {
   display: none;
 }
-html[data-spoilers='hide'] .akv-zone:not([data-revealed]) .akv-zone-veil {
+html[data-spoilers='hide']:not([data-sp-off~='brackets']) .akv-zone:not([data-revealed]):not(.akv-free) .akv-zone-veil {
   display: flex;
 }
-html[data-spoilers='hide'] .akv-zone:not([data-revealed]) .akv-zone-content {
+html[data-spoilers='hide']:not([data-sp-off~='brackets']) .akv-zone:not([data-revealed]):not(.akv-free) .akv-zone-content {
   filter: blur(8px);
   max-height: 28rem;
   overflow: hidden;

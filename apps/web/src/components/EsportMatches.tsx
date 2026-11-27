@@ -25,6 +25,7 @@ import {
 } from '@/lib/esport'
 import { intlTag } from '@/lib/i18n/config'
 import { formatDate } from '@/lib/i18n/dates'
+import { spoilerData } from '@/lib/spoilers'
 import { useI18n, useRegion } from './I18nProvider'
 import Link from './LocaleLink'
 import { EsportFollowButton } from './esport/EsportFollowButton'
@@ -292,7 +293,8 @@ export function EsportMatches({
                           <li
                             key={r.id}
                             data-revealed={revealed.has(r.id) || undefined}
-                            className={`akv-match relative flex items-center gap-3 px-4 py-2.5 text-sm ${
+                            {...spoilerData({ game: r.game, teams: [r.t1.id, r.t2.id], match: r.id })}
+                            className={`akv-match ${live ? 'akv-live ' : ''}relative flex items-center gap-3 px-4 py-2.5 text-sm ${
                               r.tournamentSlug ? 'hover:bg-zinc-800/40' : ''
                             }`}
                           >

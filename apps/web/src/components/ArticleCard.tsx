@@ -10,10 +10,11 @@ import { EsportBadges } from '@/components/EsportBadges'
 
 export function ArticleCard({ article }: { article: Article }) {
   const t = getMessages()
-  const sp = spoilerClasses(article.spoiler)
+  const sp = spoilerClasses(article.spoiler, article.game?.slug)
   return (
     <Link
       href={`/article/${article.slug}`}
+      {...sp.data}
       className={`${sp.root} group bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors`}
     >
       <div className="relative aspect-video bg-zinc-800 overflow-hidden">
