@@ -58,7 +58,19 @@ function Item({ n, onOpen, onRemove }: { n: ReaderNotification; onOpen: () => vo
     )
   } else {
     title = t.bell.article((Array.isArray(d.teams) ? d.teams : []).join(', '))
-    sub = String(d.title ?? '')
+    // A result article: its title blurs like the article cards (never
+    // hidden, the notification stays).
+    sub =
+      d.spoiler === true ? (
+        <span
+          className="akv-spoiler akv-keep block"
+          {...spoilerData({ game: typeof d.game === 'string' ? d.game : null })}
+        >
+          <span className="akv-spoiler-blur block">{String(d.title ?? '')}</span>
+        </span>
+      ) : (
+        String(d.title ?? '')
+      )
   }
   return (
     <div className="relative">

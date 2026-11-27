@@ -65,7 +65,17 @@ const richText = {
         indent: 0,
         version: 1,
         direction: 'ltr',
-        children: [{ type: 'text', text: 'Body', format: 0, style: '', mode: 'normal', detail: 0, version: 1 }],
+        children: [
+          {
+            type: 'text',
+            text: 'Body',
+            format: 0,
+            style: '',
+            mode: 'normal',
+            detail: 0,
+            version: 1,
+          },
+        ],
       },
     ],
   },
@@ -87,7 +97,11 @@ async function article(title: string, status: 'draft' | 'published', author = au
   return doc.id
 }
 
-async function staffUser(role: 'admin' | 'editor' | 'writer', name: string, author?: number | string) {
+async function staffUser(
+  role: 'admin' | 'editor' | 'writer',
+  name: string,
+  author?: number | string,
+) {
   const doc = await payload.create({
     collection: 'users',
     data: { email: email(name), password: 'pw-test-123', role, author } as never,
@@ -98,20 +112,46 @@ async function staffUser(role: 'admin' | 'editor' | 'writer', name: string, auth
 
 beforeAll(async () => {
   payload = await getPayload({ config })
-  authorId = (await payload.create({ collection: 'authors', data: { name: `${RUN} Writer` } as never })).id
-  otherAuthorId = (await payload.create({ collection: 'authors', data: { name: `${RUN} Other` } as never })).id
+  authorId = (
+    await payload.create({ collection: 'authors', data: { name: `${RUN} Writer` } as never })
+  ).id
+  otherAuthorId = (
+    await payload.create({ collection: 'authors', data: { name: `${RUN} Other` } as never })
+  ).id
   published = await article('published', 'published')
   draft = await article('draft', 'draft')
-  gameA = (await payload.create({ collection: 'games', data: { name: `${RUN} Game A` } as never })).id
-  gameB = (await payload.create({ collection: 'games', data: { name: `${RUN} Game B` } as never })).id
+  gameA = (await payload.create({ collection: 'games', data: { name: `${RUN} Game A` } as never }))
+    .id
+  gameB = (await payload.create({ collection: 'games', data: { name: `${RUN} Game B` } as never }))
+    .id
 })
 
 afterAll(async () => {
-  await payload.delete({ collection: 'readers', where: { clerkId: { like: RUN } }, overrideAccess: true })
-  await payload.delete({ collection: 'articles', where: { title: { like: RUN } }, overrideAccess: true })
-  await payload.delete({ collection: 'users', where: { email: { like: RUN } }, overrideAccess: true })
-  await payload.delete({ collection: 'authors', where: { name: { like: RUN } }, overrideAccess: true })
-  await payload.delete({ collection: 'games', where: { name: { like: RUN } }, overrideAccess: true })
+  await payload.delete({
+    collection: 'readers',
+    where: { clerkId: { like: RUN } },
+    overrideAccess: true,
+  })
+  await payload.delete({
+    collection: 'articles',
+    where: { title: { like: RUN } },
+    overrideAccess: true,
+  })
+  await payload.delete({
+    collection: 'users',
+    where: { email: { like: RUN } },
+    overrideAccess: true,
+  })
+  await payload.delete({
+    collection: 'authors',
+    where: { name: { like: RUN } },
+    overrideAccess: true,
+  })
+  await payload.delete({
+    collection: 'games',
+    where: { name: { like: RUN } },
+    overrideAccess: true,
+  })
 })
 
 describe('reader accounts', () => {
@@ -124,7 +164,12 @@ describe('reader accounts', () => {
       displayName: '  Some One  ',
       imageUrl: 'https://img.example/a.png',
     })
-    expect(first).toMatchObject({ clerkId: id, displayName: 'Some One', email: 'someone@example.com', role: 'reader' })
+    expect(first).toMatchObject({
+      clerkId: id,
+      displayName: 'Some One',
+      email: 'someone@example.com',
+      role: 'reader',
+    })
 
     const again = await upsertReader(payload, { clerkId: id, displayName: 'Renamed' })
     expect(again.id).toBe(first.id)
@@ -151,7 +196,12 @@ describe('reader accounts', () => {
     })
     expect(linked.role).toBe('author')
     expect(linked.authorSlug).toBeTruthy()
-    const row = await payload.findByID({ collection: 'readers', id: linked.id, depth: 0, overrideAccess: true })
+    const row = await payload.findByID({
+      collection: 'readers',
+      id: linked.id,
+      depth: 0,
+      overrideAccess: true,
+    })
     expect(row.cmsUser).toBe(user.id)
     expect(row.author).toBe(authorId)
   })
@@ -166,13 +216,33 @@ describe('reader accounts', () => {
       data: { role: 'reader' },
       overrideAccess: true,
     })
-    await payload.update({ collection: 'readers', id: a.id, data: { role: 'owner' }, overrideAccess: true })
+    await payload.update({
+      collection: 'readers',
+      id: a.id,
+      data: { role: 'owner' },
+      overrideAccess: true,
+    })
     await expect(
-      payload.update({ collection: 'readers', id: b.id, data: { role: 'owner' }, overrideAccess: true }),
+      payload.update({
+        collection: 'readers',
+        id: b.id,
+        data: { role: 'owner' },
+        overrideAccess: true,
+      }),
     ).rejects.toThrow(/role/)
     // Saving the owner again is fine.
-    await payload.update({ collection: 'readers', id: a.id, data: { displayName: 'Boss' }, overrideAccess: true })
-    await payload.update({ collection: 'readers', id: a.id, data: { role: 'reader' }, overrideAccess: true })
+    await payload.update({
+      collection: 'readers',
+      id: a.id,
+      data: { displayName: 'Boss' },
+      overrideAccess: true,
+    })
+    await payload.update({
+      collection: 'readers',
+      id: a.id,
+      data: { role: 'reader' },
+      overrideAccess: true,
+    })
   })
 
   it('maps a Clerk webhook user to a profile', () => {
@@ -224,9 +294,19 @@ describe('saved articles', () => {
     expect(await savedAmong(payload, reader.id, [published])).toEqual([])
 
     // An article taken off the site drops off the list; a deleted one too.
-    await payload.update({ collection: 'articles', id: second, data: { status: 'archived' }, overrideAccess: true })
+    await payload.update({
+      collection: 'articles',
+      id: second,
+      data: { status: 'archived' },
+      overrideAccess: true,
+    })
     expect((await listBookmarks(payload, reader.id)).total).toBe(0)
-    await payload.update({ collection: 'articles', id: second, data: { status: 'published' }, overrideAccess: true })
+    await payload.update({
+      collection: 'articles',
+      id: second,
+      data: { status: 'published' },
+      overrideAccess: true,
+    })
     await payload.delete({ collection: 'articles', id: second, overrideAccess: true })
     expect((await listBookmarks(payload, reader.id)).total).toBe(0)
   })
@@ -261,7 +341,9 @@ describe('followed games', () => {
 
   it('a deleted game or reader takes its follows with it', async () => {
     const reader = await ensureReader(payload, clerk('g'))
-    const temp = (await payload.create({ collection: 'games', data: { name: `${RUN} Temp` } as never })).id
+    const temp = (
+      await payload.create({ collection: 'games', data: { name: `${RUN} Temp` } as never })
+    ).id
     await addFollow(payload, reader.id, temp)
     await addFollow(payload, reader.id, gameA)
     await payload.delete({ collection: 'games', id: temp, overrideAccess: true })
@@ -278,16 +360,13 @@ describe('followed games', () => {
 
 describe('the website endpoints (READER_API_SECRET)', () => {
   const SECRET = 'test-reader-secret'
-  const req = (init: {
-    method?: string
-    body?: unknown
-    query?: string
-    auth?: string | null
-  }) =>
+  const req = (init: { method?: string; body?: unknown; query?: string; auth?: string | null }) =>
     ({
       payload,
       method: init.method ?? 'POST',
-      headers: new Headers(init.auth === null ? {} : { authorization: init.auth ?? `Bearer ${SECRET}` }),
+      headers: new Headers(
+        init.auth === null ? {} : { authorization: init.auth ?? `Bearer ${SECRET}` },
+      ),
       searchParams: new URLSearchParams(init.query ?? ''),
       json: async () => init.body ?? {},
     }) as never
@@ -310,14 +389,22 @@ describe('the website endpoints (READER_API_SECRET)', () => {
   it('syncs, saves, lists and unsaves', async () => {
     const id = clerk('w')
     const sync = await readerSyncHandler(
-      req({ body: { profile: { clerkId: id, displayName: 'Web', email: 'w@example.com', emailVerified: true } } }),
+      req({
+        body: {
+          profile: { clerkId: id, displayName: 'Web', email: 'w@example.com', emailVerified: true },
+        },
+      }),
     )
     expect(sync.status).toBe(200)
     expect((await sync.json()).reader).toMatchObject({ clerkId: id, role: 'reader' })
 
     const profile = { clerkId: id, emailVerified: true }
-    expect((await readerBookmarksHandler(req({ body: { profile, articleId: 'x' } }))).status).toBe(400)
-    expect((await readerBookmarksHandler(req({ body: { profile, articleId: draft } }))).status).toBe(404)
+    expect((await readerBookmarksHandler(req({ body: { profile, articleId: 'x' } }))).status).toBe(
+      400,
+    )
+    expect(
+      (await readerBookmarksHandler(req({ body: { profile, articleId: draft } }))).status,
+    ).toBe(404)
     // Saving needs a verified email.
     const unverified = await readerBookmarksHandler(
       req({ body: { profile: { clerkId: id, emailVerified: false }, articleId: published } }),
@@ -326,7 +413,9 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     const save = await readerBookmarksHandler(req({ body: { profile, articleId: published } }))
     expect(await save.json()).toEqual({ saved: true })
 
-    const saved = await readerSavedHandler(req({ method: 'GET', query: `clerkId=${id}&articles=${published},${draft}` }))
+    const saved = await readerSavedHandler(
+      req({ method: 'GET', query: `clerkId=${id}&articles=${published},${draft}` }),
+    )
     expect((await saved.json()).saved).toEqual([published])
 
     const list = await readerBookmarksHandler(req({ method: 'GET', query: `clerkId=${id}` }))
@@ -344,41 +433,93 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     const id = clerk('wf')
     const profile = { clerkId: id, emailVerified: true }
     expect((await readerFollowsHandler(req({ body: { profile, gameId: 'x' } }))).status).toBe(400)
-    expect((await readerFollowsHandler(req({ body: { profile, gameId: 99_999_999 } }))).status).toBe(404)
     expect(
-      (await readerFollowsHandler(req({ body: { profile: { clerkId: id, emailVerified: false }, gameId: gameA } }))).status,
+      (await readerFollowsHandler(req({ body: { profile, gameId: 99_999_999 } }))).status,
+    ).toBe(404)
+    expect(
+      (
+        await readerFollowsHandler(
+          req({ body: { profile: { clerkId: id, emailVerified: false }, gameId: gameA } }),
+        )
+      ).status,
     ).toBe(403)
-    expect(await (await readerFollowsHandler(req({ body: { profile, gameId: gameA } }))).json()).toEqual({ following: true })
-    const following = await readerFollowingHandler(req({ method: 'GET', query: `clerkId=${id}&games=${gameA},${gameB}` }))
+    expect(
+      await (await readerFollowsHandler(req({ body: { profile, gameId: gameA } }))).json(),
+    ).toEqual({ following: true })
+    const following = await readerFollowingHandler(
+      req({ method: 'GET', query: `clerkId=${id}&games=${gameA},${gameB}` }),
+    )
     expect((await following.json()).following).toEqual([gameA])
-    const list = await (await readerFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
-    expect(list.docs.map((d: { game: { slug: string } }) => d.game.slug)).toEqual([`${RUN.toLowerCase()}-game-a`])
-    const off = await readerFollowsHandler(req({ method: 'DELETE', body: { clerkId: id, gameId: gameA } }))
+    const list = await (
+      await readerFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))
+    ).json()
+    expect(list.docs.map((d: { game: { slug: string } }) => d.game.slug)).toEqual([
+      `${RUN.toLowerCase()}-game-a`,
+    ])
+    const off = await readerFollowsHandler(
+      req({ method: 'DELETE', body: { clerkId: id, gameId: gameA } }),
+    )
     expect(await off.json()).toEqual({ following: false })
     // Nobody yet: nothing followed, and no reader created to say so.
-    const ghost = await readerFollowsHandler(req({ method: 'GET', query: `clerkId=${clerk('ghost2')}` }))
+    const ghost = await readerFollowsHandler(
+      req({ method: 'GET', query: `clerkId=${clerk('ghost2')}` }),
+    )
     expect((await ghost.json()).docs).toEqual([])
   })
 
   it('follows esport teams, notifies their matches, lists, marks read and deletes the notifications', async () => {
     const id = clerk('es')
     const profile = { clerkId: id, emailVerified: true }
-    const follow = { kind: 'team', pandaId: 987_001, label: 'Team Vitality', acronym: 'VIT', game: 'cs2' }
-    expect((await esportFollowsHandler(req({ body: { profile, follow: { ...follow, kind: 'player' } } }))).status).toBe(400)
-    expect(await (await esportFollowsHandler(req({ body: { profile, follow } }))).json()).toEqual({ following: true })
+    const follow = {
+      kind: 'team',
+      pandaId: 987_001,
+      label: 'Team Vitality',
+      acronym: 'VIT',
+      game: 'cs2',
+    }
+    expect(
+      (
+        await esportFollowsHandler(
+          req({ body: { profile, follow: { ...follow, kind: 'player' } } }),
+        )
+      ).status,
+    ).toBe(400)
+    expect(await (await esportFollowsHandler(req({ body: { profile, follow } }))).json()).toEqual({
+      following: true,
+    })
     // Twice: still one follow.
     await esportFollowsHandler(req({ body: { profile, follow } }))
-    const list = await (await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
+    const list = await (
+      await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))
+    ).json()
     expect(list.docs).toMatchObject([{ kind: 'team', pandaId: 987_001, label: 'Team Vitality' }])
 
     // Starts off in the settings: only the result is notified.
     await notifySettingsHandler(req({ body: { clerkId: id, settings: { matchStart: false } } }))
-    expect(await (await notifySettingsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()).toEqual({
+    expect(
+      await (await notifySettingsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json(),
+    ).toEqual({
       matchStart: false,
       results: true,
       news: true,
       hideScores: false,
+      spoilerPrefs: { scores: true, winners: true, articles: 'blur', games: [], teams: 'all' },
     })
+    // "What to hide" from the site: cleaned, the rest untouched.
+    const spoilers = { scores: false, games: ['lol', 'x'], teams: 'followed' }
+    const saved = await (
+      await notifySettingsHandler(
+        req({ body: { clerkId: id, settings: { spoilerPrefs: spoilers } } }),
+      )
+    ).json()
+    expect(saved.spoilerPrefs).toEqual({
+      scores: false,
+      winners: true,
+      articles: 'blur',
+      games: ['lol'],
+      teams: 'followed',
+    })
+    await notifySettingsHandler(req({ body: { clerkId: id, settings: { spoilerPrefs: {} } } }))
     const ev = (type: 'start' | 'end') => ({
       type,
       matchId: 987_100,
@@ -396,31 +537,51 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     expect(await notifyMatchEvents(payload, [ev('start'), ev('end')])).toBe(1)
     expect(await notifyMatchEvents(payload, [ev('end')])).toBe(0) // once
 
-    const got = await (await notificationsHandler(req({ method: 'GET', query: `clerkId=${id}&limit=10` }))).json()
+    const got = await (
+      await notificationsHandler(req({ method: 'GET', query: `clerkId=${id}&limit=10` }))
+    ).json()
     expect(got.unread).toBe(1)
-    expect(got.docs).toMatchObject([{ kind: 'match_end', url: '/esport/results', data: { s1: 2, s2: 1 } }])
-    expect(await (await notificationsHandler(req({ body: { clerkId: id, read: 'all' } }))).json()).toEqual({ unread: 0 })
+    expect(got.docs).toMatchObject([
+      { kind: 'match_end', url: '/esport/results', data: { s1: 2, s2: 1 } },
+    ])
+    expect(
+      await (await notificationsHandler(req({ body: { clerkId: id, read: 'all' } }))).json(),
+    ).toEqual({ unread: 0 })
 
     // The bell's × and "Clear all": only this reader's notifications go.
     const other = clerk('es2')
-    await esportFollowsHandler(req({ body: { profile: { clerkId: other, emailVerified: true }, follow } }))
+    await esportFollowsHandler(
+      req({ body: { profile: { clerkId: other, emailVerified: true }, follow } }),
+    )
     expect(await notifyMatchEvents(payload, [{ ...ev('end'), matchId: 987_101 }])).toBe(2)
     const list10 = async (who: string) =>
-      (await (await notificationsHandler(req({ method: 'GET', query: `clerkId=${who}&limit=10` }))).json()).docs
+      (
+        await (
+          await notificationsHandler(req({ method: 'GET', query: `clerkId=${who}&limit=10` }))
+        ).json()
+      ).docs
     const mine = await list10(id)
     expect(mine).toHaveLength(2)
     const theirs = await list10(other)
-    expect((await notificationsHandler(req({ body: { clerkId: id, remove: [] } }))).status).toBe(400)
+    expect((await notificationsHandler(req({ body: { clerkId: id, remove: [] } }))).status).toBe(
+      400,
+    )
     // Someone else's id is left alone.
     await notificationsHandler(req({ body: { clerkId: id, remove: [theirs[0].id] } }))
     expect(await list10(other)).toHaveLength(1)
-    expect(await (await notificationsHandler(req({ body: { clerkId: id, remove: [mine[0].id] } }))).json()).toEqual({ unread: 0 })
+    expect(
+      await (
+        await notificationsHandler(req({ body: { clerkId: id, remove: [mine[0].id] } }))
+      ).json(),
+    ).toEqual({ unread: 0 })
     expect(await list10(id)).toMatchObject([{ id: mine[1].id }])
     await notificationsHandler(req({ body: { clerkId: id, remove: 'all' } }))
     expect(await list10(id)).toEqual([])
     expect(await list10(other)).toHaveLength(1)
 
-    const off = await esportFollowsHandler(req({ method: 'DELETE', body: { clerkId: id, kind: 'team', pandaId: 987_001 } }))
+    const off = await esportFollowsHandler(
+      req({ method: 'DELETE', body: { clerkId: id, kind: 'team', pandaId: 987_001 } }),
+    )
     expect(await off.json()).toEqual({ following: false })
   })
 
@@ -429,7 +590,13 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     const profile = { clerkId: id, emailVerified: true }
     const t = await payload.create({
       collection: 'esport-tournaments',
-      data: { pandaId: 987_500, game: 'cs2', name: 'Playoffs', tier: 'c', slug: `${RUN.toLowerCase()}-playoffs` } as never,
+      data: {
+        pandaId: 987_500,
+        game: 'cs2',
+        name: 'Playoffs',
+        tier: 'c',
+        slug: `${RUN.toLowerCase()}-playoffs`,
+      } as never,
       overrideAccess: true,
     })
     const match = (pandaId: number, endAt: string) =>
@@ -450,9 +617,13 @@ describe('the website endpoints (READER_API_SECRET)', () => {
     const old = await match(987_501, new Date(Date.now() - 2 * 86400_000).toISOString())
     const fresh = await match(987_502, new Date(Date.now() - 3600_000).toISOString())
     for (const pandaId of [987_501, 987_502]) {
-      await esportFollowsHandler(req({ body: { profile, follow: { kind: 'match', pandaId, label: 'A vs B' } } }))
+      await esportFollowsHandler(
+        req({ body: { profile, follow: { kind: 'match', pandaId, label: 'A vs B' } } }),
+      )
     }
-    const list = await (await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
+    const list = await (
+      await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))
+    ).json()
     expect(list.docs.find((d: { pandaId: number }) => d.pandaId === 987_502)).toMatchObject({
       slug: `${RUN.toLowerCase()}-playoffs`,
       teams: [
@@ -461,9 +632,12 @@ describe('the website endpoints (READER_API_SECRET)', () => {
       ],
     })
     expect(await pruneMatchFollows(payload)).toBeGreaterThanOrEqual(1)
-    const after = await (await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))).json()
+    const after = await (
+      await esportFollowsHandler(req({ method: 'GET', query: `clerkId=${id}` }))
+    ).json()
     expect(after.docs.map((d: { pandaId: number }) => d.pandaId)).toEqual([987_502])
-    for (const m of [old, fresh]) await payload.delete({ collection: 'esport-matches', id: m.id, overrideAccess: true })
+    for (const m of [old, fresh])
+      await payload.delete({ collection: 'esport-matches', id: m.id, overrideAccess: true })
     await payload.delete({ collection: 'esport-tournaments', id: t.id, overrideAccess: true })
   })
 
@@ -474,23 +648,50 @@ describe('the website endpoints (READER_API_SECRET)', () => {
       endpoint: `https://push.example.com/send/${RUN}`,
       keys: { p256dh: 'BOr' + 'a'.repeat(84), auth: 'k'.repeat(22) },
     }
-    expect((await pushHandler(req({ body: { clerkId: one, subscription: { endpoint: 'http://x', keys: subscription.keys } } }))).status).toBe(400)
-    expect(await (await pushHandler(req({ body: { clerkId: one, subscription, locale: 'fr' } }))).json()).toEqual({ subscribed: true })
-    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${one}` }))).json()).toEqual({ count: 1 })
+    expect(
+      (
+        await pushHandler(
+          req({
+            body: { clerkId: one, subscription: { endpoint: 'http://x', keys: subscription.keys } },
+          }),
+        )
+      ).status,
+    ).toBe(400)
+    expect(
+      await (await pushHandler(req({ body: { clerkId: one, subscription, locale: 'fr' } }))).json(),
+    ).toEqual({ subscribed: true })
+    expect(
+      await (await pushHandler(req({ method: 'GET', query: `clerkId=${one}` }))).json(),
+    ).toEqual({ count: 1 })
     // Same browser, another account: it moves.
     await pushHandler(req({ body: { clerkId: two, subscription } }))
-    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${one}` }))).json()).toEqual({ count: 0 })
-    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${two}` }))).json()).toEqual({ count: 1 })
-    await pushHandler(req({ method: 'DELETE', body: { clerkId: two, endpoint: subscription.endpoint } }))
-    expect(await (await pushHandler(req({ method: 'GET', query: `clerkId=${two}` }))).json()).toEqual({ count: 0 })
+    expect(
+      await (await pushHandler(req({ method: 'GET', query: `clerkId=${one}` }))).json(),
+    ).toEqual({ count: 0 })
+    expect(
+      await (await pushHandler(req({ method: 'GET', query: `clerkId=${two}` }))).json(),
+    ).toEqual({ count: 1 })
+    await pushHandler(
+      req({ method: 'DELETE', body: { clerkId: two, endpoint: subscription.endpoint } }),
+    )
+    expect(
+      await (await pushHandler(req({ method: 'GET', query: `clerkId=${two}` }))).json(),
+    ).toEqual({ count: 0 })
   })
 
   it('does not create a reader just to answer "saved?"', async () => {
-    const res = await readerSavedHandler(req({ method: 'GET', query: `clerkId=${clerk('ghost')}&articles=1` }))
+    const res = await readerSavedHandler(
+      req({ method: 'GET', query: `clerkId=${clerk('ghost')}&articles=1` }),
+    )
     expect((await res.json()).saved).toEqual([])
     expect(
-      (await payload.count({ collection: 'readers', where: { clerkId: { equals: clerk('ghost') } }, overrideAccess: true }))
-        .totalDocs,
+      (
+        await payload.count({
+          collection: 'readers',
+          where: { clerkId: { equals: clerk('ghost') } },
+          overrideAccess: true,
+        })
+      ).totalDocs,
     ).toBe(0)
   })
 })
@@ -498,12 +699,18 @@ describe('the website endpoints (READER_API_SECRET)', () => {
 describe("Clerk's webhook", () => {
   const SECRET = `whsec_${Buffer.from('a-very-secret-key-for-tests').toString('base64')}`
   const sign = (id: string, ts: number, body: string) =>
-    createHmac('sha256', Buffer.from(SECRET.slice(6), 'base64')).update(`${id}.${ts}.${body}`).digest('base64')
+    createHmac('sha256', Buffer.from(SECRET.slice(6), 'base64'))
+      .update(`${id}.${ts}.${body}`)
+      .digest('base64')
   const now = Math.floor(Date.now() / 1000)
 
   it('checks the Svix signature and the timestamp', () => {
     const body = '{"type":"user.created"}'
-    const good = { id: 'msg_1', timestamp: String(now), signature: `v1,bad v1,${sign('msg_1', now, body)}` }
+    const good = {
+      id: 'msg_1',
+      timestamp: String(now),
+      signature: `v1,bad v1,${sign('msg_1', now, body)}`,
+    }
     expect(verifyClerkWebhook(SECRET, good, body, now)).toBe(true)
     expect(verifyClerkWebhook(SECRET, good, `${body} `, now)).toBe(false)
     expect(verifyClerkWebhook(SECRET, { ...good, signature: 'v1,bad' }, body, now)).toBe(false)
@@ -527,15 +734,22 @@ describe("Clerk's webhook", () => {
         text: async () => body,
       } as never)
     }
-    expect((await call({ type: 'user.created', data: { id, first_name: 'Hook' } })).status).toBe(200)
+    expect((await call({ type: 'user.created', data: { id, first_name: 'Hook' } })).status).toBe(
+      200,
+    )
     const reader = await ensureReader(payload, id)
     expect(reader.displayName).toBe('Hook')
     await addBookmark(payload, reader.id, published)
 
     expect((await call({ type: 'user.deleted', data: { id, deleted: true } })).status).toBe(200)
     expect(
-      (await payload.count({ collection: 'readers', where: { clerkId: { equals: id } }, overrideAccess: true }))
-        .totalDocs,
+      (
+        await payload.count({
+          collection: 'readers',
+          where: { clerkId: { equals: id } },
+          overrideAccess: true,
+        })
+      ).totalDocs,
     ).toBe(0)
 
     const unsigned = await clerkWebhookHandler({
@@ -579,10 +793,22 @@ describe('editorial roles', () => {
     // Someone else's article, or a published one: not theirs to edit.
     const others = await article('others', 'draft', otherAuthorId)
     await expect(
-      payload.update({ collection: 'articles', id: others, data: { title: 'x' }, user: writer, overrideAccess: false }),
+      payload.update({
+        collection: 'articles',
+        id: others,
+        data: { title: 'x' },
+        user: writer,
+        overrideAccess: false,
+      }),
     ).rejects.toThrow()
     await expect(
-      payload.update({ collection: 'articles', id: published, data: { title: 'x' }, user: writer, overrideAccess: false }),
+      payload.update({
+        collection: 'articles',
+        id: published,
+        data: { title: 'x' },
+        user: writer,
+        overrideAccess: false,
+      }),
     ).rejects.toThrow()
     await expect(
       payload.delete({ collection: 'articles', id: doc.id, user: writer, overrideAccess: false }),
@@ -594,7 +820,13 @@ describe('editorial roles', () => {
     await expect(
       payload.create({
         collection: 'articles',
-        data: { title: `${RUN} orphan`, excerpt: 'E', content: richText, category: 'news', author: authorId } as never,
+        data: {
+          title: `${RUN} orphan`,
+          excerpt: 'E',
+          content: richText,
+          category: 'news',
+          author: authorId,
+        } as never,
         draft: true,
         user: writer,
         overrideAccess: false,

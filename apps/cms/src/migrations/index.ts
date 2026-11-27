@@ -32,6 +32,7 @@ import * as migration_20261125_133556_esport_follows from './20261125_133556_esp
 import * as migration_20261125_141612_push_subscriptions from './20261125_141612_push_subscriptions';
 import * as migration_20261126_133214_game_image_library from './20261126_133214_game_image_library';
 import * as migration_20261127_092722_events from './20261127_092722_events';
+import * as migration_20261127_105652_notify_spoiler_prefs from './20261127_105652_notify_spoiler_prefs';
 
 export const migrations = [
   {
@@ -203,5 +204,10 @@ export const migrations = [
     up: migration_20261127_092722_events.up,
     down: migration_20261127_092722_events.down,
     name: '20261127_092722_events'
+  },
+  {
+    up: migration_20261127_105652_notify_spoiler_prefs.up,
+    down: migration_20261127_105652_notify_spoiler_prefs.down,
+    name: '20261127_105652_notify_spoiler_prefs'
   },
 ];

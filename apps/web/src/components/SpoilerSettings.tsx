@@ -39,11 +39,11 @@ export function SpoilerSettings() {
     if (!user) return setState('saved')
     try {
       await user.update({ unsafeMetadata: { ...user.unsafeMetadata, spoilerPrefs: next } })
-      // A copy for the CMS: a result's push leaves the score out.
+      // A copy for the CMS: push notifications follow the same choices.
       void fetch('/api/notify-settings', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ settings: { hideScores: user.unsafeMetadata?.hideScores === true && next.scores } }),
+        body: JSON.stringify({ settings: { spoilerPrefs: next } }),
       }).catch(() => undefined)
       setState('saved')
     } catch {

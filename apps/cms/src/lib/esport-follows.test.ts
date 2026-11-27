@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   followFromBody,
+  hidesResult,
   mentionsTeam,
+  pushSpoilers,
   recipientsFor,
   transitionOf,
   type FollowRow,
@@ -127,5 +129,70 @@ describe('esport notifications', () => {
       stage: 'Stage 1',
     })
     expect(ev.t2).toEqual({ id: 2, name: 'Liquid', acronym: 'TL', logo: null })
+  })
+})
+
+describe("push and the reader's anti-spoil settings", () => {
+  const end = {
+    game: 'cs2',
+    matchId: 900,
+    t1: { id: 1, name: 'Vitality' },
+    t2: { id: 2, name: 'FaZe' },
+    s1: 2,
+    s2: 0,
+  }
+  const none = { teams: [], matches: [] }
+  const on = (spoilerPrefs?: unknown) => ({ hideScores: true, spoilerPrefs })
+
+  it('cleans the stored settings, everything hidden by default', () => {
+    expect(pushSpoilers(undefined)).toEqual({
+      scores: true,
+      winners: true,
+      articles: 'blur',
+      games: [],
+      teams: 'all',
+    })
+    expect(pushSpoilers({ scores: false, games: ['lol', 'x'], teams: 'followed' })).toMatchObject({
+      scores: false,
+      games: ['lol'],
+      teams: 'followed',
+    })
+  })
+
+  it('a result is hidden only with anti-spoil on, inside the parts, games and teams protected', () => {
+    expect(hidesResult({ hideScores: false }, 'match_end', end, none)).toBe(false)
+    expect(hidesResult(on(), 'match_end', end, none)).toBe(true)
+    expect(hidesResult(on(), 'match_start', end, none)).toBe(false)
+    // The score shows the winner: hidden while either is protected.
+    expect(hidesResult(on({ scores: false }), 'match_end', end, none)).toBe(true)
+    expect(hidesResult(on({ scores: false, winners: false }), 'match_end', end, none)).toBe(false)
+    // Only LoL protected: a CS2 result shows.
+    expect(hidesResult(on({ games: ['lol'] }), 'match_end', end, none)).toBe(false)
+    expect(hidesResult(on({ games: ['cs2'] }), 'match_end', end, none)).toBe(true)
+    // Only my teams: a match of theirs is hidden, another one (a followed event's) isn't.
+    expect(
+      hidesResult(on({ teams: 'followed' }), 'match_end', end, { teams: [2], matches: [] }),
+    ).toBe(true)
+    expect(
+      hidesResult(on({ teams: 'followed' }), 'match_end', end, { teams: [7], matches: [] }),
+    ).toBe(false)
+    expect(
+      hidesResult(on({ teams: 'followed' }), 'match_end', end, { teams: [], matches: [900] }),
+    ).toBe(true)
+  })
+
+  it('a result article is hidden unless articles are shown; other news never', () => {
+    const art = {
+      articleId: 1,
+      title: 'Vitality beat FaZe',
+      teams: ['Vitality'],
+      spoiler: true,
+      game: 'cs2',
+    }
+    expect(hidesResult(on(), 'article', art, none)).toBe(true)
+    expect(hidesResult(on({ articles: 'hide' }), 'article', art, none)).toBe(true)
+    expect(hidesResult(on({ articles: 'show' }), 'article', art, none)).toBe(false)
+    expect(hidesResult(on(), 'article', { ...art, spoiler: false }, none)).toBe(false)
+    expect(hidesResult(on({ games: ['valorant'] }), 'article', art, none)).toBe(false)
   })
 })

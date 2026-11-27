@@ -197,6 +197,15 @@ export const Readers: CollectionConfig = {
           type: 'checkbox',
           defaultValue: false,
         },
+        {
+          // What their anti-spoil hides (Clerk unsafeMetadata.spoilerPrefs,
+          // 2026-11-27): scores, winners, result articles, which games, all
+          // teams or only theirs. Push follows it (lib/esport-follows.ts).
+          name: 'spoilerPrefs',
+          label: 'Anti-spoil settings',
+          type: 'json',
+          admin: { readOnly: true },
+        },
       ],
     },
   ],

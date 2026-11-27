@@ -57,7 +57,16 @@ export function pushText(
     }
   }
   const teams = Array.isArray(data.teams) ? data.teams.join(', ') : ''
-  return { title: fr ? `Actu sur ${teams}` : `News about ${teams}`, body: String(data.title ?? '') }
+  return {
+    title: fr ? `Actu sur ${teams}` : `News about ${teams}`,
+    // A result article for a reader who hides results: its title would give it away.
+    body:
+      hideScores && data.spoiler === true
+        ? fr
+          ? 'Résultat masqué'
+          : 'Result hidden'
+        : String(data.title ?? ''),
+  }
 }
 
 /** How long a push service keeps trying: a match start is stale fast. */

@@ -37,3 +37,17 @@ describe('push notification text', () => {
     })
   })
 })
+
+describe('a result article for a reader who hides results', () => {
+  it('leaves the title out', () => {
+    const data = { title: 'Vitality beat FaZe in the final', teams: ['Vitality'], spoiler: true }
+    expect(pushText('article', data, 'fr', true)).toEqual({
+      title: 'Actu sur Vitality',
+      body: 'Résultat masqué',
+    })
+    expect(pushText('article', data, 'en', false).body).toBe('Vitality beat FaZe in the final')
+    expect(pushText('article', { ...data, spoiler: false }, 'en', true).body).toBe(
+      'Vitality beat FaZe in the final',
+    )
+  })
+})

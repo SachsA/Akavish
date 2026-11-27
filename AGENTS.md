@@ -257,6 +257,9 @@ updated **root** `pnpm-lock.yaml` (CI uses `--frozen-lockfile` and will fail oth
   `.akv-free` (`components/SpoilerScope.tsx`) for the games and followed-teams
   scope, read from each element's `spoilerData()` attributes. A new
   spoiler-prone element: the right class plus `spoilerData({ game, teams, match })`.
+  Push notifications follow the same choices: the site copies them to the
+  CMS (`notify.spoilerPrefs` via `/api/notify-settings`), `hidesResult` in
+  `apps/cms/src/lib/esport-follows.ts` decides.
 - **Tournament pages** (`/esport/tournaments`, `[key]` = a game or a
   PandaScore stage slug): data from `esport-tournaments.structure` (CMS sync,
   `refreshStructures`), layout in `lib/esport-tournaments.ts` (pure, tested on

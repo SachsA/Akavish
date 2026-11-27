@@ -273,8 +273,10 @@ export interface NotifySettings {
   matchStart: boolean
   results: boolean
   news: boolean
-  /** A copy of the anti-spoil default: a result's push leaves the score out. */
+  /** A copy of the anti-spoil default: pushes follow it. */
   hideScores?: boolean
+  /** A copy of "What to hide" (lib/spoilers.ts): the CMS keeps what pushes need. */
+  spoilerPrefs?: unknown
 }
 
 export async function fetchNotifySettings(clerkId: string): Promise<NotifySettings> {

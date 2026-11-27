@@ -109,6 +109,7 @@ export interface FollowRow {
   pandaId: number
   label: string
   acronym?: string | null
+  game?: string | null
 }
 
 /** The readers who follow one of the match's teams, its event or the match itself. */
@@ -156,6 +157,85 @@ type Settings = {
   results?: boolean | null
   news?: boolean | null
   hideScores?: boolean | null
+  spoilerPrefs?: unknown
+}
+
+/** The part of the reader's anti-spoil settings a push needs (the site's SpoilerPrefs). */
+export interface PushSpoilers {
+  scores: boolean
+  winners: boolean
+  articles: 'blur' | 'hide' | 'show'
+  games: string[]
+  teams: 'all' | 'followed'
+}
+
+const SPOILER_GAMES = ['cs2', 'valorant', 'lol', 'r6', 'rl']
+
+/** Stored settings, cleaned; everything hidden by default (pure, tested). */
+export function pushSpoilers(raw: unknown): PushSpoilers {
+  const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  return {
+    scores: o.scores !== false,
+    winners: o.winners !== false,
+    articles: o.articles === 'hide' || o.articles === 'show' ? o.articles : 'blur',
+    games: Array.isArray(o.games)
+      ? SPOILER_GAMES.filter((g) => (o.games as unknown[]).includes(g))
+      : [],
+    teams: o.teams === 'followed' ? 'followed' : 'all',
+  }
+}
+
+/**
+ * Whether a push gives away a result the reader hides: their anti-spoil is on
+ * by default, the notification is a result (a match's end, or an article
+ * flagged as a result), and it falls inside what they protect: the part
+ * (scores or winners for a match, result articles not "show"), the game, and
+ * their followed teams or match when they protect only those (pure, tested).
+ */
+export function hidesResult(
+  s: Settings | undefined,
+  kind: NotifyKind,
+  data: Record<string, unknown>,
+  follows: { teams: number[]; matches: number[] },
+): boolean {
+  if (s?.hideScores !== true) return false
+  const p = pushSpoilers(s.spoilerPrefs)
+  if (kind === 'match_end') {
+    if (!p.scores && !p.winners) return false
+  } else if (kind === 'article') {
+    if (data.spoiler !== true || p.articles === 'show') return false
+  } else return false
+  const game = typeof data.game === 'string' ? data.game : null
+  if (p.games.length && game && !p.games.includes(game)) return false
+  if (p.teams === 'followed' && kind === 'match_end') {
+    const ids = [data.t1, data.t2].map((t) => (t as { id?: number } | null)?.id)
+    const mine =
+      ids.some((id) => typeof id === 'number' && follows.teams.includes(id)) ||
+      (typeof data.matchId === 'number' && follows.matches.includes(data.matchId))
+    if (!mine) return false
+  }
+  // An article reaches a reader through a team they follow: always "theirs".
+  return true
+}
+
+/** The teams and matches a reader follows (for the "only my teams" scope). */
+async function followsOf(
+  payload: Payload,
+  reader: string,
+): Promise<{ teams: number[]; matches: number[] }> {
+  const { docs } = await payload.find({
+    collection: 'esport-follows' as never,
+    where: { and: [{ reader: { equals: Number(reader) } }, { kind: { in: ['team', 'match'] } }] },
+    limit: 1000,
+    depth: 0,
+    pagination: false,
+    overrideAccess: true,
+  })
+  const rows = docs as unknown as FollowRow[]
+  return {
+    teams: rows.filter((r) => r.kind === 'team').map((r) => r.pandaId),
+    matches: rows.filter((r) => r.kind === 'match').map((r) => r.pandaId),
+  }
 }
 
 async function settingsOf(payload: Payload, readerIds: string[]): Promise<Map<string, Settings>> {
@@ -209,13 +289,19 @@ async function store(
       depth: 0,
     })
     made++
-    // And to the reader's browsers with push on (lib/web-push.ts; off without VAPID keys).
-    await sendPush(
-      payload,
-      Number(reader),
-      { kind, data, url, tag: dedupeKey },
-      settings.get(reader)?.hideScores === true,
-    ).catch((err) => payload.logger.warn({ msg: '[push] failed', error: String(err) }))
+    // And to the reader's browsers with push on (lib/web-push.ts; off without
+    // VAPID keys), leaving the result out when their anti-spoil hides it.
+    const s = settings.get(reader)
+    const scoped = pushSpoilers(s?.spoilerPrefs).teams === 'followed' && s?.hideScores === true
+    const hide = hidesResult(
+      s,
+      kind,
+      data,
+      scoped ? await followsOf(payload, reader) : { teams: [], matches: [] },
+    )
+    await sendPush(payload, Number(reader), { kind, data, url, tag: dedupeKey }, hide).catch(
+      (err) => payload.logger.warn({ msg: '[push] failed', error: String(err) }),
+    )
   }
   return made
 }
@@ -274,6 +360,7 @@ export async function notifyArticle(
     title: string
     excerpt?: string | null
     category?: string
+    spoiler?: boolean | null
   },
 ): Promise<number> {
   if (article.category !== 'esport') return 0
@@ -287,10 +374,12 @@ export async function notifyArticle(
   })
   const haystack = `${article.title}\n${article.excerpt ?? ''}`
   const byReader = new Map<string, string[]>()
+  const gameOf = new Map<string, string>()
   for (const f of docs as unknown as FollowRow[]) {
     if (!mentionsTeam(haystack, f)) continue
     const r = String(f.reader)
     byReader.set(r, [...(byReader.get(r) ?? []), f.label])
+    if (f.game && !gameOf.has(r)) gameOf.set(r, f.game)
   }
   let made = 0
   for (const [reader, teams] of byReader) {
@@ -298,7 +387,15 @@ export async function notifyArticle(
       payload,
       [reader],
       'article',
-      { articleId: Number(article.id), title: article.title, teams },
+      {
+        articleId: Number(article.id),
+        title: article.title,
+        teams,
+        // A result (the site blurs it while scores are hidden), and the game
+        // of the followed team it names: what a push may have to leave out.
+        spoiler: article.spoiler === true,
+        ...(gameOf.get(reader) ? { game: gameOf.get(reader) } : {}),
+      },
       `/article/${article.slug}`,
       `article:${article.id}`,
     )
@@ -589,10 +686,10 @@ const SETTING_KEYS = ['matchStart', 'results', 'news', 'hideScores'] as const
 
 /**
  * /reader-api/notify-settings
- *   GET  ?clerkId → { matchStart, results, news, hideScores }
- *   POST { clerkId, settings } → the same, saved. Only the booleans sent
- *        change: Preferences sends the three switches, the anti-spoil default
- *        sends hideScores alone.
+ *   GET  ?clerkId → { matchStart, results, news, hideScores, spoilerPrefs }
+ *   POST { clerkId, settings } → the same, saved. Only what is sent changes:
+ *        Preferences sends the three switches, the anti-spoil default
+ *        hideScores alone, "What to hide" spoilerPrefs.
  */
 export const notifySettingsHandler: PayloadHandler = async (req) => {
   const denied = checkSecret(req.headers)
@@ -602,6 +699,7 @@ export const notifySettingsHandler: PayloadHandler = async (req) => {
     results: s?.results !== false,
     news: s?.news !== false,
     hideScores: s?.hideScores === true,
+    spoilerPrefs: pushSpoilers(s?.spoilerPrefs) as PushSpoilers,
   })
   if (req.method === 'GET') {
     const clerkId = req.searchParams.get('clerkId')
@@ -615,6 +713,9 @@ export const notifySettingsHandler: PayloadHandler = async (req) => {
   const reader = await ensureReader(req.payload, body.clerkId)
   const notify = pick((reader as unknown as { notify?: Settings }).notify)
   for (const k of SETTING_KEYS) if (typeof sent[k] === 'boolean') notify[k] = sent[k] as boolean
+  // The anti-spoil settings (the site's "What to hide"), cleaned.
+  if (sent.spoilerPrefs && typeof sent.spoilerPrefs === 'object')
+    notify.spoilerPrefs = pushSpoilers(sent.spoilerPrefs)
   await req.payload.update({
     collection: 'readers',
     id: reader.id,
